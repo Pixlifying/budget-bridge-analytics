@@ -1,5 +1,5 @@
 
-import { useState, ReactNode } from 'react';
+import { useState, ReactNode, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -39,11 +39,32 @@ interface ServiceFormProps {
   onSubmit: (values: Record<string, any>) => void;
   trigger: ReactNode;
   isEdit?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-const ServiceForm = ({ title, fields, initialValues, onSubmit, trigger, isEdit = false }: ServiceFormProps) => {
+const ServiceForm = ({ 
+  title, 
+  fields, 
+  initialValues, 
+  onSubmit, 
+  trigger, 
+  isEdit = false,
+  open,
+  onOpenChange
+}: ServiceFormProps) => {
   const [values, setValues] = useState<Record<string, any>>(initialValues);
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  
+  // Set internal state based on controlled props
+  const isControlled = open !== undefined && onOpenChange !== undefined;
+  const isOpen = isControlled ? open : internalOpen;
+  const setIsOpen = isControlled ? onOpenChange : setInternalOpen;
+
+  // Reset values when initialValues change (e.g., when switching between different edit entries)
+  useEffect(() => {
+    setValues(initialValues);
+  }, [initialValues]);
 
   const handleChange = (name: string, value: any) => {
     setValues((prev) => ({ ...prev, [name]: value }));
@@ -52,11 +73,11 @@ const ServiceForm = ({ title, fields, initialValues, onSubmit, trigger, isEdit =
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(values);
-    setOpen(false);
+    setIsOpen(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>

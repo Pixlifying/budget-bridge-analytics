@@ -20,6 +20,7 @@ interface ServiceCardProps {
   onEdit: () => void;
   onDelete: () => void;
   className?: string;
+  showActions?: boolean;
 }
 
 const ServiceCard = ({
@@ -31,6 +32,7 @@ const ServiceCard = ({
   onEdit,
   onDelete,
   className,
+  showActions = true,
 }: ServiceCardProps) => {
   return (
     <Card className={cn("bg-card shadow-sm rounded-xl overflow-hidden card-hover", className)}>
@@ -54,26 +56,28 @@ const ServiceCard = ({
           ))}
         </div>
       </CardContent>
-      <CardFooter className="pt-2 flex justify-end gap-2">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="h-8 px-3 text-muted-foreground" 
-          onClick={onEdit}
-        >
-          <Pencil size={14} className="mr-1" />
-          <span className="text-xs">Edit</span>
-        </Button>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="h-8 px-3 text-rose-500 hover:text-rose-600 hover:bg-rose-50 border-rose-200" 
-          onClick={onDelete}
-        >
-          <Trash2 size={14} className="mr-1" />
-          <span className="text-xs">Delete</span>
-        </Button>
-      </CardFooter>
+      {showActions && (
+        <CardFooter className="pt-2 flex justify-end gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-8 px-3 text-muted-foreground" 
+            onClick={onEdit}
+          >
+            <Pencil size={14} className="mr-1" />
+            <span className="text-xs">Edit</span>
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-8 px-3 text-rose-500 hover:text-rose-600 hover:bg-rose-50 border-rose-200" 
+            onClick={onDelete}
+          >
+            <Trash2 size={14} className="mr-1" />
+            <span className="text-xs">Delete</span>
+          </Button>
+        </CardFooter>
+      )}
     </Card>
   );
 };

@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { BarChart, LineChart } from 'lucide-react';
+import { BarChart, LineChart, PieChart as PieChartIcon } from 'lucide-react';
 import { 
   BarChart as RechartsBarChart,
   Bar,
@@ -12,9 +12,8 @@ import {
   ResponsiveContainer,
   LineChart as RechartsLineChart,
   Line,
-  PieChart,
-  Pie,
-  Cell
+  AreaChart,
+  Area
 } from 'recharts';
 import PageWrapper from '@/components/layout/PageWrapper';
 import DateRangePicker from '@/components/ui/DateRangePicker';
@@ -75,9 +74,6 @@ const Analytics = () => {
     amount,
   })).sort((a, b) => parseInt(a.day.split(' ')[1]) - parseInt(b.day.split(' ')[1]));
   
-  // COLORS for pie chart
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
-  
   return (
     <PageWrapper
       title="Analytics"
@@ -92,31 +88,36 @@ const Analytics = () => {
       }
     >
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        {/* Total Margin Distribution */}
+        {/* Total Margin Distribution - Changed from PieChart to AreaChart */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-border">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <BarChart className="h-5 w-5 text-primary" />
+            <PieChartIcon className="h-5 w-5 text-primary" />
             Margin Distribution
           </h2>
           <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={marginData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                outerRadius={100}
-                fill="#8884d8"
-                dataKey="value"
-                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-              >
-                {marginData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
+            <AreaChart
+              data={marginData}
+              margin={{
+                top: 10,
+                right: 30,
+                left: 0,
+                bottom: 0,
+              }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis formatter={(value) => formatCurrency(Number(value)).split('.')[0]} />
               <Tooltip formatter={(value) => formatCurrency(Number(value))} />
               <Legend />
-            </PieChart>
+              <Area 
+                type="monotone" 
+                dataKey="value" 
+                stackId="1"
+                stroke="#8884d8" 
+                fill="#8884d8" 
+                name="Margin"
+              />
+            </AreaChart>
           </ResponsiveContainer>
           <p className="text-center mt-4 text-muted-foreground text-sm">
             Total Margin: {formatCurrency(totalMargin)}

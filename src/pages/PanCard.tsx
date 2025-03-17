@@ -32,6 +32,7 @@ const PanCard = () => {
   const [panCards, setPanCards] = useLocalStorage<PanCardEntry[]>('panCards', []);
   const [filteredPanCards, setFilteredPanCards] = useState<PanCardEntry[]>([]);
   const [editingEntry, setEditingEntry] = useState<PanCardEntry | null>(null);
+  const [isEditFormOpen, setIsEditFormOpen] = useState(false);
   
   useEffect(() => {
     if (viewMode === 'day') {
@@ -83,6 +84,7 @@ const PanCard = () => {
 
     setPanCards(updatedPanCards);
     setEditingEntry(null);
+    setIsEditFormOpen(false);
     toast.success('Pan Card entry updated successfully');
   };
 
@@ -186,6 +188,7 @@ const PanCard = () => {
           }}
           onEdit={() => {}}
           onDelete={() => {}}
+          showActions={false}
           className="bg-blue-50"
         />
         <ServiceCard 
@@ -200,6 +203,7 @@ const PanCard = () => {
           }}
           onEdit={() => {}}
           onDelete={() => {}}
+          showActions={false}
           className="bg-emerald-50"
         />
         <ServiceCard 
@@ -214,6 +218,7 @@ const PanCard = () => {
           }}
           onEdit={() => {}}
           onDelete={() => {}}
+          showActions={false}
           className="bg-purple-50"
         />
       </div>
@@ -248,8 +253,10 @@ const PanCard = () => {
               }}
               onEdit={() => {
                 setEditingEntry(entry);
+                setIsEditFormOpen(true);
               }}
               onDelete={() => handleDeleteEntry(entry.id)}
+              showActions={true}
             />
           ))}
         </div>
@@ -262,7 +269,9 @@ const PanCard = () => {
           initialValues={calculateTotals(editingEntry)}
           onSubmit={handleEditEntry}
           trigger={<div />}
-          isEdit
+          isEdit={true}
+          open={isEditFormOpen}
+          onOpenChange={setIsEditFormOpen}
         />
       )}
     </PageWrapper>
