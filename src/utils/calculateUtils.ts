@@ -1,4 +1,3 @@
-
 export const calculatePanCardTotal = (count: number, amount: number): number => {
   return count * amount;
 };
@@ -16,7 +15,7 @@ export const calculatePassportMargin = (count: number): number => {
 };
 
 export const calculateBankingServicesMargin = (amount: number): number => {
-  return amount * 0.5;
+  return (amount / 100) * 0.5;
 };
 
 export const formatCurrency = (amount: number): string => {
