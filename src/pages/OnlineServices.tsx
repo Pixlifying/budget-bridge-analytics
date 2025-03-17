@@ -30,6 +30,7 @@ const OnlineServices = () => {
   const [onlineServices, setOnlineServices] = useLocalStorage<OnlineServiceEntry[]>('onlineServices', []);
   const [filteredServices, setFilteredServices] = useState<OnlineServiceEntry[]>([]);
   const [editingEntry, setEditingEntry] = useState<OnlineServiceEntry | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
   
   useEffect(() => {
     if (viewMode === 'day') {
@@ -48,6 +49,7 @@ const OnlineServices = () => {
     { value: 'Railway Tickets', label: 'Railway Tickets' },
     { value: 'Marriage Assistance Form', label: 'Marriage Assistance Form' },
     { value: 'Ayushman Form', label: 'Ayushman Form' },
+    { value: 'Loan/Files', label: 'Loan/Files' },
     { value: 'Others', label: 'Others' },
   ];
 
@@ -194,6 +196,7 @@ const OnlineServices = () => {
           onEdit={() => {}}
           onDelete={() => {}}
           className="bg-blue-50"
+          showActions={false}
         />
         <ServiceCard 
           id="summary-amount"
@@ -208,6 +211,7 @@ const OnlineServices = () => {
           onEdit={() => {}}
           onDelete={() => {}}
           className="bg-emerald-50"
+          showActions={false}
         />
         <ServiceCard 
           id="summary-popular"
@@ -222,6 +226,7 @@ const OnlineServices = () => {
           onEdit={() => {}}
           onDelete={() => {}}
           className="bg-purple-50"
+          showActions={false}
         />
       </div>
 
@@ -253,6 +258,7 @@ const OnlineServices = () => {
               }}
               onEdit={() => {
                 setEditingEntry(entry);
+                setFormOpen(true);
               }}
               onDelete={() => handleDeleteEntry(entry.id)}
             />
@@ -268,6 +274,8 @@ const OnlineServices = () => {
           onSubmit={handleEditEntry}
           trigger={<div />}
           isEdit
+          open={formOpen}
+          onOpenChange={setFormOpen}
         />
       )}
     </PageWrapper>

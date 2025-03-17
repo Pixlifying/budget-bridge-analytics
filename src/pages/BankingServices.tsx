@@ -29,6 +29,7 @@ const BankingServices = () => {
   const [bankingServices, setBankingServices] = useLocalStorage<BankingServiceEntry[]>('bankingServices', []);
   const [filteredServices, setFilteredServices] = useState<BankingServiceEntry[]>([]);
   const [editingEntry, setEditingEntry] = useState<BankingServiceEntry | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
   
   useEffect(() => {
     if (viewMode === 'day') {
@@ -159,6 +160,7 @@ const BankingServices = () => {
           onEdit={() => {}}
           onDelete={() => {}}
           className="bg-blue-50"
+          showActions={false}
         />
         <ServiceCard 
           id="summary-amount"
@@ -173,6 +175,7 @@ const BankingServices = () => {
           onEdit={() => {}}
           onDelete={() => {}}
           className="bg-emerald-50"
+          showActions={false}
         />
         <ServiceCard 
           id="summary-margin"
@@ -187,6 +190,7 @@ const BankingServices = () => {
           onEdit={() => {}}
           onDelete={() => {}}
           className="bg-purple-50"
+          showActions={false}
         />
       </div>
 
@@ -216,6 +220,7 @@ const BankingServices = () => {
               }}
               onEdit={() => {
                 setEditingEntry(entry);
+                setFormOpen(true);
               }}
               onDelete={() => handleDeleteEntry(entry.id)}
             />
@@ -231,6 +236,8 @@ const BankingServices = () => {
           onSubmit={handleEditEntry}
           trigger={<div />}
           isEdit
+          open={formOpen}
+          onOpenChange={setFormOpen}
         />
       )}
     </PageWrapper>

@@ -28,6 +28,7 @@ const Expenses = () => {
   const [expenses, setExpenses] = useLocalStorage<ExpenseEntry[]>('expenses', []);
   const [filteredExpenses, setFilteredExpenses] = useState<ExpenseEntry[]>([]);
   const [editingEntry, setEditingEntry] = useState<ExpenseEntry | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
   
   useEffect(() => {
     if (viewMode === 'day') {
@@ -148,6 +149,7 @@ const Expenses = () => {
           onEdit={() => {}}
           onDelete={() => {}}
           className="bg-blue-50"
+          showActions={false}
         />
         <ServiceCard 
           id="summary-amount"
@@ -162,6 +164,7 @@ const Expenses = () => {
           onEdit={() => {}}
           onDelete={() => {}}
           className="bg-rose-50"
+          showActions={false}
         />
         <ServiceCard 
           id="summary-average"
@@ -176,6 +179,7 @@ const Expenses = () => {
           onEdit={() => {}}
           onDelete={() => {}}
           className="bg-orange-50"
+          showActions={false}
         />
       </div>
 
@@ -203,6 +207,7 @@ const Expenses = () => {
               }}
               onEdit={() => {
                 setEditingEntry(entry);
+                setFormOpen(true);
               }}
               onDelete={() => handleDeleteEntry(entry.id)}
             />
@@ -218,6 +223,8 @@ const Expenses = () => {
           onSubmit={handleEditEntry}
           trigger={<div />}
           isEdit
+          open={formOpen}
+          onOpenChange={setFormOpen}
         />
       )}
     </PageWrapper>
