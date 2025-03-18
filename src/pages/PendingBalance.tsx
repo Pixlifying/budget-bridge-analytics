@@ -1,15 +1,13 @@
-
 import { useState, useEffect } from 'react';
 import { AlertCircle, Plus } from 'lucide-react';
 import { toast } from 'sonner';
-import { v4 as uuidv4 } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 import PageWrapper from '@/components/layout/PageWrapper';
 import ServiceForm from '@/components/ui/ServiceForm';
 import ServiceCard from '@/components/ui/ServiceCard';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import { Button } from '@/components/ui/button';
 import DownloadButton from '@/components/ui/DownloadButton';
-import useLocalStorage from '@/hooks/useLocalStorage';
 import { 
   filterByDate, 
   filterByMonth,
@@ -30,11 +28,48 @@ interface PendingBalanceEntry {
 const PendingBalance = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
-  const [pendingBalances, setPendingBalances] = useLocalStorage<PendingBalanceEntry[]>('pendingBalances', []);
+  const [pendingBalances, setPendingBalances] = useState<PendingBalanceEntry[]>([]);
   const [filteredBalances, setFilteredBalances] = useState<PendingBalanceEntry[]>([]);
   const [editingEntry, setEditingEntry] = useState<PendingBalanceEntry | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [showCustomService, setShowCustomService] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  const fetchPendingBalances = async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('pending_balances')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (error) {
+        throw error;
+      }
+      
+      const formattedData = data.map(entry => ({
+        id: entry.id,
+        date: new Date(entry.date),
+        name: entry.name,
+        address: entry.address,
+        phone: entry.phone,
+        service: entry.service,
+        customService: entry.custom_service,
+        amount: Number(entry.amount)
+      }));
+      
+      setPendingBalances(formattedData);
+    } catch (error) {
+      console.error('Error fetching pending balances:', error);
+      toast.error('Failed to load pending balances data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  useEffect(() => {
+    fetchPendingBalances();
+  }, []);
   
   useEffect(() => {
     if (viewMode === 'day') {
@@ -57,58 +92,121 @@ const PendingBalance = () => {
     { value: 'Others', label: 'Others' },
   ];
 
-  const handleAddEntry = (values: Partial<PendingBalanceEntry>) => {
-    const amount = Number(values.amount);
-    const service = values.service || '';
-    const customService = values.customService || '';
-
-    const newEntry: PendingBalanceEntry = {
-      id: uuidv4(),
-      date: values.date || new Date(),
-      name: values.name || '',
-      address: values.address || '',
-      phone: values.phone || '',
-      service: service === 'Others' ? 'Others' : service,
-      customService: service === 'Others' ? customService : undefined,
-      amount,
-    };
-
-    setPendingBalances([...pendingBalances, newEntry]);
-    toast.success('Pending balance added successfully');
-    setShowCustomService(false);
+  const handleAddEntry = async (values: Partial<PendingBalanceEntry>) => {
+    try {
+      const amount = Number(values.amount);
+      const service = values.service || '';
+      const customService = values.customService || '';
+      
+      const { data, error } = await supabase
+        .from('pending_balances')
+        .insert([
+          {
+            date: values.date || new Date(),
+            name: values.name || '',
+            address: values.address || '',
+            phone: values.phone || '',
+            service: service === 'Others' ? 'Others' : service,
+            custom_service: service === 'Others' ? customService : null,
+            amount
+          }
+        ])
+        .select();
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data && data.length > 0) {
+        const newEntry: PendingBalanceEntry = {
+          id: data[0].id,
+          date: new Date(data[0].date),
+          name: data[0].name,
+          address: data[0].address,
+          phone: data[0].phone,
+          service: data[0].service,
+          customService: data[0].custom_service,
+          amount: Number(data[0].amount)
+        };
+        
+        setPendingBalances(prev => [newEntry, ...prev]);
+        toast.success('Pending balance added successfully');
+      }
+      
+      setShowCustomService(false);
+    } catch (error) {
+      console.error('Error adding pending balance:', error);
+      toast.error('Failed to add pending balance');
+    }
   };
 
-  const handleEditEntry = (values: Partial<PendingBalanceEntry>) => {
+  const handleEditEntry = async (values: Partial<PendingBalanceEntry>) => {
     if (!editingEntry) return;
     
-    const amount = Number(values.amount);
-    const service = values.service || '';
-    const customService = values.customService || '';
-
-    const updatedBalances = pendingBalances.map(entry => 
-      entry.id === editingEntry.id 
-        ? { 
-            ...entry, 
-            date: values.date || entry.date,
-            name: values.name || entry.name,
-            address: values.address || entry.address,
-            phone: values.phone || entry.phone,
-            service: service === 'Others' ? 'Others' : service,
-            customService: service === 'Others' ? customService : undefined,
-            amount,
-          } 
-        : entry
-    );
-
-    setPendingBalances(updatedBalances);
-    setEditingEntry(null);
-    toast.success('Pending balance updated successfully');
-    setShowCustomService(false);
+    try {
+      const amount = Number(values.amount);
+      const service = values.service || '';
+      const customService = values.customService || '';
+      
+      const { error } = await supabase
+        .from('pending_balances')
+        .update({
+          date: values.date || editingEntry.date,
+          name: values.name || editingEntry.name,
+          address: values.address || editingEntry.address,
+          phone: values.phone || editingEntry.phone,
+          service: service === 'Others' ? 'Others' : service,
+          custom_service: service === 'Others' ? customService : null,
+          amount
+        })
+        .eq('id', editingEntry.id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      const updatedEntry: PendingBalanceEntry = {
+        ...editingEntry,
+        date: values.date || editingEntry.date,
+        name: values.name || editingEntry.name,
+        address: values.address || editingEntry.address,
+        phone: values.phone || editingEntry.phone,
+        service: service === 'Others' ? 'Others' : service,
+        customService: service === 'Others' ? customService : undefined,
+        amount
+      };
+      
+      setPendingBalances(prev => 
+        prev.map(entry => entry.id === editingEntry.id ? updatedEntry : entry)
+      );
+      
+      setEditingEntry(null);
+      setFormOpen(false);
+      toast.success('Pending balance updated successfully');
+      setShowCustomService(false);
+    } catch (error) {
+      console.error('Error updating pending balance:', error);
+      toast.error('Failed to update pending balance');
+    }
   };
 
-  const handleDeleteEntry = (id: string) => {
-    setPendingBalances(pendingBalances.filter(entry => entry.id !== id));
-    toast.success('Pending balance deleted successfully');
+  const handleDeleteEntry = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('pending_balances')
+        .delete()
+        .eq('id', id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      setPendingBalances(prev => prev.filter(entry => entry.id !== id));
+      toast.success('Pending balance deleted successfully');
+    } catch (error) {
+      console.error('Error deleting pending balance:', error);
+      toast.error('Failed to delete pending balance');
+    }
   };
 
   const getFormFields = () => {
@@ -213,55 +311,11 @@ const PendingBalance = () => {
         </div>
       }
     >
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <ServiceCard 
-          id="summary-count"
-          title="Total Entries"
-          date={date}
-          data={{ 
-            value: totalEntries,
-          }}
-          labels={{ 
-            value: "Count",
-          }}
-          onEdit={() => {}}
-          onDelete={() => {}}
-          className="bg-blue-50"
-          showActions={false}
-        />
-        <ServiceCard 
-          id="summary-amount"
-          title="Total Pending Amount"
-          date={date}
-          data={{ 
-            value: formatCurrency(totalPendingAmount),
-          }}
-          labels={{ 
-            value: "Amount",
-          }}
-          onEdit={() => {}}
-          onDelete={() => {}}
-          className="bg-amber-50"
-          showActions={false}
-        />
-        <ServiceCard 
-          id="summary-average"
-          title="Average Pending Amount"
-          date={date}
-          data={{ 
-            value: formatCurrency(avgAmount),
-          }}
-          labels={{ 
-            value: "Amount",
-          }}
-          onEdit={() => {}}
-          onDelete={() => {}}
-          className="bg-orange-50"
-          showActions={false}
-        />
-      </div>
-
-      {filteredBalances.length === 0 ? (
+      {isLoading ? (
+        <div className="text-center py-12">
+          <p>Loading pending balances data...</p>
+        </div>
+      ) : filteredBalances.length === 0 ? (
         <div className="text-center py-12 bg-muted/30 rounded-lg border border-border animate-fade-in">
           <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground/50" />
           <h3 className="mt-4 text-lg font-medium">No Pending Balances</h3>

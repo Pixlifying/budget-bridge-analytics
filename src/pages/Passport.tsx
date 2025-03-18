@@ -1,14 +1,13 @@
-
 import { useState, useEffect } from 'react';
 import { Receipt, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 import PageWrapper from '@/components/layout/PageWrapper';
 import ServiceForm from '@/components/ui/ServiceForm';
 import ServiceCard from '@/components/ui/ServiceCard';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import { Button } from '@/components/ui/button';
-import useLocalStorage from '@/hooks/useLocalStorage';
 import { 
   calculatePassportTotal, 
   calculatePassportMargin,
@@ -29,11 +28,46 @@ interface PassportEntry {
 const Passport = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
-  const [passports, setPassports] = useLocalStorage<PassportEntry[]>('passports', []);
+  const [passports, setPassports] = useState<PassportEntry[]>([]);
   const [filteredPassports, setFilteredPassports] = useState<PassportEntry[]>([]);
   const [editingEntry, setEditingEntry] = useState<PassportEntry | null>(null);
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   
+  const fetchPassports = async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('passports')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (error) {
+        throw error;
+      }
+      
+      const formattedData = data.map(entry => ({
+        id: entry.id,
+        date: new Date(entry.date),
+        count: entry.count,
+        amount: Number(entry.amount),
+        total: Number(entry.total),
+        margin: Number(entry.margin)
+      }));
+      
+      setPassports(formattedData);
+    } catch (error) {
+      console.error('Error fetching passports:', error);
+      toast.error('Failed to load passport data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  useEffect(() => {
+    fetchPassports();
+  }, []);
+
   useEffect(() => {
     if (viewMode === 'day') {
       setFilteredPassports(filterByDate(passports, date));
@@ -42,55 +76,112 @@ const Passport = () => {
     }
   }, [date, viewMode, passports]);
 
-  const handleAddEntry = (values: Partial<PassportEntry>) => {
-    const count = Number(values.count);
-    const amount = Number(values.amount);
-    const total = calculatePassportTotal(count, amount);
-    const margin = calculatePassportMargin(count);
-
-    const newEntry: PassportEntry = {
-      id: uuidv4(),
-      date: values.date || new Date(),
-      count,
-      amount,
-      total,
-      margin,
-    };
-
-    setPassports([...passports, newEntry]);
-    toast.success('Passport entry added successfully');
-  };
-
-  const handleEditEntry = (values: Partial<PassportEntry>) => {
-    if (!editingEntry) return;
-    
-    const count = Number(values.count);
-    const amount = Number(values.amount);
-    const total = calculatePassportTotal(count, amount);
-    const margin = calculatePassportMargin(count);
-
-    const updatedPassports = passports.map(entry => 
-      entry.id === editingEntry.id 
-        ? { 
-            ...entry, 
-            date: values.date || entry.date,
+  const handleAddEntry = async (values: Partial<PassportEntry>) => {
+    try {
+      const count = Number(values.count);
+      const amount = Number(values.amount);
+      const total = calculatePassportTotal(count, amount);
+      const margin = calculatePassportMargin(count);
+      
+      const { data, error } = await supabase
+        .from('passports')
+        .insert([
+          {
+            date: values.date || new Date(),
             count,
             amount,
             total,
-            margin,
-          } 
-        : entry
-    );
-
-    setPassports(updatedPassports);
-    setEditingEntry(null);
-    setIsEditFormOpen(false);
-    toast.success('Passport entry updated successfully');
+            margin
+          }
+        ])
+        .select();
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data && data.length > 0) {
+        const newEntry: PassportEntry = {
+          id: data[0].id,
+          date: new Date(data[0].date),
+          count: data[0].count,
+          amount: Number(data[0].amount),
+          total: Number(data[0].total),
+          margin: Number(data[0].margin)
+        };
+        
+        setPassports(prev => [newEntry, ...prev]);
+        toast.success('Passport entry added successfully');
+      }
+    } catch (error) {
+      console.error('Error adding passport entry:', error);
+      toast.error('Failed to add passport entry');
+    }
   };
 
-  const handleDeleteEntry = (id: string) => {
-    setPassports(passports.filter(entry => entry.id !== id));
-    toast.success('Passport entry deleted successfully');
+  const handleEditEntry = async (values: Partial<PassportEntry>) => {
+    if (!editingEntry) return;
+    
+    try {
+      const count = Number(values.count);
+      const amount = Number(values.amount);
+      const total = calculatePassportTotal(count, amount);
+      const margin = calculatePassportMargin(count);
+      
+      const { error } = await supabase
+        .from('passports')
+        .update({
+          date: values.date || editingEntry.date,
+          count,
+          amount,
+          total,
+          margin
+        })
+        .eq('id', editingEntry.id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      const updatedEntry: PassportEntry = {
+        ...editingEntry,
+        date: values.date || editingEntry.date,
+        count,
+        amount,
+        total,
+        margin
+      };
+      
+      setPassports(prev => 
+        prev.map(entry => entry.id === editingEntry.id ? updatedEntry : entry)
+      );
+      
+      setEditingEntry(null);
+      setIsEditFormOpen(false);
+      toast.success('Passport entry updated successfully');
+    } catch (error) {
+      console.error('Error updating passport entry:', error);
+      toast.error('Failed to update passport entry');
+    }
+  };
+
+  const handleDeleteEntry = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('passports')
+        .delete()
+        .eq('id', id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      setPassports(prev => prev.filter(entry => entry.id !== id));
+      toast.success('Passport entry deleted successfully');
+    } catch (error) {
+      console.error('Error deleting passport entry:', error);
+      toast.error('Failed to delete passport entry');
+    }
   };
 
   const formFields = [
@@ -175,55 +266,11 @@ const Passport = () => {
         </div>
       }
     >
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <ServiceCard 
-          id="summary-passports"
-          title="Total Passports"
-          date={date}
-          data={{ 
-            value: totalPassports,
-          }}
-          labels={{ 
-            value: "Count",
-          }}
-          onEdit={() => {}}
-          onDelete={() => {}}
-          showActions={false}
-          className="bg-blue-50"
-        />
-        <ServiceCard 
-          id="summary-amount"
-          title="Total Amount"
-          date={date}
-          data={{ 
-            value: formatCurrency(totalAmount),
-          }}
-          labels={{ 
-            value: "Amount",
-          }}
-          onEdit={() => {}}
-          onDelete={() => {}}
-          showActions={false}
-          className="bg-emerald-50"
-        />
-        <ServiceCard 
-          id="summary-margin"
-          title="Total Margin"
-          date={date}
-          data={{ 
-            value: formatCurrency(totalMargin),
-          }}
-          labels={{ 
-            value: "Margin",
-          }}
-          onEdit={() => {}}
-          onDelete={() => {}}
-          showActions={false}
-          className="bg-purple-50"
-        />
-      </div>
-
-      {filteredPassports.length === 0 ? (
+      {isLoading ? (
+        <div className="text-center py-12">
+          <p>Loading passport data...</p>
+        </div>
+      ) : filteredPassports.length === 0 ? (
         <div className="text-center py-12 bg-muted/30 rounded-lg border border-border animate-fade-in">
           <Receipt className="mx-auto h-12 w-12 text-muted-foreground/50" />
           <h3 className="mt-4 text-lg font-medium">No Passport entries</h3>

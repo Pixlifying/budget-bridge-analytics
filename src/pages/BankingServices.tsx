@@ -1,15 +1,14 @@
-
 import { useState, useEffect } from 'react';
 import { CreditCard, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 import PageWrapper from '@/components/layout/PageWrapper';
 import ServiceForm from '@/components/ui/ServiceForm';
 import ServiceCard from '@/components/ui/ServiceCard';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import DownloadButton from '@/components/ui/DownloadButton';
 import { Button } from '@/components/ui/button';
-import useLocalStorage from '@/hooks/useLocalStorage';
 import { 
   calculateBankingServicesMargin,
   filterByDate, 
@@ -27,10 +26,43 @@ interface BankingServiceEntry {
 const BankingServices = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
-  const [bankingServices, setBankingServices] = useLocalStorage<BankingServiceEntry[]>('bankingServices', []);
+  const [bankingServices, setBankingServices] = useState<BankingServiceEntry[]>([]);
   const [filteredServices, setFilteredServices] = useState<BankingServiceEntry[]>([]);
   const [editingEntry, setEditingEntry] = useState<BankingServiceEntry | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  const fetchBankingServices = async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('banking_services')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (error) {
+        throw error;
+      }
+      
+      const formattedData = data.map(entry => ({
+        id: entry.id,
+        date: new Date(entry.date),
+        amount: Number(entry.amount),
+        margin: Number(entry.margin)
+      }));
+      
+      setBankingServices(formattedData);
+    } catch (error) {
+      console.error('Error fetching banking services:', error);
+      toast.error('Failed to load banking services data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  useEffect(() => {
+    fetchBankingServices();
+  }, []);
   
   useEffect(() => {
     if (viewMode === 'day') {
@@ -40,46 +72,100 @@ const BankingServices = () => {
     }
   }, [date, viewMode, bankingServices]);
 
-  const handleAddEntry = (values: Partial<BankingServiceEntry>) => {
-    const amount = Number(values.amount);
-    const margin = calculateBankingServicesMargin(amount);
-
-    const newEntry: BankingServiceEntry = {
-      id: uuidv4(),
-      date: values.date || new Date(),
-      amount,
-      margin,
-    };
-
-    setBankingServices([...bankingServices, newEntry]);
-    toast.success('Banking service added successfully');
+  const handleAddEntry = async (values: Partial<BankingServiceEntry>) => {
+    try {
+      const amount = Number(values.amount);
+      const margin = calculateBankingServicesMargin(amount);
+      
+      const { data, error } = await supabase
+        .from('banking_services')
+        .insert([
+          {
+            date: values.date || new Date(),
+            amount,
+            margin
+          }
+        ])
+        .select();
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data && data.length > 0) {
+        const newEntry: BankingServiceEntry = {
+          id: data[0].id,
+          date: new Date(data[0].date),
+          amount: Number(data[0].amount),
+          margin: Number(data[0].margin)
+        };
+        
+        setBankingServices(prev => [newEntry, ...prev]);
+        toast.success('Banking service added successfully');
+      }
+    } catch (error) {
+      console.error('Error adding banking service:', error);
+      toast.error('Failed to add banking service');
+    }
   };
 
-  const handleEditEntry = (values: Partial<BankingServiceEntry>) => {
+  const handleEditEntry = async (values: Partial<BankingServiceEntry>) => {
     if (!editingEntry) return;
     
-    const amount = Number(values.amount);
-    const margin = calculateBankingServicesMargin(amount);
-
-    const updatedServices = bankingServices.map(entry => 
-      entry.id === editingEntry.id 
-        ? { 
-            ...entry, 
-            date: values.date || entry.date,
-            amount,
-            margin,
-          } 
-        : entry
-    );
-
-    setBankingServices(updatedServices);
-    setEditingEntry(null);
-    toast.success('Banking service updated successfully');
+    try {
+      const amount = Number(values.amount);
+      const margin = calculateBankingServicesMargin(amount);
+      
+      const { error } = await supabase
+        .from('banking_services')
+        .update({
+          date: values.date || editingEntry.date,
+          amount,
+          margin
+        })
+        .eq('id', editingEntry.id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      const updatedEntry: BankingServiceEntry = {
+        ...editingEntry,
+        date: values.date || editingEntry.date,
+        amount,
+        margin
+      };
+      
+      setBankingServices(prev => 
+        prev.map(entry => entry.id === editingEntry.id ? updatedEntry : entry)
+      );
+      
+      setEditingEntry(null);
+      setFormOpen(false);
+      toast.success('Banking service updated successfully');
+    } catch (error) {
+      console.error('Error updating banking service:', error);
+      toast.error('Failed to update banking service');
+    }
   };
 
-  const handleDeleteEntry = (id: string) => {
-    setBankingServices(bankingServices.filter(entry => entry.id !== id));
-    toast.success('Banking service deleted successfully');
+  const handleDeleteEntry = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('banking_services')
+        .delete()
+        .eq('id', id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      setBankingServices(prev => prev.filter(entry => entry.id !== id));
+      toast.success('Banking service deleted successfully');
+    } catch (error) {
+      console.error('Error deleting banking service:', error);
+      toast.error('Failed to delete banking service');
+    }
   };
 
   const formFields = [
@@ -154,55 +240,11 @@ const BankingServices = () => {
         </div>
       }
     >
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <ServiceCard 
-          id="summary-services"
-          title="Total Services"
-          date={date}
-          data={{ 
-            value: totalServices,
-          }}
-          labels={{ 
-            value: "Count",
-          }}
-          onEdit={() => {}}
-          onDelete={() => {}}
-          className="bg-blue-50"
-          showActions={false}
-        />
-        <ServiceCard 
-          id="summary-amount"
-          title="Total Amount"
-          date={date}
-          data={{ 
-            value: formatCurrency(totalAmount),
-          }}
-          labels={{ 
-            value: "Amount",
-          }}
-          onEdit={() => {}}
-          onDelete={() => {}}
-          className="bg-emerald-50"
-          showActions={false}
-        />
-        <ServiceCard 
-          id="summary-margin"
-          title="Total Margin"
-          date={date}
-          data={{ 
-            value: formatCurrency(totalMargin),
-          }}
-          labels={{ 
-            value: "Margin",
-          }}
-          onEdit={() => {}}
-          onDelete={() => {}}
-          className="bg-purple-50"
-          showActions={false}
-        />
-      </div>
-
-      {filteredServices.length === 0 ? (
+      {isLoading ? (
+        <div className="text-center py-12">
+          <p>Loading banking services data...</p>
+        </div>
+      ) : filteredServices.length === 0 ? (
         <div className="text-center py-12 bg-muted/30 rounded-lg border border-border animate-fade-in">
           <CreditCard className="mx-auto h-12 w-12 text-muted-foreground/50" />
           <h3 className="mt-4 text-lg font-medium">No Banking Services</h3>

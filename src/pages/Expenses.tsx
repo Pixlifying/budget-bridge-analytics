@@ -2,13 +2,12 @@
 import { useState, useEffect } from 'react';
 import { Receipt, Plus } from 'lucide-react';
 import { toast } from 'sonner';
-import { v4 as uuidv4 } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 import PageWrapper from '@/components/layout/PageWrapper';
 import ServiceForm from '@/components/ui/ServiceForm';
 import ServiceCard from '@/components/ui/ServiceCard';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import { Button } from '@/components/ui/button';
-import useLocalStorage from '@/hooks/useLocalStorage';
 import { 
   filterByDate, 
   filterByMonth,
@@ -25,10 +24,45 @@ interface ExpenseEntry {
 const Expenses = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
-  const [expenses, setExpenses] = useLocalStorage<ExpenseEntry[]>('expenses', []);
+  const [expenses, setExpenses] = useState<ExpenseEntry[]>([]);
   const [filteredExpenses, setFilteredExpenses] = useState<ExpenseEntry[]>([]);
   const [editingEntry, setEditingEntry] = useState<ExpenseEntry | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Fetch expenses from Supabase
+  const fetchExpenses = async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('expenses')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (error) {
+        throw error;
+      }
+      
+      const formattedData = data.map(entry => ({
+        id: entry.id,
+        date: new Date(entry.date),
+        name: entry.name,
+        amount: Number(entry.amount)
+      }));
+      
+      setExpenses(formattedData);
+    } catch (error) {
+      console.error('Error fetching expenses:', error);
+      toast.error('Failed to load expense data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Initial fetch
+  useEffect(() => {
+    fetchExpenses();
+  }, []);
   
   useEffect(() => {
     if (viewMode === 'day') {
@@ -38,44 +72,98 @@ const Expenses = () => {
     }
   }, [date, viewMode, expenses]);
 
-  const handleAddEntry = (values: Partial<ExpenseEntry>) => {
-    const amount = Number(values.amount);
-
-    const newEntry: ExpenseEntry = {
-      id: uuidv4(),
-      date: values.date || new Date(),
-      name: values.name || '',
-      amount,
-    };
-
-    setExpenses([...expenses, newEntry]);
-    toast.success('Expense added successfully');
+  const handleAddEntry = async (values: Partial<ExpenseEntry>) => {
+    try {
+      const amount = Number(values.amount);
+      
+      const { data, error } = await supabase
+        .from('expenses')
+        .insert([
+          {
+            date: values.date || new Date(),
+            name: values.name || '',
+            amount
+          }
+        ])
+        .select();
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data && data.length > 0) {
+        const newEntry: ExpenseEntry = {
+          id: data[0].id,
+          date: new Date(data[0].date),
+          name: data[0].name,
+          amount: Number(data[0].amount)
+        };
+        
+        setExpenses(prev => [newEntry, ...prev]);
+        toast.success('Expense added successfully');
+      }
+    } catch (error) {
+      console.error('Error adding expense:', error);
+      toast.error('Failed to add expense');
+    }
   };
 
-  const handleEditEntry = (values: Partial<ExpenseEntry>) => {
+  const handleEditEntry = async (values: Partial<ExpenseEntry>) => {
     if (!editingEntry) return;
     
-    const amount = Number(values.amount);
-
-    const updatedExpenses = expenses.map(entry => 
-      entry.id === editingEntry.id 
-        ? { 
-            ...entry, 
-            date: values.date || entry.date,
-            name: values.name || entry.name,
-            amount,
-          } 
-        : entry
-    );
-
-    setExpenses(updatedExpenses);
-    setEditingEntry(null);
-    toast.success('Expense updated successfully');
+    try {
+      const amount = Number(values.amount);
+      
+      const { error } = await supabase
+        .from('expenses')
+        .update({
+          date: values.date || editingEntry.date,
+          name: values.name || editingEntry.name,
+          amount
+        })
+        .eq('id', editingEntry.id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      const updatedEntry: ExpenseEntry = {
+        ...editingEntry,
+        date: values.date || editingEntry.date,
+        name: values.name || editingEntry.name,
+        amount
+      };
+      
+      setExpenses(prev => 
+        prev.map(entry => entry.id === editingEntry.id ? updatedEntry : entry)
+      );
+      
+      setEditingEntry(null);
+      setFormOpen(false);
+      toast.success('Expense updated successfully');
+    } catch (error) {
+      console.error('Error updating expense:', error);
+      toast.error('Failed to update expense');
+    }
   };
 
-  const handleDeleteEntry = (id: string) => {
-    setExpenses(expenses.filter(entry => entry.id !== id));
-    toast.success('Expense deleted successfully');
+  const handleDeleteEntry = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('expenses')
+        .delete()
+        .eq('id', id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      setExpenses(prev => prev.filter(entry => entry.id !== id));
+      toast.success('Expense deleted successfully');
+    } catch (error) {
+      console.error('Error deleting expense:', error);
+      toast.error('Failed to delete expense');
+    }
   };
 
   const formFields = [
@@ -183,7 +271,11 @@ const Expenses = () => {
         />
       </div>
 
-      {filteredExpenses.length === 0 ? (
+      {isLoading ? (
+        <div className="text-center py-12">
+          <p>Loading expense data...</p>
+        </div>
+      ) : filteredExpenses.length === 0 ? (
         <div className="text-center py-12 bg-muted/30 rounded-lg border border-border animate-fade-in">
           <Receipt className="mx-auto h-12 w-12 text-muted-foreground/50" />
           <h3 className="mt-4 text-lg font-medium">No Expenses</h3>

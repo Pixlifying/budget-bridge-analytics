@@ -1,15 +1,13 @@
-
 import { useState, useEffect } from 'react';
 import { Globe, Plus } from 'lucide-react';
 import { toast } from 'sonner';
-import { v4 as uuidv4 } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 import PageWrapper from '@/components/layout/PageWrapper';
 import ServiceForm from '@/components/ui/ServiceForm';
 import ServiceCard from '@/components/ui/ServiceCard';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import DownloadButton from '@/components/ui/DownloadButton';
 import { Button } from '@/components/ui/button';
-import useLocalStorage from '@/hooks/useLocalStorage';
 import { 
   filterByDate, 
   filterByMonth,
@@ -29,11 +27,49 @@ interface OnlineServiceEntry {
 const OnlineServices = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
-  const [onlineServices, setOnlineServices] = useLocalStorage<OnlineServiceEntry[]>('onlineServices', []);
+  const [onlineServices, setOnlineServices] = useState<OnlineServiceEntry[]>([]);
   const [filteredServices, setFilteredServices] = useState<OnlineServiceEntry[]>([]);
   const [editingEntry, setEditingEntry] = useState<OnlineServiceEntry | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [showCustomService, setShowCustomService] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Fetch online services from Supabase
+  const fetchOnlineServices = async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('online_services')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (error) {
+        throw error;
+      }
+      
+      const formattedData = data.map(entry => ({
+        id: entry.id,
+        date: new Date(entry.date),
+        service: entry.service,
+        customService: entry.custom_service,
+        amount: Number(entry.amount),
+        count: entry.count,
+        total: Number(entry.total)
+      }));
+      
+      setOnlineServices(formattedData);
+    } catch (error) {
+      console.error('Error fetching online services:', error);
+      toast.error('Failed to load online services data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Initial fetch
+  useEffect(() => {
+    fetchOnlineServices();
+  }, []);
   
   useEffect(() => {
     if (viewMode === 'day') {
@@ -56,60 +92,121 @@ const OnlineServices = () => {
     { value: 'Others', label: 'Others' },
   ];
 
-  const handleAddEntry = (values: Partial<OnlineServiceEntry>) => {
-    const count = Number(values.count);
-    const amount = Number(values.amount);
-    const total = count * amount;
-    const service = values.service || '';
-    const customService = values.customService || '';
-
-    const newEntry: OnlineServiceEntry = {
-      id: uuidv4(),
-      date: values.date || new Date(),
-      service: service === 'Others' ? 'Others' : service,
-      customService: service === 'Others' ? customService : undefined,
-      amount,
-      count,
-      total,
-    };
-
-    setOnlineServices([...onlineServices, newEntry]);
-    toast.success('Online service added successfully');
-    setShowCustomService(false);
-  };
-
-  const handleEditEntry = (values: Partial<OnlineServiceEntry>) => {
-    if (!editingEntry) return;
-    
-    const count = Number(values.count);
-    const amount = Number(values.amount);
-    const total = count * amount;
-    const service = values.service || '';
-    const customService = values.customService || '';
-
-    const updatedServices = onlineServices.map(entry => 
-      entry.id === editingEntry.id 
-        ? { 
-            ...entry, 
-            date: values.date || entry.date,
+  const handleAddEntry = async (values: Partial<OnlineServiceEntry>) => {
+    try {
+      const count = Number(values.count);
+      const amount = Number(values.amount);
+      const total = count * amount;
+      const service = values.service || '';
+      const customService = values.customService || '';
+      
+      const { data, error } = await supabase
+        .from('online_services')
+        .insert([
+          {
+            date: values.date || new Date(),
             service: service === 'Others' ? 'Others' : service,
-            customService: service === 'Others' ? customService : undefined,
+            custom_service: service === 'Others' ? customService : null,
             amount,
             count,
-            total,
-          } 
-        : entry
-    );
-
-    setOnlineServices(updatedServices);
-    setEditingEntry(null);
-    toast.success('Online service updated successfully');
-    setShowCustomService(false);
+            total
+          }
+        ])
+        .select();
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data && data.length > 0) {
+        const newEntry: OnlineServiceEntry = {
+          id: data[0].id,
+          date: new Date(data[0].date),
+          service: data[0].service,
+          customService: data[0].custom_service,
+          amount: Number(data[0].amount),
+          count: data[0].count,
+          total: Number(data[0].total)
+        };
+        
+        setOnlineServices(prev => [newEntry, ...prev]);
+        toast.success('Online service added successfully');
+      }
+      
+      setShowCustomService(false);
+    } catch (error) {
+      console.error('Error adding online service:', error);
+      toast.error('Failed to add online service');
+    }
   };
 
-  const handleDeleteEntry = (id: string) => {
-    setOnlineServices(onlineServices.filter(entry => entry.id !== id));
-    toast.success('Online service deleted successfully');
+  const handleEditEntry = async (values: Partial<OnlineServiceEntry>) => {
+    if (!editingEntry) return;
+    
+    try {
+      const count = Number(values.count);
+      const amount = Number(values.amount);
+      const total = count * amount;
+      const service = values.service || '';
+      const customService = values.customService || '';
+      
+      const { error } = await supabase
+        .from('online_services')
+        .update({
+          date: values.date || editingEntry.date,
+          service: service === 'Others' ? 'Others' : service,
+          custom_service: service === 'Others' ? customService : null,
+          amount,
+          count,
+          total
+        })
+        .eq('id', editingEntry.id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      const updatedEntry: OnlineServiceEntry = {
+        ...editingEntry,
+        date: values.date || editingEntry.date,
+        service: service === 'Others' ? 'Others' : service,
+        customService: service === 'Others' ? customService : undefined,
+        amount,
+        count,
+        total
+      };
+      
+      setOnlineServices(prev => 
+        prev.map(entry => entry.id === editingEntry.id ? updatedEntry : entry)
+      );
+      
+      setEditingEntry(null);
+      setFormOpen(false);
+      toast.success('Online service updated successfully');
+      setShowCustomService(false);
+    } catch (error) {
+      console.error('Error updating online service:', error);
+      toast.error('Failed to update online service');
+    }
+  };
+
+  const handleDeleteEntry = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('online_services')
+        .delete()
+        .eq('id', id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      setOnlineServices(prev => prev.filter(entry => entry.id !== id));
+      toast.success('Online service deleted successfully');
+    } catch (error) {
+      console.error('Error deleting online service:', error);
+      toast.error('Failed to delete online service');
+    }
   };
 
   const getFormFields = () => {
@@ -266,7 +363,11 @@ const OnlineServices = () => {
         />
       </div>
 
-      {filteredServices.length === 0 ? (
+      {isLoading ? (
+        <div className="text-center py-12">
+          <p>Loading online services data...</p>
+        </div>
+      ) : filteredServices.length === 0 ? (
         <div className="text-center py-12 bg-muted/30 rounded-lg border border-border animate-fade-in">
           <Globe className="mx-auto h-12 w-12 text-muted-foreground/50" />
           <h3 className="mt-4 text-lg font-medium">No Online Services</h3>
