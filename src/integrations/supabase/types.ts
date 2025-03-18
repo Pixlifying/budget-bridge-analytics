@@ -9,7 +9,183 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      banking_services: {
+        Row: {
+          amount: number
+          created_at: string | null
+          date: string
+          id: string
+          margin: number
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          date?: string
+          id?: string
+          margin: number
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          date?: string
+          id?: string
+          margin?: number
+        }
+        Relationships: []
+      }
+      expenses: {
+        Row: {
+          amount: number
+          created_at: string | null
+          date: string
+          id: string
+          name: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          date?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          date?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      online_services: {
+        Row: {
+          amount: number
+          count: number
+          created_at: string | null
+          custom_service: string | null
+          date: string
+          id: string
+          service: string
+          total: number
+        }
+        Insert: {
+          amount: number
+          count: number
+          created_at?: string | null
+          custom_service?: string | null
+          date?: string
+          id?: string
+          service: string
+          total: number
+        }
+        Update: {
+          amount?: number
+          count?: number
+          created_at?: string | null
+          custom_service?: string | null
+          date?: string
+          id?: string
+          service?: string
+          total?: number
+        }
+        Relationships: []
+      }
+      pan_cards: {
+        Row: {
+          amount: number
+          count: number
+          created_at: string | null
+          date: string
+          id: string
+          margin: number
+          total: number
+        }
+        Insert: {
+          amount: number
+          count: number
+          created_at?: string | null
+          date?: string
+          id?: string
+          margin: number
+          total: number
+        }
+        Update: {
+          amount?: number
+          count?: number
+          created_at?: string | null
+          date?: string
+          id?: string
+          margin?: number
+          total?: number
+        }
+        Relationships: []
+      }
+      passports: {
+        Row: {
+          amount: number
+          count: number
+          created_at: string | null
+          date: string
+          id: string
+          margin: number
+          total: number
+        }
+        Insert: {
+          amount: number
+          count: number
+          created_at?: string | null
+          date?: string
+          id?: string
+          margin: number
+          total: number
+        }
+        Update: {
+          amount?: number
+          count?: number
+          created_at?: string | null
+          date?: string
+          id?: string
+          margin?: number
+          total?: number
+        }
+        Relationships: []
+      }
+      pending_balances: {
+        Row: {
+          address: string
+          amount: number
+          created_at: string | null
+          custom_service: string | null
+          date: string
+          id: string
+          name: string
+          phone: string
+          service: string
+        }
+        Insert: {
+          address: string
+          amount: number
+          created_at?: string | null
+          custom_service?: string | null
+          date?: string
+          id?: string
+          name: string
+          phone: string
+          service: string
+        }
+        Update: {
+          address?: string
+          amount?: number
+          created_at?: string | null
+          custom_service?: string | null
+          date?: string
+          id?: string
+          name?: string
+          phone?: string
+          service?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

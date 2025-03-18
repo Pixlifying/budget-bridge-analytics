@@ -8,7 +8,7 @@ import ServiceForm from '@/components/ui/ServiceForm';
 import ServiceCard from '@/components/ui/ServiceCard';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import { Button } from '@/components/ui/button';
-import useLocalStorage from '@/hooks/useLocalStorage';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   calculatePanCardTotal, 
   calculatePanCardMargin,
@@ -29,11 +29,48 @@ interface PanCardEntry {
 const PanCard = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
-  const [panCards, setPanCards] = useLocalStorage<PanCardEntry[]>('panCards', []);
+  const [panCards, setPanCards] = useState<PanCardEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [filteredPanCards, setFilteredPanCards] = useState<PanCardEntry[]>([]);
   const [editingEntry, setEditingEntry] = useState<PanCardEntry | null>(null);
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
   
+  // Fetch data from Supabase
+  const fetchPanCards = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('pan_cards')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Transform the data to match our interface
+      const transformedData = data.map(item => ({
+        id: item.id,
+        date: new Date(item.date),
+        count: item.count,
+        amount: Number(item.amount),
+        total: Number(item.total),
+        margin: Number(item.margin)
+      }));
+      
+      setPanCards(transformedData);
+    } catch (error) {
+      console.error('Error fetching pan cards:', error);
+      toast.error('Failed to load pan card data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  useEffect(() => {
+    fetchPanCards();
+  }, []);
+
   useEffect(() => {
     if (viewMode === 'day') {
       setFilteredPanCards(filterByDate(panCards, date));
@@ -42,55 +79,110 @@ const PanCard = () => {
     }
   }, [date, viewMode, panCards]);
 
-  const handleAddEntry = (values: Partial<PanCardEntry>) => {
+  const handleAddEntry = async (values: Partial<PanCardEntry>) => {
     const count = Number(values.count);
     const amount = Number(values.amount);
     const total = calculatePanCardTotal(count, amount);
     const margin = calculatePanCardMargin(count);
+    const entryDate = values.date || new Date();
 
-    const newEntry: PanCardEntry = {
-      id: uuidv4(),
-      date: values.date || new Date(),
-      count,
-      amount,
-      total,
-      margin,
-    };
-
-    setPanCards([...panCards, newEntry]);
-    toast.success('Pan Card entry added successfully');
+    try {
+      const { data, error } = await supabase
+        .from('pan_cards')
+        .insert([{
+          date: entryDate.toISOString(),
+          count,
+          amount,
+          total,
+          margin
+        }])
+        .select();
+      
+      if (error) throw error;
+      
+      // Add the new entry to the local state with the returned ID
+      if (data && data.length > 0) {
+        const newEntry: PanCardEntry = {
+          id: data[0].id,
+          date: entryDate,
+          count,
+          amount,
+          total,
+          margin,
+        };
+        
+        setPanCards(prev => [newEntry, ...prev]);
+        toast.success('Pan Card entry added successfully');
+      }
+    } catch (error) {
+      console.error('Error adding pan card entry:', error);
+      toast.error('Failed to add pan card entry');
+    }
   };
 
-  const handleEditEntry = (values: Partial<PanCardEntry>) => {
+  const handleEditEntry = async (values: Partial<PanCardEntry>) => {
     if (!editingEntry) return;
     
     const count = Number(values.count);
     const amount = Number(values.amount);
     const total = calculatePanCardTotal(count, amount);
     const margin = calculatePanCardMargin(count);
+    const entryDate = values.date || editingEntry.date;
 
-    const updatedPanCards = panCards.map(entry => 
-      entry.id === editingEntry.id 
-        ? { 
-            ...entry, 
-            date: values.date || entry.date,
-            count,
-            amount,
-            total,
-            margin,
-          } 
-        : entry
-    );
+    try {
+      const { error } = await supabase
+        .from('pan_cards')
+        .update({
+          date: entryDate.toISOString(),
+          count,
+          amount,
+          total,
+          margin
+        })
+        .eq('id', editingEntry.id);
+      
+      if (error) throw error;
+      
+      // Update the local state
+      const updatedPanCards = panCards.map(entry => 
+        entry.id === editingEntry.id 
+          ? { 
+              ...entry, 
+              date: entryDate,
+              count,
+              amount,
+              total,
+              margin,
+            } 
+          : entry
+      );
 
-    setPanCards(updatedPanCards);
-    setEditingEntry(null);
-    setIsEditFormOpen(false);
-    toast.success('Pan Card entry updated successfully');
+      setPanCards(updatedPanCards);
+      setEditingEntry(null);
+      setIsEditFormOpen(false);
+      toast.success('Pan Card entry updated successfully');
+    } catch (error) {
+      console.error('Error updating pan card entry:', error);
+      toast.error('Failed to update pan card entry');
+    }
   };
 
-  const handleDeleteEntry = (id: string) => {
-    setPanCards(panCards.filter(entry => entry.id !== id));
-    toast.success('Pan Card entry deleted successfully');
+  const handleDeleteEntry = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('pan_cards')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      // Update the local state
+      setPanCards(panCards.filter(entry => entry.id !== id));
+      toast.success('Pan Card entry deleted successfully');
+    } catch (error) {
+      console.error('Error deleting pan card entry:', error);
+      toast.error('Failed to delete pan card entry');
+    }
   };
 
   const formFields = [
@@ -223,7 +315,11 @@ const PanCard = () => {
         />
       </div>
 
-      {filteredPanCards.length === 0 ? (
+      {isLoading ? (
+        <div className="text-center py-12 bg-muted/30 rounded-lg border border-border animate-fade-in">
+          <p className="text-muted-foreground">Loading pan card entries...</p>
+        </div>
+      ) : filteredPanCards.length === 0 ? (
         <div className="text-center py-12 bg-muted/30 rounded-lg border border-border animate-fade-in">
           <FileText className="mx-auto h-12 w-12 text-muted-foreground/50" />
           <h3 className="mt-4 text-lg font-medium">No Pan Card entries</h3>
