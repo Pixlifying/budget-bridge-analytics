@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import {
   Popover,
@@ -25,7 +26,7 @@ import { cn } from '@/lib/utils';
 interface FormField {
   name: string;
   label: string;
-  type: 'text' | 'number' | 'date' | 'select';
+  type: 'text' | 'number' | 'date' | 'select' | 'textarea';
   options?: Array<{ value: string; label: string }>;
   required?: boolean;
   min?: number;
@@ -145,13 +146,32 @@ const ServiceForm = ({
                     </option>
                   ))}
                 </select>
+              ) : field.type === 'textarea' ? (
+                <Textarea
+                  id={field.name}
+                  value={values[field.name] || ''}
+                  onChange={(e) => handleChange(field.name, e.target.value)}
+                  required={field.required}
+                  readOnly={field.readOnly}
+                  className={field.readOnly ? "bg-muted" : ""}
+                />
+              ) : field.type === 'number' ? (
+                <Input
+                  id={field.name}
+                  type="number"
+                  value={values[field.name] || ''}
+                  onChange={(e) => handleChange(field.name, Number(e.target.value))}
+                  min={field.min}
+                  required={field.required}
+                  readOnly={field.readOnly}
+                  className={field.readOnly ? "bg-muted" : ""}
+                />
               ) : (
                 <Input
                   id={field.name}
-                  type={field.type}
+                  type="text"
                   value={values[field.name] || ''}
-                  onChange={(e) => handleChange(field.name, field.type === 'number' ? Number(e.target.value) : e.target.value)}
-                  min={field.min}
+                  onChange={(e) => handleChange(field.name, e.target.value)}
                   required={field.required}
                   readOnly={field.readOnly}
                   className={field.readOnly ? "bg-muted" : ""}
