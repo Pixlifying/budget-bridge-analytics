@@ -7,6 +7,7 @@ import PageWrapper from '@/components/layout/PageWrapper';
 import ServiceForm from '@/components/ui/ServiceForm';
 import ServiceCard from '@/components/ui/ServiceCard';
 import DateRangePicker from '@/components/ui/DateRangePicker';
+import DownloadButton from '@/components/ui/DownloadButton';
 import { Button } from '@/components/ui/button';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import { 
@@ -127,22 +128,29 @@ const BankingServices = () => {
             mode={viewMode} 
             onModeChange={setViewMode} 
           />
-          <ServiceForm
-            title="Add Banking Service"
-            fields={formFields}
-            initialValues={{
-              date: new Date(),
-              amount: 0,
-              margin: 0,
-            }}
-            onSubmit={handleAddEntry}
-            trigger={
-              <Button className="flex items-center gap-1">
-                <Plus size={16} />
-                <span>Add Service</span>
-              </Button>
-            }
-          />
+          <div className="flex gap-2">
+            <DownloadButton 
+              data={bankingServices}
+              filename="banking-services"
+              currentData={filteredServices}
+            />
+            <ServiceForm
+              title="Add Banking Service"
+              fields={formFields}
+              initialValues={{
+                date: new Date(),
+                amount: 0,
+                margin: 0,
+              }}
+              onSubmit={handleAddEntry}
+              trigger={
+                <Button className="flex items-center gap-1">
+                  <Plus size={16} />
+                  <span>Add Service</span>
+                </Button>
+              }
+            />
+          </div>
         </div>
       }
     >

@@ -9,7 +9,9 @@ import {
   BarChart3, 
   FileText, 
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  PiggyBank,
+  AlertCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -72,12 +74,17 @@ const Sidebar = () => {
       to: '/online-services',
     },
     {
+      icon: <AlertCircle size={isCollapsed ? 20 : 18} />,
+      label: 'Pending Balance',
+      to: '/pending-balance',
+    },
+    {
       icon: <BarChart3 size={isCollapsed ? 20 : 18} />,
       label: 'Analytics',
       to: '/analytics',
     },
     {
-      icon: <Receipt size={isCollapsed ? 20 : 18} />,
+      icon: <PiggyBank size={isCollapsed ? 20 : 18} />,
       label: 'Expenses',
       to: '/expenses',
     },

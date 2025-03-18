@@ -12,6 +12,7 @@ import BankingServices from "@/pages/BankingServices";
 import OnlineServices from "@/pages/OnlineServices";
 import Analytics from "@/pages/Analytics";
 import Expenses from "@/pages/Expenses";
+import PendingBalance from "@/pages/PendingBalance";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
               <Route path="/online-services" element={<OnlineServices />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/expenses" element={<Expenses />} />
+              <Route path="/pending-balance" element={<PendingBalance />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>

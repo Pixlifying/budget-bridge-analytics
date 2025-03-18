@@ -11,14 +11,19 @@ interface StatCardProps {
     isPositive: boolean;
   };
   className?: string;
+  onClick?: () => void;
 }
 
-const StatCard = ({ title, value, icon, trend, className }: StatCardProps) => {
+const StatCard = ({ title, value, icon, trend, className, onClick }: StatCardProps) => {
   return (
-    <div className={cn(
-      "glassmorphism rounded-xl p-5 flex flex-col animate-scale-in card-hover", 
-      className
-    )}>
+    <div 
+      className={cn(
+        "glassmorphism rounded-xl p-5 flex flex-col animate-scale-in card-hover", 
+        onClick && "cursor-pointer hover:shadow-md",
+        className
+      )}
+      onClick={onClick}
+    >
       <div className="flex justify-between items-start mb-2">
         <p className="text-sm font-medium text-muted-foreground">{title}</p>
         {icon && <div className="text-primary opacity-80">{icon}</div>}

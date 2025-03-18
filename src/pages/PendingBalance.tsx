@@ -1,14 +1,14 @@
 
 import { useState, useEffect } from 'react';
-import { Globe, Plus } from 'lucide-react';
+import { AlertCircle, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from '@/lib/utils';
 import PageWrapper from '@/components/layout/PageWrapper';
 import ServiceForm from '@/components/ui/ServiceForm';
 import ServiceCard from '@/components/ui/ServiceCard';
 import DateRangePicker from '@/components/ui/DateRangePicker';
-import DownloadButton from '@/components/ui/DownloadButton';
 import { Button } from '@/components/ui/button';
+import DownloadButton from '@/components/ui/DownloadButton';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import { 
   filterByDate, 
@@ -16,32 +16,33 @@ import {
   formatCurrency
 } from '@/utils/calculateUtils';
 
-interface OnlineServiceEntry {
+interface PendingBalanceEntry {
   id: string;
   date: Date;
+  name: string;
+  address: string;
+  phone: string;
   service: string;
   customService?: string;
   amount: number;
-  count: number;
-  total: number;
 }
 
-const OnlineServices = () => {
+const PendingBalance = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
-  const [onlineServices, setOnlineServices] = useLocalStorage<OnlineServiceEntry[]>('onlineServices', []);
-  const [filteredServices, setFilteredServices] = useState<OnlineServiceEntry[]>([]);
-  const [editingEntry, setEditingEntry] = useState<OnlineServiceEntry | null>(null);
+  const [pendingBalances, setPendingBalances] = useLocalStorage<PendingBalanceEntry[]>('pendingBalances', []);
+  const [filteredBalances, setFilteredBalances] = useState<PendingBalanceEntry[]>([]);
+  const [editingEntry, setEditingEntry] = useState<PendingBalanceEntry | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [showCustomService, setShowCustomService] = useState(false);
   
   useEffect(() => {
     if (viewMode === 'day') {
-      setFilteredServices(filterByDate(onlineServices, date));
+      setFilteredBalances(filterByDate(pendingBalances, date));
     } else {
-      setFilteredServices(filterByMonth(onlineServices, date));
+      setFilteredBalances(filterByMonth(pendingBalances, date));
     }
-  }, [date, viewMode, onlineServices]);
+  }, [date, viewMode, pendingBalances]);
 
   const serviceOptions = [
     { value: 'Domicile', label: 'Domicile' },
@@ -56,60 +57,58 @@ const OnlineServices = () => {
     { value: 'Others', label: 'Others' },
   ];
 
-  const handleAddEntry = (values: Partial<OnlineServiceEntry>) => {
-    const count = Number(values.count);
+  const handleAddEntry = (values: Partial<PendingBalanceEntry>) => {
     const amount = Number(values.amount);
-    const total = count * amount;
     const service = values.service || '';
     const customService = values.customService || '';
 
-    const newEntry: OnlineServiceEntry = {
+    const newEntry: PendingBalanceEntry = {
       id: uuidv4(),
       date: values.date || new Date(),
+      name: values.name || '',
+      address: values.address || '',
+      phone: values.phone || '',
       service: service === 'Others' ? 'Others' : service,
       customService: service === 'Others' ? customService : undefined,
       amount,
-      count,
-      total,
     };
 
-    setOnlineServices([...onlineServices, newEntry]);
-    toast.success('Online service added successfully');
+    setPendingBalances([...pendingBalances, newEntry]);
+    toast.success('Pending balance added successfully');
     setShowCustomService(false);
   };
 
-  const handleEditEntry = (values: Partial<OnlineServiceEntry>) => {
+  const handleEditEntry = (values: Partial<PendingBalanceEntry>) => {
     if (!editingEntry) return;
     
-    const count = Number(values.count);
     const amount = Number(values.amount);
-    const total = count * amount;
     const service = values.service || '';
     const customService = values.customService || '';
 
-    const updatedServices = onlineServices.map(entry => 
+    const updatedBalances = pendingBalances.map(entry => 
       entry.id === editingEntry.id 
         ? { 
             ...entry, 
             date: values.date || entry.date,
+            name: values.name || entry.name,
+            address: values.address || entry.address,
+            phone: values.phone || entry.phone,
             service: service === 'Others' ? 'Others' : service,
             customService: service === 'Others' ? customService : undefined,
             amount,
-            count,
-            total,
           } 
         : entry
     );
 
-    setOnlineServices(updatedServices);
+    setPendingBalances(updatedBalances);
     setEditingEntry(null);
-    toast.success('Online service updated successfully');
+    toast.success('Pending balance updated successfully');
     setShowCustomService(false);
   };
 
   const handleDeleteEntry = (id: string) => {
-    setOnlineServices(onlineServices.filter(entry => entry.id !== id));
-    toast.success('Online service deleted successfully');
+    setPendingBalances(pendingBalances.filter(entry => entry.id !== id));
+    toast.success('Pending balance deleted successfully');
   };
 
   const getFormFields = () => {
@@ -118,6 +117,24 @@ const OnlineServices = () => {
         name: 'date', 
         label: 'Date', 
         type: 'date' as const,
+        required: true
+      },
+      { 
+        name: 'name', 
+        label: 'Name', 
+        type: 'text' as const,
+        required: true
+      },
+      { 
+        name: 'address', 
+        label: 'Address', 
+        type: 'text' as const,
+        required: true
+      },
+      { 
+        name: 'phone', 
+        label: 'Phone Number', 
+        type: 'text' as const,
         required: true
       },
       { 
@@ -139,49 +156,25 @@ const OnlineServices = () => {
       });
     }
 
-    fields.push(
-      { 
-        name: 'amount', 
-        label: 'Amount (₹)', 
-        type: 'number' as const,
-        min: 0,
-        required: true
-      },
-      { 
-        name: 'count', 
-        label: 'Number of Services', 
-        type: 'number' as const,
-        min: 1,
-        required: true
-      }
-    );
+    fields.push({ 
+      name: 'amount', 
+      label: 'Pending Amount (₹)', 
+      type: 'number' as const,
+      min: 0,
+      required: true
+    });
 
     return fields;
   };
 
-  const calculateTotals = (values: Record<string, any>) => {
-    const count = Number(values.count) || 0;
-    const amount = Number(values.amount) || 0;
-    return {
-      ...values,
-      total: count * amount
-    };
-  };
-
-  const totalCount = filteredServices.reduce((sum, entry) => sum + entry.count, 0);
-  const totalAmount = filteredServices.reduce((sum, entry) => sum + entry.total, 0);
-  const serviceGroups = filteredServices.reduce((groups, entry) => {
-    const service = entry.service === 'Others' ? (entry.customService || 'Other') : entry.service;
-    groups[service] = (groups[service] || 0) + entry.count;
-    return groups;
-  }, {} as Record<string, number>);
-
-  const mostUsedService = Object.entries(serviceGroups).sort((a, b) => b[1] - a[1])[0]?.[0] || 'None';
+  const totalPendingAmount = filteredBalances.reduce((sum, entry) => sum + entry.amount, 0);
+  const totalEntries = filteredBalances.length;
+  const avgAmount = totalEntries > 0 ? totalPendingAmount / totalEntries : 0;
 
   return (
     <PageWrapper
-      title="Online Services"
-      subtitle={`Manage your online services for ${viewMode === 'day' ? 'today' : 'this month'}`}
+      title="Pending Balance"
+      subtitle={`Manage pending balances for ${viewMode === 'day' ? 'today' : 'this month'}`}
       action={
         <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
           <DateRangePicker 
@@ -192,25 +185,27 @@ const OnlineServices = () => {
           />
           <div className="flex gap-2">
             <DownloadButton 
-              data={onlineServices}
-              filename="online-services"
-              currentData={filteredServices}
+              data={pendingBalances}
+              filename="pending-balances"
+              currentData={filteredBalances}
             />
             <ServiceForm
-              title="Add Online Service"
+              title="Add Pending Balance"
               fields={getFormFields()}
               initialValues={{
                 date: new Date(),
+                name: '',
+                address: '',
+                phone: '',
                 service: '',
                 customService: '',
                 amount: 0,
-                count: 1,
               }}
               onSubmit={handleAddEntry}
               trigger={
                 <Button className="flex items-center gap-1">
                   <Plus size={16} />
-                  <span>Add Service</span>
+                  <span>Add Balance</span>
                 </Button>
               }
             />
@@ -220,11 +215,11 @@ const OnlineServices = () => {
     >
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <ServiceCard 
-          id="summary-services"
-          title="Total Services"
+          id="summary-count"
+          title="Total Entries"
           date={date}
           data={{ 
-            value: totalCount,
+            value: totalEntries,
           }}
           labels={{ 
             value: "Count",
@@ -236,61 +231,63 @@ const OnlineServices = () => {
         />
         <ServiceCard 
           id="summary-amount"
-          title="Total Amount"
+          title="Total Pending Amount"
           date={date}
           data={{ 
-            value: formatCurrency(totalAmount),
+            value: formatCurrency(totalPendingAmount),
           }}
           labels={{ 
             value: "Amount",
           }}
           onEdit={() => {}}
           onDelete={() => {}}
-          className="bg-emerald-50"
+          className="bg-amber-50"
           showActions={false}
         />
         <ServiceCard 
-          id="summary-popular"
-          title="Most Used Service"
+          id="summary-average"
+          title="Average Pending Amount"
           date={date}
           data={{ 
-            value: mostUsedService,
+            value: formatCurrency(avgAmount),
           }}
           labels={{ 
-            value: "Service",
+            value: "Amount",
           }}
           onEdit={() => {}}
           onDelete={() => {}}
-          className="bg-purple-50"
+          className="bg-orange-50"
           showActions={false}
         />
       </div>
 
-      {filteredServices.length === 0 ? (
+      {filteredBalances.length === 0 ? (
         <div className="text-center py-12 bg-muted/30 rounded-lg border border-border animate-fade-in">
-          <Globe className="mx-auto h-12 w-12 text-muted-foreground/50" />
-          <h3 className="mt-4 text-lg font-medium">No Online Services</h3>
+          <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground/50" />
+          <h3 className="mt-4 text-lg font-medium">No Pending Balances</h3>
           <p className="mt-2 text-sm text-muted-foreground">
-            Add a new online service to get started.
+            Add a new pending balance to get started.
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredServices.map((entry) => (
+          {filteredBalances.map((entry) => (
             <ServiceCard
               key={entry.id}
               id={entry.id}
-              title={entry.service === 'Others' ? (entry.customService || 'Other Service') : entry.service}
+              title={entry.name}
               date={entry.date}
               data={{
-                count: entry.count,
+                service: entry.service === 'Others' ? (entry.customService || 'Other Service') : entry.service,
+                phone: entry.phone,
+                address: entry.address,
                 amount: formatCurrency(entry.amount),
-                total: formatCurrency(entry.total),
               }}
               labels={{
-                count: 'Number of Services',
-                amount: 'Amount per Service',
-                total: 'Total Amount',
+                service: 'Service',
+                phone: 'Phone',
+                address: 'Address',
+                amount: 'Pending Amount',
               }}
               onEdit={() => {
                 setShowCustomService(entry.service === 'Others');
@@ -305,10 +302,11 @@ const OnlineServices = () => {
 
       {editingEntry && (
         <ServiceForm
-          title="Edit Online Service"
+          title="Edit Pending Balance"
           fields={getFormFields()}
           initialValues={{
-            ...calculateTotals(editingEntry),
+            ...editingEntry,
+            service: editingEntry.service || '',
             customService: editingEntry.customService || '',
           }}
           onSubmit={handleEditEntry}
@@ -322,4 +320,4 @@ const OnlineServices = () => {
   );
 };
 
-export default OnlineServices;
+export default PendingBalance;

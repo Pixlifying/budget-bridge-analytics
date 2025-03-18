@@ -30,6 +30,7 @@ interface FormField {
   required?: boolean;
   min?: number;
   readOnly?: boolean;
+  onChange?: (value: any) => void;
 }
 
 interface ServiceFormProps {
@@ -68,6 +69,12 @@ const ServiceForm = ({
 
   const handleChange = (name: string, value: any) => {
     setValues((prev) => ({ ...prev, [name]: value }));
+    
+    // Call the field's onChange handler if provided
+    const field = fields.find(f => f.name === name);
+    if (field && field.onChange) {
+      field.onChange(value);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
