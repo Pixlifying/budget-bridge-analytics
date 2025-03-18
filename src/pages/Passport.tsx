@@ -85,15 +85,13 @@ const Passport = () => {
       
       const { data, error } = await supabase
         .from('passports')
-        .insert([
-          {
-            date: values.date || new Date(),
-            count,
-            amount,
-            total,
-            margin
-          }
-        ])
+        .insert({
+          date: values.date ? values.date.toISOString() : new Date().toISOString(),
+          count,
+          amount,
+          total,
+          margin
+        })
         .select();
       
       if (error) {
@@ -131,7 +129,7 @@ const Passport = () => {
       const { error } = await supabase
         .from('passports')
         .update({
-          date: values.date || editingEntry.date,
+          date: values.date ? values.date.toISOString() : editingEntry.date.toISOString(),
           count,
           amount,
           total,
@@ -145,7 +143,7 @@ const Passport = () => {
       
       const updatedEntry: PassportEntry = {
         ...editingEntry,
-        date: values.date || editingEntry.date,
+        date: values.date ? values.date.toISOString() : editingEntry.date.toISOString(),
         count,
         amount,
         total,

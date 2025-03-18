@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Receipt, Plus } from 'lucide-react';
 import { toast } from 'sonner';
@@ -30,7 +29,6 @@ const Expenses = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Fetch expenses from Supabase
   const fetchExpenses = async () => {
     try {
       setIsLoading(true);
@@ -59,7 +57,6 @@ const Expenses = () => {
     }
   };
   
-  // Initial fetch
   useEffect(() => {
     fetchExpenses();
   }, []);
@@ -78,13 +75,11 @@ const Expenses = () => {
       
       const { data, error } = await supabase
         .from('expenses')
-        .insert([
-          {
-            date: values.date || new Date(),
-            name: values.name || '',
-            amount
-          }
-        ])
+        .insert({
+          date: values.date ? values.date.toISOString() : new Date().toISOString(),
+          name: values.name || '',
+          amount
+        })
         .select();
       
       if (error) {
@@ -117,7 +112,7 @@ const Expenses = () => {
       const { error } = await supabase
         .from('expenses')
         .update({
-          date: values.date || editingEntry.date,
+          date: values.date ? values.date.toISOString() : editingEntry.date.toISOString(),
           name: values.name || editingEntry.name,
           amount
         })
@@ -129,7 +124,7 @@ const Expenses = () => {
       
       const updatedEntry: ExpenseEntry = {
         ...editingEntry,
-        date: values.date || editingEntry.date,
+        date: values.date ? new Date(values.date) : new Date(editingEntry.date),
         name: values.name || editingEntry.name,
         amount
       };

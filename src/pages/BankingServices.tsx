@@ -79,13 +79,11 @@ const BankingServices = () => {
       
       const { data, error } = await supabase
         .from('banking_services')
-        .insert([
-          {
-            date: values.date || new Date(),
-            amount,
-            margin
-          }
-        ])
+        .insert({
+          date: values.date ? values.date.toISOString() : new Date().toISOString(),
+          amount,
+          margin
+        })
         .select();
       
       if (error) {
@@ -119,7 +117,7 @@ const BankingServices = () => {
       const { error } = await supabase
         .from('banking_services')
         .update({
-          date: values.date || editingEntry.date,
+          date: values.date ? values.date.toISOString() : editingEntry.date.toISOString(),
           amount,
           margin
         })

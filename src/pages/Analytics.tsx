@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { BarChart3 } from 'lucide-react';
 import { 
@@ -14,7 +15,7 @@ import { Bar, Pie } from 'react-chartjs-2';
 import PageWrapper from '@/components/layout/PageWrapper';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import StatCard from '@/components/ui/StatCard';
-import useLocalStorage from '@/hooks/useLocalStorage';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   filterByDate, 
   filterByMonth,
@@ -84,13 +85,14 @@ interface PendingBalanceEntry {
 const Analytics = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
+  const [isLoading, setIsLoading] = useState(true);
   
-  const [panCards] = useLocalStorage<PanCardEntry[]>('panCards', []);
-  const [passports] = useLocalStorage<PassportEntry[]>('passports', []);
-  const [bankingServices] = useLocalStorage<BankingServiceEntry[]>('bankingServices', []);
-  const [onlineServices] = useLocalStorage<OnlineServiceEntry[]>('onlineServices', []);
-  const [expenses] = useLocalStorage<ExpenseEntry[]>('expenses', []);
-  const [pendingBalances] = useLocalStorage<PendingBalanceEntry[]>('pendingBalances', []);
+  const [panCards, setPanCards] = useState<PanCardEntry[]>([]);
+  const [passports, setPassports] = useState<PassportEntry[]>([]);
+  const [bankingServices, setBankingServices] = useState<BankingServiceEntry[]>([]);
+  const [onlineServices, setOnlineServices] = useState<OnlineServiceEntry[]>([]);
+  const [expenses, setExpenses] = useState<ExpenseEntry[]>([]);
+  const [pendingBalances, setPendingBalances] = useState<PendingBalanceEntry[]>([]);
 
   const [filteredPanCards, setFilteredPanCards] = useState<PanCardEntry[]>([]);
   const [filteredPassports, setFilteredPassports] = useState<PassportEntry[]>([]);
@@ -98,6 +100,126 @@ const Analytics = () => {
   const [filteredOnlineServices, setFilteredOnlineServices] = useState<OnlineServiceEntry[]>([]);
   const [filteredExpenses, setFilteredExpenses] = useState<ExpenseEntry[]>([]);
   const [filteredPendingBalances, setFilteredPendingBalances] = useState<PendingBalanceEntry[]>([]);
+  
+  const fetchAllData = async () => {
+    setIsLoading(true);
+    try {
+      // Fetch pan cards
+      const { data: panCardData, error: panCardError } = await supabase
+        .from('pan_cards')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (panCardError) throw panCardError;
+      
+      // Fetch passports
+      const { data: passportData, error: passportError } = await supabase
+        .from('passports')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (passportError) throw passportError;
+      
+      // Fetch banking services
+      const { data: bankingData, error: bankingError } = await supabase
+        .from('banking_services')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (bankingError) throw bankingError;
+      
+      // Fetch online services
+      const { data: onlineData, error: onlineError } = await supabase
+        .from('online_services')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (onlineError) throw onlineError;
+      
+      // Fetch expenses
+      const { data: expenseData, error: expenseError } = await supabase
+        .from('expenses')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (expenseError) throw expenseError;
+      
+      // Fetch pending balances
+      const { data: pendingData, error: pendingError } = await supabase
+        .from('pending_balances')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (pendingError) throw pendingError;
+      
+      // Transform data
+      const formattedPanCards = panCardData.map(entry => ({
+        id: entry.id,
+        date: new Date(entry.date),
+        count: entry.count,
+        amount: Number(entry.amount),
+        total: Number(entry.total),
+        margin: Number(entry.margin)
+      }));
+      
+      const formattedPassports = passportData.map(entry => ({
+        id: entry.id,
+        date: new Date(entry.date),
+        count: entry.count,
+        amount: Number(entry.amount),
+        total: Number(entry.total),
+        margin: Number(entry.margin)
+      }));
+      
+      const formattedBankingServices = bankingData.map(entry => ({
+        id: entry.id,
+        date: new Date(entry.date),
+        amount: Number(entry.amount),
+        margin: Number(entry.margin)
+      }));
+      
+      const formattedOnlineServices = onlineData.map(entry => ({
+        id: entry.id,
+        date: new Date(entry.date),
+        service: entry.service,
+        amount: Number(entry.amount),
+        count: entry.count
+      }));
+      
+      const formattedExpenses = expenseData.map(entry => ({
+        id: entry.id,
+        date: new Date(entry.date),
+        name: entry.name,
+        amount: Number(entry.amount)
+      }));
+      
+      const formattedPendingBalances = pendingData.map(entry => ({
+        id: entry.id,
+        date: new Date(entry.date),
+        name: entry.name,
+        address: entry.address,
+        phone: entry.phone,
+        service: entry.service,
+        amount: Number(entry.amount)
+      }));
+      
+      // Update state
+      setPanCards(formattedPanCards);
+      setPassports(formattedPassports);
+      setBankingServices(formattedBankingServices);
+      setOnlineServices(formattedOnlineServices);
+      setExpenses(formattedExpenses);
+      setPendingBalances(formattedPendingBalances);
+    } catch (error) {
+      console.error('Error fetching analytics data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  useEffect(() => {
+    fetchAllData();
+  }, []);
   
   useEffect(() => {
     if (viewMode === 'day') {

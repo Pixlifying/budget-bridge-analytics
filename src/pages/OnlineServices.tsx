@@ -6,7 +6,6 @@ import PageWrapper from '@/components/layout/PageWrapper';
 import ServiceForm from '@/components/ui/ServiceForm';
 import ServiceCard from '@/components/ui/ServiceCard';
 import DateRangePicker from '@/components/ui/DateRangePicker';
-import DownloadButton from '@/components/ui/DownloadButton';
 import { Button } from '@/components/ui/button';
 import { 
   filterByDate, 
@@ -34,7 +33,6 @@ const OnlineServices = () => {
   const [showCustomService, setShowCustomService] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Fetch online services from Supabase
   const fetchOnlineServices = async () => {
     try {
       setIsLoading(true);
@@ -66,7 +64,6 @@ const OnlineServices = () => {
     }
   };
   
-  // Initial fetch
   useEffect(() => {
     fetchOnlineServices();
   }, []);
@@ -79,19 +76,6 @@ const OnlineServices = () => {
     }
   }, [date, viewMode, onlineServices]);
 
-  const serviceOptions = [
-    { value: 'Domicile', label: 'Domicile' },
-    { value: 'Birth Certificate', label: 'Birth Certificate' },
-    { value: 'Death Certificate', label: 'Death Certificate' },
-    { value: 'Pension Form', label: 'Pension Form' },
-    { value: 'Ladli Beti Form', label: 'Ladli Beti Form' },
-    { value: 'Railway Tickets', label: 'Railway Tickets' },
-    { value: 'Marriage Assistance Form', label: 'Marriage Assistance Form' },
-    { value: 'Ayushman Form', label: 'Ayushman Form' },
-    { value: 'Loan/Files', label: 'Loan/Files' },
-    { value: 'Others', label: 'Others' },
-  ];
-
   const handleAddEntry = async (values: Partial<OnlineServiceEntry>) => {
     try {
       const count = Number(values.count);
@@ -102,16 +86,14 @@ const OnlineServices = () => {
       
       const { data, error } = await supabase
         .from('online_services')
-        .insert([
-          {
-            date: values.date || new Date(),
-            service: service === 'Others' ? 'Others' : service,
-            custom_service: service === 'Others' ? customService : null,
-            amount,
-            count,
-            total
-          }
-        ])
+        .insert({
+          date: values.date ? values.date.toISOString() : new Date().toISOString(),
+          service: service === 'Others' ? 'Others' : service,
+          custom_service: service === 'Others' ? customService : null,
+          amount,
+          count,
+          total
+        })
         .select();
       
       if (error) {
@@ -153,7 +135,7 @@ const OnlineServices = () => {
       const { error } = await supabase
         .from('online_services')
         .update({
-          date: values.date || editingEntry.date,
+          date: values.date ? values.date.toISOString() : editingEntry.date.toISOString(),
           service: service === 'Others' ? 'Others' : service,
           custom_service: service === 'Others' ? customService : null,
           amount,
@@ -209,6 +191,17 @@ const OnlineServices = () => {
     }
   };
 
+  const serviceOptions = [
+    { value: 'UAN Activation', label: 'UAN Activation' },
+    { value: 'PF/ESI Registration', label: 'PF/ESI Registration' },
+    { value: 'ITR Filing', label: 'ITR Filing' },
+    { value: 'GST Registration', label: 'GST Registration' },
+    { value: 'GST Return', label: 'GST Return' },
+    { value: 'Udyam/Udyog Registration', label: 'Udyam/Udyog Registration' },
+    { value: 'Ayushman Card', label: 'Ayushman Card' },
+    { value: 'Others', label: 'Others' },
+  ];
+
   const getFormFields = () => {
     const fields = [
       { 
@@ -236,27 +229,33 @@ const OnlineServices = () => {
       });
     }
 
-    fields.push(
-      { 
-        name: 'amount', 
-        label: 'Amount (₹)', 
-        type: 'number' as const,
-        min: 0,
-        required: true
-      },
-      { 
-        name: 'count', 
-        label: 'Number of Services', 
-        type: 'number' as const,
-        min: 1,
-        required: true
-      }
-    );
+    fields.push({ 
+      name: 'count', 
+      label: 'Number of Services', 
+      type: 'number' as const,
+      min: 1,
+      required: true
+    });
+
+    fields.push({ 
+      name: 'amount', 
+      label: 'Amount per Service (₹)', 
+      type: 'number' as const,
+      min: 0,
+      required: true
+    });
+
+    fields.push({ 
+      name: 'total', 
+      label: 'Total Amount (₹)', 
+      type: 'number' as const,
+      readOnly: true
+    });
 
     return fields;
   };
 
-  const calculateTotals = (values: Record<string, any>) => {
+  const calculateTotal = (values: Record<string, any>) => {
     const count = Number(values.count) || 0;
     const amount = Number(values.amount) || 0;
     return {
@@ -409,7 +408,7 @@ const OnlineServices = () => {
           title="Edit Online Service"
           fields={getFormFields()}
           initialValues={{
-            ...calculateTotals(editingEntry),
+            ...calculateTotal(editingEntry),
             customService: editingEntry.customService || '',
           }}
           onSubmit={handleEditEntry}

@@ -100,17 +100,15 @@ const PendingBalance = () => {
       
       const { data, error } = await supabase
         .from('pending_balances')
-        .insert([
-          {
-            date: values.date || new Date(),
-            name: values.name || '',
-            address: values.address || '',
-            phone: values.phone || '',
-            service: service === 'Others' ? 'Others' : service,
-            custom_service: service === 'Others' ? customService : null,
-            amount
-          }
-        ])
+        .insert({
+          date: values.date ? values.date.toISOString() : new Date().toISOString(),
+          name: values.name || '',
+          address: values.address || '',
+          phone: values.phone || '',
+          service: service === 'Others' ? 'Others' : service,
+          custom_service: service === 'Others' ? customService : null,
+          amount
+        })
         .select();
       
       if (error) {
@@ -151,7 +149,7 @@ const PendingBalance = () => {
       const { error } = await supabase
         .from('pending_balances')
         .update({
-          date: values.date || editingEntry.date,
+          date: values.date ? values.date.toISOString() : editingEntry.date.toISOString(),
           name: values.name || editingEntry.name,
           address: values.address || editingEntry.address,
           phone: values.phone || editingEntry.phone,
