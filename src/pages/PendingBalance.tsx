@@ -255,7 +255,7 @@ const PendingBalance = () => {
     fields.push({ 
       name: 'amount', 
       label: 'Pending Amount (₹)', 
-      type: 'number' as const,
+      type: 'number' as 'select' | 'date' | 'text' | 'number',
       min: 0,
       required: true
     });

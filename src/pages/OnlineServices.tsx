@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from 'react';
-import { Globe, Plus } from 'lucide-react';
+import { Globe, Plus, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import PageWrapper from '@/components/layout/PageWrapper';
@@ -10,8 +11,15 @@ import { Button } from '@/components/ui/button';
 import { 
   filterByDate, 
   filterByMonth,
-  formatCurrency
+  formatCurrency,
+  exportToExcel
 } from '@/utils/calculateUtils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface OnlineServiceEntry {
   id: string;
@@ -32,6 +40,7 @@ const OnlineServices = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [showCustomService, setShowCustomService] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
   const fetchOnlineServices = async () => {
     try {
@@ -207,13 +216,13 @@ const OnlineServices = () => {
       { 
         name: 'date', 
         label: 'Date', 
-        type: 'date' as const,
+        type: 'date',
         required: true
       },
       { 
         name: 'service', 
         label: 'Service Type', 
-        type: 'select' as const,
+        type: 'select',
         options: serviceOptions,
         required: true,
         onChange: (value: string) => setShowCustomService(value === 'Others')
@@ -224,7 +233,7 @@ const OnlineServices = () => {
       fields.push({ 
         name: 'customService', 
         label: 'Specify Service', 
-        type: 'text' as const,
+        type: 'text' as 'select' | 'date' | 'text',
         required: true
       });
     }
@@ -232,7 +241,7 @@ const OnlineServices = () => {
     fields.push({ 
       name: 'count', 
       label: 'Number of Services', 
-      type: 'number' as const,
+      type: 'number' as 'select' | 'date' | 'text' | 'number',
       min: 1,
       required: true
     });
@@ -240,7 +249,7 @@ const OnlineServices = () => {
     fields.push({ 
       name: 'amount', 
       label: 'Amount per Service (₹)', 
-      type: 'number' as const,
+      type: 'number' as 'select' | 'date' | 'text' | 'number',
       min: 0,
       required: true
     });
@@ -248,7 +257,7 @@ const OnlineServices = () => {
     fields.push({ 
       name: 'total', 
       label: 'Total Amount (₹)', 
-      type: 'number' as const,
+      type: 'number' as 'select' | 'date' | 'text' | 'number',
       readOnly: true
     });
 
@@ -274,6 +283,16 @@ const OnlineServices = () => {
 
   const mostUsedService = Object.entries(serviceGroups).sort((a, b) => b[1] - a[1])[0]?.[0] || 'None';
 
+  const handleDownloadAll = () => {
+    exportToExcel(onlineServices, 'online-services-all');
+    setIsDropdownOpen(false);
+  };
+
+  const handleDownloadCurrent = () => {
+    exportToExcel(filteredServices, 'online-services-current-view');
+    setIsDropdownOpen(false);
+  };
+
   return (
     <PageWrapper
       title="Online Services"
@@ -287,11 +306,22 @@ const OnlineServices = () => {
             onModeChange={setViewMode} 
           />
           <div className="flex gap-2">
-            <DownloadButton 
-              data={onlineServices}
-              filename="online-services"
-              currentData={filteredServices}
-            />
+            <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Download size={16} />
+                  <span>Download</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 z-50 bg-background border shadow-md">
+                <DropdownMenuItem onClick={handleDownloadAll} className="cursor-pointer">
+                  Download All Data
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleDownloadCurrent} className="cursor-pointer">
+                  Download Current View
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <ServiceForm
               title="Add Online Service"
               fields={getFormFields()}
