@@ -1,11 +1,13 @@
+
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import PageWrapper from '@/components/layout/PageWrapper';
 import ServiceForm from '@/components/ui/ServiceForm';
 import ServiceCard from '@/components/ui/ServiceCard';
+import DateRangePicker from '@/components/ui/DateRangePicker';
 import { Button } from '@/components/ui/button';
-import { formatCurrency } from '@/utils/calculateUtils';
+import { formatCurrency, filterByDate, filterByMonth } from '@/utils/calculateUtils';
 
 interface OnlineServiceEntry {
   id: string;
@@ -18,9 +20,12 @@ interface OnlineServiceEntry {
 
 const OnlineServices = () => {
   const [onlineServices, setOnlineServices] = useState<OnlineServiceEntry[]>([]);
+  const [filteredServices, setFilteredServices] = useState<OnlineServiceEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<OnlineServiceEntry | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [filterMode, setFilterMode] = useState<'day' | 'month'>('day');
 
   const fetchOnlineServices = async () => {
     setIsLoading(true);
@@ -42,6 +47,7 @@ const OnlineServices = () => {
       }));
 
       setOnlineServices(formattedData);
+      applyDateFilter(formattedData, selectedDate, filterMode);
     } catch (error) {
       console.error('Error fetching online services:', error);
       toast.error('Failed to load online services data');
@@ -50,9 +56,29 @@ const OnlineServices = () => {
     }
   };
 
+  const applyDateFilter = (data: OnlineServiceEntry[], date: Date, mode: 'day' | 'month') => {
+    if (mode === 'day') {
+      setFilteredServices(filterByDate(data, date));
+    } else {
+      setFilteredServices(filterByMonth(data, date));
+    }
+  };
+
   useEffect(() => {
     fetchOnlineServices();
   }, []);
+
+  useEffect(() => {
+    applyDateFilter(onlineServices, selectedDate, filterMode);
+  }, [selectedDate, filterMode, onlineServices]);
+
+  const handleDateChange = (date: Date) => {
+    setSelectedDate(date);
+  };
+
+  const handleModeChange = (mode: 'day' | 'month') => {
+    setFilterMode(mode);
+  };
 
   const handleAddEntry = async (values: Partial<OnlineServiceEntry>) => {
     try {
@@ -197,12 +223,22 @@ const OnlineServices = () => {
     },
   ];
 
+  // Calculate totals for the filtered services
+  const totalServices = filteredServices.length;
+  const totalAmount = filteredServices.reduce((sum, service) => sum + service.total, 0);
+
   return (
     <PageWrapper
       title="Online Services"
       subtitle="Manage your online services"
       action={
         <div className="flex gap-2">
+          <DateRangePicker
+            date={selectedDate}
+            onDateChange={handleDateChange}
+            mode={filterMode}
+            onModeChange={handleModeChange}
+          />
           <ServiceForm
             title="Add Online Service"
             fields={formFields}
@@ -223,20 +259,46 @@ const OnlineServices = () => {
         </div>
       }
     >
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div className="col-span-1 bg-white rounded-lg shadow p-4 flex flex-col">
+          <h3 className="text-sm font-medium text-gray-500">Total Services</h3>
+          <p className="text-2xl font-bold mt-1">{totalServices}</p>
+          <p className="text-sm text-gray-500 mt-1">
+            {filterMode === 'day' ? 'for selected day' : 'for selected month'}
+          </p>
+        </div>
+        <div className="col-span-1 bg-white rounded-lg shadow p-4 flex flex-col">
+          <h3 className="text-sm font-medium text-gray-500">Total Amount</h3>
+          <p className="text-2xl font-bold mt-1">{formatCurrency(totalAmount)}</p>
+          <p className="text-sm text-gray-500 mt-1">
+            {filterMode === 'day' ? 'for selected day' : 'for selected month'}
+          </p>
+        </div>
+        <div className="col-span-1 bg-white rounded-lg shadow p-4 flex flex-col">
+          <h3 className="text-sm font-medium text-gray-500">Total Margin</h3>
+          <p className="text-2xl font-bold mt-1">{formatCurrency(totalAmount * 0.1)}</p>
+          <p className="text-sm text-gray-500 mt-1">
+            {filterMode === 'day' ? 'for selected day' : 'for selected month'}
+          </p>
+        </div>
+      </div>
+
       {isLoading ? (
         <div className="text-center py-12">
           <p>Loading online services data...</p>
         </div>
-      ) : onlineServices.length === 0 ? (
+      ) : filteredServices.length === 0 ? (
         <div className="text-center py-12">
           <h3 className="mt-4 text-lg font-medium">No Online Services</h3>
           <p className="mt-2 text-sm">
-            Add a new online service to get started.
+            {onlineServices.length > 0 
+              ? `No services found for the selected ${filterMode === 'day' ? 'day' : 'month'}.` 
+              : 'Add a new online service to get started.'}
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {onlineServices.map((entry) => (
+          {filteredServices.map((entry) => (
             <ServiceCard
               key={entry.id}
               id={entry.id}
