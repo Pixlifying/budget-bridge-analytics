@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { CreditCard, Plus } from 'lucide-react';
 import { toast } from 'sonner';
@@ -80,7 +81,7 @@ const BankingServices = () => {
       const { data, error } = await supabase
         .from('banking_services')
         .insert({
-          date: values.date ? values.date.toISOString() : new Date().toISOString(),
+          date: values.date ? new Date(values.date).toISOString() : new Date().toISOString(),
           amount,
           margin
         })
@@ -117,7 +118,7 @@ const BankingServices = () => {
       const { error } = await supabase
         .from('banking_services')
         .update({
-          date: values.date ? values.date.toISOString() : editingEntry.date.toISOString(),
+          date: values.date ? new Date(values.date).toISOString() : editingEntry.date.toISOString(),
           amount,
           margin
         })
@@ -238,6 +239,55 @@ const BankingServices = () => {
         </div>
       }
     >
+      {/* Summary cards showing totals */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <ServiceCard 
+          id="summary-services"
+          title="Total Services"
+          date={date}
+          data={{ 
+            value: totalServices,
+          }}
+          labels={{ 
+            value: "Count",
+          }}
+          onEdit={() => {}}
+          onDelete={() => {}}
+          className="bg-blue-50"
+          showActions={false}
+        />
+        <ServiceCard 
+          id="summary-amount"
+          title="Total Amount"
+          date={date}
+          data={{ 
+            value: formatCurrency(totalAmount),
+          }}
+          labels={{ 
+            value: "Amount",
+          }}
+          onEdit={() => {}}
+          onDelete={() => {}}
+          className="bg-emerald-50"
+          showActions={false}
+        />
+        <ServiceCard 
+          id="summary-margin"
+          title="Total Margin"
+          date={date}
+          data={{ 
+            value: formatCurrency(totalMargin),
+          }}
+          labels={{ 
+            value: "Margin",
+          }}
+          onEdit={() => {}}
+          onDelete={() => {}}
+          className="bg-purple-50"
+          showActions={false}
+        />
+      </div>
+
       {isLoading ? (
         <div className="text-center py-12">
           <p>Loading banking services data...</p>

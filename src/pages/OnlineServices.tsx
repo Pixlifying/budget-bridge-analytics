@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Globe, Plus, Download } from 'lucide-react';
 import { toast } from 'sonner';
@@ -84,6 +83,91 @@ const OnlineServices = () => {
       setFilteredServices(filterByMonth(onlineServices, date));
     }
   }, [date, viewMode, onlineServices]);
+
+  const serviceOptions = [
+    { value: 'Income Certificate', label: 'Income Certificate' },
+    { value: 'Birth Certificate', label: 'Birth Certificate' },
+    { value: 'Ladli Beti', label: 'Ladli Beti' },
+    { value: 'Insurance Car/Bike', label: 'Insurance Car/Bike' },
+    { value: 'Marriage Certificate', label: 'Marriage Certificate' },
+    { value: 'Railway Tickets', label: 'Railway Tickets' },
+    { value: 'Pension Form', label: 'Pension Form' },
+    { value: 'Social Security Schemes', label: 'Social Security Schemes' },
+    { value: 'Marriage Assistance Form', label: 'Marriage Assistance Form' },
+    { value: 'Others', label: 'Others' },
+  ];
+
+  const getFormFields = () => {
+    const fields = [
+      { 
+        name: 'date', 
+        label: 'Date', 
+        type: 'date' as const,
+        required: true
+      },
+      { 
+        name: 'service', 
+        label: 'Service Type', 
+        type: 'select' as const,
+        options: serviceOptions,
+        required: true,
+        onChange: (value: string) => setShowCustomService(value === 'Others')
+      },
+    ];
+
+    if (showCustomService) {
+      fields.push({ 
+        name: 'customService', 
+        label: 'Specify Service', 
+        type: 'text' as const,
+        required: true
+      });
+    }
+
+    fields.push({ 
+      name: 'count', 
+      label: 'Number of Services', 
+      type: 'number' as const,
+      min: 1,
+      required: true
+    });
+
+    fields.push({ 
+      name: 'amount', 
+      label: 'Amount per Service (₹)', 
+      type: 'number' as const,
+      min: 0,
+      required: true
+    });
+
+    fields.push({ 
+      name: 'total', 
+      label: 'Total Amount (₹)', 
+      type: 'number' as const,
+      readOnly: true
+    });
+
+    return fields;
+  };
+
+  const calculateTotal = (values: Record<string, any>) => {
+    const count = Number(values.count) || 0;
+    const amount = Number(values.amount) || 0;
+    return {
+      ...values,
+      total: count * amount
+    };
+  };
+
+  const totalCount = filteredServices.reduce((sum, entry) => sum + entry.count, 0);
+  const totalAmount = filteredServices.reduce((sum, entry) => sum + entry.total, 0);
+  const serviceGroups = filteredServices.reduce((groups, entry) => {
+    const service = entry.service === 'Others' ? (entry.customService || 'Other') : entry.service;
+    groups[service] = (groups[service] || 0) + entry.count;
+    return groups;
+  }, {} as Record<string, number>);
+
+  const mostUsedService = Object.entries(serviceGroups).sort((a, b) => b[1] - a[1])[0]?.[0] || 'None';
 
   const handleAddEntry = async (values: Partial<OnlineServiceEntry>) => {
     try {
@@ -199,89 +283,6 @@ const OnlineServices = () => {
       toast.error('Failed to delete online service');
     }
   };
-
-  const serviceOptions = [
-    { value: 'UAN Activation', label: 'UAN Activation' },
-    { value: 'PF/ESI Registration', label: 'PF/ESI Registration' },
-    { value: 'ITR Filing', label: 'ITR Filing' },
-    { value: 'GST Registration', label: 'GST Registration' },
-    { value: 'GST Return', label: 'GST Return' },
-    { value: 'Udyam/Udyog Registration', label: 'Udyam/Udyog Registration' },
-    { value: 'Ayushman Card', label: 'Ayushman Card' },
-    { value: 'Others', label: 'Others' },
-  ];
-
-  const getFormFields = () => {
-    const fields = [
-      { 
-        name: 'date', 
-        label: 'Date', 
-        type: 'date' as const,
-        required: true
-      },
-      { 
-        name: 'service', 
-        label: 'Service Type', 
-        type: 'select' as const,
-        options: serviceOptions,
-        required: true,
-        onChange: (value: string) => setShowCustomService(value === 'Others')
-      },
-    ];
-
-    if (showCustomService) {
-      fields.push({ 
-        name: 'customService', 
-        label: 'Specify Service', 
-        type: 'text' as const,
-        required: true
-      });
-    }
-
-    fields.push({ 
-      name: 'count', 
-      label: 'Number of Services', 
-      type: 'number' as const,
-      min: 1,
-      required: true
-    });
-
-    fields.push({ 
-      name: 'amount', 
-      label: 'Amount per Service (₹)', 
-      type: 'number' as const,
-      min: 0,
-      required: true
-    });
-
-    fields.push({ 
-      name: 'total', 
-      label: 'Total Amount (₹)', 
-      type: 'number' as const,
-      readOnly: true
-    });
-
-    return fields;
-  };
-
-  const calculateTotal = (values: Record<string, any>) => {
-    const count = Number(values.count) || 0;
-    const amount = Number(values.amount) || 0;
-    return {
-      ...values,
-      total: count * amount
-    };
-  };
-
-  const totalCount = filteredServices.reduce((sum, entry) => sum + entry.count, 0);
-  const totalAmount = filteredServices.reduce((sum, entry) => sum + entry.total, 0);
-  const serviceGroups = filteredServices.reduce((groups, entry) => {
-    const service = entry.service === 'Others' ? (entry.customService || 'Other') : entry.service;
-    groups[service] = (groups[service] || 0) + entry.count;
-    return groups;
-  }, {} as Record<string, number>);
-
-  const mostUsedService = Object.entries(serviceGroups).sort((a, b) => b[1] - a[1])[0]?.[0] || 'None';
 
   const handleDownloadAll = () => {
     exportToExcel(onlineServices, 'online-services-all');

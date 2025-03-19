@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { BarChart3 } from 'lucide-react';
 import { 
@@ -21,6 +20,16 @@ import {
   filterByMonth,
   formatCurrency
 } from '@/utils/calculateUtils';
+import { 
+  Table, 
+  TableHeader, 
+  TableBody, 
+  TableHead, 
+  TableRow, 
+  TableCell,
+  TableCaption 
+} from '@/components/ui/table';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 ChartJS.register(
   CategoryScale,
@@ -104,7 +113,6 @@ const Analytics = () => {
   const fetchAllData = async () => {
     setIsLoading(true);
     try {
-      // Fetch pan cards
       const { data: panCardData, error: panCardError } = await supabase
         .from('pan_cards')
         .select('*')
@@ -112,7 +120,6 @@ const Analytics = () => {
       
       if (panCardError) throw panCardError;
       
-      // Fetch passports
       const { data: passportData, error: passportError } = await supabase
         .from('passports')
         .select('*')
@@ -120,7 +127,6 @@ const Analytics = () => {
       
       if (passportError) throw passportError;
       
-      // Fetch banking services
       const { data: bankingData, error: bankingError } = await supabase
         .from('banking_services')
         .select('*')
@@ -128,7 +134,6 @@ const Analytics = () => {
       
       if (bankingError) throw bankingError;
       
-      // Fetch online services
       const { data: onlineData, error: onlineError } = await supabase
         .from('online_services')
         .select('*')
@@ -136,7 +141,6 @@ const Analytics = () => {
       
       if (onlineError) throw onlineError;
       
-      // Fetch expenses
       const { data: expenseData, error: expenseError } = await supabase
         .from('expenses')
         .select('*')
@@ -144,7 +148,6 @@ const Analytics = () => {
       
       if (expenseError) throw expenseError;
       
-      // Fetch pending balances
       const { data: pendingData, error: pendingError } = await supabase
         .from('pending_balances')
         .select('*')
@@ -152,7 +155,6 @@ const Analytics = () => {
       
       if (pendingError) throw pendingError;
       
-      // Transform data
       const formattedPanCards = panCardData.map(entry => ({
         id: entry.id,
         date: new Date(entry.date),
@@ -203,7 +205,6 @@ const Analytics = () => {
         amount: Number(entry.amount)
       }));
       
-      // Update state
       setPanCards(formattedPanCards);
       setPassports(formattedPassports);
       setBankingServices(formattedBankingServices);
@@ -239,7 +240,6 @@ const Analytics = () => {
     }
   }, [date, viewMode, panCards, passports, bankingServices, onlineServices, expenses, pendingBalances]);
 
-  // Prepare data for charts
   const expenseData = {
     labels: filteredExpenses.map(item => item.name),
     datasets: [
@@ -321,6 +321,13 @@ const Analytics = () => {
     },
   };
 
+  const marginTableData = [
+    { service: 'PAN Card', margin: '₹100 per card', calculation: 'Fixed ₹100 margin for each PAN Card' },
+    { service: 'Passport', margin: '₹200 per passport', calculation: 'Fixed ₹200 margin for each Passport' },
+    { service: 'Banking Service', margin: '10% of amount', calculation: 'Calculated as 10% of the transaction amount' },
+    { service: 'Online Service', margin: 'Varies', calculation: 'Depends on service type and count' },
+  ];
+
   return (
     <PageWrapper
       title="Analytics"
@@ -372,6 +379,33 @@ const Analytics = () => {
           <h3 className="text-lg font-medium mb-4">Financial Overview</h3>
           <Pie data={pieChartData} options={chartOptions} />
         </div>
+        
+        <Card className="bg-white shadow-md">
+          <CardHeader>
+            <CardTitle>Margin Calculation Breakdown</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableCaption>Details on how margin is calculated for different services</TableCaption>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Service</TableHead>
+                  <TableHead>Margin Rate</TableHead>
+                  <TableHead>Calculation Method</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {marginTableData.map((item, index) => (
+                  <TableRow key={index}>
+                    <TableCell className="font-medium">{item.service}</TableCell>
+                    <TableCell>{item.margin}</TableCell>
+                    <TableCell>{item.calculation}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       </div>
     </PageWrapper>
   );

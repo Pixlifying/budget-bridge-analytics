@@ -265,6 +265,55 @@ const Passport = () => {
         </div>
       }
     >
+      {/* Summary cards showing totals */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <ServiceCard 
+          id="summary-passports"
+          title="Total Passports"
+          date={date}
+          data={{ 
+            value: totalPassports,
+          }}
+          labels={{ 
+            value: "Count",
+          }}
+          onEdit={() => {}}
+          onDelete={() => {}}
+          className="bg-blue-50"
+          showActions={false}
+        />
+        <ServiceCard 
+          id="summary-amount"
+          title="Total Amount"
+          date={date}
+          data={{ 
+            value: formatCurrency(totalAmount),
+          }}
+          labels={{ 
+            value: "Amount",
+          }}
+          onEdit={() => {}}
+          onDelete={() => {}}
+          className="bg-emerald-50"
+          showActions={false}
+        />
+        <ServiceCard 
+          id="summary-margin"
+          title="Total Margin"
+          date={date}
+          data={{ 
+            value: formatCurrency(totalMargin),
+          }}
+          labels={{ 
+            value: "Margin",
+          }}
+          onEdit={() => {}}
+          onDelete={() => {}}
+          className="bg-purple-50"
+          showActions={false}
+        />
+      </div>
+
       {isLoading ? (
         <div className="text-center py-12">
           <p>Loading passport data...</p>
