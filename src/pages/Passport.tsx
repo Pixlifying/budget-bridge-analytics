@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Receipt, Plus } from 'lucide-react';
 import { toast } from 'sonner';
@@ -86,7 +87,7 @@ const Passport = () => {
       const { data, error } = await supabase
         .from('passports')
         .insert({
-          date: values.date ? new Date(values.date) : new Date().toISOString(),
+          date: values.date ? new Date(values.date).toISOString() : new Date().toISOString(),
           count,
           amount,
           total,
@@ -129,7 +130,7 @@ const Passport = () => {
       const { error } = await supabase
         .from('passports')
         .update({
-          date: values.date ? new Date(values.date) : editingEntry.date.toISOString(),
+          date: values.date ? new Date(values.date).toISOString() : editingEntry.date.toISOString(),
           count,
           amount,
           total,
@@ -143,7 +144,7 @@ const Passport = () => {
       
       const updatedEntry: PassportEntry = {
         ...editingEntry,
-        date: values.date ? new Date(values.date) : editingEntry.date.toISOString(),
+        date: values.date ? new Date(values.date) : editingEntry.date,
         count,
         amount,
         total,

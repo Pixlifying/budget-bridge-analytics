@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { AlertCircle, Plus } from 'lucide-react';
 import { toast } from 'sonner';
@@ -101,7 +102,7 @@ const PendingBalance = () => {
       const { data, error } = await supabase
         .from('pending_balances')
         .insert({
-          date: values.date ? values.date.toISOString() : new Date().toISOString(),
+          date: values.date ? new Date(values.date).toISOString() : new Date().toISOString(),
           name: values.name || '',
           address: values.address || '',
           phone: values.phone || '',
@@ -149,7 +150,7 @@ const PendingBalance = () => {
       const { error } = await supabase
         .from('pending_balances')
         .update({
-          date: values.date ? values.date.toISOString() : editingEntry.date.toISOString(),
+          date: values.date ? new Date(values.date).toISOString() : editingEntry.date.toISOString(),
           name: values.name || editingEntry.name,
           address: values.address || editingEntry.address,
           phone: values.phone || editingEntry.phone,
@@ -255,7 +256,7 @@ const PendingBalance = () => {
     fields.push({ 
       name: 'amount', 
       label: 'Pending Amount (₹)', 
-      type: 'number' as 'select' | 'date' | 'text' | 'number',
+      type: 'number' as const,
       min: 0,
       required: true
     });

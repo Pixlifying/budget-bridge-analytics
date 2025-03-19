@@ -96,7 +96,7 @@ const OnlineServices = () => {
       const { data, error } = await supabase
         .from('online_services')
         .insert({
-          date: values.date ? values.date.toISOString() : new Date().toISOString(),
+          date: values.date ? new Date(values.date).toISOString() : new Date().toISOString(),
           service: service === 'Others' ? 'Others' : service,
           custom_service: service === 'Others' ? customService : null,
           amount,
@@ -144,7 +144,7 @@ const OnlineServices = () => {
       const { error } = await supabase
         .from('online_services')
         .update({
-          date: values.date ? values.date.toISOString() : editingEntry.date.toISOString(),
+          date: values.date ? new Date(values.date).toISOString() : editingEntry.date.toISOString(),
           service: service === 'Others' ? 'Others' : service,
           custom_service: service === 'Others' ? customService : null,
           amount,
@@ -216,13 +216,13 @@ const OnlineServices = () => {
       { 
         name: 'date', 
         label: 'Date', 
-        type: 'date',
+        type: 'date' as const,
         required: true
       },
       { 
         name: 'service', 
         label: 'Service Type', 
-        type: 'select',
+        type: 'select' as const,
         options: serviceOptions,
         required: true,
         onChange: (value: string) => setShowCustomService(value === 'Others')
@@ -233,7 +233,7 @@ const OnlineServices = () => {
       fields.push({ 
         name: 'customService', 
         label: 'Specify Service', 
-        type: 'text' as 'select' | 'date' | 'text',
+        type: 'text' as const,
         required: true
       });
     }
@@ -241,7 +241,7 @@ const OnlineServices = () => {
     fields.push({ 
       name: 'count', 
       label: 'Number of Services', 
-      type: 'number' as 'select' | 'date' | 'text' | 'number',
+      type: 'number' as const,
       min: 1,
       required: true
     });
@@ -249,7 +249,7 @@ const OnlineServices = () => {
     fields.push({ 
       name: 'amount', 
       label: 'Amount per Service (₹)', 
-      type: 'number' as 'select' | 'date' | 'text' | 'number',
+      type: 'number' as const,
       min: 0,
       required: true
     });
@@ -257,7 +257,7 @@ const OnlineServices = () => {
     fields.push({ 
       name: 'total', 
       label: 'Total Amount (₹)', 
-      type: 'number' as 'select' | 'date' | 'text' | 'number',
+      type: 'number' as const,
       readOnly: true
     });
 
