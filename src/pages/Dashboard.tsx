@@ -8,7 +8,8 @@ import {
   filterByDate, 
   filterByMonth, 
   formatCurrency, 
-  getTotalMargin 
+  getTotalMargin,
+  calculateOnlineServiceMargin 
 } from '@/utils/calculateUtils';
 import {
   Dialog,
@@ -90,7 +91,6 @@ const Dashboard = () => {
   const fetchAllData = async () => {
     setIsLoading(true);
     try {
-      // Fetch pan cards
       const { data: panCardData, error: panCardError } = await supabase
         .from('pan_cards')
         .select('*')
@@ -98,7 +98,6 @@ const Dashboard = () => {
       
       if (panCardError) throw panCardError;
       
-      // Fetch passports
       const { data: passportData, error: passportError } = await supabase
         .from('passports')
         .select('*')
@@ -106,7 +105,6 @@ const Dashboard = () => {
       
       if (passportError) throw passportError;
       
-      // Fetch banking services
       const { data: bankingData, error: bankingError } = await supabase
         .from('banking_services')
         .select('*')
@@ -114,7 +112,6 @@ const Dashboard = () => {
       
       if (bankingError) throw bankingError;
       
-      // Fetch online services
       const { data: onlineData, error: onlineError } = await supabase
         .from('online_services')
         .select('*')
@@ -122,7 +119,6 @@ const Dashboard = () => {
       
       if (onlineError) throw onlineError;
       
-      // Fetch expenses
       const { data: expenseData, error: expenseError } = await supabase
         .from('expenses')
         .select('*')
@@ -130,7 +126,6 @@ const Dashboard = () => {
       
       if (expenseError) throw expenseError;
       
-      // Fetch pending balances
       const { data: pendingData, error: pendingError } = await supabase
         .from('pending_balances')
         .select('*')
@@ -138,7 +133,6 @@ const Dashboard = () => {
       
       if (pendingError) throw pendingError;
       
-      // Transform data
       const formattedPanCards = panCardData.map(entry => ({
         id: entry.id,
         date: new Date(entry.date),
@@ -189,7 +183,6 @@ const Dashboard = () => {
         amount: Number(entry.amount)
       }));
       
-      // Update state
       setPanCards(formattedPanCards);
       setPassports(formattedPassports);
       setBankingServices(formattedBankingServices);
@@ -228,7 +221,8 @@ const Dashboard = () => {
   const totalMargin = getTotalMargin(
     filteredPanCards,
     filteredPassports,
-    filteredBankingServices
+    filteredBankingServices,
+    filteredOnlineServices
   );
 
   const panCardCount = filteredPanCards.reduce((sum, entry) => sum + entry.count, 0);
@@ -241,6 +235,7 @@ const Dashboard = () => {
   const panCardMargin = filteredPanCards.reduce((total, item) => total + item.margin, 0);
   const passportMargin = filteredPassports.reduce((total, item) => total + item.margin, 0);
   const bankingMargin = filteredBankingServices.reduce((total, item) => total + item.margin, 0);
+  const onlineServicesMargin = filteredOnlineServices.reduce((total, item) => total + calculateOnlineServiceMargin(item.amount), 0);
 
   return (
     <PageWrapper
@@ -313,6 +308,10 @@ const Dashboard = () => {
               <div className="flex justify-between items-center border-b pb-2">
                 <span className="font-medium">Banking Services Margin:</span>
                 <span>{formatCurrency(bankingMargin)}</span>
+              </div>
+              <div className="flex justify-between items-center border-b pb-2">
+                <span className="font-medium">Online Services Margin:</span>
+                <span>{formatCurrency(onlineServicesMargin)}</span>
               </div>
               <div className="flex justify-between items-center pt-2">
                 <span className="font-bold">Total Margin:</span>

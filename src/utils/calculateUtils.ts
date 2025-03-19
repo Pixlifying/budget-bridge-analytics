@@ -1,4 +1,3 @@
-
 export const calculatePanCardTotal = (count: number, amount: number): number => {
   return count * amount;
 };
@@ -17,6 +16,10 @@ export const calculatePassportMargin = (count: number): number => {
 
 export const calculateBankingServicesMargin = (amount: number): number => {
   return (amount / 100) * 0.5;
+};
+
+export const calculateOnlineServiceMargin = (amount: number): number => {
+  return amount * 0.1; // 10% margin on online services
 };
 
 export const formatCurrency = (amount: number): string => {
@@ -67,13 +70,15 @@ export const filterByMonth = <T extends { date: Date }>(data: T[], date: Date): 
 export const getTotalMargin = (
   panCards: Array<{ count: number; margin: number }>, 
   passports: Array<{ count: number; margin: number }>, 
-  bankingServices: Array<{ margin: number }>
+  bankingServices: Array<{ margin: number }>,
+  onlineServices: Array<{ amount: number }>
 ): number => {
   const panCardMargin = panCards.reduce((total, item) => total + item.margin, 0);
   const passportMargin = passports.reduce((total, item) => total + item.margin, 0);
   const bankingMargin = bankingServices.reduce((total, item) => total + item.margin, 0);
+  const onlineServicesMargin = onlineServices.reduce((total, item) => total + calculateOnlineServiceMargin(item.amount), 0);
   
-  return panCardMargin + passportMargin + bankingMargin;
+  return panCardMargin + passportMargin + bankingMargin + onlineServicesMargin;
 };
 
 export const exportToExcel = <T extends Record<string, any>>(data: T[], filename: string): void => {

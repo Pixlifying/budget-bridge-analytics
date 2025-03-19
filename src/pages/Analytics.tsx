@@ -322,10 +322,10 @@ const Analytics = () => {
   };
 
   const marginTableData = [
-    { service: 'PAN Card', margin: '₹100 per card', calculation: 'Fixed ₹100 margin for each PAN Card' },
+    { service: 'PAN Card', margin: '₹150 per card', calculation: 'Fixed ₹150 margin for each PAN Card' },
     { service: 'Passport', margin: '₹200 per passport', calculation: 'Fixed ₹200 margin for each Passport' },
-    { service: 'Banking Service', margin: '10% of amount', calculation: 'Calculated as 10% of the transaction amount' },
-    { service: 'Online Service', margin: 'Varies', calculation: 'Depends on service type and count' },
+    { service: 'Banking Service', margin: '0.5% of amount', calculation: 'Calculated as 0.5% of the transaction amount' },
+    { service: 'Online Service', margin: '10% of amount', calculation: 'Calculated as 10% of the transaction amount' },
   ];
 
   return (
