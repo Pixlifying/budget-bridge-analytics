@@ -90,6 +90,7 @@ export type Database = {
           count: number
           created_at: string | null
           custom_service: string | null
+          customer_name: string | null
           date: string
           id: string
           service: string
@@ -100,6 +101,7 @@ export type Database = {
           count: number
           created_at?: string | null
           custom_service?: string | null
+          customer_name?: string | null
           date?: string
           id?: string
           service: string
@@ -110,6 +112,7 @@ export type Database = {
           count?: number
           created_at?: string | null
           custom_service?: string | null
+          customer_name?: string | null
           date?: string
           id?: string
           service?: string
