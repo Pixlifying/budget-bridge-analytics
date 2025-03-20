@@ -1,11 +1,13 @@
 
 import { useState, useEffect } from 'react';
+import { Globe, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import PageWrapper from '@/components/layout/PageWrapper';
 import ServiceForm from '@/components/ui/ServiceForm';
 import ServiceCard from '@/components/ui/ServiceCard';
 import DateRangePicker from '@/components/ui/DateRangePicker';
+import DownloadButton from '@/components/ui/DownloadButton';
 import { Button } from '@/components/ui/button';
 import { formatCurrency, filterByDate, filterByMonth } from '@/utils/calculateUtils';
 
@@ -44,6 +46,7 @@ const OnlineServices = () => {
         date: new Date(entry.date),
         service: entry.service,
         custom_service: entry.custom_service,
+        // Handle potential missing customer_name field in database
         customer_name: entry.customer_name || '',
         amount: Number(entry.amount),
         count: Number(entry.count),
@@ -90,6 +93,9 @@ const OnlineServices = () => {
         ? values.custom_service 
         : values.service;
         
+      // Add console.log to debug
+      console.log('Adding online service:', values);
+      
       const { data, error } = await supabase
         .from('online_services')
         .insert({
@@ -103,7 +109,10 @@ const OnlineServices = () => {
         })
         .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error adding online service:', error);
+        throw error;
+      }
 
       if (data && data.length > 0) {
         const newEntry: OnlineServiceEntry = {
@@ -253,49 +262,74 @@ const OnlineServices = () => {
       title="Online Services"
       subtitle="Manage your online services"
       action={
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
           <DateRangePicker
             date={selectedDate}
             onDateChange={handleDateChange}
             mode={filterMode}
             onModeChange={handleModeChange}
           />
-          <ServiceForm
-            title="Add Online Service"
-            fields={formFields}
-            initialValues={{
-              date: new Date(),
-              customer_name: '',
-              service: '',
-              custom_service: '',
-              amount: 0,
-              count: 1,
-            }}
-            onSubmit={handleAddEntry}
-            trigger={
-              <Button className="flex items-center gap-1">
-                <span>Add Service</span>
-              </Button>
-            }
-          />
+          <div className="flex gap-2">
+            <DownloadButton 
+              data={onlineServices}
+              filename="online-services"
+              currentData={filteredServices}
+            />
+            <ServiceForm
+              title="Add Online Service"
+              fields={formFields}
+              initialValues={{
+                date: new Date(),
+                customer_name: '',
+                service: '',
+                custom_service: '',
+                amount: 0,
+                count: 1,
+              }}
+              onSubmit={handleAddEntry}
+              trigger={
+                <Button className="flex items-center gap-1">
+                  <Plus size={16} />
+                  <span>Add Service</span>
+                </Button>
+              }
+            />
+          </div>
         </div>
       }
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div className="col-span-1 bg-white rounded-lg shadow p-4 flex flex-col">
-          <h3 className="text-sm font-medium text-gray-500">Total Services</h3>
-          <p className="text-2xl font-bold mt-1">{totalServices}</p>
-          <p className="text-sm text-gray-500 mt-1">
-            {filterMode === 'day' ? 'for selected day' : 'for selected month'}
-          </p>
-        </div>
-        <div className="col-span-1 bg-white rounded-lg shadow p-4 flex flex-col">
-          <h3 className="text-sm font-medium text-gray-500">Total Amount</h3>
-          <p className="text-2xl font-bold mt-1">{formatCurrency(totalAmount)}</p>
-          <p className="text-sm text-gray-500 mt-1">
-            {filterMode === 'day' ? 'for selected day' : 'for selected month'}
-          </p>
-        </div>
+      {/* Summary cards showing totals */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <ServiceCard 
+          id="summary-services"
+          title="Total Services"
+          date={selectedDate}
+          data={{ 
+            value: totalServices,
+          }}
+          labels={{ 
+            value: "Count",
+          }}
+          onEdit={() => {}}
+          onDelete={() => {}}
+          className="bg-blue-50"
+          showActions={false}
+        />
+        <ServiceCard 
+          id="summary-amount"
+          title="Total Amount"
+          date={selectedDate}
+          data={{ 
+            value: formatCurrency(totalAmount),
+          }}
+          labels={{ 
+            value: "Amount",
+          }}
+          onEdit={() => {}}
+          onDelete={() => {}}
+          className="bg-emerald-50"
+          showActions={false}
+        />
       </div>
 
       {isLoading ? (
@@ -303,9 +337,10 @@ const OnlineServices = () => {
           <p>Loading online services data...</p>
         </div>
       ) : filteredServices.length === 0 ? (
-        <div className="text-center py-12">
+        <div className="text-center py-12 bg-muted/30 rounded-lg border border-border animate-fade-in">
+          <Globe className="mx-auto h-12 w-12 text-muted-foreground/50" />
           <h3 className="mt-4 text-lg font-medium">No Online Services</h3>
-          <p className="mt-2 text-sm">
+          <p className="mt-2 text-sm text-muted-foreground">
             {onlineServices.length > 0 
               ? `No services found for the selected ${filterMode === 'day' ? 'day' : 'month'}.` 
               : 'Add a new online service to get started.'}
@@ -326,8 +361,8 @@ const OnlineServices = () => {
               }}
               labels={{
                 customer: 'Customer',
-                amount: 'Amount',
-                total: 'Total',
+                amount: 'Amount per Service',
+                total: 'Total Amount',
               }}
               onEdit={() => {
                 setEditingEntry(entry);
