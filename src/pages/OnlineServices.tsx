@@ -13,6 +13,8 @@ interface OnlineServiceEntry {
   id: string;
   date: Date;
   service: string;
+  custom_service?: string;
+  customer_name: string;
   amount: number;
   count: number;
   total: number;
@@ -41,6 +43,8 @@ const OnlineServices = () => {
         id: entry.id,
         date: new Date(entry.date),
         service: entry.service,
+        custom_service: entry.custom_service,
+        customer_name: entry.customer_name || '',
         amount: Number(entry.amount),
         count: Number(entry.count),
         total: Number(entry.total),
@@ -82,11 +86,17 @@ const OnlineServices = () => {
 
   const handleAddEntry = async (values: Partial<OnlineServiceEntry>) => {
     try {
+      const finalServiceName = values.service === 'Other' && values.custom_service 
+        ? values.custom_service 
+        : values.service;
+        
       const { data, error } = await supabase
         .from('online_services')
         .insert({
           date: values.date ? new Date(values.date).toISOString() : new Date().toISOString(),
           service: values.service,
+          custom_service: values.service === 'Other' ? values.custom_service : null,
+          customer_name: values.customer_name || '',
           amount: values.amount,
           count: values.count,
           total: values.amount * values.count,
@@ -100,6 +110,8 @@ const OnlineServices = () => {
           id: data[0].id,
           date: new Date(data[0].date),
           service: data[0].service,
+          custom_service: data[0].custom_service,
+          customer_name: data[0].customer_name || '',
           amount: Number(data[0].amount),
           count: Number(data[0].count),
           total: Number(data[0].total),
@@ -118,11 +130,17 @@ const OnlineServices = () => {
     if (!editingEntry) return;
 
     try {
+      const finalServiceName = values.service === 'Other' && values.custom_service 
+        ? values.custom_service 
+        : values.service;
+        
       const { error } = await supabase
         .from('online_services')
         .update({
           date: values.date ? new Date(values.date).toISOString() : editingEntry.date.toISOString(),
           service: values.service,
+          custom_service: values.service === 'Other' ? values.custom_service : null,
+          customer_name: values.customer_name || '',
           amount: values.amount,
           count: values.count,
           total: values.amount * values.count,
@@ -135,6 +153,8 @@ const OnlineServices = () => {
         ...editingEntry,
         date: values.date || editingEntry.date,
         service: values.service,
+        custom_service: values.service === 'Other' ? values.custom_service : null,
+        customer_name: values.customer_name || '',
         amount: values.amount,
         count: values.count,
         total: values.amount * values.count,
@@ -177,6 +197,12 @@ const OnlineServices = () => {
       type: 'date' as const,
       required: true
     },
+    {
+      name: 'customer_name',
+      label: 'Customer Name',
+      type: 'text' as const,
+      required: true
+    },
     { 
       name: 'service', 
       label: 'Service Type', 
@@ -189,7 +215,7 @@ const OnlineServices = () => {
         { label: 'Marriage Certificate', value: 'Marriage Certificate' },
         { label: 'Railway Tickets', value: 'Railway Tickets' },
         { label: 'Pension Form', value: 'Pension Form' },
-        { label: 'Social Security Schemes', value: 'Social Security Schemes' },
+        { label: 'Domicile', value: 'Domicile' },
         { label: 'Marriage Assistance Form', value: 'Marriage Assistance Form' },
         { label: 'Other', value: 'Other' }
       ],
@@ -200,6 +226,7 @@ const OnlineServices = () => {
       label: 'Custom Service Name', 
       type: 'text' as const,
       conditional: (values: Record<string, any>) => values.service === 'Other',
+      required: true
     },
     { 
       name: 'amount', 
@@ -214,12 +241,6 @@ const OnlineServices = () => {
       type: 'number' as const,
       min: 1,
       required: true
-    },
-    { 
-      name: 'total', 
-      label: 'Total Amount (₹)', 
-      type: 'number' as const,
-      readOnly: true
     },
   ];
 
@@ -244,10 +265,11 @@ const OnlineServices = () => {
             fields={formFields}
             initialValues={{
               date: new Date(),
+              customer_name: '',
               service: '',
+              custom_service: '',
               amount: 0,
               count: 1,
-              total: 0,
             }}
             onSubmit={handleAddEntry}
             trigger={
@@ -259,7 +281,7 @@ const OnlineServices = () => {
         </div>
       }
     >
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div className="col-span-1 bg-white rounded-lg shadow p-4 flex flex-col">
           <h3 className="text-sm font-medium text-gray-500">Total Services</h3>
           <p className="text-2xl font-bold mt-1">{totalServices}</p>
@@ -270,13 +292,6 @@ const OnlineServices = () => {
         <div className="col-span-1 bg-white rounded-lg shadow p-4 flex flex-col">
           <h3 className="text-sm font-medium text-gray-500">Total Amount</h3>
           <p className="text-2xl font-bold mt-1">{formatCurrency(totalAmount)}</p>
-          <p className="text-sm text-gray-500 mt-1">
-            {filterMode === 'day' ? 'for selected day' : 'for selected month'}
-          </p>
-        </div>
-        <div className="col-span-1 bg-white rounded-lg shadow p-4 flex flex-col">
-          <h3 className="text-sm font-medium text-gray-500">Total Margin</h3>
-          <p className="text-2xl font-bold mt-1">{formatCurrency(totalAmount * 0.1)}</p>
           <p className="text-sm text-gray-500 mt-1">
             {filterMode === 'day' ? 'for selected day' : 'for selected month'}
           </p>
@@ -302,13 +317,15 @@ const OnlineServices = () => {
             <ServiceCard
               key={entry.id}
               id={entry.id}
-              title={entry.service}
+              title={entry.service === 'Other' && entry.custom_service ? entry.custom_service : entry.service}
               date={entry.date}
               data={{
+                customer: entry.customer_name || 'Not specified',
                 amount: formatCurrency(entry.amount),
                 total: formatCurrency(entry.total),
               }}
               labels={{
+                customer: 'Customer',
                 amount: 'Amount',
                 total: 'Total',
               }}
@@ -328,10 +345,11 @@ const OnlineServices = () => {
           fields={formFields}
           initialValues={{
             date: editingEntry.date,
+            customer_name: editingEntry.customer_name || '',
             service: editingEntry.service,
+            custom_service: editingEntry.custom_service || '',
             amount: editingEntry.amount,
             count: editingEntry.count,
-            total: editingEntry.total,
           }}
           onSubmit={handleEditEntry}
           trigger={<div />}

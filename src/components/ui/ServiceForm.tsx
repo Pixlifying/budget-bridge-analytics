@@ -32,6 +32,7 @@ interface FormField {
   min?: number;
   readOnly?: boolean;
   onChange?: (value: any) => void;
+  conditional?: (values: Record<string, any>) => boolean;
 }
 
 interface ServiceFormProps {
@@ -96,89 +97,96 @@ const ServiceForm = ({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-          {fields.map((field) => (
-            <div key={field.name} className="grid gap-2">
-              <Label htmlFor={field.name} className="text-sm">
-                {field.label}
-              </Label>
+          {fields.map((field) => {
+            // Skip rendering if the field has a conditional function and it returns false
+            if (field.conditional && !field.conditional(values)) {
+              return null;
+            }
+            
+            return (
+              <div key={field.name} className="grid gap-2">
+                <Label htmlFor={field.name} className="text-sm">
+                  {field.label}
+                </Label>
 
-              {field.type === 'date' ? (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      id={field.name}
-                      variant="outline"
-                      className={cn(
-                        "justify-start text-left font-normal",
-                        !values[field.name] && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {values[field.name] ? (
-                        format(values[field.name], 'PPP')
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={values[field.name]}
-                      onSelect={(date) => handleChange(field.name, date)}
-                      initialFocus
-                      className="p-3 pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
-              ) : field.type === 'select' ? (
-                <select
-                  id={field.name}
-                  value={values[field.name] || ''}
-                  onChange={(e) => handleChange(field.name, e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  required={field.required}
-                >
-                  <option value="">Select {field.label}</option>
-                  {field.options?.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              ) : field.type === 'textarea' ? (
-                <Textarea
-                  id={field.name}
-                  value={values[field.name] || ''}
-                  onChange={(e) => handleChange(field.name, e.target.value)}
-                  required={field.required}
-                  readOnly={field.readOnly}
-                  className={field.readOnly ? "bg-muted" : ""}
-                />
-              ) : field.type === 'number' ? (
-                <Input
-                  id={field.name}
-                  type="number"
-                  value={values[field.name] || ''}
-                  onChange={(e) => handleChange(field.name, Number(e.target.value))}
-                  min={field.min}
-                  required={field.required}
-                  readOnly={field.readOnly}
-                  className={field.readOnly ? "bg-muted" : ""}
-                />
-              ) : (
-                <Input
-                  id={field.name}
-                  type="text"
-                  value={values[field.name] || ''}
-                  onChange={(e) => handleChange(field.name, e.target.value)}
-                  required={field.required}
-                  readOnly={field.readOnly}
-                  className={field.readOnly ? "bg-muted" : ""}
-                />
-              )}
-            </div>
-          ))}
+                {field.type === 'date' ? (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        id={field.name}
+                        variant="outline"
+                        className={cn(
+                          "justify-start text-left font-normal",
+                          !values[field.name] && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {values[field.name] ? (
+                          format(values[field.name], 'PPP')
+                        ) : (
+                          <span>Pick a date</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={values[field.name]}
+                        onSelect={(date) => handleChange(field.name, date)}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                ) : field.type === 'select' ? (
+                  <select
+                    id={field.name}
+                    value={values[field.name] || ''}
+                    onChange={(e) => handleChange(field.name, e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    required={field.required}
+                  >
+                    <option value="">Select {field.label}</option>
+                    {field.options?.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                ) : field.type === 'textarea' ? (
+                  <Textarea
+                    id={field.name}
+                    value={values[field.name] || ''}
+                    onChange={(e) => handleChange(field.name, e.target.value)}
+                    required={field.required}
+                    readOnly={field.readOnly}
+                    className={field.readOnly ? "bg-muted" : ""}
+                  />
+                ) : field.type === 'number' ? (
+                  <Input
+                    id={field.name}
+                    type="number"
+                    value={values[field.name] || ''}
+                    onChange={(e) => handleChange(field.name, Number(e.target.value))}
+                    min={field.min}
+                    required={field.required}
+                    readOnly={field.readOnly}
+                    className={field.readOnly ? "bg-muted" : ""}
+                  />
+                ) : (
+                  <Input
+                    id={field.name}
+                    type="text"
+                    value={values[field.name] || ''}
+                    onChange={(e) => handleChange(field.name, e.target.value)}
+                    required={field.required}
+                    readOnly={field.readOnly}
+                    className={field.readOnly ? "bg-muted" : ""}
+                  />
+                )}
+              </div>
+            );
+          })}
 
           <div className="mt-2 flex justify-end">
             <Button type="submit" className="btn-hover">
