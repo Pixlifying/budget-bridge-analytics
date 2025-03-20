@@ -11,7 +11,8 @@ import {
   ChevronLeft,
   ChevronRight,
   PiggyBank,
-  AlertCircle
+  AlertCircle,
+  FilePen
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -72,6 +73,11 @@ const Sidebar = () => {
       icon: <Globe size={isCollapsed ? 20 : 18} />,
       label: 'Online Services',
       to: '/online-services',
+    },
+    {
+      icon: <FilePen size={isCollapsed ? 20 : 18} />,
+      label: 'Applications',
+      to: '/applications',
     },
     {
       icon: <AlertCircle size={isCollapsed ? 20 : 18} />,

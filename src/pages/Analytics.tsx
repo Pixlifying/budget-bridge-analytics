@@ -91,6 +91,14 @@ interface PendingBalanceEntry {
   amount: number;
 }
 
+interface ApplicationEntry {
+  id: string;
+  date: Date;
+  customer_name: string;
+  pages_count: number;
+  amount: number;
+}
+
 const Analytics = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
@@ -102,6 +110,7 @@ const Analytics = () => {
   const [onlineServices, setOnlineServices] = useState<OnlineServiceEntry[]>([]);
   const [expenses, setExpenses] = useState<ExpenseEntry[]>([]);
   const [pendingBalances, setPendingBalances] = useState<PendingBalanceEntry[]>([]);
+  const [applications, setApplications] = useState<ApplicationEntry[]>([]);
 
   const [filteredPanCards, setFilteredPanCards] = useState<PanCardEntry[]>([]);
   const [filteredPassports, setFilteredPassports] = useState<PassportEntry[]>([]);
@@ -109,6 +118,7 @@ const Analytics = () => {
   const [filteredOnlineServices, setFilteredOnlineServices] = useState<OnlineServiceEntry[]>([]);
   const [filteredExpenses, setFilteredExpenses] = useState<ExpenseEntry[]>([]);
   const [filteredPendingBalances, setFilteredPendingBalances] = useState<PendingBalanceEntry[]>([]);
+  const [filteredApplications, setFilteredApplications] = useState<ApplicationEntry[]>([]);
   
   const fetchAllData = async () => {
     setIsLoading(true);
@@ -154,6 +164,13 @@ const Analytics = () => {
         .order('date', { ascending: false });
       
       if (pendingError) throw pendingError;
+      
+      const { data: applicationsData, error: applicationsError } = await supabase
+        .from('applications')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (applicationsError) throw applicationsError;
       
       const formattedPanCards = panCardData.map(entry => ({
         id: entry.id,
@@ -205,12 +222,21 @@ const Analytics = () => {
         amount: Number(entry.amount)
       }));
       
+      const formattedApplications = applicationsData.map(entry => ({
+        id: entry.id,
+        date: new Date(entry.date),
+        customer_name: entry.customer_name,
+        pages_count: entry.pages_count,
+        amount: Number(entry.amount)
+      }));
+      
       setPanCards(formattedPanCards);
       setPassports(formattedPassports);
       setBankingServices(formattedBankingServices);
       setOnlineServices(formattedOnlineServices);
       setExpenses(formattedExpenses);
       setPendingBalances(formattedPendingBalances);
+      setApplications(formattedApplications);
     } catch (error) {
       console.error('Error fetching analytics data:', error);
     } finally {
@@ -230,6 +256,7 @@ const Analytics = () => {
       setFilteredOnlineServices(filterByDate(onlineServices, date));
       setFilteredExpenses(filterByDate(expenses, date));
       setFilteredPendingBalances(filterByDate(pendingBalances, date));
+      setFilteredApplications(filterByDate(applications, date));
     } else {
       setFilteredPanCards(filterByMonth(panCards, date));
       setFilteredPassports(filterByMonth(passports, date));
@@ -237,8 +264,9 @@ const Analytics = () => {
       setFilteredOnlineServices(filterByMonth(onlineServices, date));
       setFilteredExpenses(filterByMonth(expenses, date));
       setFilteredPendingBalances(filterByMonth(pendingBalances, date));
+      setFilteredApplications(filterByMonth(applications, date));
     }
-  }, [date, viewMode, panCards, passports, bankingServices, onlineServices, expenses, pendingBalances]);
+  }, [date, viewMode, panCards, passports, bankingServices, onlineServices, expenses, pendingBalances, applications]);
 
   const expenseData = {
     labels: filteredExpenses.map(item => item.name),
@@ -273,20 +301,33 @@ const Analytics = () => {
     ],
   };
 
+  const applicationData = {
+    labels: filteredApplications.map(item => item.customer_name),
+    datasets: [
+      {
+        label: 'Applications',
+        data: filteredApplications.map(item => item.amount),
+        backgroundColor: 'rgba(153, 102, 255, 0.5)',
+      },
+    ],
+  };
+
   const totalExpenses = filteredExpenses.reduce((sum, entry) => sum + entry.amount, 0);
   const totalOnlineServices = filteredOnlineServices.reduce((sum, entry) => sum + entry.amount, 0);
   const totalPendingBalances = filteredPendingBalances.reduce((sum, entry) => sum + entry.amount, 0);
+  const totalApplications = filteredApplications.reduce((sum, entry) => sum + entry.amount, 0);
 
   const pieChartData = {
-    labels: ['Expenses', 'Online Services', 'Pending Balances'],
+    labels: ['Expenses', 'Online Services', 'Pending Balances', 'Applications'],
     datasets: [
       {
         label: 'Total Amounts',
-        data: [totalExpenses, totalOnlineServices, totalPendingBalances],
+        data: [totalExpenses, totalOnlineServices, totalPendingBalances, totalApplications],
         backgroundColor: [
           'rgba(255, 99, 132, 0.5)',
           'rgba(54, 162, 235, 0.5)',
           'rgba(75, 192, 192, 0.5)',
+          'rgba(153, 102, 255, 0.5)',
         ],
         borderWidth: 1,
       },
@@ -321,11 +362,23 @@ const Analytics = () => {
     },
   };
 
+  const panCardMarginExample = 150;
+  const passportMarginExample = 200;
+  const bankingServiceMarginExample = 500 * 0.05;
+  const onlineServiceMarginExample = 1000;
+  const applicationMarginExample = 500;
+  
+  const totalMarginExample = panCardMarginExample + passportMarginExample + 
+                            bankingServiceMarginExample + onlineServiceMarginExample + 
+                            applicationMarginExample;
+
   const marginTableData = [
-    { service: 'PAN Card', margin: '₹150 per card', calculation: 'Fixed ₹150 margin for each PAN Card' },
-    { service: 'Passport', margin: '₹200 per passport', calculation: 'Fixed ₹200 margin for each Passport' },
-    { service: 'Banking Service', margin: '0.5% of amount', calculation: 'Calculated as 0.5% of the transaction amount' },
-    { service: 'Online Service', margin: '10% of amount', calculation: 'Calculated as 10% of the transaction amount' },
+    { service: 'PAN Card', margin: '₹150 per card', calculation: 'Fixed ₹150 margin for each PAN Card', example: formatCurrency(panCardMarginExample) },
+    { service: 'Passport', margin: '₹200 per passport', calculation: 'Fixed ₹200 margin for each Passport', example: formatCurrency(passportMarginExample) },
+    { service: 'Banking Service', margin: '5% of amount', calculation: 'Calculated as 5% of the transaction amount', example: formatCurrency(bankingServiceMarginExample) },
+    { service: 'Online Service', margin: '100% of amount', calculation: 'Full amount is counted as margin', example: formatCurrency(onlineServiceMarginExample) },
+    { service: 'Application', margin: '100% of amount', calculation: 'Full amount is counted as margin', example: formatCurrency(applicationMarginExample) },
+    { service: 'Total', margin: 'Sum of all margins', calculation: 'Sum of all service margins', example: formatCurrency(totalMarginExample) },
   ];
 
   return (
@@ -357,6 +410,11 @@ const Analytics = () => {
           value={formatCurrency(totalPendingBalances)}
           icon={<BarChart3 size={20} />}
         />
+        <StatCard 
+          title="Total Applications"
+          value={formatCurrency(totalApplications)}
+          icon={<BarChart3 size={20} />}
+        />
       </div>
 
       <div className="mt-8 grid grid-cols-1 gap-6">
@@ -376,6 +434,11 @@ const Analytics = () => {
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-4">
+          <h3 className="text-lg font-medium mb-4">Applications Chart</h3>
+          <Bar options={chartOptions} data={applicationData} />
+        </div>
+
+        <div className="bg-white rounded-lg shadow-md p-4">
           <h3 className="text-lg font-medium mb-4">Financial Overview</h3>
           <Pie data={pieChartData} options={chartOptions} />
         </div>
@@ -392,14 +455,16 @@ const Analytics = () => {
                   <TableHead>Service</TableHead>
                   <TableHead>Margin Rate</TableHead>
                   <TableHead>Calculation Method</TableHead>
+                  <TableHead>Example (₹500 / 1 unit)</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {marginTableData.map((item, index) => (
-                  <TableRow key={index}>
+                  <TableRow key={index} className={item.service === 'Total' ? "font-bold" : ""}>
                     <TableCell className="font-medium">{item.service}</TableCell>
                     <TableCell>{item.margin}</TableCell>
                     <TableCell>{item.calculation}</TableCell>
+                    <TableCell>{item.example}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

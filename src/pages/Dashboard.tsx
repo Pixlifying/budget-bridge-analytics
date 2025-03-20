@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, CreditCard, Globe, Receipt, PiggyBank, AlertCircle } from 'lucide-react';
+import { FileText, CreditCard, Globe, Receipt, PiggyBank, AlertCircle, FilePen } from 'lucide-react';
 import PageWrapper from '@/components/layout/PageWrapper';
 import StatCard from '@/components/ui/StatCard';
 import DateRangePicker from '@/components/ui/DateRangePicker';
@@ -68,6 +68,14 @@ interface PendingBalanceEntry {
   amount: number;
 }
 
+interface ApplicationEntry {
+  id: string;
+  date: Date;
+  customer_name: string;
+  pages_count: number;
+  amount: number;
+}
+
 const Dashboard = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
@@ -80,6 +88,7 @@ const Dashboard = () => {
   const [onlineServices, setOnlineServices] = useState<OnlineServiceEntry[]>([]);
   const [expenses, setExpenses] = useState<ExpenseEntry[]>([]);
   const [pendingBalances, setPendingBalances] = useState<PendingBalanceEntry[]>([]);
+  const [applications, setApplications] = useState<ApplicationEntry[]>([]);
 
   const [filteredPanCards, setFilteredPanCards] = useState<PanCardEntry[]>([]);
   const [filteredPassports, setFilteredPassports] = useState<PassportEntry[]>([]);
@@ -87,6 +96,7 @@ const Dashboard = () => {
   const [filteredOnlineServices, setFilteredOnlineServices] = useState<OnlineServiceEntry[]>([]);
   const [filteredExpenses, setFilteredExpenses] = useState<ExpenseEntry[]>([]);
   const [filteredPendingBalances, setFilteredPendingBalances] = useState<PendingBalanceEntry[]>([]);
+  const [filteredApplications, setFilteredApplications] = useState<ApplicationEntry[]>([]);
   
   const fetchAllData = async () => {
     setIsLoading(true);
@@ -132,6 +142,13 @@ const Dashboard = () => {
         .order('date', { ascending: false });
       
       if (pendingError) throw pendingError;
+      
+      const { data: applicationsData, error: applicationsError } = await supabase
+        .from('applications')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (applicationsError) throw applicationsError;
       
       const formattedPanCards = panCardData.map(entry => ({
         id: entry.id,
@@ -183,12 +200,21 @@ const Dashboard = () => {
         amount: Number(entry.amount)
       }));
       
+      const formattedApplications = applicationsData.map(entry => ({
+        id: entry.id,
+        date: new Date(entry.date),
+        customer_name: entry.customer_name,
+        pages_count: entry.pages_count,
+        amount: Number(entry.amount)
+      }));
+      
       setPanCards(formattedPanCards);
       setPassports(formattedPassports);
       setBankingServices(formattedBankingServices);
       setOnlineServices(formattedOnlineServices);
       setExpenses(formattedExpenses);
       setPendingBalances(formattedPendingBalances);
+      setApplications(formattedApplications);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -208,6 +234,7 @@ const Dashboard = () => {
       setFilteredOnlineServices(filterByDate(onlineServices, date));
       setFilteredExpenses(filterByDate(expenses, date));
       setFilteredPendingBalances(filterByDate(pendingBalances, date));
+      setFilteredApplications(filterByDate(applications, date));
     } else {
       setFilteredPanCards(filterByMonth(panCards, date));
       setFilteredPassports(filterByMonth(passports, date));
@@ -215,14 +242,16 @@ const Dashboard = () => {
       setFilteredOnlineServices(filterByMonth(onlineServices, date));
       setFilteredExpenses(filterByMonth(expenses, date));
       setFilteredPendingBalances(filterByMonth(pendingBalances, date));
+      setFilteredApplications(filterByMonth(applications, date));
     }
-  }, [date, viewMode, panCards, passports, bankingServices, onlineServices, expenses, pendingBalances]);
+  }, [date, viewMode, panCards, passports, bankingServices, onlineServices, expenses, pendingBalances, applications]);
 
   const totalMargin = getTotalMargin(
     filteredPanCards,
     filteredPassports,
     filteredBankingServices,
-    filteredOnlineServices
+    filteredOnlineServices,
+    filteredApplications
   );
 
   const panCardCount = filteredPanCards.reduce((sum, entry) => sum + entry.count, 0);
@@ -231,11 +260,15 @@ const Dashboard = () => {
   const onlineServicesCount = filteredOnlineServices.reduce((sum, entry) => sum + entry.count, 0);
   const expensesTotal = filteredExpenses.reduce((sum, entry) => sum + entry.amount, 0);
   const pendingBalanceTotal = filteredPendingBalances.reduce((sum, entry) => sum + entry.amount, 0);
+  const applicationsCount = filteredApplications.length;
+  const applicationsPagesCount = filteredApplications.reduce((sum, entry) => sum + entry.pages_count, 0);
+  const applicationsAmount = filteredApplications.reduce((sum, entry) => sum + entry.amount, 0);
 
   const panCardMargin = filteredPanCards.reduce((total, item) => total + item.margin, 0);
   const passportMargin = filteredPassports.reduce((total, item) => total + item.margin, 0);
   const bankingMargin = filteredBankingServices.reduce((total, item) => total + item.margin, 0);
   const onlineServicesMargin = filteredOnlineServices.reduce((total, item) => total + calculateOnlineServiceMargin(item.amount), 0);
+  const applicationsMargin = applicationsAmount;
 
   return (
     <PageWrapper
@@ -270,6 +303,16 @@ const Dashboard = () => {
           title="Online Services"
           value={onlineServicesCount}
           icon={<Globe size={20} />}
+        />
+        <StatCard 
+          title="Applications"
+          value={applicationsCount}
+          icon={<FilePen size={20} />}
+        />
+        <StatCard 
+          title="Total Applications Pages"
+          value={applicationsPagesCount.toString()}
+          icon={<FilePen size={20} />}
         />
         <StatCard 
           title="Expenses"
@@ -312,6 +355,10 @@ const Dashboard = () => {
               <div className="flex justify-between items-center border-b pb-2">
                 <span className="font-medium">Online Services Margin:</span>
                 <span>{formatCurrency(onlineServicesMargin)}</span>
+              </div>
+              <div className="flex justify-between items-center border-b pb-2">
+                <span className="font-medium">Applications Margin:</span>
+                <span>{formatCurrency(applicationsMargin)}</span>
               </div>
               <div className="flex justify-between items-center pt-2">
                 <span className="font-bold">Total Margin:</span>

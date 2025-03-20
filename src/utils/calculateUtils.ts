@@ -53,11 +53,18 @@ export const calculateOnlineServiceMargin = (amount: number): number => {
   return amount;
 };
 
+// Applications utility function
+export const calculateApplicationsMargin = (amount: number): number => {
+  // The total amount of the application is the margin
+  return amount;
+};
+
 export const getTotalMargin = (
   panCards: { margin: number }[],
   passports: { margin: number }[],
   bankingServices: { margin: number }[],
-  onlineServices: { amount: number, count: number }[]
+  onlineServices: { amount: number, count: number }[],
+  applications: { amount: number }[] = []
 ): number => {
   const panCardMargin = panCards.reduce((total, item) => total + item.margin, 0);
   const passportMargin = passports.reduce((total, item) => total + item.margin, 0);
@@ -68,7 +75,10 @@ export const getTotalMargin = (
     return total + (item.amount * item.count);
   }, 0);
   
-  return panCardMargin + passportMargin + bankingMargin + onlineServicesMargin;
+  // Calculate applications margin
+  const applicationsMargin = applications.reduce((total, item) => total + item.amount, 0);
+  
+  return panCardMargin + passportMargin + bankingMargin + onlineServicesMargin + applicationsMargin;
 };
 
 // Export to Excel function with proper type constraint

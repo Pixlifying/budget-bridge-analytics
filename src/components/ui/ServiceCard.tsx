@@ -10,6 +10,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useState } from 'react';
+import DeleteConfirmation from './DeleteConfirmation';
 
 interface ServiceCardProps {
   id: string;
@@ -34,6 +36,17 @@ const ServiceCard = ({
   className,
   showActions = true,
 }: ServiceCardProps) => {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  
+  const handleDelete = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    onDelete();
+    setShowDeleteConfirm(false);
+  };
+
   return (
     <Card className={cn("bg-card shadow-sm rounded-xl overflow-hidden card-hover", className)}>
       <CardHeader className="pb-2">
@@ -71,13 +84,19 @@ const ServiceCard = ({
             variant="outline" 
             size="sm" 
             className="h-8 px-3 text-rose-500 hover:text-rose-600 hover:bg-rose-50 border-rose-200" 
-            onClick={onDelete}
+            onClick={handleDelete}
           >
             <Trash2 size={14} className="mr-1" />
             <span className="text-xs">Delete</span>
           </Button>
         </CardFooter>
       )}
+      
+      <DeleteConfirmation 
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={confirmDelete}
+      />
     </Card>
   );
 };

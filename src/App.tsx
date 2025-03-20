@@ -10,6 +10,7 @@ import PanCard from "@/pages/PanCard";
 import Passport from "@/pages/Passport";
 import BankingServices from "@/pages/BankingServices";
 import OnlineServices from "@/pages/OnlineServices";
+import Applications from "@/pages/Applications";
 import Analytics from "@/pages/Analytics";
 import Expenses from "@/pages/Expenses";
 import PendingBalance from "@/pages/PendingBalance";
@@ -32,6 +33,7 @@ const App = () => (
               <Route path="/passport" element={<Passport />} />
               <Route path="/banking-services" element={<BankingServices />} />
               <Route path="/online-services" element={<OnlineServices />} />
+              <Route path="/applications" element={<Applications />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/expenses" element={<Expenses />} />
               <Route path="/pending-balance" element={<PendingBalance />} />
