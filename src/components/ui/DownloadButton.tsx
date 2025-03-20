@@ -10,14 +10,14 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { exportToExcel } from '@/utils/calculateUtils';
 
-interface DownloadButtonProps<T> {
+interface DownloadButtonProps<T extends object> {
   data: T[];
   filename: string;
   currentData: T[];
   label?: string;
 }
 
-function DownloadButton<T>({ data, filename, currentData, label = "Download" }: DownloadButtonProps<T>) {
+function DownloadButton<T extends object>({ data, filename, currentData, label = "Download" }: DownloadButtonProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleDownloadAll = () => {

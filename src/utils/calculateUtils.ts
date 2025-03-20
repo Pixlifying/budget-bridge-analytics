@@ -71,7 +71,7 @@ export const getTotalMargin = (
   return panCardMargin + passportMargin + bankingMargin + onlineServicesMargin;
 };
 
-// Export to Excel function
+// Export to Excel function with proper type constraint
 export const exportToExcel = <T extends object>(data: T[], filename: string) => {
   const worksheet = XLSX.utils.json_to_sheet(data);
   const workbook = XLSX.utils.book_new();

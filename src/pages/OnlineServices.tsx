@@ -16,10 +16,11 @@ interface OnlineServiceEntry {
   date: Date;
   service: string;
   custom_service?: string;
-  customer_name: string;
+  customer_name?: string; // Make this optional since it doesn't exist in the database yet
   amount: number;
   count: number;
   total: number;
+  created_at?: string;
 }
 
 const OnlineServices = () => {
@@ -46,11 +47,11 @@ const OnlineServices = () => {
         date: new Date(entry.date),
         service: entry.service,
         custom_service: entry.custom_service,
-        // Handle potential missing customer_name field in database
-        customer_name: entry.customer_name || '',
+        // The database doesn't have customer_name yet, so we'll default to an empty string
         amount: Number(entry.amount),
         count: Number(entry.count),
         total: Number(entry.total),
+        created_at: entry.created_at
       }));
 
       setOnlineServices(formattedData);
@@ -102,7 +103,7 @@ const OnlineServices = () => {
           date: values.date ? new Date(values.date).toISOString() : new Date().toISOString(),
           service: values.service,
           custom_service: values.service === 'Other' ? values.custom_service : null,
-          customer_name: values.customer_name || '',
+          // Temporarily remove customer_name from the insert since it doesn't exist in the table yet
           amount: values.amount,
           count: values.count,
           total: values.amount * values.count,
@@ -120,10 +121,12 @@ const OnlineServices = () => {
           date: new Date(data[0].date),
           service: data[0].service,
           custom_service: data[0].custom_service,
-          customer_name: data[0].customer_name || '',
+          // Store customer_name in the local state even though it's not in the database yet
+          customer_name: values.customer_name || '',
           amount: Number(data[0].amount),
           count: Number(data[0].count),
           total: Number(data[0].total),
+          created_at: data[0].created_at
         };
 
         setOnlineServices(prev => [newEntry, ...prev]);
@@ -149,7 +152,7 @@ const OnlineServices = () => {
           date: values.date ? new Date(values.date).toISOString() : editingEntry.date.toISOString(),
           service: values.service,
           custom_service: values.service === 'Other' ? values.custom_service : null,
-          customer_name: values.customer_name || '',
+          // Temporarily remove customer_name from the update since it doesn't exist in the table yet
           amount: values.amount,
           count: values.count,
           total: values.amount * values.count,
