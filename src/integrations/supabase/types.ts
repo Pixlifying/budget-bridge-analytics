@@ -216,6 +216,39 @@ export type Database = {
         }
         Relationships: []
       }
+      photostats: {
+        Row: {
+          amount_per_page: number
+          created_at: string | null
+          date: string
+          id: string
+          is_double_sided: boolean
+          margin: number
+          pages_count: number
+          total_amount: number
+        }
+        Insert: {
+          amount_per_page: number
+          created_at?: string | null
+          date?: string
+          id?: string
+          is_double_sided?: boolean
+          margin: number
+          pages_count: number
+          total_amount: number
+        }
+        Update: {
+          amount_per_page?: number
+          created_at?: string | null
+          date?: string
+          id?: string
+          is_double_sided?: boolean
+          margin?: number
+          pages_count?: number
+          total_amount?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

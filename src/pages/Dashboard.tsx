@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, CreditCard, Globe, Receipt, PiggyBank, AlertCircle, FilePen } from 'lucide-react';
+import { FileText, CreditCard, Globe, Receipt, PiggyBank, AlertCircle, FilePen, Copy } from 'lucide-react';
 import PageWrapper from '@/components/layout/PageWrapper';
 import StatCard from '@/components/ui/StatCard';
 import DateRangePicker from '@/components/ui/DateRangePicker';
@@ -76,6 +76,16 @@ interface ApplicationEntry {
   amount: number;
 }
 
+interface PhotostatEntry {
+  id: string;
+  date: Date;
+  pages_count: number;
+  amount_per_page: number;
+  is_double_sided: boolean;
+  total_amount: number;
+  margin: number;
+}
+
 const Dashboard = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
@@ -89,7 +99,7 @@ const Dashboard = () => {
   const [expenses, setExpenses] = useState<ExpenseEntry[]>([]);
   const [pendingBalances, setPendingBalances] = useState<PendingBalanceEntry[]>([]);
   const [applications, setApplications] = useState<ApplicationEntry[]>([]);
-
+  const [photostats, setPhotostats] = useState<PhotostatEntry[]>([]);
   const [filteredPanCards, setFilteredPanCards] = useState<PanCardEntry[]>([]);
   const [filteredPassports, setFilteredPassports] = useState<PassportEntry[]>([]);
   const [filteredBankingServices, setFilteredBankingServices] = useState<BankingServiceEntry[]>([]);
@@ -97,7 +107,8 @@ const Dashboard = () => {
   const [filteredExpenses, setFilteredExpenses] = useState<ExpenseEntry[]>([]);
   const [filteredPendingBalances, setFilteredPendingBalances] = useState<PendingBalanceEntry[]>([]);
   const [filteredApplications, setFilteredApplications] = useState<ApplicationEntry[]>([]);
-  
+  const [filteredPhotostats, setFilteredPhotostats] = useState<PhotostatEntry[]>([]);
+
   const fetchAllData = async () => {
     setIsLoading(true);
     try {
@@ -149,6 +160,13 @@ const Dashboard = () => {
         .order('date', { ascending: false });
       
       if (applicationsError) throw applicationsError;
+      
+      const { data: photostatData, error: photostatError } = await supabase
+        .from('photostats')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (photostatError) throw photostatError;
       
       const formattedPanCards = panCardData.map(entry => ({
         id: entry.id,
@@ -208,6 +226,16 @@ const Dashboard = () => {
         amount: Number(entry.amount)
       }));
       
+      const formattedPhotostats = photostatData.map(entry => ({
+        id: entry.id,
+        date: new Date(entry.date),
+        pages_count: entry.pages_count,
+        amount_per_page: Number(entry.amount_per_page),
+        is_double_sided: entry.is_double_sided,
+        total_amount: Number(entry.total_amount),
+        margin: Number(entry.margin)
+      }));
+      
       setPanCards(formattedPanCards);
       setPassports(formattedPassports);
       setBankingServices(formattedBankingServices);
@@ -215,6 +243,7 @@ const Dashboard = () => {
       setExpenses(formattedExpenses);
       setPendingBalances(formattedPendingBalances);
       setApplications(formattedApplications);
+      setPhotostats(formattedPhotostats);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -235,6 +264,7 @@ const Dashboard = () => {
       setFilteredExpenses(filterByDate(expenses, date));
       setFilteredPendingBalances(filterByDate(pendingBalances, date));
       setFilteredApplications(filterByDate(applications, date));
+      setFilteredPhotostats(filterByDate(photostats, date));
     } else {
       setFilteredPanCards(filterByMonth(panCards, date));
       setFilteredPassports(filterByMonth(passports, date));
@@ -243,8 +273,9 @@ const Dashboard = () => {
       setFilteredExpenses(filterByMonth(expenses, date));
       setFilteredPendingBalances(filterByMonth(pendingBalances, date));
       setFilteredApplications(filterByMonth(applications, date));
+      setFilteredPhotostats(filterByMonth(photostats, date));
     }
-  }, [date, viewMode, panCards, passports, bankingServices, onlineServices, expenses, pendingBalances, applications]);
+  }, [date, viewMode, panCards, passports, bankingServices, onlineServices, expenses, pendingBalances, applications, photostats]);
 
   const totalMargin = getTotalMargin(
     filteredPanCards,
@@ -252,7 +283,7 @@ const Dashboard = () => {
     filteredBankingServices,
     filteredOnlineServices,
     filteredApplications
-  );
+  ) + filteredPhotostats.reduce((total, item) => total + item.margin, 0);
 
   const panCardCount = filteredPanCards.reduce((sum, entry) => sum + entry.count, 0);
   const passportCount = filteredPassports.reduce((sum, entry) => sum + entry.count, 0);
@@ -263,12 +294,16 @@ const Dashboard = () => {
   const applicationsCount = filteredApplications.length;
   const applicationsPagesCount = filteredApplications.reduce((sum, entry) => sum + entry.pages_count, 0);
   const applicationsAmount = filteredApplications.reduce((sum, entry) => sum + entry.amount, 0);
+  const photostatPagesCount = filteredPhotostats.reduce((sum, entry) => sum + entry.pages_count, 0);
+  const photostatAmount = filteredPhotostats.reduce((sum, entry) => sum + entry.total_amount, 0);
+  const photostatMargin = filteredPhotostats.reduce((total, item) => total + item.margin, 0);
 
   const panCardMargin = filteredPanCards.reduce((total, item) => total + item.margin, 0);
   const passportMargin = filteredPassports.reduce((total, item) => total + item.margin, 0);
   const bankingMargin = filteredBankingServices.reduce((total, item) => total + item.margin, 0);
   const onlineServicesMargin = filteredOnlineServices.reduce((total, item) => total + calculateOnlineServiceMargin(item.amount), 0);
   const applicationsMargin = applicationsAmount;
+  const photostatMargin = photostatMargin;
 
   return (
     <PageWrapper
@@ -310,9 +345,9 @@ const Dashboard = () => {
           icon={<FilePen size={20} />}
         />
         <StatCard 
-          title="Total Applications Pages"
-          value={applicationsPagesCount.toString()}
-          icon={<FilePen size={20} />}
+          title="Photostat Pages"
+          value={photostatPagesCount.toString()}
+          icon={<Copy size={20} />}
         />
         <StatCard 
           title="Expenses"
@@ -359,6 +394,10 @@ const Dashboard = () => {
               <div className="flex justify-between items-center border-b pb-2">
                 <span className="font-medium">Applications Margin:</span>
                 <span>{formatCurrency(applicationsMargin)}</span>
+              </div>
+              <div className="flex justify-between items-center border-b pb-2">
+                <span className="font-medium">Photostat Margin:</span>
+                <span>{formatCurrency(photostatMargin)}</span>
               </div>
               <div className="flex justify-between items-center pt-2">
                 <span className="font-bold">Total Margin:</span>

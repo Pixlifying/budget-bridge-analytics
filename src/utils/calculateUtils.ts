@@ -62,7 +62,8 @@ export const getTotalMargin = (
   passports: { margin: number }[],
   bankingServices: { margin: number }[],
   onlineServices: { amount: number, count: number }[],
-  applications: { amount: number }[] = []
+  applications: { amount: number }[] = [],
+  photostats: { margin: number }[] = []
 ): number => {
   const panCardMargin = panCards.reduce((total, item) => total + item.margin, 0);
   const passportMargin = passports.reduce((total, item) => total + item.margin, 0);
@@ -76,7 +77,10 @@ export const getTotalMargin = (
   // Calculate applications margin
   const applicationsMargin = applications.reduce((total, item) => total + item.amount, 0);
   
-  return panCardMargin + passportMargin + bankingMargin + onlineServicesMargin + applicationsMargin;
+  // Calculate photostat margin
+  const photostatMargin = photostats.reduce((total, item) => total + item.margin, 0);
+  
+  return panCardMargin + passportMargin + bankingMargin + onlineServicesMargin + applicationsMargin + photostatMargin;
 };
 
 // Export to Excel function with proper type constraint
