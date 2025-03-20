@@ -1,4 +1,3 @@
-
 import { format, isSameDay, isSameMonth } from 'date-fns';
 import * as XLSX from 'xlsx';
 
@@ -44,8 +43,8 @@ export const calculatePassportMargin = (count: number): number => {
 
 // Banking services utility function
 export const calculateBankingServicesMargin = (amount: number): number => {
-  // Fixed margin calculation for banking services
-  return amount * 0.05; // 5% of the amount
+  // Updated formula: amount/100*0.5
+  return (amount / 100) * 0.5;
 };
 
 export const calculateOnlineServiceMargin = (amount: number): number => {
@@ -53,7 +52,6 @@ export const calculateOnlineServiceMargin = (amount: number): number => {
   return amount;
 };
 
-// Applications utility function
 export const calculateApplicationsMargin = (amount: number): number => {
   // The total amount of the application is the margin
   return amount;
