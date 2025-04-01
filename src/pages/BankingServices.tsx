@@ -11,6 +11,7 @@ import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import { formatCurrency } from '@/utils/calculateUtils';
 import { supabase } from '@/integrations/supabase/client';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 
 interface BankingService {
   id: string;
@@ -29,22 +30,26 @@ const BankingServices = () => {
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
 
   // Fetch banking services data
-  const { data: bankingServices, refetch } = useQuery({
+  const { data: bankingServices, refetch, isError } = useQuery({
     queryKey: ['bankingServices', viewMode, selectedDate],
     queryFn: async () => {
       let query = supabase.from('banking_services').select('*');
       
       if (viewMode === 'day') {
-        const dateStr = selectedDate.toISOString().split('T')[0];
+        // Filter by exact date
+        const dateStr = format(selectedDate, 'yyyy-MM-dd');
         query = query.eq('date', dateStr);
       } else if (viewMode === 'month') {
-        const yearMonth = selectedDate.toISOString().split('T')[0].substring(0, 7);
-        query = query.ilike('date', `${yearMonth}%`);
+        // Filter by month range
+        const startDate = format(startOfMonth(selectedDate), 'yyyy-MM-dd');
+        const endDate = format(endOfMonth(selectedDate), 'yyyy-MM-dd');
+        query = query.gte('date', startDate).lte('date', endDate);
       }
       
       const { data, error } = await query.order('date', { ascending: false });
       
       if (error) {
+        console.error('Error fetching banking services:', error);
         toast.error('Failed to load banking services');
         throw error;
       }
@@ -52,6 +57,13 @@ const BankingServices = () => {
       return data || [];
     },
   });
+
+  // Show toast when there's an error
+  useEffect(() => {
+    if (isError) {
+      toast.error('Failed to load banking services');
+    }
+  }, [isError]);
 
   // Calculate summary data
   const totalAmount = bankingServices?.reduce((sum, service) => sum + service.amount, 0) || 0;
