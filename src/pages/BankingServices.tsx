@@ -61,7 +61,7 @@ const BankingServices = () => {
   // Handle add new service
   const handleAddService = async (formData: any) => {
     try {
-      // Calculate margin using the new formula: amount * 0.5 / 100
+      // Calculate margin using the formula: amount * 0.5 / 100
       const calculatedMargin = (formData.amount * 0.5) / 100;
       
       const { error } = await supabase.from('banking_services').insert([
@@ -89,7 +89,7 @@ const BankingServices = () => {
     try {
       if (!currentService) return;
       
-      // Calculate margin using the new formula: amount * 0.5 / 100
+      // Calculate margin using the formula: amount * 0.5 / 100
       const calculatedMargin = (formData.amount * 0.5) / 100;
       
       const { error } = await supabase
@@ -144,7 +144,7 @@ const BankingServices = () => {
     setViewMode(mode);
   };
 
-  // Form fields for banking services
+  // Form fields for banking services - removed margin field since it's calculated
   const formFields = [
     {
       name: 'date',
