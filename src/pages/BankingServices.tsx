@@ -2,12 +2,13 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Calendar, CreditCard, Plus } from 'lucide-react';
+import { CreditCard, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PageWrapper from '@/components/layout/PageWrapper';
 import ServiceCard from '@/components/ui/ServiceCard';
 import ServiceForm from '@/components/ui/ServiceForm';
 import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
+import DateRangePicker from '@/components/ui/DateRangePicker';
 import { formatCurrency } from '@/utils/calculateUtils';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -29,7 +30,7 @@ const BankingServices = () => {
 
   // Fetch banking services data
   const { data: bankingServices, refetch } = useQuery({
-    queryKey: ['bankingServices'],
+    queryKey: ['bankingServices', viewMode, selectedDate],
     queryFn: async () => {
       let query = supabase.from('banking_services').select('*');
       
@@ -60,11 +61,14 @@ const BankingServices = () => {
   // Handle add new service
   const handleAddService = async (formData: any) => {
     try {
+      // Calculate margin using the new formula: amount * 0.5 / 100
+      const calculatedMargin = (formData.amount * 0.5) / 100;
+      
       const { error } = await supabase.from('banking_services').insert([
         {
           date: formData.date,
           amount: formData.amount,
-          margin: formData.margin,
+          margin: calculatedMargin,
           transaction_count: formData.transaction_count || 0,
         }
       ]);
@@ -85,12 +89,15 @@ const BankingServices = () => {
     try {
       if (!currentService) return;
       
+      // Calculate margin using the new formula: amount * 0.5 / 100
+      const calculatedMargin = (formData.amount * 0.5) / 100;
+      
       const { error } = await supabase
         .from('banking_services')
         .update({
           date: formData.date,
           amount: formData.amount,
-          margin: formData.margin,
+          margin: calculatedMargin,
           transaction_count: formData.transaction_count || 0,
         })
         .eq('id', currentService.id);
@@ -127,13 +134,14 @@ const BankingServices = () => {
     }
   };
 
-  // Filter services by date or month
+  // Handle date change
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
   };
 
-  const toggleViewMode = () => {
-    setViewMode(viewMode === 'day' ? 'month' : 'day');
+  // Handle view mode change
+  const handleViewModeChange = (mode: 'day' | 'month') => {
+    setViewMode(mode);
   };
 
   // Form fields for banking services
@@ -151,12 +159,6 @@ const BankingServices = () => {
       required: true,
     },
     {
-      name: 'margin',
-      label: 'Margin',
-      type: 'number' as const,
-      required: true,
-    },
-    {
       name: 'transaction_count',
       label: 'Number of Transactions',
       type: 'number' as const,
@@ -169,9 +171,17 @@ const BankingServices = () => {
       title="Banking Services"
       subtitle="Manage banking transactions"
       action={
-        <Button onClick={() => setIsAddModalOpen(true)}>
-          <Plus className="mr-1" /> Add Service
-        </Button>
+        <div className="flex items-center space-x-4">
+          <DateRangePicker 
+            date={selectedDate}
+            onDateChange={handleDateChange}
+            mode={viewMode}
+            onModeChange={handleViewModeChange}
+          />
+          <Button onClick={() => setIsAddModalOpen(true)}>
+            <Plus className="mr-1" /> Add Service
+          </Button>
+        </div>
       }
     >
       {/* Summary Cards */}
@@ -187,20 +197,6 @@ const BankingServices = () => {
         <div className="glassmorphism p-4 rounded-lg">
           <h3 className="text-sm text-muted-foreground">Total Margin</h3>
           <p className="text-2xl font-bold">{formatCurrency(totalMargin)}</p>
-        </div>
-      </div>
-
-      {/* Date Filter */}
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={toggleViewMode}
-          >
-            <Calendar className="h-4 w-4 mr-2" />
-            {viewMode === 'day' ? 'View by Day' : 'View by Month'}
-          </Button>
         </div>
       </div>
 
@@ -241,7 +237,6 @@ const BankingServices = () => {
         initialValues={{
           date: new Date().toISOString().split('T')[0],
           amount: '',
-          margin: '',
           transaction_count: 1,
         }}
         onSubmit={handleAddService}
@@ -257,7 +252,6 @@ const BankingServices = () => {
         initialValues={currentService ? {
           date: currentService.date,
           amount: currentService.amount,
-          margin: currentService.margin,
           transaction_count: currentService.transaction_count || 0,
         } : {}}
         onSubmit={handleEditService}

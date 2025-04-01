@@ -44,8 +44,8 @@ export const calculatePassportMargin = (count: number): number => {
 
 // Banking services utility function
 export const calculateBankingServicesMargin = (amount: number): number => {
-  // Updated formula: amount/100*0.5
-  return (amount / 100) * 0.5;
+  // Updated formula: amount * 0.5 / 100
+  return (amount * 0.5) / 100;
 };
 
 export const calculateOnlineServiceMargin = (amount: number): number => {
