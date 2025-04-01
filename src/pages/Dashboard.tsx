@@ -3,8 +3,6 @@ import { useEffect, useState } from 'react';
 import {
   CreditCard,
   FileText,
-  LayoutDashboard,
-  LucideIcon,
   ScrollText,
   Wallet,
 } from 'lucide-react';
@@ -19,12 +17,6 @@ import {
   formatCurrency,
   getTotalMargin,
 } from '@/utils/calculateUtils';
-
-interface ServiceData {
-  margin: number;
-  amount: number;
-  count: number;
-}
 
 const Dashboard = () => {
   const [date, setDate] = useState<Date>(new Date());
