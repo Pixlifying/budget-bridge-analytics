@@ -10,6 +10,7 @@ import ServiceCard from '@/components/ui/ServiceCard';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import DownloadButton from '@/components/ui/DownloadButton';
 import { Button } from '@/components/ui/button';
+import StatCard from '@/components/ui/StatCard';
 import { 
   calculateBankingServicesMargin,
   filterByDate, 
@@ -21,6 +22,7 @@ interface BankingServiceEntry {
   id: string;
   date: Date;
   amount: number;
+  transaction_count: number;
   margin: number;
 }
 
@@ -49,6 +51,7 @@ const BankingServices = () => {
         id: entry.id,
         date: new Date(entry.date),
         amount: Number(entry.amount),
+        transaction_count: Number(entry.transaction_count || 1),
         margin: Number(entry.margin)
       }));
       
@@ -76,6 +79,7 @@ const BankingServices = () => {
   const handleAddEntry = async (values: Partial<BankingServiceEntry>) => {
     try {
       const amount = Number(values.amount);
+      const transaction_count = Number(values.transaction_count || 1);
       const margin = calculateBankingServicesMargin(amount);
       
       const { data, error } = await supabase
@@ -83,6 +87,7 @@ const BankingServices = () => {
         .insert({
           date: values.date ? new Date(values.date).toISOString() : new Date().toISOString(),
           amount,
+          transaction_count,
           margin
         })
         .select();
@@ -96,6 +101,7 @@ const BankingServices = () => {
           id: data[0].id,
           date: new Date(data[0].date),
           amount: Number(data[0].amount),
+          transaction_count: Number(data[0].transaction_count || 1),
           margin: Number(data[0].margin)
         };
         
@@ -113,6 +119,7 @@ const BankingServices = () => {
     
     try {
       const amount = Number(values.amount);
+      const transaction_count = Number(values.transaction_count || 1);
       const margin = calculateBankingServicesMargin(amount);
       
       const { error } = await supabase
@@ -120,6 +127,7 @@ const BankingServices = () => {
         .update({
           date: values.date ? new Date(values.date).toISOString() : editingEntry.date.toISOString(),
           amount,
+          transaction_count,
           margin
         })
         .eq('id', editingEntry.id);
@@ -132,6 +140,7 @@ const BankingServices = () => {
         ...editingEntry,
         date: values.date || editingEntry.date,
         amount,
+        transaction_count,
         margin
       };
       
@@ -181,6 +190,13 @@ const BankingServices = () => {
       min: 0,
       required: true
     },
+    {
+      name: 'transaction_count',
+      label: 'Number of Transactions',
+      type: 'number' as const,
+      min: 1,
+      required: true
+    },
     { 
       name: 'margin', 
       label: 'Margin (₹)', 
@@ -197,9 +213,11 @@ const BankingServices = () => {
     };
   };
 
+  // Calculate summary stats
   const totalAmount = filteredServices.reduce((sum, entry) => sum + entry.amount, 0);
   const totalMargin = filteredServices.reduce((sum, entry) => sum + entry.margin, 0);
   const totalServices = filteredServices.length;
+  const totalTransactions = filteredServices.reduce((sum, entry) => sum + (entry.transaction_count || 1), 0);
 
   return (
     <PageWrapper
@@ -225,6 +243,7 @@ const BankingServices = () => {
               initialValues={{
                 date: new Date(),
                 amount: 0,
+                transaction_count: 1,
                 margin: 0,
               }}
               onSubmit={handleAddEntry}
@@ -240,51 +259,30 @@ const BankingServices = () => {
       }
     >
       {/* Summary cards showing totals */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <ServiceCard 
-          id="summary-services"
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <StatCard 
           title="Total Services"
-          date={date}
-          data={{ 
-            value: totalServices,
-          }}
-          labels={{ 
-            value: "Count",
-          }}
-          onEdit={() => {}}
-          onDelete={() => {}}
+          value={totalServices}
+          icon={<CreditCard className="h-5 w-5" />}
           className="bg-blue-50"
-          showActions={false}
         />
-        <ServiceCard 
-          id="summary-amount"
+        <StatCard 
+          title="Total Transactions"
+          value={totalTransactions}
+          icon={<CreditCard className="h-5 w-5" />}
+          className="bg-green-50"
+        />
+        <StatCard 
           title="Total Amount"
-          date={date}
-          data={{ 
-            value: formatCurrency(totalAmount),
-          }}
-          labels={{ 
-            value: "Amount",
-          }}
-          onEdit={() => {}}
-          onDelete={() => {}}
+          value={formatCurrency(totalAmount)}
+          icon={<CreditCard className="h-5 w-5" />}
           className="bg-emerald-50"
-          showActions={false}
         />
-        <ServiceCard 
-          id="summary-margin"
+        <StatCard 
           title="Total Margin"
-          date={date}
-          data={{ 
-            value: formatCurrency(totalMargin),
-          }}
-          labels={{ 
-            value: "Margin",
-          }}
-          onEdit={() => {}}
-          onDelete={() => {}}
+          value={formatCurrency(totalMargin)}
+          icon={<CreditCard className="h-5 w-5" />}
           className="bg-purple-50"
-          showActions={false}
         />
       </div>
 
@@ -310,10 +308,12 @@ const BankingServices = () => {
               date={entry.date}
               data={{
                 amount: formatCurrency(entry.amount),
+                transactions: entry.transaction_count || 1,
                 margin: formatCurrency(entry.margin),
               }}
               labels={{
                 amount: 'Amount',
+                transactions: 'Transactions',
                 margin: 'Margin',
               }}
               onEdit={() => {
@@ -330,7 +330,10 @@ const BankingServices = () => {
         <ServiceForm
           title="Edit Banking Service"
           fields={formFields}
-          initialValues={calculateTotals(editingEntry)}
+          initialValues={calculateTotals({
+            ...editingEntry,
+            transaction_count: editingEntry.transaction_count || 1
+          })}
           onSubmit={handleEditEntry}
           trigger={<div />}
           isEdit

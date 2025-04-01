@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from 'react';
-import { Copy, Filter } from 'lucide-react';
+import { FileText, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { v4 } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -208,7 +207,6 @@ const Photostat = () => {
     }
   ];
 
-  // Calculate totals for the filtered photostats
   const totalPages = filteredPhotostats.reduce((sum, entry) => sum + entry.pages_count, 0);
   const totalAmount = filteredPhotostats.reduce((sum, entry) => sum + entry.total_amount, 0);
 
@@ -253,21 +251,19 @@ const Photostat = () => {
         </div>
       }
     >
-      {/* Summary cards showing totals */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <StatCard 
           title="Total Pages"
           value={totalPages.toString()}
-          icon={<Copy size={20} />}
+          icon={<FileText size={20} />}
         />
         <StatCard 
           title="Total Amount"
           value={formatCurrency(totalAmount)}
-          icon={<Filter size={20} />}
+          icon={<FileText size={20} />}
         />
       </div>
 
-      {/* List of photostat entries */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredPhotostats.length === 0 ? (
           <div className="col-span-full text-center py-8 bg-muted/30 rounded-lg">
@@ -299,7 +295,6 @@ const Photostat = () => {
         )}
       </div>
 
-      {/* Edit form dialog */}
       {editingEntry && (
         <ServiceForm
           title="Edit Photostat Entry"
