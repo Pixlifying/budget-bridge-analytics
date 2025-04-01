@@ -11,13 +11,21 @@ import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
 import { formatCurrency } from '@/utils/calculateUtils';
 import { supabase } from '@/integrations/supabase/client';
 
+interface BankingService {
+  id: string;
+  date: string;
+  amount: number;
+  margin: number;
+  transaction_count: number;
+}
+
 const BankingServices = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [currentService, setCurrentService] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState('day');
+  const [currentService, setCurrentService] = useState<BankingService | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
 
   // Fetch banking services data
   const { data: bankingServices, refetch } = useQuery({
@@ -50,7 +58,7 @@ const BankingServices = () => {
   const totalMargin = bankingServices?.reduce((sum, service) => sum + service.margin, 0) || 0;
 
   // Handle add new service
-  const handleAddService = async (formData) => {
+  const handleAddService = async (formData: any) => {
     try {
       const { error } = await supabase.from('banking_services').insert([
         {
@@ -73,8 +81,10 @@ const BankingServices = () => {
   };
 
   // Handle edit service
-  const handleEditService = async (formData) => {
+  const handleEditService = async (formData: any) => {
     try {
+      if (!currentService) return;
+      
       const { error } = await supabase
         .from('banking_services')
         .update({
@@ -99,6 +109,8 @@ const BankingServices = () => {
   // Handle delete service
   const handleDeleteService = async () => {
     try {
+      if (!currentService) return;
+      
       const { error } = await supabase
         .from('banking_services')
         .delete()
@@ -116,7 +128,7 @@ const BankingServices = () => {
   };
 
   // Filter services by date or month
-  const handleDateChange = (date) => {
+  const handleDateChange = (date: Date) => {
     setSelectedDate(date);
   };
 
@@ -129,25 +141,25 @@ const BankingServices = () => {
     {
       name: 'date',
       label: 'Date',
-      type: 'date',
+      type: 'date' as const,
       required: true,
     },
     {
       name: 'amount',
       label: 'Amount',
-      type: 'number',
+      type: 'number' as const,
       required: true,
     },
     {
       name: 'margin',
       label: 'Margin',
-      type: 'number',
+      type: 'number' as const,
       required: true,
     },
     {
       name: 'transaction_count',
       label: 'Number of Transactions',
-      type: 'number',
+      type: 'number' as const,
       required: true,
     },
   ];
@@ -197,13 +209,19 @@ const BankingServices = () => {
         {bankingServices?.map((service) => (
           <ServiceCard
             key={service.id}
-            title={`Banking Service on ${new Date(service.date).toLocaleDateString()}`}
-            icon={<CreditCard className="h-5 w-5" />}
-            details={[
-              { label: 'Amount', value: formatCurrency(service.amount) },
-              { label: 'Margin', value: formatCurrency(service.margin) },
-              { label: 'Transactions', value: service.transaction_count || 0 },
-            ]}
+            id={service.id}
+            title={`Banking Service`}
+            date={new Date(service.date)}
+            data={{
+              amount: formatCurrency(service.amount),
+              margin: formatCurrency(service.margin),
+              transactions: service.transaction_count || 0,
+            }}
+            labels={{
+              amount: 'Amount',
+              margin: 'Margin',
+              transactions: 'Transactions',
+            }}
             onEdit={() => {
               setCurrentService(service);
               setIsEditModalOpen(true);
@@ -218,9 +236,6 @@ const BankingServices = () => {
 
       {/* Add Service Modal */}
       <ServiceForm
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onSubmit={handleAddService}
         title="Add Banking Service"
         fields={formFields}
         initialValues={{
@@ -229,13 +244,14 @@ const BankingServices = () => {
           margin: '',
           transaction_count: 1,
         }}
+        onSubmit={handleAddService}
+        trigger={<></>}
+        open={isAddModalOpen}
+        onOpenChange={setIsAddModalOpen}
       />
 
       {/* Edit Service Modal */}
       <ServiceForm
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        onSubmit={handleEditService}
         title="Edit Banking Service"
         fields={formFields}
         initialValues={currentService ? {
@@ -244,13 +260,17 @@ const BankingServices = () => {
           margin: currentService.margin,
           transaction_count: currentService.transaction_count || 0,
         } : {}}
+        onSubmit={handleEditService}
+        trigger={<></>}
+        open={isEditModalOpen}
+        onOpenChange={setIsEditModalOpen}
       />
 
       {/* Delete Confirmation Modal */}
       <DeleteConfirmation
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
-        onDelete={handleDeleteService}
+        onConfirm={handleDeleteService}
         title="Delete Banking Service"
         description="Are you sure you want to delete this banking service? This action cannot be undone."
       />
