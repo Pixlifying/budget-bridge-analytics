@@ -43,6 +43,7 @@ export type Database = {
           date: string
           id: string
           margin: number
+          transaction_count: number
         }
         Insert: {
           amount: number
@@ -50,6 +51,7 @@ export type Database = {
           date?: string
           id?: string
           margin: number
+          transaction_count?: number
         }
         Update: {
           amount?: number
@@ -57,6 +59,7 @@ export type Database = {
           date?: string
           id?: string
           margin?: number
+          transaction_count?: number
         }
         Relationships: []
       }

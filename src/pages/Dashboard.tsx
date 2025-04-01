@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import {
   CreditCard,
@@ -30,9 +31,9 @@ const Dashboard = () => {
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
   const [isLoading, setIsLoading] = useState(true);
 
-  const { data: panCardData, error: panCardError } = useQuery(
-    ['panCards'],
-    async () => {
+  const { data: panCardData, error: panCardError } = useQuery({
+    queryKey: ['panCards'],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('pan_cards')
         .select('*')
@@ -42,11 +43,11 @@ const Dashboard = () => {
       }
       return data;
     }
-  );
+  });
 
-  const { data: passportData, error: passportError } = useQuery(
-    ['passports'],
-    async () => {
+  const { data: passportData, error: passportError } = useQuery({
+    queryKey: ['passports'],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('passports')
         .select('*')
@@ -56,11 +57,11 @@ const Dashboard = () => {
       }
       return data;
     }
-  );
+  });
 
-  const { data: bankingData, error: bankingError } = useQuery(
-    ['bankingServices'],
-    async () => {
+  const { data: bankingData, error: bankingError } = useQuery({
+    queryKey: ['bankingServices'],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('banking_services')
         .select('*')
@@ -70,11 +71,11 @@ const Dashboard = () => {
       }
       return data;
     }
-  );
+  });
 
-  const { data: onlineData, error: onlineError } = useQuery(
-    ['onlineServices'],
-    async () => {
+  const { data: onlineData, error: onlineError } = useQuery({
+    queryKey: ['onlineServices'],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('online_services')
         .select('*')
@@ -84,11 +85,11 @@ const Dashboard = () => {
       }
       return data;
     }
-  );
+  });
 
-  const { data: applicationsData, error: applicationsError } = useQuery(
-    ['applications'],
-    async () => {
+  const { data: applicationsData, error: applicationsError } = useQuery({
+    queryKey: ['applications'],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('applications')
         .select('*')
@@ -98,13 +99,13 @@ const Dashboard = () => {
       }
       return data;
     }
-  );
+  });
 
-  const { data: photostatData, error: photostatError } = useQuery(
-    ['photostat'],
-    async () => {
+  const { data: photostatData, error: photostatError } = useQuery({
+    queryKey: ['photostat'],
+    queryFn: async () => {
       const { data, error } = await supabase
-        .from('photostat')
+        .from('photostats')
         .select('*')
         .order('date', { ascending: false });
       if (error) {
@@ -112,7 +113,7 @@ const Dashboard = () => {
       }
       return data;
     }
-  );
+  });
 
   useEffect(() => {
     if (
