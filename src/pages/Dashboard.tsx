@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import {
   CreditCard,
@@ -221,6 +222,7 @@ const Dashboard = () => {
     photostatData || []
   );
 
+  // Calculate all the required totals and counts
   const panCardMargin = panCardData?.reduce((sum, entry) => sum + entry.margin, 0) || 0;
   const passportMargin = passportData?.reduce((sum, entry) => sum + entry.margin, 0) || 0;
   const bankingMargin = bankingData?.reduce((sum, entry) => sum + entry.margin, 0) || 0;
@@ -229,6 +231,18 @@ const Dashboard = () => {
   }, 0) || 0;
   const applicationsMargin = applicationsData?.reduce((sum, entry) => sum + entry.amount, 0) || 0;
   const photostatMarginTotal = photostatData?.reduce((sum, entry) => sum + entry.margin, 0) || 0;
+
+  // Calculate additional metrics for each service
+  const bankingServicesTotal = bankingData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
+  const bankingServicesCount = bankingData?.reduce((sum, entry) => sum + (entry.transaction_count || 1), 0) || 0;
+  
+  const onlineServicesTotal = onlineData?.reduce((sum, entry) => sum + Number(entry.total || 0), 0) || 0;
+  const onlineServicesCount = onlineData?.length || 0;
+  
+  const applicationsTotal = applicationsData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
+  const applicationsCount = applicationsData?.length || 0;
+  
+  const pendingBalanceTotal = pendingBalanceData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
 
   const marginProportions = [
     { name: 'PAN Card', value: panCardMargin },
