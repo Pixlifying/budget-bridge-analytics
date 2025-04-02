@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import {
   CreditCard,
@@ -9,6 +8,7 @@ import {
   Globe,
   FilePenLine,
   AlertCircle,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
@@ -23,11 +23,18 @@ import {
   formatCurrency,
   getTotalMargin,
 } from '@/utils/calculateUtils';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const Dashboard = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
   const [isLoading, setIsLoading] = useState(true);
+  const [marginDialogOpen, setMarginDialogOpen] = useState(false);
 
   const { data: panCardData, error: panCardError } = useQuery({
     queryKey: ['panCards', viewMode, date],
@@ -35,11 +42,9 @@ const Dashboard = () => {
       let query = supabase.from('pan_cards').select('*');
       
       if (viewMode === 'day') {
-        // Filter by exact date
         const dateStr = format(date, 'yyyy-MM-dd');
         query = query.eq('date', dateStr);
       } else if (viewMode === 'month') {
-        // Filter by month range
         const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
         const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
         query = query.gte('date', startDate).lte('date', endDate);
@@ -207,7 +212,6 @@ const Dashboard = () => {
     pendingBalanceError,
   ]);
 
-  // Get total margin
   const totalMargin = getTotalMargin(
     panCardData || [],
     passportData || [],
@@ -217,7 +221,6 @@ const Dashboard = () => {
     photostatData || []
   );
 
-  // Calculate service specific totals
   const panCardMargin = panCardData?.reduce((sum, entry) => sum + entry.margin, 0) || 0;
   const passportMargin = passportData?.reduce((sum, entry) => sum + entry.margin, 0) || 0;
   const bankingMargin = bankingData?.reduce((sum, entry) => sum + entry.margin, 0) || 0;
@@ -225,25 +228,8 @@ const Dashboard = () => {
     return sum + (entry.amount * entry.count);
   }, 0) || 0;
   const applicationsMargin = applicationsData?.reduce((sum, entry) => sum + entry.amount, 0) || 0;
-  // Calculate photostat margin
   const photostatMarginTotal = photostatData?.reduce((sum, entry) => sum + entry.margin, 0) || 0;
 
-  // Calculate pending balance total
-  const pendingBalanceTotal = pendingBalanceData?.reduce((sum, entry) => sum + entry.amount, 0) || 0;
-
-  // Calculate banking services stats
-  const bankingServicesTotal = bankingData?.reduce((sum, entry) => sum + entry.amount, 0) || 0;
-  const bankingServicesCount = bankingData?.length || 0;
-  
-  // Calculate online services stats
-  const onlineServicesTotal = onlineData?.reduce((sum, entry) => sum + entry.total, 0) || 0;
-  const onlineServicesCount = onlineData?.length || 0;
-  
-  // Calculate applications stats
-  const applicationsTotal = applicationsData?.reduce((sum, entry) => sum + entry.amount, 0) || 0;
-  const applicationsCount = applicationsData?.length || 0;
-
-  // Calculate proportions for the chart
   const marginProportions = [
     { name: 'PAN Card', value: panCardMargin },
     { name: 'Passport', value: passportMargin },
@@ -256,19 +242,19 @@ const Dashboard = () => {
   const getServiceColor = (serviceName: string): string => {
     switch (serviceName) {
       case 'PAN Card':
-        return '#FFD480'; // Light Orange
+        return '#FFD480';
       case 'Passport':
-        return '#90CAF9'; // Light Blue
+        return '#90CAF9';
       case 'Banking':
-        return '#A5D6A7'; // Light Green
+        return '#A5D6A7';
       case 'Online':
-        return '#FFAB91'; // Light Red
+        return '#FFAB91';
       case 'Applications':
-        return '#B39DDB'; // Light Purple
+        return '#B39DDB';
       case 'Photostat':
-        return '#F48FB1'; // Light Pink
+        return '#F48FB1';
       default:
-        return '#BDBDBD'; // Light Gray
+        return '#BDBDBD';
     }
   };
 
@@ -280,7 +266,15 @@ const Dashboard = () => {
     setViewMode(mode);
   };
 
-  // Render component
+  const marginDetails = [
+    { name: 'PAN Card', value: panCardMargin, color: '#FFD480' },
+    { name: 'Passport', value: passportMargin, color: '#90CAF9' },
+    { name: 'Banking Services', value: bankingMargin, color: '#A5D6A7' },
+    { name: 'Online Services', value: onlineMargin, color: '#FFAB91' },
+    { name: 'Applications', value: applicationsMargin, color: '#B39DDB' },
+    { name: 'Photostat', value: photostatMarginTotal, color: '#F48FB1' },
+  ];
+
   return (
     <PageWrapper
       title="Dashboard"
@@ -301,6 +295,7 @@ const Dashboard = () => {
           title="Total Margin"
           value={formatCurrency(totalMargin)}
           icon={<Wallet className="h-5 w-5" />}
+          onClick={() => setMarginDialogOpen(true)}
         />
         <StatCard
           title="PAN Cards"
@@ -319,8 +314,34 @@ const Dashboard = () => {
         />
       </div>
 
+      <Dialog open={marginDialogOpen} onOpenChange={setMarginDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Margin Breakdown</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="space-y-4">
+              {marginDetails.map((item) => (
+                <div key={item.name} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
+                    <span>{item.name}</span>
+                  </div>
+                  <span className="font-semibold">{formatCurrency(item.value)}</span>
+                </div>
+              ))}
+              <div className="border-t pt-2 mt-2">
+                <div className="flex items-center justify-between font-bold">
+                  <span>Total Margin</span>
+                  <span>{formatCurrency(totalMargin)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        {/* Banking Services Block */}
         <div className="glassmorphism rounded-xl p-5 animate-scale-in">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-semibold text-lg">Banking Services</h3>
@@ -342,7 +363,6 @@ const Dashboard = () => {
           </div>
         </div>
         
-        {/* Online Services Block */}
         <div className="glassmorphism rounded-xl p-5 animate-scale-in">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-semibold text-lg">Online Services</h3>
@@ -366,7 +386,6 @@ const Dashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        {/* Applications Block */}
         <div className="glassmorphism rounded-xl p-5 animate-scale-in">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-semibold text-lg">Applications</h3>
@@ -384,7 +403,6 @@ const Dashboard = () => {
           </div>
         </div>
         
-        {/* Pending Balance Block */}
         <div className="glassmorphism rounded-xl p-5 animate-scale-in">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-semibold text-lg">Pending Balance</h3>
