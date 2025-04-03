@@ -3,11 +3,19 @@ import { format, isSameDay, isSameMonth } from 'date-fns';
 import * as XLSX from 'xlsx';
 
 export const filterByDate = <T extends { date: Date }>(items: T[], date: Date): T[] => {
-  return items.filter(item => isSameDay(new Date(item.date), new Date(date)));
+  console.log('Filtering by date:', date);
+  return items.filter(item => {
+    const itemDate = new Date(item.date);
+    const result = isSameDay(itemDate, date);
+    return result;
+  });
 };
 
 export const filterByMonth = <T extends { date: Date }>(items: T[], date: Date): T[] => {
-  return items.filter(item => isSameMonth(new Date(item.date), new Date(date)));
+  return items.filter(item => {
+    const itemDate = new Date(item.date);
+    return isSameMonth(itemDate, date);
+  });
 };
 
 export const formatCurrency = (amount: number): string => {

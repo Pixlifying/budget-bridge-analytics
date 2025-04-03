@@ -9,6 +9,7 @@ import DateRangePicker from '@/components/ui/DateRangePicker';
 import DownloadButton from '@/components/ui/DownloadButton';
 import { Button } from '@/components/ui/button';
 import { formatCurrency, filterByDate, filterByMonth } from '@/utils/calculateUtils';
+import { format, startOfDay, endOfDay } from 'date-fns';
 
 interface OnlineServiceEntry {
   id: string;
@@ -34,10 +35,12 @@ const OnlineServices = () => {
   const fetchOnlineServices = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('online_services')
         .select('*')
         .order('date', { ascending: false });
+      
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -53,6 +56,7 @@ const OnlineServices = () => {
         created_at: entry.created_at
       }));
 
+      console.log('All online services:', formattedData.length);
       setOnlineServices(formattedData);
       applyDateFilter(formattedData, selectedDate, filterMode);
     } catch (error) {
@@ -64,10 +68,15 @@ const OnlineServices = () => {
   };
 
   const applyDateFilter = (data: OnlineServiceEntry[], date: Date, mode: 'day' | 'month') => {
+    console.log('Applying filter:', mode, 'for date:', date);
     if (mode === 'day') {
-      setFilteredServices(filterByDate(data, date));
+      const filtered = filterByDate(data, date);
+      console.log('Filtered services by day:', filtered.length);
+      setFilteredServices(filtered);
     } else {
-      setFilteredServices(filterByMonth(data, date));
+      const filtered = filterByMonth(data, date);
+      console.log('Filtered services by month:', filtered.length);
+      setFilteredServices(filtered);
     }
   };
 
