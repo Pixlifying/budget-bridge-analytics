@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import {
   CreditCard,
@@ -8,6 +9,7 @@ import {
   Globe,
   FilePenLine,
   AlertCircle,
+  DollarSign,
   X,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -156,18 +158,21 @@ const Dashboard = () => {
       let query = supabase.from('photostats').select('*');
       
       if (viewMode === 'day') {
-        const dateStr = format(date, 'yyyy-MM-dd');
-        query = query.eq('date', dateStr);
+        const startDateStr = format(startOfDay(date), 'yyyy-MM-dd');
+        const endDateStr = format(endOfDay(date), 'yyyy-MM-dd');
+        
+        query = query.gte('date', startDateStr).lt('date', endDateStr + 'T23:59:59');
       } else if (viewMode === 'month') {
         const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
         const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
-        query = query.gte('date', startDate).lte('date', endDate);
+        query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59');
       }
       
       const { data, error } = await query.order('date', { ascending: false });
       if (error) {
         throw error;
       }
+      console.log('Photostat data fetched:', data, 'for date:', date, 'mode:', viewMode);
       return data;
     }
   });
@@ -194,6 +199,31 @@ const Dashboard = () => {
     }
   });
 
+  const { data: expensesData, error: expensesError } = useQuery({
+    queryKey: ['expenses', viewMode, date],
+    queryFn: async () => {
+      let query = supabase.from('expenses').select('*');
+      
+      if (viewMode === 'day') {
+        const startDateStr = format(startOfDay(date), 'yyyy-MM-dd');
+        const endDateStr = format(endOfDay(date), 'yyyy-MM-dd');
+        
+        query = query.gte('date', startDateStr).lt('date', endDateStr + 'T23:59:59');
+      } else if (viewMode === 'month') {
+        const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
+        const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
+        query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59');
+      }
+      
+      const { data, error } = await query.order('date', { ascending: false });
+      if (error) {
+        throw error;
+      }
+      console.log('Expenses data fetched:', data, 'for date:', date, 'mode:', viewMode);
+      return data;
+    }
+  });
+
   useEffect(() => {
     if (
       panCardError ||
@@ -202,7 +232,8 @@ const Dashboard = () => {
       onlineError ||
       applicationsError ||
       photostatError ||
-      pendingBalanceError
+      pendingBalanceError ||
+      expensesError
     ) {
       toast.error('Failed to load data');
     }
@@ -214,6 +245,7 @@ const Dashboard = () => {
     applicationsError,
     photostatError,
     pendingBalanceError,
+    expensesError,
   ]);
 
   const totalMargin = getTotalMargin(
@@ -246,6 +278,10 @@ const Dashboard = () => {
   const applicationsCount = applicationsData?.length || 0;
   
   const pendingBalanceTotal = pendingBalanceData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
+  
+  // Calculate expenses metrics
+  const expensesTotal = expensesData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
+  const expensesCount = expensesData?.length || 0;
 
   const marginProportions = [
     { name: 'PAN Card', value: panCardMargin },
@@ -434,6 +470,30 @@ const Dashboard = () => {
               <p className="text-sm text-muted-foreground">Count</p>
               <p className="text-xl font-bold">{pendingBalanceData?.length || 0}</p>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* New Expenses Section */}
+      <div className="glassmorphism rounded-xl p-5 animate-scale-in mb-8">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-semibold text-lg">Expenses</h3>
+          <DollarSign className="h-5 w-5 text-primary opacity-70" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <p className="text-sm text-muted-foreground">Total Amount</p>
+            <p className="text-xl font-bold">{formatCurrency(expensesTotal || 0)}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Count</p>
+            <p className="text-xl font-bold">{expensesCount || 0}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Average</p>
+            <p className="text-xl font-bold">
+              {expensesCount ? formatCurrency(expensesTotal / expensesCount) : formatCurrency(0)}
+            </p>
           </div>
         </div>
       </div>
