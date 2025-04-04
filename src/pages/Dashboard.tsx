@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import {
   CreditCard,
@@ -136,18 +135,21 @@ const Dashboard = () => {
       let query = supabase.from('applications').select('*');
       
       if (viewMode === 'day') {
-        const dateStr = format(date, 'yyyy-MM-dd');
-        query = query.eq('date', dateStr);
+        const startDateStr = format(startOfDay(date), 'yyyy-MM-dd');
+        const endDateStr = format(endOfDay(date), 'yyyy-MM-dd');
+        
+        query = query.gte('date', startDateStr).lt('date', endDateStr + 'T23:59:59');
       } else if (viewMode === 'month') {
         const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
         const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
-        query = query.gte('date', startDate).lte('date', endDate);
+        query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59');
       }
       
       const { data, error } = await query.order('date', { ascending: false });
       if (error) {
         throw error;
       }
+      console.log('Applications data fetched:', data, 'for date:', date, 'mode:', viewMode);
       return data;
     }
   });
@@ -183,18 +185,21 @@ const Dashboard = () => {
       let query = supabase.from('pending_balances').select('*');
       
       if (viewMode === 'day') {
-        const dateStr = format(date, 'yyyy-MM-dd');
-        query = query.eq('date', dateStr);
+        const startDateStr = format(startOfDay(date), 'yyyy-MM-dd');
+        const endDateStr = format(endOfDay(date), 'yyyy-MM-dd');
+        
+        query = query.gte('date', startDateStr).lt('date', endDateStr + 'T23:59:59');
       } else if (viewMode === 'month') {
         const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
         const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
-        query = query.gte('date', startDate).lte('date', endDate);
+        query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59');
       }
       
       const { data, error } = await query.order('date', { ascending: false });
       if (error) {
         throw error;
       }
+      console.log('Pending balances data fetched:', data, 'for date:', date, 'mode:', viewMode);
       return data;
     }
   });
