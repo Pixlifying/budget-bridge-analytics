@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import {
   CreditCard,
@@ -204,12 +205,25 @@ const Dashboard = () => {
     expensesError,
   ]);
 
+  // Calculate metrics from fetched data
+  const bankingServicesTotal = bankingData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
+  const bankingServicesCount = bankingData?.reduce((sum, entry) => sum + (entry.transaction_count || 1), 0) || 0;
   const bankingMargin = bankingData?.reduce((sum, entry) => sum + entry.margin, 0) || 0;
+
+  const onlineServicesTotal = onlineData?.reduce((sum, entry) => sum + Number(entry.total || 0), 0) || 0;
+  const onlineServicesCount = onlineData?.length || 0;
   const onlineMargin = onlineData?.reduce((sum, entry) => sum + (entry.amount * entry.count), 0) || 0;
+
+  const applicationsTotal = applicationsData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
+  const applicationsCount = applicationsData?.length || 0;
   const applicationsMargin = applicationsData?.reduce((sum, entry) => sum + entry.amount, 0) || 0;
+
   const photostatMarginTotal = photostatData?.reduce((sum, entry) => sum + entry.margin, 0) || 0;
+
   const pendingBalanceTotal = pendingBalanceData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
+
   const expensesTotal = expensesData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
+  const expensesCount = expensesData?.length || 0;
 
   // Calculate total margin without PanCard and Passport
   const totalMargin = bankingMargin + onlineMargin + applicationsMargin + photostatMarginTotal;
@@ -436,20 +450,5 @@ const Dashboard = () => {
     </PageWrapper>
   );
 };
-
-const bankingServicesTotal = bankingData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
-const bankingServicesCount = bankingData?.reduce((sum, entry) => sum + (entry.transaction_count || 1), 0) || 0;
-
-const onlineServicesTotal = onlineData?.reduce((sum, entry) => sum + Number(entry.total || 0), 0) || 0;
-const onlineServicesCount = onlineData?.length || 0;
-
-const applicationsTotal = applicationsData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
-const applicationsCount = applicationsData?.length || 0;
-
-const pendingBalanceTotal = pendingBalanceData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
-
-// Calculate expenses metrics
-const expensesTotal = expensesData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
-const expensesCount = expensesData?.length || 0;
 
 export default Dashboard;
