@@ -5,8 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Sidebar from "@/components/layout/Sidebar";
 import Dashboard from "@/pages/Dashboard";
-import PanCard from "@/pages/PanCard";
-import Passport from "@/pages/Passport";
 import BankingServices from "@/pages/BankingServices";
 import OnlineServices from "@/pages/OnlineServices";
 import Applications from "@/pages/Applications";
@@ -30,8 +28,6 @@ const App = () => (
           <main className="flex-1 overflow-auto">
             <Routes>
               <Route path="/" element={<Dashboard />} />
-              <Route path="/pan-card" element={<PanCard />} />
-              <Route path="/passport" element={<Passport />} />
               <Route path="/banking-services" element={<BankingServices />} />
               <Route path="/online-services" element={<OnlineServices />} />
               <Route path="/applications" element={<Applications />} />

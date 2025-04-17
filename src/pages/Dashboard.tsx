@@ -2,13 +2,12 @@ import { useEffect, useState } from 'react';
 import {
   CreditCard,
   FileText,
-  ScrollText,
-  Wallet,
+  Globe, 
   BarChart3,
-  Globe,
   FilePenLine,
   AlertCircle,
   DollarSign,
+  Wallet,
   X,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -36,50 +35,6 @@ const Dashboard = () => {
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
   const [isLoading, setIsLoading] = useState(true);
   const [marginDialogOpen, setMarginDialogOpen] = useState(false);
-
-  const { data: panCardData, error: panCardError } = useQuery({
-    queryKey: ['panCards', viewMode, date],
-    queryFn: async () => {
-      let query = supabase.from('pan_cards').select('*');
-      
-      if (viewMode === 'day') {
-        const dateStr = format(date, 'yyyy-MM-dd');
-        query = query.eq('date', dateStr);
-      } else if (viewMode === 'month') {
-        const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
-        const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
-        query = query.gte('date', startDate).lte('date', endDate);
-      }
-      
-      const { data, error } = await query.order('date', { ascending: false });
-      if (error) {
-        throw error;
-      }
-      return data;
-    }
-  });
-
-  const { data: passportData, error: passportError } = useQuery({
-    queryKey: ['passports', viewMode, date],
-    queryFn: async () => {
-      let query = supabase.from('passports').select('*');
-      
-      if (viewMode === 'day') {
-        const dateStr = format(date, 'yyyy-MM-dd');
-        query = query.eq('date', dateStr);
-      } else if (viewMode === 'month') {
-        const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
-        const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
-        query = query.gte('date', startDate).lte('date', endDate);
-      }
-      
-      const { data, error } = await query.order('date', { ascending: false });
-      if (error) {
-        throw error;
-      }
-      return data;
-    }
-  });
 
   const { data: bankingData, error: bankingError } = useQuery({
     queryKey: ['bankingServices', viewMode, date],
@@ -231,8 +186,6 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (
-      panCardError ||
-      passportError ||
       bankingError ||
       onlineError ||
       applicationsError ||
@@ -243,8 +196,6 @@ const Dashboard = () => {
       toast.error('Failed to load data');
     }
   }, [
-    panCardError,
-    passportError,
     bankingError,
     onlineError,
     applicationsError,
@@ -253,56 +204,27 @@ const Dashboard = () => {
     expensesError,
   ]);
 
-  const totalMargin = getTotalMargin(
-    panCardData || [],
-    passportData || [],
-    bankingData || [],
-    onlineData || [],
-    applicationsData || [],
-    photostatData || []
-  );
-
-  // Calculate all the required totals and counts
-  const panCardMargin = panCardData?.reduce((sum, entry) => sum + entry.margin, 0) || 0;
-  const passportMargin = passportData?.reduce((sum, entry) => sum + entry.margin, 0) || 0;
   const bankingMargin = bankingData?.reduce((sum, entry) => sum + entry.margin, 0) || 0;
-  const onlineMargin = onlineData?.reduce((sum, entry) => {
-    return sum + (entry.amount * entry.count);
-  }, 0) || 0;
+  const onlineMargin = onlineData?.reduce((sum, entry) => sum + (entry.amount * entry.count), 0) || 0;
   const applicationsMargin = applicationsData?.reduce((sum, entry) => sum + entry.amount, 0) || 0;
   const photostatMarginTotal = photostatData?.reduce((sum, entry) => sum + entry.margin, 0) || 0;
-
-  // Calculate additional metrics for each service
-  const bankingServicesTotal = bankingData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
-  const bankingServicesCount = bankingData?.reduce((sum, entry) => sum + (entry.transaction_count || 1), 0) || 0;
-  
-  const onlineServicesTotal = onlineData?.reduce((sum, entry) => sum + Number(entry.total || 0), 0) || 0;
-  const onlineServicesCount = onlineData?.length || 0;
-  
-  const applicationsTotal = applicationsData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
-  const applicationsCount = applicationsData?.length || 0;
-  
   const pendingBalanceTotal = pendingBalanceData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
-  
-  // Calculate expenses metrics
   const expensesTotal = expensesData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
-  const expensesCount = expensesData?.length || 0;
+
+  // Calculate total margin without PanCard and Passport
+  const totalMargin = bankingMargin + onlineMargin + applicationsMargin + photostatMarginTotal;
 
   const marginProportions = [
-    { name: 'PAN Card', value: panCardMargin },
-    { name: 'Passport', value: passportMargin },
     { name: 'Banking', value: bankingMargin },
     { name: 'Online', value: onlineMargin },
     { name: 'Applications', value: applicationsMargin },
     { name: 'Photostat', value: photostatMarginTotal },
+    { name: 'Pending Balance', value: pendingBalanceTotal },
+    { name: 'Expenses', value: expensesTotal },
   ];
 
   const getServiceColor = (serviceName: string): string => {
     switch (serviceName) {
-      case 'PAN Card':
-        return '#FFD480';
-      case 'Passport':
-        return '#90CAF9';
       case 'Banking':
         return '#A5D6A7';
       case 'Online':
@@ -311,6 +233,10 @@ const Dashboard = () => {
         return '#B39DDB';
       case 'Photostat':
         return '#F48FB1';
+      case 'Pending Balance':
+        return '#FFB74D';
+      case 'Expenses':
+        return '#4FC3F7';
       default:
         return '#BDBDBD';
     }
@@ -325,12 +251,12 @@ const Dashboard = () => {
   };
 
   const marginDetails = [
-    { name: 'PAN Card', value: panCardMargin, color: '#FFD480' },
-    { name: 'Passport', value: passportMargin, color: '#90CAF9' },
     { name: 'Banking Services', value: bankingMargin, color: '#A5D6A7' },
     { name: 'Online Services', value: onlineMargin, color: '#FFAB91' },
     { name: 'Applications', value: applicationsMargin, color: '#B39DDB' },
     { name: 'Photostat', value: photostatMarginTotal, color: '#F48FB1' },
+    { name: 'Pending Balance', value: pendingBalanceTotal, color: '#FFB74D' },
+    { name: 'Expenses', value: expensesTotal, color: '#4FC3F7' },
   ];
 
   return (
@@ -348,7 +274,7 @@ const Dashboard = () => {
         </div>
       }
     >
-      <div className="grid gap-6 mb-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 mb-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         <StatCard
           title="Total Margin"
           value={formatCurrency(totalMargin)}
@@ -356,19 +282,14 @@ const Dashboard = () => {
           onClick={() => setMarginDialogOpen(true)}
         />
         <StatCard
-          title="PAN Cards"
-          value={panCardData?.length || 0}
-          icon={<CreditCard className="h-5 w-5" />}
-        />
-        <StatCard
-          title="Passports"
-          value={passportData?.length || 0}
-          icon={<ScrollText className="h-5 w-5" />}
-        />
-        <StatCard
           title="Photostat"
           value={photostatData?.length || 0}
           icon={<FileText className="h-5 w-5" />}
+        />
+        <StatCard
+          title="Banking Services"
+          value={bankingServicesCount}
+          icon={<CreditCard className="h-5 w-5" />}
         />
       </div>
 
@@ -515,5 +436,20 @@ const Dashboard = () => {
     </PageWrapper>
   );
 };
+
+const bankingServicesTotal = bankingData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
+const bankingServicesCount = bankingData?.reduce((sum, entry) => sum + (entry.transaction_count || 1), 0) || 0;
+
+const onlineServicesTotal = onlineData?.reduce((sum, entry) => sum + Number(entry.total || 0), 0) || 0;
+const onlineServicesCount = onlineData?.length || 0;
+
+const applicationsTotal = applicationsData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
+const applicationsCount = applicationsData?.length || 0;
+
+const pendingBalanceTotal = pendingBalanceData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
+
+// Calculate expenses metrics
+const expensesTotal = expensesData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
+const expensesCount = expensesData?.length || 0;
 
 export default Dashboard;

@@ -1,13 +1,10 @@
-
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
-  Receipt, 
   CreditCard,
   Globe, 
   BarChart3, 
-  FileText, 
   ChevronLeft,
   ChevronRight,
   PiggyBank,
@@ -56,16 +53,6 @@ const Sidebar = () => {
       to: '/',
     },
     {
-      icon: <FileText size={isCollapsed ? 20 : 18} />,
-      label: 'Pan Card',
-      to: '/pan-card',
-    },
-    {
-      icon: <Receipt size={isCollapsed ? 20 : 18} />,
-      label: 'Passport',
-      to: '/passport',
-    },
-    {
       icon: <CreditCard size={isCollapsed ? 20 : 18} />,
       label: 'Banking Services',
       to: '/banking-services',
@@ -82,7 +69,7 @@ const Sidebar = () => {
     },
     {
       icon: <Copy size={isCollapsed ? 20 : 18} />,
-      label: 'Photostat',
+      label: 'Printout and Photostat',
       to: '/photostat',
     },
     {
