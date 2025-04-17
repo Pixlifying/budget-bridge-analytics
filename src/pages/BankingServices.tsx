@@ -2,15 +2,16 @@ import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Plus } from 'lucide-react';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import PageWrapper from '@/components/layout/PageWrapper';
 import ServiceCard from '@/components/ui/ServiceCard';
 import ServiceForm from '@/components/ui/ServiceForm';
 import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
 import DateRangePicker from '@/components/ui/DateRangePicker';
-import DownloadButton from '@/components/ui/DownloadButton';
 import { formatCurrency } from '@/utils/calculateUtils';
 import { supabase } from '@/integrations/supabase/client';
+import DownloadButton from '@/components/ui/DownloadButton';
 
 interface BankingService {
   id: string;

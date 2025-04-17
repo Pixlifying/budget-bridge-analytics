@@ -1,9 +1,9 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { format } from 'date-fns';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { toast } from 'sonner';
-import { FileText, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PageWrapper from '@/components/layout/PageWrapper';
 import ServiceForm from '@/components/ui/ServiceForm';
@@ -39,8 +39,8 @@ const Query = () => {
         const dateStr = format(selectedDate, 'yyyy-MM-dd');
         query = query.eq('date', dateStr);
       } else if (viewMode === 'month') {
-        const startDate = format(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1), 'yyyy-MM-dd');
-        const endDate = format(new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0), 'yyyy-MM-dd');
+        const startDate = format(startOfMonth(selectedDate), 'yyyy-MM-dd');
+        const endDate = format(endOfMonth(selectedDate), 'yyyy-MM-dd');
         query = query.gte('date', startDate).lte('date', endDate);
       }
       
@@ -52,7 +52,7 @@ const Query = () => {
         throw error;
       }
       
-      return data || [];
+      return (data || []) as QueryEntry[];
     },
   });
 
@@ -73,7 +73,7 @@ const Query = () => {
     {
       name: 'mobile_no',
       label: 'Mobile Number',
-      type: 'tel' as const,
+      type: 'text' as const,
       required: true,
     },
     {

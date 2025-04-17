@@ -252,6 +252,39 @@ export type Database = {
         }
         Relationships: []
       }
+      queries: {
+        Row: {
+          address: string
+          adhar_no: string | null
+          created_at: string | null
+          customer_name: string
+          date: string
+          description: string
+          id: string
+          mobile_no: string
+        }
+        Insert: {
+          address: string
+          adhar_no?: string | null
+          created_at?: string | null
+          customer_name: string
+          date?: string
+          description: string
+          id?: string
+          mobile_no: string
+        }
+        Update: {
+          address?: string
+          adhar_no?: string | null
+          created_at?: string | null
+          customer_name?: string
+          date?: string
+          description?: string
+          id?: string
+          mobile_no?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
