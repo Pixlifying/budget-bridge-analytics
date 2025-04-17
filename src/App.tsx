@@ -12,6 +12,7 @@ import Analytics from "@/pages/Analytics";
 import Expenses from "@/pages/Expenses";
 import PendingBalance from "@/pages/PendingBalance";
 import Photostat from "@/pages/Photostat";
+import Query from "@/pages/Query";
 import NotFound from "@/pages/NotFound";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 
@@ -32,6 +33,7 @@ const App = () => (
               <Route path="/online-services" element={<OnlineServices />} />
               <Route path="/applications" element={<Applications />} />
               <Route path="/photostat" element={<Photostat />} />
+              <Route path="/queries" element={<Query />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/expenses" element={<Expenses />} />
               <Route path="/pending-balance" element={<PendingBalance />} />

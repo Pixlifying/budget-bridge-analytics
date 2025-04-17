@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -10,7 +11,8 @@ import {
   PiggyBank,
   AlertCircle,
   FilePen,
-  Copy
+  Copy,
+  FileText
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -71,6 +73,11 @@ const Sidebar = () => {
       icon: <Copy size={isCollapsed ? 20 : 18} />,
       label: 'Printout and Photostat',
       to: '/photostat',
+    },
+    {
+      icon: <FileText size={isCollapsed ? 20 : 18} />,
+      label: 'Queries',
+      to: '/queries',
     },
     {
       icon: <AlertCircle size={isCollapsed ? 20 : 18} />,

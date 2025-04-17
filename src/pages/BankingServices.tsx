@@ -1,17 +1,16 @@
-
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { CreditCard, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PageWrapper from '@/components/layout/PageWrapper';
 import ServiceCard from '@/components/ui/ServiceCard';
 import ServiceForm from '@/components/ui/ServiceForm';
 import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
 import DateRangePicker from '@/components/ui/DateRangePicker';
+import DownloadButton from '@/components/ui/DownloadButton';
 import { formatCurrency } from '@/utils/calculateUtils';
 import { supabase } from '@/integrations/supabase/client';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
 
 interface BankingService {
   id: string;
@@ -29,18 +28,15 @@ const BankingServices = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
 
-  // Fetch banking services data
   const { data: bankingServices, refetch, isError } = useQuery({
     queryKey: ['bankingServices', viewMode, selectedDate],
     queryFn: async () => {
       let query = supabase.from('banking_services').select('*');
       
       if (viewMode === 'day') {
-        // Filter by exact date
         const dateStr = format(selectedDate, 'yyyy-MM-dd');
         query = query.eq('date', dateStr);
       } else if (viewMode === 'month') {
-        // Filter by month range
         const startDate = format(startOfMonth(selectedDate), 'yyyy-MM-dd');
         const endDate = format(endOfMonth(selectedDate), 'yyyy-MM-dd');
         query = query.gte('date', startDate).lte('date', endDate);
@@ -58,22 +54,18 @@ const BankingServices = () => {
     },
   });
 
-  // Show toast when there's an error
   useEffect(() => {
     if (isError) {
       toast.error('Failed to load banking services');
     }
   }, [isError]);
 
-  // Calculate summary data
   const totalAmount = bankingServices?.reduce((sum, service) => sum + service.amount, 0) || 0;
   const totalTransactions = bankingServices?.reduce((sum, service) => sum + (service.transaction_count || 0), 0) || 0;
   const totalMargin = bankingServices?.reduce((sum, service) => sum + service.margin, 0) || 0;
 
-  // Handle add new service
   const handleAddService = async (formData: any) => {
     try {
-      // Calculate margin using the formula: amount * 0.5 / 100
       const calculatedMargin = (formData.amount * 0.5) / 100;
       
       const { error } = await supabase.from('banking_services').insert([
@@ -96,12 +88,10 @@ const BankingServices = () => {
     }
   };
 
-  // Handle edit service
   const handleEditService = async (formData: any) => {
     try {
       if (!currentService) return;
       
-      // Calculate margin using the formula: amount * 0.5 / 100
       const calculatedMargin = (formData.amount * 0.5) / 100;
       
       const { error } = await supabase
@@ -125,7 +115,6 @@ const BankingServices = () => {
     }
   };
 
-  // Handle delete service
   const handleDeleteService = async () => {
     try {
       if (!currentService) return;
@@ -146,17 +135,14 @@ const BankingServices = () => {
     }
   };
 
-  // Handle date change
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
   };
 
-  // Handle view mode change
   const handleViewModeChange = (mode: 'day' | 'month') => {
     setViewMode(mode);
   };
 
-  // Form fields for banking services - removed margin field since it's calculated
   const formFields = [
     {
       name: 'date',
@@ -190,13 +176,18 @@ const BankingServices = () => {
             mode={viewMode}
             onModeChange={handleViewModeChange}
           />
+          <DownloadButton
+            data={bankingServices || []}
+            filename="banking-services"
+            currentData={bankingServices || []}
+            label="Download CSV"
+          />
           <Button onClick={() => setIsAddModalOpen(true)}>
             <Plus className="mr-1" /> Add Service
           </Button>
         </div>
       }
     >
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="glassmorphism p-4 rounded-lg">
           <h3 className="text-sm text-muted-foreground">Total Amount</h3>
@@ -212,7 +203,6 @@ const BankingServices = () => {
         </div>
       </div>
 
-      {/* Services List */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {bankingServices?.map((service) => (
           <ServiceCard
@@ -242,7 +232,6 @@ const BankingServices = () => {
         ))}
       </div>
 
-      {/* Add Service Modal */}
       <ServiceForm
         title="Add Banking Service"
         fields={formFields}
@@ -257,7 +246,6 @@ const BankingServices = () => {
         onOpenChange={setIsAddModalOpen}
       />
 
-      {/* Edit Service Modal */}
       <ServiceForm
         title="Edit Banking Service"
         fields={formFields}
@@ -272,7 +260,6 @@ const BankingServices = () => {
         onOpenChange={setIsEditModalOpen}
       />
 
-      {/* Delete Confirmation Modal */}
       <DeleteConfirmation
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
