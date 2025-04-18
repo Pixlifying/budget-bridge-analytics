@@ -256,6 +256,7 @@ export type Database = {
         Row: {
           address: string
           adhar_no: string | null
+          completed: boolean
           created_at: string | null
           customer_name: string
           date: string
@@ -266,6 +267,7 @@ export type Database = {
         Insert: {
           address: string
           adhar_no?: string | null
+          completed?: boolean
           created_at?: string | null
           customer_name: string
           date?: string
@@ -276,6 +278,7 @@ export type Database = {
         Update: {
           address?: string
           adhar_no?: string | null
+          completed?: boolean
           created_at?: string | null
           customer_name?: string
           date?: string

@@ -3,14 +3,14 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { toast } from 'sonner';
-import { Plus } from 'lucide-react';
+import { Plus, Edit, Check, FileText, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PageWrapper from '@/components/layout/PageWrapper';
 import ServiceForm from '@/components/ui/ServiceForm';
 import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
 import DateRangePicker from '@/components/ui/DateRangePicker';
-import DownloadButton from '@/components/ui/DownloadButton';
 import { supabase } from '@/integrations/supabase/client';
+import { exportToPDF } from '@/utils/calculateUtils';
 
 interface QueryEntry {
   id: string;
@@ -20,18 +20,21 @@ interface QueryEntry {
   description: string;
   address: string;
   adhar_no?: string;
+  completed: boolean;
 }
 
 const Query = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentQuery, setCurrentQuery] = useState<QueryEntry | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
+  const [filterCompleted, setFilterCompleted] = useState<boolean | null>(null);
 
   // Fetch queries data
   const { data: queries, refetch, isError } = useQuery({
-    queryKey: ['queries', viewMode, selectedDate],
+    queryKey: ['queries', viewMode, selectedDate, filterCompleted],
     queryFn: async () => {
       let query = supabase.from('queries').select('*');
       
@@ -42,6 +45,10 @@ const Query = () => {
         const startDate = format(startOfMonth(selectedDate), 'yyyy-MM-dd');
         const endDate = format(endOfMonth(selectedDate), 'yyyy-MM-dd');
         query = query.gte('date', startDate).lte('date', endDate);
+      }
+      
+      if (filterCompleted !== null) {
+        query = query.eq('completed', filterCompleted);
       }
       
       const { data, error } = await query.order('date', { ascending: false });
@@ -94,12 +101,25 @@ const Query = () => {
       type: 'text' as const,
       required: false,
     },
+    {
+      name: 'completed',
+      label: 'Completed',
+      type: 'select' as const,
+      options: [
+        { value: 'true', label: 'Yes' },
+        { value: 'false', label: 'No' }
+      ],
+      required: true,
+    }
   ];
 
   // Handle add new query
   const handleAddQuery = async (formData: any) => {
     try {
-      const { error } = await supabase.from('queries').insert([formData]);
+      const { error } = await supabase.from('queries').insert([{
+        ...formData,
+        completed: formData.completed === 'true'
+      }]);
 
       if (error) throw error;
       
@@ -109,6 +129,30 @@ const Query = () => {
     } catch (error) {
       console.error('Error adding query:', error);
       toast.error('Failed to add query');
+    }
+  };
+
+  // Handle edit query
+  const handleEditQuery = async (formData: any) => {
+    try {
+      if (!currentQuery) return;
+      
+      const { error } = await supabase
+        .from('queries')
+        .update({
+          ...formData,
+          completed: formData.completed === 'true'
+        })
+        .eq('id', currentQuery.id);
+
+      if (error) throw error;
+      
+      toast.success('Query updated successfully');
+      setIsEditModalOpen(false);
+      refetch();
+    } catch (error) {
+      console.error('Error updating query:', error);
+      toast.error('Failed to update query');
     }
   };
 
@@ -133,6 +177,31 @@ const Query = () => {
     }
   };
 
+  // Handle mark as complete
+  const handleMarkAsComplete = async (query: QueryEntry) => {
+    try {
+      const { error } = await supabase
+        .from('queries')
+        .update({ completed: true })
+        .eq('id', query.id);
+
+      if (error) throw error;
+      
+      toast.success('Query marked as completed');
+      refetch();
+    } catch (error) {
+      console.error('Error marking query as complete:', error);
+      toast.error('Failed to mark query as complete');
+    }
+  };
+
+  // Download as PDF
+  const handleDownloadPDF = () => {
+    if (queries) {
+      exportToPDF(queries, 'queries');
+    }
+  };
+
   return (
     <PageWrapper
       title="Queries"
@@ -145,12 +214,32 @@ const Query = () => {
             mode={viewMode}
             onModeChange={setViewMode}
           />
-          <DownloadButton
-            data={queries || []}
-            filename="queries"
-            currentData={queries || []}
-            label="Download CSV"
-          />
+          <div className="flex items-center space-x-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setFilterCompleted(null)}
+              className={filterCompleted === null ? 'bg-primary text-primary-foreground' : ''}
+            >
+              All
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setFilterCompleted(true)}
+              className={filterCompleted === true ? 'bg-primary text-primary-foreground' : ''}
+            >
+              Completed
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setFilterCompleted(false)}
+              className={filterCompleted === false ? 'bg-primary text-primary-foreground' : ''}
+            >
+              Pending
+            </Button>
+          </div>
+          <Button onClick={handleDownloadPDF} className="flex items-center gap-2">
+            <FileText size={16} /> Download PDF
+          </Button>
           <Button onClick={() => setIsAddModalOpen(true)}>
             <Plus className="mr-2" /> Add Query
           </Button>
@@ -169,18 +258,42 @@ const Query = () => {
                 <h3 className="font-medium">{query.customer_name}</h3>
                 <p className="text-sm text-muted-foreground">
                   {new Date(query.date).toLocaleDateString()}
+                  {query.completed && <span className="ml-2 text-green-600">(Completed)</span>}
                 </p>
               </div>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => {
-                  setCurrentQuery(query);
-                  setIsDeleteModalOpen(true);
-                }}
-              >
-                Delete
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setCurrentQuery(query);
+                    setIsEditModalOpen(true);
+                  }}
+                >
+                  <Edit size={14} className="mr-1" />
+                  Edit
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => {
+                    setCurrentQuery(query);
+                    setIsDeleteModalOpen(true);
+                  }}
+                >
+                  Delete
+                </Button>
+                {!query.completed && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleMarkAsComplete(query)}
+                  >
+                    <Check size={14} className="mr-1" />
+                    Mark Complete
+                  </Button>
+                )}
+              </div>
             </div>
             <div className="mt-4 grid gap-4 text-sm">
               <div>
@@ -215,11 +328,28 @@ const Query = () => {
           description: '',
           address: '',
           adhar_no: '',
+          completed: 'false'
         }}
         onSubmit={handleAddQuery}
         trigger={<></>}
         open={isAddModalOpen}
         onOpenChange={setIsAddModalOpen}
+      />
+
+      {/* Edit Query Modal */}
+      <ServiceForm
+        title="Edit Query"
+        fields={formFields}
+        initialValues={currentQuery ? {
+          ...currentQuery,
+          date: new Date(currentQuery.date).toISOString().split('T')[0],
+          completed: currentQuery.completed.toString()
+        } : {}}
+        onSubmit={handleEditQuery}
+        trigger={<></>}
+        open={isEditModalOpen}
+        onOpenChange={setIsEditModalOpen}
+        isEdit={true}
       />
 
       {/* Delete Confirmation Modal */}
