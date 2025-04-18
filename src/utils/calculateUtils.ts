@@ -1,7 +1,16 @@
+
 import { format, isSameDay, isSameMonth } from 'date-fns';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { UserOptions } from 'jspdf-autotable';
+
+// Extend jsPDF with autoTable
+declare module 'jspdf' {
+  interface jsPDF {
+    autoTable: (options: UserOptions) => jsPDF;
+  }
+}
 
 export const filterByDate = <T extends { date: Date }>(items: T[], date: Date): T[] => {
   console.log('Filtering by date:', date);
