@@ -63,6 +63,68 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_transactions: {
+        Row: {
+          amount: number
+          created_at: string | null
+          customer_id: string
+          date: string | null
+          id: string
+          type: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          customer_id: string
+          date?: string | null
+          id?: string
+          type: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          customer_id?: string
+          date?: string | null
+          id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_transactions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customers: {
+        Row: {
+          address: string
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          phone: string
+        }
+        Insert: {
+          address: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          phone: string
+        }
+        Update: {
+          address?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          phone?: string
+        }
+        Relationships: []
+      }
       expenses: {
         Row: {
           amount: number

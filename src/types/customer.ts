@@ -4,6 +4,7 @@ export interface Transaction {
   type: 'debit' | 'credit';
   amount: number;
   date: string;
+  customer_id?: string;  // Added to match Supabase schema
 }
 
 export interface Customer {
@@ -13,4 +14,5 @@ export interface Customer {
   phone: string;
   address: string;
   transactions: Transaction[];
+  created_at?: string;
 }

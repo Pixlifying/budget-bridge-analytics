@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Plus, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +7,10 @@ import { useToast } from '@/hooks/use-toast';
 import CustomerCard from '@/components/ui/CustomerCard';
 import { Customer, Transaction } from '@/types/customer';
 import TransactionDialog from '@/components/ui/TransactionDialog';
+import DownloadButton from '@/components/ui/DownloadButton';
+import DateRangePicker from '@/components/ui/DateRangePicker';
+import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
 
 const Customers = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -15,56 +18,84 @@ const Customers = () => {
   const [showTransactionDialog, setShowTransactionDialog] = useState(false);
   const [transactionType, setTransactionType] = useState<'debit' | 'credit'>('debit');
   const [currentCustomerIndex, setCurrentCustomerIndex] = useState<number>(-1);
+  const [date, setDate] = useState<Date>(new Date());
+  const [mode, setMode] = useState<'day' | 'month'>('month');
   const { toast } = useToast();
 
-  // Load customers from localStorage on component mount
-  useEffect(() => {
-    const savedCustomers = localStorage.getItem('customers');
-    if (savedCustomers) {
-      setCustomers(JSON.parse(savedCustomers));
+  // Fetch customers from Supabase
+  const fetchCustomers = async () => {
+    try {
+      const { data: customersData, error: customersError } = await supabase
+        .from('customers')
+        .select('*');
+
+      const { data: transactionsData, error: transactionsError } = await supabase
+        .from('customer_transactions')
+        .select('*');
+
+      if (customersError || transactionsError) {
+        throw new Error(customersError?.message || transactionsError?.message);
+      }
+
+      const enrichedCustomers = customersData.map(customer => ({
+        ...customer,
+        transactions: transactionsData.filter(t => t.customer_id === customer.id)
+      }));
+
+      setCustomers(enrichedCustomers);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: `Failed to fetch customers: ${error}`,
+        variant: "destructive"
+      });
     }
+  };
+
+  useEffect(() => {
+    fetchCustomers();
   }, []);
 
-  // Save customers to localStorage whenever the array changes
-  useEffect(() => {
-    localStorage.setItem('customers', JSON.stringify(customers));
-  }, [customers]);
+  const handleAddCustomer = async (values: any) => {
+    try {
+      // Insert customer
+      const { data: customerData, error: customerError } = await supabase
+        .from('customers')
+        .insert({
+          name: values.name,
+          description: values.description,
+          phone: values.phone,
+          address: values.address
+        })
+        .select();
 
-  // Calculate totals
-  const totalDebit = customers.reduce((sum, customer) => 
-    sum + customer.transactions
-      .filter(t => t.type === 'debit')
-      .reduce((tSum, t) => tSum + t.amount, 0), 0);
-  
-  const totalCredit = customers.reduce((sum, customer) => 
-    sum + customer.transactions
-      .filter(t => t.type === 'credit')
-      .reduce((tSum, t) => tSum + t.amount, 0), 0);
+      if (customerError) throw customerError;
 
-  const totalBalance = totalDebit - totalCredit;
+      // Insert first transaction
+      const { error: transactionError } = await supabase
+        .from('customer_transactions')
+        .insert({
+          customer_id: customerData[0].id,
+          type: values.transactionType,
+          amount: values.amount
+        });
 
-  const handleAddCustomer = (values: any) => {
-    const newCustomer: Customer = {
-      id: Date.now().toString(),
-      name: values.name,
-      description: values.description,
-      phone: values.phone,
-      address: values.address,
-      transactions: [
-        {
-          id: Date.now().toString(),
-          type: values.transactionType as 'debit' | 'credit',
-          amount: values.amount,
-          date: new Date().toISOString()
-        }
-      ]
-    };
+      if (transactionError) throw transactionError;
 
-    setCustomers(prev => [...prev, newCustomer]);
-    toast({
-      title: "Customer added",
-      description: `${values.name} has been added successfully.`
-    });
+      // Refetch customers to update the list
+      await fetchCustomers();
+
+      toast({
+        title: "Customer added",
+        description: `${values.name} has been added successfully.`
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: `Failed to add customer: ${error}`,
+        variant: "destructive"
+      });
+    }
   };
 
   const handleDragStart = (customer: Customer) => {
@@ -142,7 +173,7 @@ const Customers = () => {
     return debitTotal - creditTotal;
   };
 
-  const formFields = [
+  const formFields: FormField[] = [
     { name: 'name', label: 'Name', type: 'text', required: true },
     { name: 'phone', label: 'Mobile Number', type: 'text', required: true },
     { name: 'address', label: 'Address', type: 'text', required: true },
@@ -164,25 +195,38 @@ const Customers = () => {
     <div className="container mx-auto py-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Customer Transactions</h1>
-        <ServiceForm
-          title="Add New Customer"
-          fields={formFields}
-          initialValues={{
-            name: '',
-            phone: '',
-            address: '',
-            description: '',
-            amount: '',
-            transactionType: 'debit'
-          }}
-          onSubmit={handleAddCustomer}
-          trigger={
-            <Button>
-              <Plus size={16} className="mr-1" />
-              Add Customer
-            </Button>
-          }
-        />
+        <div className="flex items-center space-x-4">
+          <DateRangePicker 
+            date={date}
+            onDateChange={setDate}
+            mode={mode}
+            onModeChange={setMode}
+          />
+          <DownloadButton 
+            data={customers} 
+            currentData={customers} 
+            filename="customer-transactions" 
+          />
+          <ServiceForm
+            title="Add New Customer"
+            fields={formFields}
+            initialValues={{
+              name: '',
+              phone: '',
+              address: '',
+              description: '',
+              amount: '',
+              transactionType: 'debit'
+            }}
+            onSubmit={handleAddCustomer}
+            trigger={
+              <Button>
+                <Plus size={16} className="mr-1" />
+                Add Customer
+              </Button>
+            }
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -191,7 +235,10 @@ const Customers = () => {
           <CardHeader className="bg-red-50">
             <CardTitle className="text-xl flex justify-between items-center">
               <span>Debit (They Owe You)</span>
-              <span className="text-red-600">₹{totalDebit}</span>
+              <span className="text-red-600">₹{customers.reduce((sum, customer) => 
+                sum + customer.transactions
+                  .filter(t => t.type === 'debit')
+                  .reduce((tSum, t) => tSum + t.amount, 0), 0)}</span>
             </CardTitle>
           </CardHeader>
           <CardContent 
@@ -219,53 +266,15 @@ const Customers = () => {
           </CardContent>
         </Card>
 
-        {/* Total Balance */}
-        <Card className="shadow-md border-t-4 border-t-purple-500">
-          <CardHeader className="bg-purple-50">
-            <CardTitle className="text-xl flex justify-between items-center">
-              <span>Total Balance</span>
-              <span className={`${totalBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                ₹{totalBalance}
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 flex flex-col items-center justify-center min-h-[50vh]">
-            <div className="text-center space-y-4">
-              <div className="py-2">
-                <h3 className="text-lg font-medium">Debit Total</h3>
-                <p className="text-2xl text-red-600">₹{totalDebit}</p>
-              </div>
-              
-              <div className="flex justify-center">
-                <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
-                  <ArrowRight className="text-gray-500" />
-                </div>
-              </div>
-              
-              <div className="py-2">
-                <h3 className="text-lg font-medium">Credit Total</h3>
-                <p className="text-2xl text-green-600">₹{totalCredit}</p>
-              </div>
-              
-              <div className="pt-4 border-t">
-                <h3 className="text-lg font-medium">Balance</h3>
-                <p className={`text-3xl font-bold ${totalBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  ₹{totalBalance}
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {totalBalance >= 0 ? 'Net amount to receive' : 'Net amount to pay'}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
         {/* Credit Section */}
         <Card className="shadow-md border-r-4 border-r-green-500">
           <CardHeader className="bg-green-50">
             <CardTitle className="text-xl flex justify-between items-center">
               <span>Credit (You Owe Them)</span>
-              <span className="text-green-600">₹{totalCredit}</span>
+              <span className="text-green-600">₹{customers.reduce((sum, customer) => 
+                sum + customer.transactions
+                  .filter(t => t.type === 'credit')
+                  .reduce((tSum, t) => tSum + t.amount, 0), 0)}</span>
             </CardTitle>
           </CardHeader>
           <CardContent 
@@ -289,6 +298,83 @@ const Customers = () => {
                   <ArrowRight className="mx-auto mt-2" />
                 </div>
               )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Total Balance Section */}
+        <Card className="shadow-md border-t-4 border-t-purple-500">
+          <CardHeader className="bg-purple-50">
+            <CardTitle className="text-xl flex justify-between items-center">
+              <span>Total Balance</span>
+              <span className={`${customers.reduce((sum, customer) => 
+                sum + customer.transactions
+                  .filter(t => t.type === 'debit')
+                  .reduce((tSum, t) => tSum + t.amount, 0), 0) - customers.reduce((sum, customer) => 
+                sum + customer.transactions
+                  .filter(t => t.type === 'credit')
+                  .reduce((tSum, t) => tSum + t.amount, 0), 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                ₹{customers.reduce((sum, customer) => 
+                sum + customer.transactions
+                  .filter(t => t.type === 'debit')
+                  .reduce((tSum, t) => tSum + t.amount, 0), 0) - customers.reduce((sum, customer) => 
+                sum + customer.transactions
+                  .filter(t => t.type === 'credit')
+                  .reduce((tSum, t) => tSum + t.amount, 0), 0)}
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 flex flex-col items-center justify-center min-h-[50vh]">
+            <div className="text-center space-y-4">
+              <div className="py-2">
+                <h3 className="text-lg font-medium">Debit Total</h3>
+                <p className="text-2xl text-red-600">₹{customers.reduce((sum, customer) => 
+                sum + customer.transactions
+                  .filter(t => t.type === 'debit')
+                  .reduce((tSum, t) => tSum + t.amount, 0), 0)}</p>
+              </div>
+              
+              <div className="flex justify-center">
+                <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+                  <ArrowRight className="text-gray-500" />
+                </div>
+              </div>
+              
+              <div className="py-2">
+                <h3 className="text-lg font-medium">Credit Total</h3>
+                <p className="text-2xl text-green-600">₹{customers.reduce((sum, customer) => 
+                sum + customer.transactions
+                  .filter(t => t.type === 'credit')
+                  .reduce((tSum, t) => tSum + t.amount, 0), 0)}</p>
+              </div>
+              
+              <div className="pt-4 border-t">
+                <h3 className="text-lg font-medium">Balance</h3>
+                <p className={`text-3xl font-bold ${customers.reduce((sum, customer) => 
+                sum + customer.transactions
+                  .filter(t => t.type === 'debit')
+                  .reduce((tSum, t) => tSum + t.amount, 0), 0) - customers.reduce((sum, customer) => 
+                sum + customer.transactions
+                  .filter(t => t.type === 'credit')
+                  .reduce((tSum, t) => tSum + t.amount, 0), 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  ₹{customers.reduce((sum, customer) => 
+                sum + customer.transactions
+                  .filter(t => t.type === 'debit')
+                  .reduce((tSum, t) => tSum + t.amount, 0), 0) - customers.reduce((sum, customer) => 
+                sum + customer.transactions
+                  .filter(t => t.type === 'credit')
+                  .reduce((tSum, t) => tSum + t.amount, 0), 0)}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {customers.reduce((sum, customer) => 
+                sum + customer.transactions
+                  .filter(t => t.type === 'debit')
+                  .reduce((tSum, t) => tSum + t.amount, 0), 0) - customers.reduce((sum, customer) => 
+                sum + customer.transactions
+                  .filter(t => t.type === 'credit')
+                  .reduce((tSum, t) => tSum + t.amount, 0), 0) >= 0 ? 'Net amount to receive' : 'Net amount to pay'}
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
