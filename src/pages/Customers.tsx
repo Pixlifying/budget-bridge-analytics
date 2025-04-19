@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Plus, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,9 +38,14 @@ const Customers = () => {
         throw new Error(customersError?.message || transactionsError?.message);
       }
 
-      const enrichedCustomers = customersData.map(customer => ({
+      const enrichedCustomers: Customer[] = customersData.map(customer => ({
         ...customer,
-        transactions: transactionsData.filter(t => t.customer_id === customer.id)
+        transactions: transactionsData
+          .filter(t => t.customer_id === customer.id)
+          .map(t => ({
+            ...t,
+            type: t.type as 'debit' | 'credit' // Cast the type explicitly
+          }))
       }));
 
       setCustomers(enrichedCustomers);
@@ -172,6 +178,15 @@ const Customers = () => {
       
     return debitTotal - creditTotal;
   };
+
+  interface FormField {
+    name: string;
+    label: string;
+    type: string;
+    required: boolean;
+    options?: { label: string; value: string }[];
+    min?: number;
+  }
 
   const formFields: FormField[] = [
     { name: 'name', label: 'Name', type: 'text', required: true },

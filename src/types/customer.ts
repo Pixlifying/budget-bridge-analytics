@@ -5,6 +5,7 @@ export interface Transaction {
   amount: number;
   date: string;
   customer_id?: string;  // Added to match Supabase schema
+  created_at?: string;   // Added to match Supabase schema
 }
 
 export interface Customer {
