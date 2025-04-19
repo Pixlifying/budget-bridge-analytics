@@ -12,7 +12,8 @@ import {
   AlertCircle,
   FilePen,
   Copy,
-  FileText
+  FileText,
+  Users
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -78,6 +79,11 @@ const Sidebar = () => {
       icon: <FileText size={isCollapsed ? 20 : 18} />,
       label: 'Queries',
       to: '/queries',
+    },
+    {
+      icon: <Users size={isCollapsed ? 20 : 18} />,
+      label: 'Customers',
+      to: '/customers',
     },
     {
       icon: <AlertCircle size={isCollapsed ? 20 : 18} />,
