@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Plus, ArrowLeft, ArrowRight, Trash2, Edit } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import ServiceForm from '@/components/ui/ServiceForm';
@@ -10,7 +10,7 @@ import TransactionDialog from '@/components/ui/TransactionDialog';
 import DownloadButton from '@/components/ui/DownloadButton';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
+import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
 
 const Customers = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -20,6 +20,9 @@ const Customers = () => {
   const [currentCustomerIndex, setCurrentCustomerIndex] = useState<number>(-1);
   const [date, setDate] = useState<Date>(new Date());
   const [mode, setMode] = useState<'day' | 'month'>('month');
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
   const { toast } = useToast();
 
   const fetchCustomers = async () => {
@@ -79,7 +82,8 @@ const Customers = () => {
         .insert({
           customer_id: customerData[0].id,
           type: values.transactionType,
-          amount: values.amount
+          amount: values.amount,
+          date: values.date || new Date().toISOString()
         });
 
       if (transactionError) throw transactionError;
@@ -94,6 +98,74 @@ const Customers = () => {
       toast({
         title: "Error",
         description: `Failed to add customer: ${error}`,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleEditCustomer = async (values: any) => {
+    if (!selectedCustomer) return;
+
+    try {
+      const { error: customerError } = await supabase
+        .from('customers')
+        .update({
+          name: values.name,
+          description: values.description,
+          phone: values.phone,
+          address: values.address
+        })
+        .eq('id', selectedCustomer.id);
+
+      if (customerError) throw customerError;
+
+      await fetchCustomers();
+      setIsEditMode(false);
+      setSelectedCustomer(null);
+
+      toast({
+        title: "Customer updated",
+        description: `${values.name} has been updated successfully.`
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: `Failed to update customer: ${error}`,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteCustomer = async () => {
+    if (!selectedCustomer) return;
+
+    try {
+      const { error: transactionError } = await supabase
+        .from('customer_transactions')
+        .delete()
+        .eq('customer_id', selectedCustomer.id);
+
+      if (transactionError) throw transactionError;
+
+      const { error: customerError } = await supabase
+        .from('customers')
+        .delete()
+        .eq('id', selectedCustomer.id);
+
+      if (customerError) throw customerError;
+
+      await fetchCustomers();
+      setIsDeleteDialogOpen(false);
+      setSelectedCustomer(null);
+
+      toast({
+        title: "Customer deleted",
+        description: `${selectedCustomer.name} has been deleted successfully.`
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: `Failed to delete customer: ${error}`,
         variant: "destructive"
       });
     }
@@ -178,6 +250,7 @@ const Customers = () => {
     { name: 'address', label: 'Address', type: 'text' as const, required: true },
     { name: 'description', label: 'Description', type: 'textarea' as const, required: false },
     { name: 'amount', label: 'Amount', type: 'number' as const, required: true, min: 0 },
+    { name: 'date', label: 'Date', type: 'date' as const, required: true },
     { 
       name: 'transactionType', 
       label: 'Transaction Type', 
@@ -207,21 +280,30 @@ const Customers = () => {
             filename="customer-transactions" 
           />
           <ServiceForm
-            title="Add New Customer"
+            title={isEditMode ? "Edit Customer" : "Add New Customer"}
             fields={formFields}
-            initialValues={{
+            initialValues={isEditMode && selectedCustomer ? {
+              name: selectedCustomer.name,
+              phone: selectedCustomer.phone,
+              address: selectedCustomer.address,
+              description: selectedCustomer.description || '',
+              date: new Date(),
+              amount: 0,
+              transactionType: 'debit'
+            } : {
               name: '',
               phone: '',
               address: '',
               description: '',
+              date: new Date(),
               amount: '',
               transactionType: 'debit'
             }}
-            onSubmit={handleAddCustomer}
+            onSubmit={isEditMode ? handleEditCustomer : handleAddCustomer}
             trigger={
               <Button>
                 <Plus size={16} className="mr-1" />
-                Add Customer
+                {isEditMode ? 'Edit Customer' : 'Add Customer'}
               </Button>
             }
           />
@@ -246,12 +328,37 @@ const Customers = () => {
           >
             <div className="space-y-4">
               {getCustomersByTransactionType('debit').map(customer => (
-                <CustomerCard 
-                  key={customer.id}
-                  customer={customer}
-                  balance={getCustomerBalance(customer)}
-                  onDragStart={() => handleDragStart(customer)}
-                />
+                <div key={customer.id} className="relative group">
+                  <CustomerCard 
+                    customer={customer}
+                    balance={getCustomerBalance(customer)}
+                    onDragStart={() => handleDragStart(customer)}
+                  />
+                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="mr-2"
+                      onClick={() => {
+                        setSelectedCustomer(customer);
+                        setIsEditMode(true);
+                      }}
+                    >
+                      <Edit size={16} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-500"
+                      onClick={() => {
+                        setSelectedCustomer(customer);
+                        setIsDeleteDialogOpen(true);
+                      }}
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  </div>
+                </div>
               ))}
               {getCustomersByTransactionType('debit').length === 0 && (
                 <div className="text-center py-8 text-muted-foreground">
@@ -385,6 +492,17 @@ const Customers = () => {
           onComplete={handleTransactionComplete}
         />
       )}
+
+      <DeleteConfirmation
+        isOpen={isDeleteDialogOpen}
+        onClose={() => {
+          setIsDeleteDialogOpen(false);
+          setSelectedCustomer(null);
+        }}
+        onConfirm={handleDeleteCustomer}
+        title={`Delete ${selectedCustomer?.name}`}
+        description="Are you sure you want to delete this customer? This will also delete all their transactions."
+      />
     </div>
   );
 };
