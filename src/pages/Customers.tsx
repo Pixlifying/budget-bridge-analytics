@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Plus, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,7 +22,6 @@ const Customers = () => {
   const [mode, setMode] = useState<'day' | 'month'>('month');
   const { toast } = useToast();
 
-  // Fetch customers from Supabase
   const fetchCustomers = async () => {
     try {
       const { data: customersData, error: customersError } = await supabase
@@ -44,7 +42,7 @@ const Customers = () => {
           .filter(t => t.customer_id === customer.id)
           .map(t => ({
             ...t,
-            type: t.type as 'debit' | 'credit' // Cast the type explicitly
+            type: t.type as 'debit' | 'credit'
           }))
       }));
 
@@ -64,7 +62,6 @@ const Customers = () => {
 
   const handleAddCustomer = async (values: any) => {
     try {
-      // Insert customer
       const { data: customerData, error: customerError } = await supabase
         .from('customers')
         .insert({
@@ -77,7 +74,6 @@ const Customers = () => {
 
       if (customerError) throw customerError;
 
-      // Insert first transaction
       const { error: transactionError } = await supabase
         .from('customer_transactions')
         .insert({
@@ -88,7 +84,6 @@ const Customers = () => {
 
       if (transactionError) throw transactionError;
 
-      // Refetch customers to update the list
       await fetchCustomers();
 
       toast({
@@ -111,7 +106,6 @@ const Customers = () => {
   const handleDragOver = (e: React.DragEvent, section: 'debit' | 'credit') => {
     e.preventDefault();
     if (draggedCustomer) {
-      // Only allow dropping if the section is different from the customer's current transaction
       if (draggedCustomer.transactions.some(t => t.type !== section)) {
         e.dataTransfer.dropEffect = "move";
       }
@@ -123,7 +117,6 @@ const Customers = () => {
     if (draggedCustomer) {
       const draggedIndex = customers.findIndex(c => c.id === draggedCustomer.id);
       if (draggedIndex !== -1) {
-        // Check if this customer already has transactions of the opposite type
         const hasOppositeType = draggedCustomer.transactions.some(t => t.type === section);
         if (!hasOppositeType) {
           setTransactionType(section);
@@ -179,25 +172,16 @@ const Customers = () => {
     return debitTotal - creditTotal;
   };
 
-  interface FormField {
-    name: string;
-    label: string;
-    type: string;
-    required: boolean;
-    options?: { label: string; value: string }[];
-    min?: number;
-  }
-
-  const formFields: FormField[] = [
-    { name: 'name', label: 'Name', type: 'text', required: true },
-    { name: 'phone', label: 'Mobile Number', type: 'text', required: true },
-    { name: 'address', label: 'Address', type: 'text', required: true },
-    { name: 'description', label: 'Description', type: 'textarea', required: false },
-    { name: 'amount', label: 'Amount', type: 'number', required: true, min: 0 },
+  const formFields = [
+    { name: 'name', label: 'Name', type: 'text' as const, required: true },
+    { name: 'phone', label: 'Mobile Number', type: 'text' as const, required: true },
+    { name: 'address', label: 'Address', type: 'text' as const, required: true },
+    { name: 'description', label: 'Description', type: 'textarea' as const, required: false },
+    { name: 'amount', label: 'Amount', type: 'number' as const, required: true, min: 0 },
     { 
       name: 'transactionType', 
       label: 'Transaction Type', 
-      type: 'select', 
+      type: 'select' as const, 
       required: true,
       options: [
         { label: 'Debit (They Owe You)', value: 'debit' },
@@ -245,7 +229,6 @@ const Customers = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Debit Section */}
         <Card className="shadow-md border-l-4 border-l-red-500">
           <CardHeader className="bg-red-50">
             <CardTitle className="text-xl flex justify-between items-center">
@@ -281,7 +264,6 @@ const Customers = () => {
           </CardContent>
         </Card>
 
-        {/* Credit Section */}
         <Card className="shadow-md border-r-4 border-r-green-500">
           <CardHeader className="bg-green-50">
             <CardTitle className="text-xl flex justify-between items-center">
@@ -317,7 +299,6 @@ const Customers = () => {
           </CardContent>
         </Card>
 
-        {/* Total Balance Section */}
         <Card className="shadow-md border-t-4 border-t-purple-500">
           <CardHeader className="bg-purple-50">
             <CardTitle className="text-xl flex justify-between items-center">
