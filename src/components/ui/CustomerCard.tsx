@@ -19,6 +19,10 @@ const CustomerCard = ({ customer, balance, onDragStart }: CustomerCardProps) => 
     .filter(t => t.type === 'credit')
     .reduce((sum, t) => sum + t.amount, 0);
 
+  // Determine if the balance is positive (they owe you) or negative (you owe them)
+  const isPositiveBalance = debitTotal > creditTotal;
+  const displayBalance = Math.abs(debitTotal - creditTotal);
+
   return (
     <Card 
       className="shadow-sm hover:shadow-md transition-all cursor-grab active:cursor-grabbing"
@@ -53,8 +57,8 @@ const CustomerCard = ({ customer, balance, onDragStart }: CustomerCardProps) => 
               <ArrowDownRight size={14} className="mr-1" />
               ₹{creditTotal}
             </div>
-            <div className={`font-bold mt-2 ${balance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
-              Net: ₹{Math.abs(balance)}
+            <div className={`font-bold mt-2 ${isPositiveBalance ? 'text-red-600' : 'text-green-600'}`}>
+              Net: {isPositiveBalance ? '' : '-'}₹{displayBalance}
             </div>
           </div>
         </div>

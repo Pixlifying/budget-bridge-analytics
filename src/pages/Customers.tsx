@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Plus, ArrowLeft, ArrowRight, Trash2, Edit } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,9 +12,11 @@ import DownloadButton from '@/components/ui/DownloadButton';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import { supabase } from '@/integrations/supabase/client';
 import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
+import { isSameDay, isSameMonth, startOfDay } from 'date-fns';
 
 const Customers = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
   const [draggedCustomer, setDraggedCustomer] = useState<Customer | null>(null);
   const [showTransactionDialog, setShowTransactionDialog] = useState(false);
   const [transactionType, setTransactionType] = useState<'debit' | 'credit'>('debit');
@@ -50,6 +53,7 @@ const Customers = () => {
       }));
 
       setCustomers(enrichedCustomers);
+      filterCustomersByDate(enrichedCustomers, date, mode);
     } catch (error) {
       toast({
         title: "Error",
@@ -59,9 +63,37 @@ const Customers = () => {
     }
   };
 
+  // Function to filter customers based on date and mode
+  const filterCustomersByDate = (customersList: Customer[], filterDate: Date, filterMode: 'day' | 'month') => {
+    const filtered = customersList.map(customer => {
+      const filteredTransactions = customer.transactions.filter(t => {
+        const transactionDate = new Date(t.date);
+        if (filterMode === 'day') {
+          return isSameDay(transactionDate, filterDate);
+        } else {
+          return isSameMonth(transactionDate, filterDate);
+        }
+      });
+      
+      return {
+        ...customer,
+        transactions: filteredTransactions
+      };
+    }).filter(customer => customer.transactions.length > 0);
+    
+    setFilteredCustomers(filtered);
+  };
+
   useEffect(() => {
     fetchCustomers();
   }, []);
+
+  // Apply filters whenever date or mode changes
+  useEffect(() => {
+    if (customers.length > 0) {
+      filterCustomersByDate(customers, date, mode);
+    }
+  }, [date, mode, customers]);
 
   const handleAddCustomer = async (values: any) => {
     try {
@@ -83,7 +115,7 @@ const Customers = () => {
           customer_id: customerData[0].id,
           type: values.transactionType,
           amount: values.amount,
-          date: values.date || new Date().toISOString()
+          date: values.date ? new Date(values.date).toISOString() : new Date().toISOString()
         });
 
       if (transactionError) throw transactionError;
@@ -187,7 +219,7 @@ const Customers = () => {
   const handleDrop = (e: React.DragEvent, section: 'debit' | 'credit') => {
     e.preventDefault();
     if (draggedCustomer) {
-      const draggedIndex = customers.findIndex(c => c.id === draggedCustomer.id);
+      const draggedIndex = filteredCustomers.findIndex(c => c.id === draggedCustomer.id);
       if (draggedIndex !== -1) {
         const hasOppositeType = draggedCustomer.transactions.some(t => t.type === section);
         if (!hasOppositeType) {
@@ -200,25 +232,35 @@ const Customers = () => {
     setDraggedCustomer(null);
   };
 
-  const handleTransactionComplete = (amount: number) => {
+  const handleTransactionComplete = async (amount: number) => {
     if (currentCustomerIndex !== -1 && transactionType) {
-      const updatedCustomers = [...customers];
-      const customer = updatedCustomers[currentCustomerIndex];
+      const customer = filteredCustomers[currentCustomerIndex];
       
-      customer.transactions.push({
-        id: Date.now().toString(),
-        type: transactionType,
-        amount: amount,
-        date: new Date().toISOString()
-      });
+      try {
+        const { error: transactionError } = await supabase
+          .from('customer_transactions')
+          .insert({
+            customer_id: customer.id,
+            type: transactionType,
+            amount: amount,
+            date: new Date().toISOString()
+          });
 
-      updatedCustomers[currentCustomerIndex] = customer;
-      setCustomers(updatedCustomers);
-      
-      toast({
-        title: "Transaction added",
-        description: `${transactionType === 'credit' ? 'Credit' : 'Debit'} of ${amount} added for ${customer.name}`
-      });
+        if (transactionError) throw transactionError;
+
+        await fetchCustomers();
+        
+        toast({
+          title: "Transaction added",
+          description: `${transactionType === 'credit' ? 'Credit' : 'Debit'} of ${amount} added for ${customer.name}`
+        });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: `Failed to add transaction: ${error}`,
+          variant: "destructive"
+        });
+      }
     }
     
     setShowTransactionDialog(false);
@@ -227,7 +269,7 @@ const Customers = () => {
   };
 
   const getCustomersByTransactionType = (type: 'debit' | 'credit') => {
-    return customers.filter(customer => 
+    return filteredCustomers.filter(customer => 
       customer.transactions.some(transaction => transaction.type === type)
     );
   };
@@ -263,6 +305,13 @@ const Customers = () => {
     }
   ];
 
+  const editFormFields = [
+    { name: 'name', label: 'Name', type: 'text' as const, required: true },
+    { name: 'phone', label: 'Mobile Number', type: 'text' as const, required: true },
+    { name: 'address', label: 'Address', type: 'text' as const, required: true },
+    { name: 'description', label: 'Description', type: 'textarea' as const, required: false }
+  ];
+
   return (
     <div className="container mx-auto py-6">
       <div className="flex justify-between items-center mb-6">
@@ -275,21 +324,18 @@ const Customers = () => {
             onModeChange={setMode}
           />
           <DownloadButton 
-            data={customers} 
-            currentData={customers} 
+            data={filteredCustomers} 
+            currentData={filteredCustomers} 
             filename="customer-transactions" 
           />
           <ServiceForm
             title={isEditMode ? "Edit Customer" : "Add New Customer"}
-            fields={formFields}
+            fields={isEditMode ? editFormFields : formFields}
             initialValues={isEditMode && selectedCustomer ? {
               name: selectedCustomer.name,
               phone: selectedCustomer.phone,
               address: selectedCustomer.address,
               description: selectedCustomer.description || '',
-              date: new Date(),
-              amount: 0,
-              transactionType: 'debit'
             } : {
               name: '',
               phone: '',
@@ -315,7 +361,7 @@ const Customers = () => {
           <CardHeader className="bg-red-50">
             <CardTitle className="text-xl flex justify-between items-center">
               <span>Debit (They Owe You)</span>
-              <span className="text-red-600">₹{customers.reduce((sum, customer) => 
+              <span className="text-red-600">₹{filteredCustomers.reduce((sum, customer) => 
                 sum + customer.transactions
                   .filter(t => t.type === 'debit')
                   .reduce((tSum, t) => tSum + t.amount, 0), 0)}</span>
@@ -375,7 +421,7 @@ const Customers = () => {
           <CardHeader className="bg-green-50">
             <CardTitle className="text-xl flex justify-between items-center">
               <span>Credit (You Owe Them)</span>
-              <span className="text-green-600">₹{customers.reduce((sum, customer) => 
+              <span className="text-green-600">₹{filteredCustomers.reduce((sum, customer) => 
                 sum + customer.transactions
                   .filter(t => t.type === 'credit')
                   .reduce((tSum, t) => tSum + t.amount, 0), 0)}</span>
@@ -388,12 +434,38 @@ const Customers = () => {
           >
             <div className="space-y-4">
               {getCustomersByTransactionType('credit').map(customer => (
-                <CustomerCard 
-                  key={customer.id}
-                  customer={customer}
-                  balance={-getCustomerBalance(customer)}
-                  onDragStart={() => handleDragStart(customer)}
-                />
+                <div key={customer.id} className="relative group">
+                  <CustomerCard 
+                    key={customer.id}
+                    customer={customer}
+                    balance={getCustomerBalance(customer)}
+                    onDragStart={() => handleDragStart(customer)}
+                  />
+                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="mr-2"
+                      onClick={() => {
+                        setSelectedCustomer(customer);
+                        setIsEditMode(true);
+                      }}
+                    >
+                      <Edit size={16} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-500"
+                      onClick={() => {
+                        setSelectedCustomer(customer);
+                        setIsDeleteDialogOpen(true);
+                      }}
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  </div>
+                </div>
               ))}
               {getCustomersByTransactionType('credit').length === 0 && (
                 <div className="text-center py-8 text-muted-foreground">
@@ -410,20 +482,27 @@ const Customers = () => {
           <CardHeader className="bg-purple-50">
             <CardTitle className="text-xl flex justify-between items-center">
               <span>Total Balance</span>
-              <span className={`${customers.reduce((sum, customer) => 
+              <span className={`${filteredCustomers.reduce((sum, customer) => 
                 sum + customer.transactions
                   .filter(t => t.type === 'debit')
-                  .reduce((tSum, t) => tSum + t.amount, 0), 0) - customers.reduce((sum, customer) => 
+                  .reduce((tSum, t) => tSum + t.amount, 0), 0) - filteredCustomers.reduce((sum, customer) => 
                 sum + customer.transactions
                   .filter(t => t.type === 'credit')
                   .reduce((tSum, t) => tSum + t.amount, 0), 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                ₹{customers.reduce((sum, customer) => 
+                {filteredCustomers.reduce((sum, customer) => 
                 sum + customer.transactions
                   .filter(t => t.type === 'debit')
-                  .reduce((tSum, t) => tSum + t.amount, 0), 0) - customers.reduce((sum, customer) => 
+                  .reduce((tSum, t) => tSum + t.amount, 0), 0) - filteredCustomers.reduce((sum, customer) => 
                 sum + customer.transactions
                   .filter(t => t.type === 'credit')
-                  .reduce((tSum, t) => tSum + t.amount, 0), 0)}
+                  .reduce((tSum, t) => tSum + t.amount, 0), 0) >= 0 ? '' : '-'}
+                ₹{Math.abs(filteredCustomers.reduce((sum, customer) => 
+                sum + customer.transactions
+                  .filter(t => t.type === 'debit')
+                  .reduce((tSum, t) => tSum + t.amount, 0), 0) - filteredCustomers.reduce((sum, customer) => 
+                sum + customer.transactions
+                  .filter(t => t.type === 'credit')
+                  .reduce((tSum, t) => tSum + t.amount, 0), 0))}
               </span>
             </CardTitle>
           </CardHeader>
@@ -431,7 +510,7 @@ const Customers = () => {
             <div className="text-center space-y-4">
               <div className="py-2">
                 <h3 className="text-lg font-medium">Debit Total</h3>
-                <p className="text-2xl text-red-600">₹{customers.reduce((sum, customer) => 
+                <p className="text-2xl text-red-600">₹{filteredCustomers.reduce((sum, customer) => 
                 sum + customer.transactions
                   .filter(t => t.type === 'debit')
                   .reduce((tSum, t) => tSum + t.amount, 0), 0)}</p>
@@ -445,7 +524,7 @@ const Customers = () => {
               
               <div className="py-2">
                 <h3 className="text-lg font-medium">Credit Total</h3>
-                <p className="text-2xl text-green-600">₹{customers.reduce((sum, customer) => 
+                <p className="text-2xl text-green-600">₹{filteredCustomers.reduce((sum, customer) => 
                 sum + customer.transactions
                   .filter(t => t.type === 'credit')
                   .reduce((tSum, t) => tSum + t.amount, 0), 0)}</p>
@@ -453,26 +532,33 @@ const Customers = () => {
               
               <div className="pt-4 border-t">
                 <h3 className="text-lg font-medium">Balance</h3>
-                <p className={`text-3xl font-bold ${customers.reduce((sum, customer) => 
+                <p className={`text-3xl font-bold ${filteredCustomers.reduce((sum, customer) => 
                 sum + customer.transactions
                   .filter(t => t.type === 'debit')
-                  .reduce((tSum, t) => tSum + t.amount, 0), 0) - customers.reduce((sum, customer) => 
+                  .reduce((tSum, t) => tSum + t.amount, 0), 0) - filteredCustomers.reduce((sum, customer) => 
                 sum + customer.transactions
                   .filter(t => t.type === 'credit')
                   .reduce((tSum, t) => tSum + t.amount, 0), 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  ₹{customers.reduce((sum, customer) => 
+                  {filteredCustomers.reduce((sum, customer) => 
                 sum + customer.transactions
                   .filter(t => t.type === 'debit')
-                  .reduce((tSum, t) => tSum + t.amount, 0), 0) - customers.reduce((sum, customer) => 
+                  .reduce((tSum, t) => tSum + t.amount, 0), 0) - filteredCustomers.reduce((sum, customer) => 
                 sum + customer.transactions
                   .filter(t => t.type === 'credit')
-                  .reduce((tSum, t) => tSum + t.amount, 0), 0)}
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {customers.reduce((sum, customer) => 
+                  .reduce((tSum, t) => tSum + t.amount, 0), 0) >= 0 ? '' : '-'}
+                  ₹{Math.abs(filteredCustomers.reduce((sum, customer) => 
                 sum + customer.transactions
                   .filter(t => t.type === 'debit')
-                  .reduce((tSum, t) => tSum + t.amount, 0), 0) - customers.reduce((sum, customer) => 
+                  .reduce((tSum, t) => tSum + t.amount, 0), 0) - filteredCustomers.reduce((sum, customer) => 
+                sum + customer.transactions
+                  .filter(t => t.type === 'credit')
+                  .reduce((tSum, t) => tSum + t.amount, 0), 0))}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {filteredCustomers.reduce((sum, customer) => 
+                sum + customer.transactions
+                  .filter(t => t.type === 'debit')
+                  .reduce((tSum, t) => tSum + t.amount, 0), 0) - filteredCustomers.reduce((sum, customer) => 
                 sum + customer.transactions
                   .filter(t => t.type === 'credit')
                   .reduce((tSum, t) => tSum + t.amount, 0), 0) >= 0 ? 'Net amount to receive' : 'Net amount to pay'}
@@ -485,7 +571,7 @@ const Customers = () => {
 
       {showTransactionDialog && currentCustomerIndex !== -1 && (
         <TransactionDialog 
-          customer={customers[currentCustomerIndex]}
+          customer={filteredCustomers[currentCustomerIndex]}
           type={transactionType}
           open={showTransactionDialog}
           onOpenChange={setShowTransactionDialog}
