@@ -1,61 +1,98 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Phone } from 'lucide-react';
+import { ArrowLeft, Phone, Download, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
-import { Transaction } from '@/types/customer';
+import { Customer, Transaction } from '@/types/customer';
 import { formatCurrency } from '@/utils/calculateUtils';
 import { Skeleton } from '@/components/ui/skeleton';
+import DownloadButton from '@/components/ui/DownloadButton';
+import ServiceForm from '@/components/ui/ServiceForm';
 
 const CustomerDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [customer, setCustomer] = useState<any>(null);
+  const [customer, setCustomer] = useState<Customer | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("balance");
 
+  const fetchCustomerData = async () => {
+    if (!id) return;
+
+    try {
+      // Fetch customer data
+      const { data: customerData, error: customerError } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (customerError) throw customerError;
+
+      // Fetch transactions for this customer
+      const { data: transactionData, error: transactionError } = await supabase
+        .from('customer_transactions')
+        .select('*')
+        .eq('customer_id', id)
+        .order('date', { ascending: false });
+
+      if (transactionError) throw transactionError;
+
+      // Ensure transactions have the correct type
+      const typedTransactions = (transactionData || []).map(transaction => ({
+        ...transaction,
+        type: transaction.type as 'debit' | 'credit'
+      }));
+
+      setCustomer({
+        ...customerData,
+        transactions: typedTransactions
+      });
+      setTransactions(typedTransactions);
+    } catch (error) {
+      console.error('Error fetching customer details:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchCustomerDetails = async () => {
-      if (!id) return;
-
-      try {
-        // Fetch customer data
-        const { data: customerData, error: customerError } = await supabase
-          .from('customers')
-          .select('*')
-          .eq('id', id)
-          .single();
-
-        if (customerError) throw customerError;
-
-        // Fetch transactions for this customer
-        const { data: transactionData, error: transactionError } = await supabase
-          .from('customer_transactions')
-          .select('*')
-          .eq('customer_id', id)
-          .order('date', { ascending: false });
-
-        if (transactionError) throw transactionError;
-
-        setCustomer(customerData);
-        setTransactions(transactionData);
-      } catch (error) {
-        console.error('Error fetching customer details:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCustomerDetails();
+    fetchCustomerData();
   }, [id]);
 
   const handleBack = () => {
     navigate('/customers');
+  };
+
+  const handleAddTransaction = async (values: Record<string, any>) => {
+    try {
+      if (!id) return false;
+
+      const newTransaction = {
+        customer_id: id,
+        type: values.type as 'debit' | 'credit',
+        amount: Number(values.amount),
+        date: values.date,
+        description: values.description || null,
+      };
+
+      const { error } = await supabase
+        .from('customer_transactions')
+        .insert(newTransaction);
+
+      if (error) throw error;
+      
+      await fetchCustomerData();
+      return true;
+    } catch (error) {
+      console.error('Error adding transaction:', error);
+      return false;
+    }
   };
 
   // Calculate total debits, credits and balance
@@ -72,6 +109,38 @@ const CustomerDetails = () => {
   // Filter transactions by type
   const debitTransactions = transactions.filter(t => t.type === 'debit');
   const creditTransactions = transactions.filter(t => t.type === 'credit');
+
+  // Form fields for adding transactions
+  const transactionFormFields = [
+    {
+      name: 'type',
+      label: 'Transaction Type',
+      type: 'select',
+      options: [
+        { value: 'credit', label: 'Credit' },
+        { value: 'debit', label: 'Debit' },
+      ],
+      required: true,
+    },
+    {
+      name: 'amount',
+      label: 'Amount',
+      type: 'number',
+      required: true,
+      min: 0,
+    },
+    {
+      name: 'date',
+      label: 'Date',
+      type: 'date',
+      required: true,
+    },
+    {
+      name: 'description',
+      label: 'Description',
+      type: 'textarea',
+    },
+  ];
 
   return (
     <div className="container px-4 py-6 space-y-6">
@@ -96,19 +165,44 @@ const CustomerDetails = () => {
           {/* Customer Info Card */}
           <Card className="border-0 shadow-md bg-purple-50">
             <CardHeader className="pb-2">
-              <h1 className="text-2xl font-bold text-purple-900">{customer.name}</h1>
-              <div className="flex items-center gap-2 text-sm text-purple-700">
-                <Phone size={14} />
-                <span>{customer.phone}</span>
+              <div className="flex justify-between items-start">
+                <div>
+                  <h1 className="text-2xl font-bold text-purple-900">{customer.name}</h1>
+                  <div className="flex items-center gap-2 text-sm text-purple-700">
+                    <Phone size={14} />
+                    <span>{customer.phone}</span>
+                  </div>
+                  {customer.address && (
+                    <p className="text-sm text-muted-foreground mt-1">{customer.address}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <ServiceForm
+                    title="Add New Transaction"
+                    fields={transactionFormFields}
+                    initialValues={{ date: new Date() }}
+                    onSubmit={handleAddTransaction}
+                    trigger={
+                      <Button size="sm" variant="outline">
+                        <Plus size={16} className="mr-1" /> Add Transaction
+                      </Button>
+                    }
+                  />
+                  <DownloadButton
+                    data={transactions}
+                    filename={`customer-${customer.name}-transactions`}
+                    currentData={activeTab === 'credit' ? creditTransactions : 
+                                activeTab === 'debit' ? debitTransactions : 
+                                transactions}
+                    label="Export"
+                  />
+                </div>
               </div>
-              {customer.address && (
-                <p className="text-sm text-muted-foreground mt-1">{customer.address}</p>
+              {customer.description && (
+                <p className="text-sm text-muted-foreground mt-2">{customer.description}</p>
               )}
             </CardHeader>
             <CardContent>
-              {customer.description && (
-                <p className="text-sm text-muted-foreground">{customer.description}</p>
-              )}
               <div className="grid grid-cols-3 gap-2 mt-4">
                 <div className="text-center">
                   <p className="text-xs text-muted-foreground">Total Credits</p>
