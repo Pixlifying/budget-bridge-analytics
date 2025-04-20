@@ -106,7 +106,7 @@ const ServiceForm = ({
               return (
                 <div key={field.name} className="grid gap-1.5">
                   <Label htmlFor={field.name} className="text-sm">
-                    {field.label}
+                    {field.label} {field.required && <span className="text-red-500">*</span>}
                   </Label>
 
                   {field.type === 'date' ? (
@@ -134,6 +134,7 @@ const ServiceForm = ({
                           selected={values[field.name]}
                           onSelect={(date) => handleChange(field.name, date)}
                           initialFocus
+                          className={cn("p-3 pointer-events-auto")}
                         />
                       </PopoverContent>
                     </Popover>

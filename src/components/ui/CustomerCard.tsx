@@ -2,7 +2,8 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Customer } from '@/types/customer';
-import { Phone, MapPin, FileText, ArrowDownRight, ArrowUpRight } from 'lucide-react';
+import { Phone, MapPin, FileText, ArrowDownRight, ArrowUpRight, Calendar } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface CustomerCardProps {
   customer: Customer;
@@ -11,6 +12,7 @@ interface CustomerCardProps {
 }
 
 const CustomerCard = ({ customer, balance, onDragStart }: CustomerCardProps) => {
+  // Calculate totals
   const debitTotal = customer.transactions
     .filter(t => t.type === 'debit')
     .reduce((sum, t) => sum + t.amount, 0);
@@ -19,9 +21,14 @@ const CustomerCard = ({ customer, balance, onDragStart }: CustomerCardProps) => 
     .filter(t => t.type === 'credit')
     .reduce((sum, t) => sum + t.amount, 0);
 
-  // Calculate net balance (debit - credit)
-  const netBalance = debitTotal - creditTotal;
+  // Calculate net balance (credit - debit)
+  const netBalance = creditTotal - debitTotal;
   const isPositiveBalance = netBalance >= 0;
+
+  // Get latest transaction date
+  const latestTransaction = customer.transactions.length > 0
+    ? new Date(Math.max(...customer.transactions.map(t => new Date(t.date).getTime())))
+    : null;
 
   return (
     <Card 
@@ -51,24 +58,25 @@ const CustomerCard = ({ customer, balance, onDragStart }: CustomerCardProps) => 
           <div className="text-right ml-4">
             <div className="font-bold text-red-600 flex items-center justify-end">
               <ArrowUpRight size={14} className="mr-1" />
-              ₹{debitTotal}
+              Debit: ₹{debitTotal}
             </div>
             <div className="font-bold text-green-600 flex items-center justify-end mt-1">
               <ArrowDownRight size={14} className="mr-1" />
-              ₹{creditTotal}
+              Credit: ₹{creditTotal}
             </div>
-            <div className={`font-bold mt-2 ${isPositiveBalance ? 'text-red-600' : 'text-green-600'}`}>
-              Net: {isPositiveBalance ? '' : '-'}₹{Math.abs(netBalance)}
+            <div className={`font-bold mt-2 ${isPositiveBalance ? 'text-green-600' : 'text-red-600'}`}>
+              Balance: {isPositiveBalance ? '+' : '-'}₹{Math.abs(netBalance)}
             </div>
           </div>
         </div>
         
         <div className="mt-2 text-xs">
-          <p className="text-muted-foreground">Latest transaction: {
-            customer.transactions.length > 0 
-              ? new Date(customer.transactions[customer.transactions.length - 1].date).toLocaleDateString()
-              : 'No transactions'
-          }</p>
+          {latestTransaction && (
+            <div className="flex items-center text-muted-foreground">
+              <Calendar size={12} className="mr-1" />
+              <span>Latest: {format(latestTransaction, 'PPP')}</span>
+            </div>
+          )}
           <p className="text-muted-foreground mt-1">Drag to opposite section to create a new transaction</p>
         </div>
       </CardContent>
