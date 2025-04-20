@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Phone, Download, Plus } from 'lucide-react';
@@ -25,7 +24,6 @@ const CustomerDetails = () => {
     if (!id) return;
 
     try {
-      // Fetch customer data
       const { data: customerData, error: customerError } = await supabase
         .from('customers')
         .select('*')
@@ -34,7 +32,6 @@ const CustomerDetails = () => {
 
       if (customerError) throw customerError;
 
-      // Fetch transactions for this customer
       const { data: transactionData, error: transactionError } = await supabase
         .from('customer_transactions')
         .select('*')
@@ -43,7 +40,6 @@ const CustomerDetails = () => {
 
       if (transactionError) throw transactionError;
 
-      // Ensure transactions have the correct type
       const typedTransactions = (transactionData || []).map(transaction => ({
         ...transaction,
         type: transaction.type as 'debit' | 'credit'
@@ -95,7 +91,6 @@ const CustomerDetails = () => {
     }
   };
 
-  // Calculate total debits, credits and balance
   const totalDebits = transactions
     .filter(t => t.type === 'debit')
     .reduce((sum, t) => sum + Number(t.amount), 0);
@@ -106,16 +101,14 @@ const CustomerDetails = () => {
   
   const balance = totalCredits - totalDebits;
 
-  // Filter transactions by type
   const debitTransactions = transactions.filter(t => t.type === 'debit');
   const creditTransactions = transactions.filter(t => t.type === 'credit');
 
-  // Form fields for adding transactions
   const transactionFormFields = [
     {
       name: 'type',
       label: 'Transaction Type',
-      type: 'select',
+      type: 'select' as const,
       options: [
         { value: 'credit', label: 'Credit' },
         { value: 'debit', label: 'Debit' },
@@ -125,30 +118,29 @@ const CustomerDetails = () => {
     {
       name: 'amount',
       label: 'Amount',
-      type: 'number',
+      type: 'number' as const,
       required: true,
       min: 0,
     },
     {
       name: 'date',
       label: 'Date',
-      type: 'date',
+      type: 'date' as const,
       required: true,
     },
     {
       name: 'description',
       label: 'Description',
-      type: 'textarea',
+      type: 'textarea' as const,
     },
   ];
 
   return (
-    <div className="container px-4 py-6 space-y-6">
-      {/* Back button */}
+    <div className="container px-4 py-6 space-y-6 max-w-lg mx-auto">
       <Button 
         variant="ghost" 
         size="sm" 
-        className="flex items-center gap-1 mb-4 px-0"
+        className="flex items-center gap-1 -ml-2"
         onClick={handleBack}
       >
         <ArrowLeft size={16} /> Back
@@ -162,7 +154,6 @@ const CustomerDetails = () => {
         </div>
       ) : customer ? (
         <>
-          {/* Customer Info Card */}
           <Card className="border-0 shadow-md bg-purple-50">
             <CardHeader className="pb-2">
               <div className="flex justify-between items-start">
@@ -180,7 +171,7 @@ const CustomerDetails = () => {
                   <ServiceForm
                     title="Add New Transaction"
                     fields={transactionFormFields}
-                    initialValues={{ date: new Date() }}
+                    initialValues={{ date: new Date().toISOString().split('T')[0] }}
                     onSubmit={handleAddTransaction}
                     trigger={
                       <Button size="sm" variant="outline">
@@ -192,15 +183,12 @@ const CustomerDetails = () => {
                     data={transactions}
                     filename={`customer-${customer.name}-transactions`}
                     currentData={activeTab === 'credit' ? creditTransactions : 
-                                activeTab === 'debit' ? debitTransactions : 
-                                transactions}
+                              activeTab === 'debit' ? debitTransactions : 
+                              transactions}
                     label="Export"
                   />
                 </div>
               </div>
-              {customer.description && (
-                <p className="text-sm text-muted-foreground mt-2">{customer.description}</p>
-              )}
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-3 gap-2 mt-4">
@@ -222,7 +210,6 @@ const CustomerDetails = () => {
             </CardContent>
           </Card>
 
-          {/* Tabs */}
           <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="w-full grid grid-cols-3">
               <TabsTrigger value="balance">Balance</TabsTrigger>
@@ -230,7 +217,6 @@ const CustomerDetails = () => {
               <TabsTrigger value="debit">Debit</TabsTrigger>
             </TabsList>
             
-            {/* Balance Tab */}
             <TabsContent value="balance" className="mt-4">
               <Card>
                 <CardHeader>
@@ -257,7 +243,6 @@ const CustomerDetails = () => {
               </Card>
             </TabsContent>
             
-            {/* Credit Tab */}
             <TabsContent value="credit" className="mt-4">
               <Card>
                 <CardHeader>
@@ -291,7 +276,6 @@ const CustomerDetails = () => {
               </Card>
             </TabsContent>
             
-            {/* Debit Tab */}
             <TabsContent value="debit" className="mt-4">
               <Card>
                 <CardHeader>

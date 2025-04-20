@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Phone, Download, CalendarRange } from 'lucide-react';
+import { Plus, Search, Phone, Download, CalendarRange, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { Customer } from '@/types/customer';
@@ -11,6 +10,7 @@ import { formatCurrency } from '@/utils/calculateUtils';
 import ServiceForm from '@/components/ui/ServiceForm';
 import DownloadButton from '@/components/ui/DownloadButton';
 import { format } from 'date-fns';
+import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
 import {
   Popover,
   PopoverContent,
@@ -24,6 +24,8 @@ const Customers = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState<Date | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const fetchCustomers = async (filterDate?: Date | null) => {
@@ -75,10 +77,6 @@ const Customers = () => {
     }
   };
 
-  useEffect(() => {
-    fetchCustomers();
-  }, []);
-
   const handleViewCustomer = (customerId: string) => {
     navigate(`/customers/${customerId}`);
   };
@@ -110,44 +108,28 @@ const Customers = () => {
     }
   };
 
-  const handleEditCustomer = async (customerId: string, values: Record<string, any>) => {
+  const handleDeleteCustomer = async () => {
+    if (!selectedCustomerId) return;
+    
     try {
       const { error } = await supabase
         .from('customers')
-        .update({
-          name: values.name,
-          phone: values.phone,
-          address: values.address,
-          description: values.description || null,
-        })
-        .eq('id', customerId);
+        .delete()
+        .eq('id', selectedCustomerId);
 
       if (error) throw error;
       
       await fetchCustomers(dateFilter);
-      return true;
+      setShowDeleteConfirm(false);
+      setSelectedCustomerId(null);
     } catch (error) {
-      console.error('Error updating customer:', error);
-      return false;
+      console.error('Error deleting customer:', error);
     }
   };
 
-  const filteredCustomers = customers.filter(customer =>
-    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.phone.includes(searchTerm)
-  );
-
-  // Calculate balance for each customer
-  const calculateBalance = (customer: Customer) => {
-    const credits = customer.transactions
-      .filter(t => t.type === 'credit')
-      .reduce((sum, t) => sum + Number(t.amount), 0);
-      
-    const debits = customer.transactions
-      .filter(t => t.type === 'debit')
-      .reduce((sum, t) => sum + Number(t.amount), 0);
-      
-    return credits - debits;
+  const initiateDelete = (customerId: string) => {
+    setSelectedCustomerId(customerId);
+    setShowDeleteConfirm(true);
   };
 
   // Form fields for adding/editing customers
@@ -155,30 +137,35 @@ const Customers = () => {
     {
       name: 'name',
       label: 'Customer Name',
-      type: 'text',
+      type: 'text' as const,
       required: true,
     },
     {
       name: 'phone',
       label: 'Phone Number',
-      type: 'text',
+      type: 'text' as const,
       required: true,
     },
     {
       name: 'address',
       label: 'Address',
-      type: 'text',
+      type: 'text' as const,
       required: true,
     },
     {
       name: 'description',
       label: 'Description',
-      type: 'textarea',
+      type: 'textarea' as const,
     },
   ];
 
+  const filteredCustomers = customers.filter(customer =>
+    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    customer.phone.includes(searchTerm)
+  );
+
   return (
-    <div className="container px-4 py-6 space-y-6">
+    <div className="container px-4 py-6 space-y-6 max-w-lg mx-auto">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Customers</h1>
         <div className="flex gap-2">
@@ -189,7 +176,7 @@ const Customers = () => {
             onSubmit={handleAddCustomer}
             trigger={
               <Button size="sm">
-                <Plus size={16} className="mr-1" /> Add Customer
+                <Plus size={16} className="mr-1" /> Add
               </Button>
             }
           />
@@ -207,7 +194,7 @@ const Customers = () => {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
           <Input
-            placeholder="Search by name or phone number..."
+            placeholder="Search by name or phone..."
             className="pl-9"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -239,67 +226,47 @@ const Customers = () => {
             <Card key={index} className="animate-pulse">
               <CardContent className="p-4">
                 <div className="h-6 bg-gray-200 rounded w-1/2 mb-2"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/4 mb-3"></div>
-                <div className="h-5 bg-gray-200 rounded w-1/3"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/4"></div>
               </CardContent>
             </Card>
           ))
         ) : filteredCustomers.length > 0 ? (
           filteredCustomers.map((customer) => {
-            const balance = calculateBalance(customer);
-            const latestTransaction = customer.transactions.length > 0 
-              ? customer.transactions.sort((a, b) => 
-                  new Date(b.date).getTime() - new Date(a.date).getTime()
-                )[0]
-              : null;
+            const balance = customer.transactions
+              ? customer.transactions.reduce((sum, t) => 
+                  sum + (t.type === 'credit' ? Number(t.amount) : -Number(t.amount)), 0
+                )
+              : 0;
             
             return (
               <Card 
                 key={customer.id} 
-                className="border shadow-sm hover:shadow"
+                className="border shadow-sm hover:shadow transition-shadow"
+                onClick={() => handleViewCustomer(customer.id)}
               >
                 <CardContent className="p-4">
                   <div className="flex justify-between items-start">
                     <div className="flex-grow">
-                      <h3 className="font-semibold">{customer.name}</h3>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Phone size={12} />
+                      <h3 className="font-semibold text-lg">{customer.name}</h3>
+                      <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
+                        <Phone size={14} />
                         <span>{customer.phone}</span>
                       </div>
-                      {latestTransaction && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Latest transaction: {format(new Date(latestTransaction.date), 'dd MMM yyyy')}
-                        </p>
-                      )}
                     </div>
-                    <div className={`text-right ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      <p className="text-xs text-muted-foreground">Balance</p>
-                      <p className="font-semibold">{formatCurrency(balance)}</p>
-                    </div>
-                  </div>
-                  <div className="flex justify-between mt-4 pt-3 border-t">
-                    <ServiceForm
-                      title="Edit Customer"
-                      fields={customerFormFields}
-                      initialValues={{
-                        name: customer.name,
-                        phone: customer.phone,
-                        address: customer.address,
-                        description: customer.description || '',
-                      }}
-                      onSubmit={(values) => handleEditCustomer(customer.id, values)}
-                      trigger={
-                        <Button variant="outline" size="sm">Edit</Button>
-                      }
-                      isEdit={true}
-                    />
-                    <Button 
-                      variant="default" 
+                    <Button
+                      variant="ghost"
                       size="sm"
-                      onClick={() => handleViewCustomer(customer.id)}
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        initiateDelete(customer.id);
+                      }}
                     >
-                      View Details
+                      <Trash2 size={16} />
                     </Button>
+                  </div>
+                  <div className={`mt-2 text-right ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <p className="text-sm font-medium">{formatCurrency(balance)}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -311,6 +278,17 @@ const Customers = () => {
           </div>
         )}
       </div>
+
+      <DeleteConfirmation
+        isOpen={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          setSelectedCustomerId(null);
+        }}
+        onConfirm={handleDeleteCustomer}
+        title="Delete Customer"
+        description="Are you sure you want to delete this customer? This action cannot be undone and will remove all associated transactions."
+      />
     </div>
   );
 };
