@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Phone, Download, CalendarRange, Trash2 } from 'lucide-react';
@@ -18,6 +19,7 @@ import {
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
+import { toast } from "sonner";
 
 const Customers = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -54,7 +56,13 @@ const Customers = () => {
               
           const { data: transactionsData, error: transactionsError } = await transactionQuery;
               
-          if (transactionsError) throw transactionsError;
+          if (transactionsError) {
+            console.error('Error fetching transactions:', transactionsError);
+            return {
+              ...customer,
+              transactions: []
+            };
+          }
           
           // Ensure transactions have the correct type
           const typedTransactions = (transactionsData || []).map(transaction => ({
@@ -72,10 +80,15 @@ const Customers = () => {
       setCustomers(customersWithTransactions);
     } catch (error) {
       console.error('Error fetching customers:', error);
+      toast.error("Failed to load customers");
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchCustomers(dateFilter);
+  }, [dateFilter]);
 
   const handleViewCustomer = (customerId: string) => {
     navigate(`/customers/${customerId}`);
@@ -83,7 +96,6 @@ const Customers = () => {
 
   const handleDateFilterChange = (date: Date | undefined) => {
     setDateFilter(date || null);
-    fetchCustomers(date || null);
   };
 
   const handleAddCustomer = async (values: Record<string, any>) => {
@@ -100,10 +112,12 @@ const Customers = () => {
 
       if (error) throw error;
       
+      toast.success("Customer added successfully");
       await fetchCustomers(dateFilter);
       return true;
     } catch (error) {
       console.error('Error adding customer:', error);
+      toast.error("Failed to add customer");
       return false;
     }
   };
@@ -112,6 +126,15 @@ const Customers = () => {
     if (!selectedCustomerId) return;
     
     try {
+      // First delete all transactions for this customer
+      const { error: transactionError } = await supabase
+        .from('customer_transactions')
+        .delete()
+        .eq('customer_id', selectedCustomerId);
+
+      if (transactionError) throw transactionError;
+      
+      // Then delete the customer
       const { error } = await supabase
         .from('customers')
         .delete()
@@ -119,11 +142,13 @@ const Customers = () => {
 
       if (error) throw error;
       
+      toast.success("Customer deleted successfully");
       await fetchCustomers(dateFilter);
       setShowDeleteConfirm(false);
       setSelectedCustomerId(null);
     } catch (error) {
       console.error('Error deleting customer:', error);
+      toast.error("Failed to delete customer");
     }
   };
 

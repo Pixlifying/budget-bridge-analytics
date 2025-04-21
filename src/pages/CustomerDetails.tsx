@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Phone, Download, Plus } from 'lucide-react';
@@ -11,6 +12,7 @@ import { formatCurrency } from '@/utils/calculateUtils';
 import { Skeleton } from '@/components/ui/skeleton';
 import DownloadButton from '@/components/ui/DownloadButton';
 import ServiceForm from '@/components/ui/ServiceForm';
+import { toast } from "sonner";
 
 const CustomerDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -83,10 +85,12 @@ const CustomerDetails = () => {
 
       if (error) throw error;
       
+      toast.success("Transaction added successfully");
       await fetchCustomerData();
       return true;
     } catch (error) {
       console.error('Error adding transaction:', error);
+      toast.error("Failed to add transaction");
       return false;
     }
   };
