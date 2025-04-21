@@ -54,6 +54,7 @@ const CustomerDetails = () => {
       setTransactions(typedTransactions);
     } catch (error) {
       console.error('Error fetching customer details:', error);
+      toast.error("Failed to load customer details");
     } finally {
       setLoading(false);
     }
