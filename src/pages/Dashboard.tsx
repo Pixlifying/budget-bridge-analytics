@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import {
   CreditCard,
@@ -10,6 +9,7 @@ import {
   DollarSign,
   Wallet,
   X,
+  Printer,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
@@ -218,41 +218,39 @@ const Dashboard = () => {
   const applicationsCount = applicationsData?.length || 0;
   const applicationsMargin = applicationsData?.reduce((sum, entry) => sum + entry.amount, 0) || 0;
 
-  const photostatMarginTotal = photostatData?.reduce((sum, entry) => sum + entry.margin, 0) || 0;
+  // 1. Calculate Printout/Photostat Totals and Margins
+  const photostatTotal = photostatData?.reduce((sum, entry) => sum + Number(entry.total_amount), 0) || 0;
+  const photostatCount = photostatData?.length || 0;
+  const photostatMarginTotal = photostatData?.reduce((sum, entry) => sum + Number(entry.margin), 0) || 0;
 
   const pendingBalanceTotal = pendingBalanceData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
 
   const expensesTotal = expensesData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
   const expensesCount = expensesData?.length || 0;
 
-  // Calculate total margin without PanCard and Passport
+  // Calculate total margin including Photostat
   const totalMargin = bankingMargin + onlineMargin + applicationsMargin + photostatMarginTotal;
 
+  // 2. Update marginProportions and marginDetails to include Printout and Photostat
   const marginProportions = [
     { name: 'Banking', value: bankingMargin },
     { name: 'Online', value: onlineMargin },
     { name: 'Applications', value: applicationsMargin },
-    { name: 'Photostat', value: photostatMarginTotal },
+    { name: 'Printout and Photostat', value: photostatMarginTotal },
     { name: 'Pending Balance', value: pendingBalanceTotal },
     { name: 'Expenses', value: expensesTotal },
   ];
 
   const getServiceColor = (serviceName: string): string => {
     switch (serviceName) {
-      case 'Banking':
-        return '#A5D6A7';
-      case 'Online':
-        return '#FFAB91';
-      case 'Applications':
-        return '#B39DDB';
-      case 'Photostat':
-        return '#F48FB1';
-      case 'Pending Balance':
-        return '#FFB74D';
-      case 'Expenses':
-        return '#4FC3F7';
-      default:
-        return '#BDBDBD';
+      case 'Banking': return '#A5D6A7';
+      case 'Online': return '#FFAB91';
+      case 'Applications': return '#B39DDB';
+      case 'Printout and Photostat': return '#F48FB1';
+      case 'Photostat': return '#F48FB1'; // compatibility
+      case 'Pending Balance': return '#FFB74D';
+      case 'Expenses': return '#4FC3F7';
+      default: return '#BDBDBD';
     }
   };
 
@@ -268,7 +266,7 @@ const Dashboard = () => {
     { name: 'Banking Services', value: bankingMargin, color: '#A5D6A7' },
     { name: 'Online Services', value: onlineMargin, color: '#FFAB91' },
     { name: 'Applications', value: applicationsMargin, color: '#B39DDB' },
-    { name: 'Photostat', value: photostatMarginTotal, color: '#F48FB1' },
+    { name: 'Printout and Photostat', value: photostatMarginTotal, color: '#F48FB1' },
     { name: 'Pending Balance', value: pendingBalanceTotal, color: '#FFB74D' },
     { name: 'Expenses', value: expensesTotal, color: '#4FC3F7' },
   ];
@@ -297,8 +295,13 @@ const Dashboard = () => {
         />
         <StatCard
           title="Photostat"
-          value={photostatData?.length || 0}
+          value={photostatCount}
           icon={<FileText className="h-5 w-5" />}
+        />
+        <StatCard
+          title="Printout and Photostat"
+          value={photostatCount}
+          icon={<Printer className="h-5 w-5" />} // Choose lucide icon "printer"
         />
         <StatCard
           title="Banking Services"
@@ -414,26 +417,24 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* New Expenses Section */}
+      {/* Printout/Photostat section */}
       <div className="glassmorphism rounded-xl p-5 animate-scale-in mb-8">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="font-semibold text-lg">Expenses</h3>
-          <DollarSign className="h-5 w-5 text-primary opacity-70" />
+          <h3 className="font-semibold text-lg">Printout and Photostat</h3>
+          <Printer className="h-5 w-5 text-primary opacity-70" />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <p className="text-sm text-muted-foreground">Total Amount</p>
-            <p className="text-xl font-bold">{formatCurrency(expensesTotal || 0)}</p>
+            <p className="text-xl font-bold">{formatCurrency(photostatTotal)}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Count</p>
-            <p className="text-xl font-bold">{expensesCount || 0}</p>
+            <p className="text-xl font-bold">{photostatCount}</p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Average</p>
-            <p className="text-xl font-bold">
-              {expensesCount ? formatCurrency(expensesTotal / expensesCount) : formatCurrency(0)}
-            </p>
+            <p className="text-sm text-muted-foreground">Margin</p>
+            <p className="text-xl font-bold">{formatCurrency(photostatMarginTotal)}</p>
           </div>
         </div>
       </div>
