@@ -1,25 +1,19 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Phone, Download, CalendarRange, Trash2 } from 'lucide-react';
+import { Search, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { Customer } from '@/types/customer';
-import { formatCurrency } from '@/utils/calculateUtils';
-import ServiceForm from '@/components/ui/ServiceForm';
-import DownloadButton from '@/components/ui/DownloadButton';
 import { format } from 'date-fns';
-import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
+import DownloadButton from '@/components/ui/DownloadButton';
 import { toast } from "sonner";
+
+import CustomerList from '@/components/customers/CustomerList';
+import CustomerForm from '@/components/customers/CustomerForm';
+import CustomerDateFilter from '@/components/customers/CustomerDateFilter';
+import DeleteCustomerDialog from '@/components/customers/DeleteCustomerDialog';
 
 const Customers = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -40,7 +34,6 @@ const Customers = () => {
 
       if (error) throw error;
       
-      // Get transactions for each customer
       const customersWithTransactions = await Promise.all(
         (data || []).map(async (customer) => {
           let transactionQuery = supabase
@@ -48,7 +41,6 @@ const Customers = () => {
             .select('*')
             .eq('customer_id', customer.id);
           
-          // Apply date filtering if specified
           if (filterDate) {
             const dateString = format(filterDate, 'yyyy-MM-dd');
             transactionQuery = transactionQuery.like('date', `${dateString}%`);
@@ -88,6 +80,7 @@ const Customers = () => {
 
   useEffect(() => {
     fetchCustomers(dateFilter);
+    // eslint-disable-next-line
   }, [dateFilter]);
 
   const handleViewCustomer = (customerId: string) => {
@@ -126,7 +119,6 @@ const Customers = () => {
     if (!selectedCustomerId) return;
     
     try {
-      // First delete all transactions for this customer
       const { error: transactionError } = await supabase
         .from('customer_transactions')
         .delete()
@@ -134,7 +126,6 @@ const Customers = () => {
 
       if (transactionError) throw transactionError;
       
-      // Then delete the customer
       const { error } = await supabase
         .from('customers')
         .delete()
@@ -157,33 +148,6 @@ const Customers = () => {
     setShowDeleteConfirm(true);
   };
 
-  // Form fields for adding/editing customers
-  const customerFormFields = [
-    {
-      name: 'name',
-      label: 'Customer Name',
-      type: 'text' as const,
-      required: true,
-    },
-    {
-      name: 'phone',
-      label: 'Phone Number',
-      type: 'text' as const,
-      required: true,
-    },
-    {
-      name: 'address',
-      label: 'Address',
-      type: 'text' as const,
-      required: true,
-    },
-    {
-      name: 'description',
-      label: 'Description',
-      type: 'textarea' as const,
-    },
-  ];
-
   const filteredCustomers = customers.filter(customer =>
     customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     customer.phone.includes(searchTerm)
@@ -194,18 +158,7 @@ const Customers = () => {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Customers</h1>
         <div className="flex gap-2">
-          <ServiceForm
-            title="Add New Customer"
-            fields={customerFormFields}
-            initialValues={{}}
-            onSubmit={handleAddCustomer}
-            trigger={
-              <Button size="sm">
-                <Plus size={16} className="mr-1" /> Add
-              </Button>
-            }
-          />
-          
+          <CustomerForm onSubmit={handleAddCustomer} />
           <DownloadButton
             data={customers}
             filename="customers"
@@ -225,97 +178,33 @@ const Customers = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className="flex items-center gap-1">
-              <CalendarRange size={16} />
-              {dateFilter ? format(dateFilter, 'PPP') : 'Filter by date'}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="end">
-            <Calendar
-              mode="single"
-              selected={dateFilter || undefined}
-              onSelect={handleDateFilterChange}
-              initialFocus
-              className={cn("p-3 pointer-events-auto")}
-            />
-          </PopoverContent>
-        </Popover>
+        <CustomerDateFilter dateFilter={dateFilter} onChange={handleDateFilterChange} />
       </div>
 
       <div className="grid gap-4">
-        {loading ? (
-          Array(3).fill(0).map((_, index) => (
-            <Card key={index} className="animate-pulse">
-              <CardContent className="p-4">
-                <div className="h-6 bg-gray-200 rounded w-1/2 mb-2"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-              </CardContent>
-            </Card>
-          ))
-        ) : filteredCustomers.length > 0 ? (
-          filteredCustomers.map((customer) => {
-            const balance = customer.transactions
-              ? customer.transactions.reduce((sum, t) => 
-                  sum + (t.type === 'credit' ? Number(t.amount) : -Number(t.amount)), 0
-                )
-              : 0;
-            
-            return (
-              <Card 
-                key={customer.id} 
-                className="border shadow-sm hover:shadow transition-shadow"
-                onClick={() => handleViewCustomer(customer.id)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-grow">
-                      <h3 className="font-semibold text-lg">{customer.name}</h3>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
-                        <Phone size={14} />
-                        <span>{customer.phone}</span>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        initiateDelete(customer.id);
-                      }}
-                    >
-                      <Trash2 size={16} />
-                    </Button>
-                  </div>
-                  <div className={`mt-2 text-right ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    <p className="text-sm font-medium">{formatCurrency(balance)}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })
-        ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            {searchTerm ? "No customers found matching your search." : "No customers found. Add your first customer!"}
-          </div>
-        )}
+        <CustomerList
+          customers={filteredCustomers}
+          loading={loading}
+          searchTerm={searchTerm}
+          onView={handleViewCustomer}
+          onDelete={(id, e) => {
+            e.stopPropagation();
+            initiateDelete(id);
+          }}
+        />
       </div>
 
-      <DeleteConfirmation
+      <DeleteCustomerDialog
         isOpen={showDeleteConfirm}
         onClose={() => {
           setShowDeleteConfirm(false);
           setSelectedCustomerId(null);
         }}
         onConfirm={handleDeleteCustomer}
-        title="Delete Customer"
-        description="Are you sure you want to delete this customer? This action cannot be undone and will remove all associated transactions."
       />
     </div>
   );
 };
 
 export default Customers;
+
