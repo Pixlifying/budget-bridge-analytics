@@ -62,7 +62,7 @@ const Sidebar = () => {
     },
     {
       icon: <Globe size={isCollapsed ? 20 : 18} />,
-      label: 'Online Services',
+      label: 'Digital Services',
       to: '/online-services',
     },
     {
