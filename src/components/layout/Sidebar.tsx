@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -13,7 +12,8 @@ import {
   FilePen,
   Copy,
   FileText,
-  Users
+  Users,
+  Calculator
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -89,6 +89,11 @@ const Sidebar = () => {
       icon: <AlertCircle size={isCollapsed ? 20 : 18} />,
       label: 'Pending Balance',
       to: '/pending-balance',
+    },
+    {
+      icon: <Calculator size={isCollapsed ? 20 : 18} />,
+      label: 'Age Calculator',
+      to: '/age-calculator',
     },
     {
       icon: <BarChart3 size={isCollapsed ? 20 : 18} />,

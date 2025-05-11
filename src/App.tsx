@@ -16,6 +16,7 @@ import Photostat from "@/pages/Photostat";
 import Query from "@/pages/Query";
 import Customers from "@/pages/Customers";
 import CustomerDetails from "@/pages/CustomerDetails";
+import AgeCalculator from "@/pages/AgeCalculator";
 import NotFound from "@/pages/NotFound";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 
@@ -41,6 +42,7 @@ const App = () => (
                 <Route path="/pending-balance" element={<PendingBalance />} />
                 <Route path="/customers" element={<Customers />} />
                 <Route path="/customers/:id" element={<CustomerDetails />} />
+                <Route path="/age-calculator" element={<AgeCalculator />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </main>
