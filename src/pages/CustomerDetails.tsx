@@ -71,13 +71,13 @@ const CustomerDetails = () => {
     try {
       if (!id) return false;
 
-      // Ensure proper data formatting for Supabase
+      // Create a transaction object with only the fields that exist in the database
       const newTransaction = {
         customer_id: id,
         type: values.type as 'debit' | 'credit',
         amount: Number(values.amount),
-        date: values.date,
-        description: values.description || null,
+        date: values.date
+        // We're omitting the description field since it doesn't exist in the database
       };
 
       console.log("Saving transaction to Supabase:", newTransaction);
@@ -166,12 +166,8 @@ const CustomerDetails = () => {
       label: 'Date',
       type: 'date' as const,
       required: true,
-    },
-    {
-      name: 'description',
-      label: 'Description',
-      type: 'textarea' as const,
-    },
+    }
+    // Removed the description field since it doesn't exist in the database
   ];
 
   return (
