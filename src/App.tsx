@@ -17,6 +17,8 @@ import Query from "@/pages/Query";
 import Customers from "@/pages/Customers";
 import CustomerDetails from "@/pages/CustomerDetails";
 import AgeCalculator from "@/pages/AgeCalculator";
+import FeeExpenses from "@/pages/FeeExpenses";
+import MiscExpenses from "@/pages/MiscExpenses";
 import NotFound from "@/pages/NotFound";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 
@@ -39,6 +41,8 @@ const App = () => (
                 <Route path="/queries" element={<Query />} />
                 <Route path="/analytics" element={<Analytics />} />
                 <Route path="/expenses" element={<Expenses />} />
+                <Route path="/fee-expenses" element={<FeeExpenses />} />
+                <Route path="/misc-expenses" element={<MiscExpenses />} />
                 <Route path="/pending-balance" element={<PendingBalance />} />
                 <Route path="/customers" element={<Customers />} />
                 <Route path="/customers/:id" element={<CustomerDetails />} />

@@ -22,10 +22,12 @@ const AgeCalculator = () => {
         return;
       }
       
-      const parsedDate = parse(birthDate, 'yyyy-MM-dd', new Date());
+      // Parse the date in DD-MM-YYYY format
+      const [day, month, year] = birthDate.split('-');
+      const parsedDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
       
       if (!isValid(parsedDate)) {
-        setError('Invalid date format');
+        setError('Invalid date format. Please use DD-MM-YYYY');
         return;
       }
       
@@ -61,14 +63,14 @@ const AgeCalculator = () => {
   return (
     <PageWrapper 
       title="Age Calculator" 
-      description="Calculate age based on birth date"
-      icon={<Calculator className="h-6 w-6" />}
+      subtitle="Calculate age based on birth date"
+      action={<Calculator className="h-6 w-6" />}
     >
       <div className="container mx-auto py-6">
         <Card className="max-w-md mx-auto">
           <CardHeader>
             <CardTitle>Age Calculator</CardTitle>
-            <CardDescription>Enter a birth date to calculate age</CardDescription>
+            <CardDescription>Enter a birth date to calculate age (DD-MM-YYYY)</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -76,10 +78,10 @@ const AgeCalculator = () => {
                 <Label htmlFor="birthDate">Birth Date</Label>
                 <Input
                   id="birthDate"
-                  type="date"
+                  type="text"
                   value={birthDate}
                   onChange={(e) => setBirthDate(e.target.value)}
-                  placeholder="YYYY-MM-DD"
+                  placeholder="DD-MM-YYYY"
                 />
                 {error && <p className="text-sm text-red-500">{error}</p>}
               </div>

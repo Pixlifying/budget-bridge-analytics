@@ -149,6 +149,54 @@ export type Database = {
         }
         Relationships: []
       }
+      fee_expenses: {
+        Row: {
+          created_at: string | null
+          customer_name: string
+          date: string
+          fee: number
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          customer_name: string
+          date?: string
+          fee: number
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          customer_name?: string
+          date?: string
+          fee?: number
+          id?: string
+        }
+        Relationships: []
+      }
+      misc_expenses: {
+        Row: {
+          created_at: string | null
+          date: string
+          fee: number
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          date?: string
+          fee: number
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          fee?: number
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       online_services: {
         Row: {
           amount: number
