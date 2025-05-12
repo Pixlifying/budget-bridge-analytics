@@ -25,38 +25,36 @@ import { TooltipProvider } from "@radix-ui/react-tooltip";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <TooltipProvider>
-          <div className="flex h-screen bg-background">
-            <Sidebar />
-            <main className="flex-1 overflow-auto">
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/banking-services" element={<BankingServices />} />
-                <Route path="/online-services" element={<OnlineServices />} />
-                <Route path="/applications" element={<Applications />} />
-                <Route path="/photostat" element={<Photostat />} />
-                <Route path="/queries" element={<Query />} />
-                <Route path="/analytics" element={<Analytics />} />
-                <Route path="/expenses" element={<Expenses />} />
-                <Route path="/fee-expenses" element={<FeeExpenses />} />
-                <Route path="/misc-expenses" element={<MiscExpenses />} />
-                <Route path="/pending-balance" element={<PendingBalance />} />
-                <Route path="/customers" element={<Customers />} />
-                <Route path="/customers/:id" element={<CustomerDetails />} />
-                <Route path="/age-calculator" element={<AgeCalculator />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </main>
-          </div>
-          <Toaster />
-          <Sonner />
-        </TooltipProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
-  </React.StrictMode>
+  <QueryClientProvider client={queryClient}>
+    <BrowserRouter>
+      <TooltipProvider>
+        <div className="flex h-screen bg-background">
+          <Sidebar />
+          <main className="flex-1 overflow-auto">
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/banking-services" element={<BankingServices />} />
+              <Route path="/online-services" element={<OnlineServices />} />
+              <Route path="/applications" element={<Applications />} />
+              <Route path="/photostat" element={<Photostat />} />
+              <Route path="/queries" element={<Query />} />
+              <Route path="/analytics" element={<Analytics />} />
+              <Route path="/expenses" element={<Expenses />} />
+              <Route path="/fee-expenses" element={<FeeExpenses />} />
+              <Route path="/misc-expenses" element={<MiscExpenses />} />
+              <Route path="/pending-balance" element={<PendingBalance />} />
+              <Route path="/customers" element={<Customers />} />
+              <Route path="/customers/:id" element={<CustomerDetails />} />
+              <Route path="/age-calculator" element={<AgeCalculator />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </main>
+        </div>
+        <Toaster />
+        <Sonner />
+      </TooltipProvider>
+    </BrowserRouter>
+  </QueryClientProvider>
 );
 
 export default App;
