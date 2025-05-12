@@ -136,6 +136,7 @@ const Sidebar = () => {
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
     services: false,
     expenses: false,
+    apps: false
   });
 
   const toggleMenu = (menuKey: string) => {
@@ -183,6 +184,20 @@ const Sidebar = () => {
     },
   ];
 
+  // Apps submenu items
+  const appsItems = [
+    {
+      icon: <Calculator size={isCollapsed ? 20 : 16} />,
+      label: 'Calculator',
+      to: '/calculator',
+    },
+    {
+      icon: <Calculator size={isCollapsed ? 20 : 16} />,
+      label: 'Age Calculator',
+      to: '/age-calculator',
+    },
+  ];
+
   // Main sidebar items
   const sidebarItems = [
     {
@@ -225,9 +240,11 @@ const Sidebar = () => {
     },
     {
       icon: <Calculator size={isCollapsed ? 20 : 18} />,
-      label: 'Age Calculator',
-      to: '/age-calculator',
-      hasChildren: false,
+      label: 'Apps',
+      to: '#',
+      hasChildren: true,
+      menuKey: 'apps',
+      children: appsItems,
     },
     {
       icon: <BarChart3 size={isCollapsed ? 20 : 18} />,

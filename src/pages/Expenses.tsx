@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Receipt, Plus } from 'lucide-react';
 import { toast } from 'sonner';
@@ -32,23 +33,75 @@ const Expenses = () => {
   const fetchExpenses = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
+      
+      // Fetch general expenses
+      const { data: generalExpenses, error: generalError } = await supabase
         .from('expenses')
         .select('*')
         .order('date', { ascending: false });
       
-      if (error) {
-        throw error;
+      if (generalError) {
+        throw generalError;
       }
       
-      const formattedData = data.map(entry => ({
+      // Fetch fee expenses
+      const { data: feeExpenses, error: feeError } = await supabase
+        .from('fee_expenses')
+        .select('*')
+        .order('date', { ascending: false });
+        
+      if (feeError) {
+        throw feeError;
+      }
+      
+      // Fetch misc expenses
+      const { data: miscExpenses, error: miscError } = await supabase
+        .from('misc_expenses')
+        .select('*')
+        .order('date', { ascending: false });
+        
+      if (miscError) {
+        throw miscError;
+      }
+      
+      // Format general expenses
+      const formattedGeneralExpenses = (generalExpenses || []).map(entry => ({
         id: entry.id,
         date: new Date(entry.date),
         name: entry.name,
-        amount: Number(entry.amount)
+        amount: Number(entry.amount),
+        type: 'general'
       }));
       
-      setExpenses(formattedData);
+      // Format fee expenses
+      const formattedFeeExpenses = (feeExpenses || []).map(entry => ({
+        id: entry.id,
+        date: new Date(entry.date),
+        name: `Fee: ${entry.customer_name}`,
+        amount: Number(entry.fee),
+        type: 'fee'
+      }));
+      
+      // Format misc expenses
+      const formattedMiscExpenses = (miscExpenses || []).map(entry => ({
+        id: entry.id,
+        date: new Date(entry.date),
+        name: `Misc: ${entry.name}`,
+        amount: Number(entry.fee),
+        type: 'misc'
+      }));
+      
+      // Combine all expenses
+      const allExpenses = [
+        ...formattedGeneralExpenses,
+        ...formattedFeeExpenses,
+        ...formattedMiscExpenses
+      ];
+      
+      // Sort by date (newest first)
+      allExpenses.sort((a, b) => b.date.getTime() - a.date.getTime());
+      
+      setExpenses(allExpenses);
     } catch (error) {
       console.error('Error fetching expenses:', error);
       toast.error('Failed to load expense data');
@@ -144,10 +197,31 @@ const Expenses = () => {
 
   const handleDeleteEntry = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('expenses')
-        .delete()
-        .eq('id', id);
+      const expenseToDelete = expenses.find(e => e.id === id);
+      if (!expenseToDelete) return;
+      
+      let error;
+      
+      // Delete from the appropriate table based on type
+      if (expenseToDelete.type === 'fee') {
+        const result = await supabase
+          .from('fee_expenses')
+          .delete()
+          .eq('id', id);
+        error = result.error;
+      } else if (expenseToDelete.type === 'misc') {
+        const result = await supabase
+          .from('misc_expenses')
+          .delete()
+          .eq('id', id);
+        error = result.error;
+      } else {
+        const result = await supabase
+          .from('expenses')
+          .delete()
+          .eq('id', id);
+        error = result.error;
+      }
       
       if (error) {
         throw error;
@@ -293,8 +367,12 @@ const Expenses = () => {
                 amount: 'Amount',
               }}
               onEdit={() => {
-                setEditingEntry(entry);
-                setFormOpen(true);
+                if (entry.type === 'general') {
+                  setEditingEntry(entry);
+                  setFormOpen(true);
+                } else {
+                  toast.info("You can only edit general expenses here. Edit fee or misc expenses in their respective pages.");
+                }
               }}
               onDelete={() => handleDeleteEntry(entry.id)}
             />

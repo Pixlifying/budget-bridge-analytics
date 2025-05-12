@@ -17,6 +17,7 @@ import Query from "@/pages/Query";
 import Customers from "@/pages/Customers";
 import CustomerDetails from "@/pages/CustomerDetails";
 import AgeCalculator from "@/pages/AgeCalculator";
+import Calculator from "@/pages/Calculator";
 import FeeExpenses from "@/pages/FeeExpenses";
 import MiscExpenses from "@/pages/MiscExpenses";
 import NotFound from "@/pages/NotFound";
@@ -45,6 +46,7 @@ const App = () => (
               <Route path="/pending-balance" element={<PendingBalance />} />
               <Route path="/customers" element={<Customers />} />
               <Route path="/customers/:id" element={<CustomerDetails />} />
+              <Route path="/calculator" element={<Calculator />} />
               <Route path="/age-calculator" element={<AgeCalculator />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Phone, Download, Plus } from 'lucide-react';
@@ -76,8 +77,8 @@ const CustomerDetails = () => {
         customer_id: id,
         type: values.type as 'debit' | 'credit',
         amount: Number(values.amount),
-        date: values.date
-        // We're omitting the description field since it doesn't exist in the database
+        date: values.date,
+        description: values.description || null // Add description field
       };
 
       console.log("Saving transaction to Supabase:", newTransaction);
@@ -166,8 +167,13 @@ const CustomerDetails = () => {
       label: 'Date',
       type: 'date' as const,
       required: true,
+    },
+    {
+      name: 'description',
+      label: 'Description',
+      type: 'text' as const,
+      required: false,
     }
-    // Removed the description field since it doesn't exist in the database
   ];
 
   return (
