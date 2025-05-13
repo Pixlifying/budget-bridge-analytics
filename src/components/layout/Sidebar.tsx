@@ -1,188 +1,320 @@
-import React, { useState } from 'react';
-import {
-  HomeIcon,
-  Calculator,
+
+import { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { 
+  LayoutDashboard, 
   CreditCard,
-  Passport,
-  Landmark,
-  Globe,
-  Files,
+  Globe, 
+  BarChart3, 
+  ChevronLeft,
+  ChevronRight,
+  PiggyBank,
+  AlertCircle,
+  FilePen,
   Copy,
+  FileText,
   Users,
-  DollarSign,
-  FileCheck,
-  HelpCircle,
-  BarChart4,
-  User2,
-  CircleDollarSign,
-  Receipt,
-  FileBox,
+  Calculator,
+  ChevronsRight,
+  ChevronsDown
 } from 'lucide-react';
-import { NavLink, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
-interface NavItemProps {
-  href: string;
-  icon: React.ReactNode;
+interface SidebarItemProps {
+  icon: JSX.Element;
   label: string;
+  to: string;
+  isActive: boolean;
+  isCollapsed: boolean;
+  hasChildren?: boolean;
+  isExpanded?: boolean;
+  onClick?: () => void;
 }
 
-interface NavSubItemProps {
-  href: string;
-  icon: React.ReactNode;
-  label: string;
+// SubMenu component for nested items
+interface SidebarSubMenuProps {
+  items: {
+    icon: JSX.Element;
+    label: string;
+    to: string;
+  }[];
+  isCollapsed: boolean;
+  isExpanded: boolean;
 }
 
-interface NavGroupProps {
-  icon: React.ReactNode;
-  label: string;
-  subItems: NavSubItemProps[];
-}
-
-const NavItem: React.FC<NavItemProps> = ({ href, icon, label }) => {
+const SidebarSubMenu = ({ items, isCollapsed, isExpanded }: SidebarSubMenuProps) => {
   const location = useLocation();
-  const isActive = location.pathname === href;
-
+  
+  if (isCollapsed || !isExpanded) return null;
+  
   return (
-    <li>
-      <NavLink
-        to={href}
-        className={cn(
-          'flex items-center gap-2 rounded-md p-2 text-sm font-medium hover:bg-secondary hover:text-secondary-foreground',
-          isActive ? 'bg-secondary text-secondary-foreground' : 'text-muted-foreground'
-        )}
-      >
-        {icon}
-        {label}
-      </NavLink>
-    </li>
+    <div className="ml-6 mt-1 border-l border-sidebar-border pl-2 space-y-1">
+      {items.map((item) => {
+        const isActive = location.pathname === item.to || location.pathname.startsWith(item.to);
+        return (
+          <Link
+            key={item.to}
+            to={item.to}
+            className={cn(
+              "flex items-center gap-2 px-2 py-2 rounded-md text-sm transition-all duration-300 ease-in-out",
+              isActive 
+                ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm" 
+                : "text-sidebar-foreground hover:bg-sidebar-accent/10 hover:text-sidebar-accent-foreground"
+            )}
+          >
+            <div className="shrink-0 w-4 h-4">
+              {item.icon}
+            </div>
+            <span className="text-sm font-medium">{item.label}</span>
+          </Link>
+        );
+      })}
+    </div>
   );
 };
 
-const NavSubItem: React.FC<NavSubItemProps> = ({ href, icon, label }) => {
-  const location = useLocation();
-  const isActive = location.pathname === href;
-
-  return (
-    <li>
-      <NavLink
-        to={href}
-        className={cn(
-          'flex items-center gap-2 rounded-md p-2 pl-6 text-sm font-medium hover:bg-secondary hover:text-secondary-foreground',
-          isActive ? 'bg-secondary text-secondary-foreground' : 'text-muted-foreground'
-        )}
-      >
-        {icon}
-        {label}
-      </NavLink>
-    </li>
-  );
-};
-
-const NavGroup: React.FC<NavGroupProps> = ({ icon, label, subItems }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  return (
-    <li>
-      <button
-        className="flex w-full items-center justify-between gap-2 rounded-md p-2 text-sm font-medium hover:bg-secondary hover:text-secondary-foreground"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <div className="flex items-center gap-2">
-          {icon}
-          {label}
-        </div>
-        <svg
-          className={cn('h-4 w-4 shrink-0 transition-transform duration-200', {
-            'rotate-90': isExpanded,
-          })}
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 20 20"
-          fill="currentColor"
+const SidebarItem = ({ 
+  icon, 
+  label, 
+  to, 
+  isActive, 
+  isCollapsed, 
+  hasChildren, 
+  isExpanded,
+  onClick 
+}: SidebarItemProps) => {
+  if (hasChildren) {
+    return (
+      <div className="space-y-1">
+        <button
+          onClick={onClick}
+          className={cn(
+            "w-full flex items-center gap-2 px-3 py-3 my-1 rounded-md transition-all duration-300 ease-in-out",
+            isActive 
+              ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm" 
+              : "text-sidebar-foreground hover:bg-sidebar-accent/10 hover:text-sidebar-accent-foreground",
+            isCollapsed ? "justify-center" : ""
+          )}
         >
-          <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-        </svg>
-      </button>
-      {isExpanded && (
-        <ul className="mt-2 space-y-1">
-          {subItems.map((subItem) => (
-            <NavSubItem key={subItem.href} href={subItem.href} icon={subItem.icon} label={subItem.label} />
-          ))}
-        </ul>
+          <div className={cn("shrink-0", isCollapsed ? "w-6 h-6" : "w-5 h-5")}>
+            {icon}
+          </div>
+          {!isCollapsed && (
+            <>
+              <span className="text-sm font-medium flex-1 text-left">{label}</span>
+              {!isCollapsed && (isExpanded ? <ChevronsDown size={16} /> : <ChevronsRight size={16} />)}
+            </>
+          )}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      to={to}
+      className={cn(
+        "flex items-center gap-2 px-3 py-3 my-1 rounded-md transition-all duration-300 ease-in-out",
+        isActive 
+          ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm" 
+          : "text-sidebar-foreground hover:bg-sidebar-accent/10 hover:text-sidebar-accent-foreground",
+        isCollapsed ? "justify-center" : ""
       )}
-    </li>
+    >
+      <div className={cn("shrink-0", isCollapsed ? "w-6 h-6" : "w-5 h-5")}>
+        {icon}
+      </div>
+      {!isCollapsed && <span className="text-sm font-medium">{label}</span>}
+    </Link>
   );
 };
 
-const Sidebar: React.FC = () => {
+const Sidebar = () => {
   const location = useLocation();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
+    services: false,
+    expenses: false,
+    apps: false
+  });
 
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
+  const toggleMenu = (menuKey: string) => {
+    setExpandedMenus(prev => ({
+      ...prev,
+      [menuKey]: !prev[menuKey]
+    }));
   };
 
-  const links = [
-    { href: '/', icon: <HomeIcon />, label: 'Dashboard' },
-    { 
-      icon: <Calculator />, 
-      label: 'Apps',
-      subItems: [
-        { href: '/calculator', icon: <Calculator />, label: 'Calculator' },
-        { href: '/age-calculator', icon: <User2 />, label: 'Age Calculator' },
-      ]
+  // Service submenu items
+  const serviceItems = [
+    {
+      icon: <CreditCard size={isCollapsed ? 20 : 16} />,
+      label: 'Banking Services',
+      to: '/banking-services',
     },
-    { href: '/pan-card', icon: <CreditCard />, label: 'Pan Card' },
-    { href: '/passport', icon: <Passport />, label: 'Passport' },
-    { href: '/banking-services', icon: <Landmark />, label: 'Banking' },
-    { href: '/online-services', icon: <Globe />, label: 'Online Services' },
-    { href: '/applications', icon: <Files />, label: 'Applications' },
-    { href: '/photostat', icon: <Copy />, label: 'Photostat' },
-    { href: '/customers', icon: <Users />, label: 'Customers' },
-    { 
-      icon: <DollarSign />, 
+    {
+      icon: <Globe size={isCollapsed ? 20 : 16} />,
+      label: 'Digital Services',
+      to: '/online-services',
+    },
+    {
+      icon: <FilePen size={isCollapsed ? 20 : 16} />,
+      label: 'Offline Services',
+      to: '/applications',
+    },
+  ];
+
+  // Expense submenu items
+  const expenseItems = [
+    {
+      icon: <PiggyBank size={isCollapsed ? 20 : 16} />,
       label: 'Expenses',
-      subItems: [
-        { href: '/expenses', icon: <CircleDollarSign />, label: 'General Expenses' },
-        { href: '/fee-expenses', icon: <Receipt />, label: 'Fee Expenses' },
-        { href: '/misc-expenses', icon: <FileBox />, label: 'Misc Expenses' },
-      ]
+      to: '/expenses',
     },
-    { href: '/pending-balance', icon: <FileCheck />, label: 'Pending Balance' },
-    { href: '/queries', icon: <HelpCircle />, label: 'Query' },
-    { href: '/analytics', icon: <BarChart4 />, label: 'Analytics' },
+    {
+      icon: <Copy size={isCollapsed ? 20 : 16} />,
+      label: 'Fee Expenses',
+      to: '/fee-expenses',
+    },
+    {
+      icon: <FileText size={isCollapsed ? 20 : 16} />,
+      label: 'Misc Expenses',
+      to: '/misc-expenses',
+    },
+  ];
+
+  // Apps submenu items
+  const appsItems = [
+    {
+      icon: <Calculator size={isCollapsed ? 20 : 16} />,
+      label: 'Calculator',
+      to: '/calculator',
+    },
+    {
+      icon: <Calculator size={isCollapsed ? 20 : 16} />,
+      label: 'Age Calculator',
+      to: '/age-calculator',
+    },
+  ];
+
+  // Main sidebar items
+  const sidebarItems = [
+    {
+      icon: <LayoutDashboard size={isCollapsed ? 20 : 18} />,
+      label: 'Dashboard',
+      to: '/',
+      hasChildren: false,
+    },
+    {
+      icon: <CreditCard size={isCollapsed ? 20 : 18} />,
+      label: 'Services',
+      to: '#',
+      hasChildren: true,
+      menuKey: 'services',
+      children: serviceItems,
+    },
+    {
+      icon: <Copy size={isCollapsed ? 20 : 18} />,
+      label: 'Photostat',
+      to: '/photostat',
+      hasChildren: false,
+    },
+    {
+      icon: <FileText size={isCollapsed ? 20 : 18} />,
+      label: 'Queries',
+      to: '/queries',
+      hasChildren: false,
+    },
+    {
+      icon: <Users size={isCollapsed ? 20 : 18} />,
+      label: 'Customers',
+      to: '/customers',
+      hasChildren: false,
+    },
+    {
+      icon: <AlertCircle size={isCollapsed ? 20 : 18} />,
+      label: 'Pending Balance',
+      to: '/pending-balance',
+      hasChildren: false,
+    },
+    {
+      icon: <Calculator size={isCollapsed ? 20 : 18} />,
+      label: 'Apps',
+      to: '#',
+      hasChildren: true,
+      menuKey: 'apps',
+      children: appsItems,
+    },
+    {
+      icon: <BarChart3 size={isCollapsed ? 20 : 18} />,
+      label: 'Analytics',
+      to: '/analytics',
+      hasChildren: false,
+    },
+    {
+      icon: <PiggyBank size={isCollapsed ? 20 : 18} />,
+      label: 'Expenses',
+      to: '#',
+      hasChildren: true,
+      menuKey: 'expenses',
+      children: expenseItems,
+    },
   ];
 
   return (
-    <div className="flex h-screen">
-      {/* Sidebar */}
-      <aside
-        className={cn(
-          'flex flex-col w-64 border-r bg-secondary text-secondary-foreground',
-          !isSidebarOpen ? 'hidden' : 'block'
+    <aside
+      className={cn(
+        "h-screen bg-sidebar flex flex-col border-r border-sidebar-border transition-all duration-300 ease-in-out sticky top-0",
+        isCollapsed ? "w-16" : "w-64"
+      )}
+    >
+      <div className="flex items-center justify-between p-4">
+        {!isCollapsed && (
+          <h1 className="text-xl font-bold text-sidebar-foreground">Hisab Kitab</h1>
         )}
-      >
-        <div className="p-4">
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-        </div>
-        <nav className="flex-1 space-y-1 p-4">
-          <ul>
-            {links.map((link, index) =>
-              link.subItems ? (
-                <NavGroup key={index} icon={link.icon} label={link.label} subItems={link.subItems} />
-              ) : (
-                <NavItem key={link.href} href={link.href} icon={link.icon} label={link.label} />
-              )
-            )}
-          </ul>
-        </nav>
-      </aside>
-
-      {/* Main Content */}
-      <div className="flex-1 p-4">
-        {/* Your main content here */}
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="p-1.5 rounded-full bg-sidebar-accent/10 text-sidebar-foreground hover:bg-sidebar-accent/20 transition-all"
+        >
+          {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+        </button>
       </div>
-    </div>
+      
+      <ScrollArea className="flex-1 px-2 py-2">
+        <nav className="space-y-1">
+          {sidebarItems.map((item) => {
+            // Calculate if this item or any of its children is active
+            const isActive = item.hasChildren 
+              ? (item.children?.some(child => location.pathname === child.to || location.pathname.startsWith(child.to))) ?? false
+              : (item.to === '/' ? location.pathname === '/' : location.pathname.startsWith(item.to));
+            
+            return (
+              <div key={item.label}>
+                <SidebarItem
+                  icon={item.icon}
+                  label={item.label}
+                  to={item.hasChildren ? '#' : item.to}
+                  isActive={isActive}
+                  isCollapsed={isCollapsed}
+                  hasChildren={item.hasChildren}
+                  isExpanded={item.hasChildren ? expandedMenus[item.menuKey as string] : undefined}
+                  onClick={item.hasChildren ? () => toggleMenu(item.menuKey as string) : undefined}
+                />
+                
+                {item.hasChildren && (
+                  <SidebarSubMenu
+                    items={item.children ?? []}
+                    isCollapsed={isCollapsed}
+                    isExpanded={expandedMenus[item.menuKey as string]}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </nav>
+      </ScrollArea>
+    </aside>
   );
 };
 
