@@ -19,6 +19,7 @@ interface ExpenseEntry {
   date: Date;
   name: string;
   amount: number;
+  type: string;
 }
 
 const Expenses = () => {
@@ -144,7 +145,8 @@ const Expenses = () => {
           id: data[0].id,
           date: new Date(data[0].date),
           name: data[0].name,
-          amount: Number(data[0].amount)
+          amount: Number(data[0].amount),
+          type: 'general'
         };
         
         setExpenses(prev => [newEntry, ...prev]);

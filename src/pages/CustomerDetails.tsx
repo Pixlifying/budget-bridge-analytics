@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Phone, Download, Plus } from 'lucide-react';
+import { ArrowLeft, Phone, Download, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import DownloadButton from '@/components/ui/DownloadButton';
 import ServiceForm from '@/components/ui/ServiceForm';
 import { toast } from "sonner";
+import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
 
 const CustomerDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -21,6 +22,8 @@ const CustomerDetails = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("balance");
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
 
   const fetchCustomerData = async () => {
     if (!id) return;
@@ -128,6 +131,46 @@ const CustomerDetails = () => {
       console.error('Error adding transaction:', error);
       toast.error("Failed to add transaction");
       return false;
+    }
+  };
+
+  const handleDeleteTransaction = (transactionId: string) => {
+    setTransactionToDelete(transactionId);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDeleteTransaction = async () => {
+    if (!transactionToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from('customer_transactions')
+        .delete()
+        .eq('id', transactionToDelete);
+
+      if (error) throw error;
+
+      // Update transactions state
+      setTransactions(prevTransactions => 
+        prevTransactions.filter(t => t.id !== transactionToDelete)
+      );
+
+      // Update customer state
+      setCustomer(prevCustomer => {
+        if (!prevCustomer) return null;
+        return {
+          ...prevCustomer,
+          transactions: prevCustomer.transactions.filter(t => t.id !== transactionToDelete)
+        };
+      });
+
+      toast.success("Transaction deleted successfully");
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+      toast.error("Failed to delete transaction");
+    } finally {
+      setTransactionToDelete(null);
+      setDeleteConfirmOpen(false);
     }
   };
 
@@ -304,10 +347,21 @@ const CustomerDetails = () => {
                               {transaction.description || "Credit Transaction"}
                             </p>
                           </div>
-                          <div className="text-right">
-                            <p className="text-green-600 font-semibold">
-                              +{formatCurrency(Number(transaction.amount))}
-                            </p>
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              <p className="text-green-600 font-semibold">
+                                +{formatCurrency(Number(transaction.amount))}
+                              </p>
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                              onClick={() => handleDeleteTransaction(transaction.id)}
+                            >
+                              <Trash2 size={16} />
+                              <span className="sr-only">Delete transaction</span>
+                            </Button>
                           </div>
                         </div>
                       ))}
@@ -337,10 +391,21 @@ const CustomerDetails = () => {
                               {transaction.description || "Debit Transaction"}
                             </p>
                           </div>
-                          <div className="text-right">
-                            <p className="text-red-600 font-semibold">
-                              -{formatCurrency(Number(transaction.amount))}
-                            </p>
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              <p className="text-red-600 font-semibold">
+                                -{formatCurrency(Number(transaction.amount))}
+                              </p>
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                              onClick={() => handleDeleteTransaction(transaction.id)}
+                            >
+                              <Trash2 size={16} />
+                              <span className="sr-only">Delete transaction</span>
+                            </Button>
                           </div>
                         </div>
                       ))}
@@ -350,6 +415,17 @@ const CustomerDetails = () => {
               </Card>
             </TabsContent>
           </Tabs>
+
+          <DeleteConfirmation
+            isOpen={deleteConfirmOpen}
+            onClose={() => {
+              setDeleteConfirmOpen(false);
+              setTransactionToDelete(null);
+            }}
+            onConfirm={confirmDeleteTransaction}
+            title="Delete Transaction"
+            description="Are you sure you want to delete this transaction? This action cannot be undone."
+          />
         </>
       ) : (
         <div className="text-center py-8">
