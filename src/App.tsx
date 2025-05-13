@@ -1,5 +1,7 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
 import PanCard from './pages/PanCard';
 import Passport from './pages/Passport';
@@ -23,23 +25,25 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/calculator" element={<Calculator />} />
-        <Route path="/age-calculator" element={<AgeCalculator />} />
-        <Route path="/pan-card" element={<PanCard />} />
-        <Route path="/passport" element={<Passport />} />
-        <Route path="/banking-services" element={<BankingServices />} />
-        <Route path="/online-services" element={<OnlineServices />} />
-        <Route path="/applications" element={<Applications />} />
-        <Route path="/photostat" element={<Photostat />} />
-        <Route path="/customers" element={<Customers />} />
-        <Route path="/customers/:id" element={<CustomerDetails />} />
-        <Route path="/expenses" element={<Expenses />} />
-        <Route path="/fee-expenses" element={<FeeExpenses />} />
-        <Route path="/misc-expenses" element={<MiscExpenses />} />
-        <Route path="/pending-balance" element={<PendingBalance />} />
-        <Route path="/queries" element={<Query />} />
-        <Route path="/analytics" element={<Analytics />} />
+        <Route element={<Layout />}>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/calculator" element={<Calculator />} />
+          <Route path="/age-calculator" element={<AgeCalculator />} />
+          <Route path="/pan-card" element={<PanCard />} />
+          <Route path="/passport" element={<Passport />} />
+          <Route path="/banking-services" element={<BankingServices />} />
+          <Route path="/online-services" element={<OnlineServices />} />
+          <Route path="/applications" element={<Applications />} />
+          <Route path="/photostat" element={<Photostat />} />
+          <Route path="/customers" element={<Customers />} />
+          <Route path="/customers/:id" element={<CustomerDetails />} />
+          <Route path="/expenses" element={<Expenses />} />
+          <Route path="/fee-expenses" element={<FeeExpenses />} />
+          <Route path="/misc-expenses" element={<MiscExpenses />} />
+          <Route path="/pending-balance" element={<PendingBalance />} />
+          <Route path="/queries" element={<Query />} />
+          <Route path="/analytics" element={<Analytics />} />
+        </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
