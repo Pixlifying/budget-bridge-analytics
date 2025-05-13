@@ -1,7 +1,7 @@
 
 import { format, isSameDay, isSameMonth } from 'date-fns';
 import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import { UserOptions } from 'jspdf-autotable';
 
