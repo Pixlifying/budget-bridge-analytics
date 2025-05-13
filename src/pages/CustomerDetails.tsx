@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Phone, Download, Plus } from 'lucide-react';
+import { ArrowLeft, Phone, Download, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
@@ -12,6 +12,7 @@ import { formatCurrency } from '@/utils/calculateUtils';
 import { Skeleton } from '@/components/ui/skeleton';
 import DownloadButton from '@/components/ui/DownloadButton';
 import ServiceForm from '@/components/ui/ServiceForm';
+import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
 import { toast } from "sonner";
 
 const CustomerDetails = () => {
@@ -21,6 +22,8 @@ const CustomerDetails = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("balance");
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
 
   const fetchCustomerData = async () => {
     if (!id) return;
@@ -78,7 +81,7 @@ const CustomerDetails = () => {
         type: values.type as 'debit' | 'credit',
         amount: Number(values.amount),
         date: values.date,
-        description: values.description || null // Add description field
+        description: values.description || null 
       };
 
       console.log("Saving transaction to Supabase:", newTransaction);
@@ -129,6 +132,43 @@ const CustomerDetails = () => {
       toast.error("Failed to add transaction");
       return false;
     }
+  };
+
+  const handleDeleteTransaction = async () => {
+    if (!transactionToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from('customer_transactions')
+        .delete()
+        .eq('id', transactionToDelete);
+
+      if (error) throw error;
+
+      // Update the local state
+      setTransactions(prev => prev.filter(t => t.id !== transactionToDelete));
+      
+      // Update the customer state as well
+      setCustomer(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          transactions: prev.transactions.filter(t => t.id !== transactionToDelete)
+        };
+      });
+
+      toast.success("Transaction deleted successfully");
+      setIsDeleteModalOpen(false);
+      setTransactionToDelete(null);
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+      toast.error("Failed to delete transaction");
+    }
+  };
+
+  const initiateDelete = (id: string) => {
+    setTransactionToDelete(id);
+    setIsDeleteModalOpen(true);
   };
 
   const totalDebits = transactions
@@ -304,10 +344,18 @@ const CustomerDetails = () => {
                               {transaction.description || "Credit Transaction"}
                             </p>
                           </div>
-                          <div className="text-right">
+                          <div className="flex items-center gap-2">
                             <p className="text-green-600 font-semibold">
                               +{formatCurrency(Number(transaction.amount))}
                             </p>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => initiateDelete(transaction.id)}
+                              className="text-red-500 hover:bg-red-50 hover:text-red-600"
+                            >
+                              <Trash2 size={16} />
+                            </Button>
                           </div>
                         </div>
                       ))}
@@ -337,10 +385,18 @@ const CustomerDetails = () => {
                               {transaction.description || "Debit Transaction"}
                             </p>
                           </div>
-                          <div className="text-right">
+                          <div className="flex items-center gap-2">
                             <p className="text-red-600 font-semibold">
                               -{formatCurrency(Number(transaction.amount))}
                             </p>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => initiateDelete(transaction.id)}
+                              className="text-red-500 hover:bg-red-50 hover:text-red-600"
+                            >
+                              <Trash2 size={16} />
+                            </Button>
                           </div>
                         </div>
                       ))}
@@ -350,6 +406,17 @@ const CustomerDetails = () => {
               </Card>
             </TabsContent>
           </Tabs>
+
+          <DeleteConfirmation
+            isOpen={isDeleteModalOpen}
+            onClose={() => {
+              setIsDeleteModalOpen(false);
+              setTransactionToDelete(null);
+            }}
+            onConfirm={handleDeleteTransaction}
+            title="Delete Transaction"
+            description="Are you sure you want to delete this transaction? This action cannot be undone."
+          />
         </>
       ) : (
         <div className="text-center py-8">
