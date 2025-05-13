@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -24,7 +23,7 @@ import {
   User2,
   BookOpen // Replacing Passport with BookOpen
 } from 'lucide-react';
-import { useMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface SidebarProps {
   isSidebarOpen: boolean;
@@ -46,7 +45,7 @@ interface NavSubItem {
 
 const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, toggleSidebar }) => {
   const location = useLocation();
-  const { isMobile } = useMobile();
+  const isMobile = useIsMobile();
   const [activeItems, setActiveItems] = useState<string[]>([]);
 
   const links: NavItem[] = [
