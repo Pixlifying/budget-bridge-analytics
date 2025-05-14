@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { Plus } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -16,12 +16,14 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import PageWrapper from '@/components/layout/PageWrapper';
+import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
 
 // Define form schema
 const formSchema = z.object({
   customer_name: z.string().min(1, { message: "Customer name is required" }),
   amount: z.coerce.number().positive({ message: "Amount must be a positive number" }),
   account_type: z.string().min(1, { message: "Account type is required" }),
+  insurance_type: z.string().optional(),
   date: z.date()
 });
 
@@ -31,6 +33,8 @@ const BankingAccounts = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [mode, setMode] = useState<'day' | 'month'>('day');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [accountToDelete, setAccountToDelete] = useState<string | null>(null);
   
   // Form for adding new account
   const form = useForm<FormValues>({
@@ -39,9 +43,13 @@ const BankingAccounts = () => {
       customer_name: '',
       amount: 0,
       account_type: '',
+      insurance_type: '',
       date: new Date()
     }
   });
+
+  // Watch for account type changes to show/hide insurance options
+  const accountType = form.watch('account_type');
 
   // Get accounts
   const fetchAccounts = async () => {
@@ -88,12 +96,19 @@ const BankingAccounts = () => {
   // Handle form submission
   const onSubmit = async (values: FormValues) => {
     try {
-      const { error } = await supabase.from('banking_accounts').insert({
+      const accountData: any = {
         customer_name: values.customer_name,
         date: values.date.toISOString(),
         amount: values.amount,
         account_type: values.account_type
-      });
+      };
+
+      // Add insurance type if it's a savings account with insurance
+      if (values.account_type === 'Savings Account' && values.insurance_type) {
+        accountData.insurance_type = values.insurance_type;
+      }
+
+      const { error } = await supabase.from('banking_accounts').insert(accountData);
 
       if (error) {
         throw error;
@@ -117,12 +132,55 @@ const BankingAccounts = () => {
     }
   };
 
+  // Handle account deletion
+  const handleDeleteAccount = async () => {
+    if (!accountToDelete) return;
+    
+    try {
+      const { error } = await supabase
+        .from('banking_accounts')
+        .delete()
+        .eq('id', accountToDelete);
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Success",
+        description: "Account deleted successfully",
+      });
+
+      setDeleteDialogOpen(false);
+      setAccountToDelete(null);
+      refetch();
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete account",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const openDeleteDialog = (id: string) => {
+    setAccountToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
   // Account type options
   const accountTypes = [
     { value: "Savings Account", label: "Savings Account" },
     { value: "FD/RD", label: "FD/RD" },
     { value: "Loan Documents", label: "Loan Documents" },
     { value: "Social Security", label: "Social Security" }
+  ];
+
+  // Insurance type options
+  const insuranceTypes = [
+    { value: "PMSBY", label: "PMSBY" },
+    { value: "PMJJY", label: "PMJJY" },
   ];
 
   // Group accounts by account type
@@ -136,7 +194,7 @@ const BankingAccounts = () => {
   }, {} as Record<string, typeof accounts>);
 
   return (
-    <PageWrapper title="Banking Accounts" description="Manage banking accounts">
+    <PageWrapper title="Banking Accounts" subtitle="Manage banking accounts">
       <div className="flex justify-between items-center mb-6">
         <DateRangePicker 
           date={date} 
@@ -166,51 +224,53 @@ const BankingAccounts = () => {
                     <FormItem>
                       <FormLabel>Customer Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter customer name" {...field} />
+                        <Input placeholder="Enter customer name" className="max-w-md" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
                 
-                <FormField
-                  control={form.control}
-                  name="date"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Date</FormLabel>
-                      <FormControl>
-                        <DateRangePicker 
-                          date={field.value} 
-                          onDateChange={field.onChange}
-                          mode="day"
-                          onModeChange={() => {}}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="amount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Amount</FormLabel>
-                      <FormControl>
-                        <Input type="number" placeholder="0" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="date"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Date</FormLabel>
+                        <FormControl>
+                          <DateRangePicker 
+                            date={field.value} 
+                            onDateChange={field.onChange}
+                            mode="day"
+                            onModeChange={() => {}}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="amount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Amount</FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="0" className="max-w-xs" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
                 
                 <FormField
                   control={form.control}
                   name="account_type"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="max-w-md">
                       <FormLabel>Account Type</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
@@ -230,6 +290,34 @@ const BankingAccounts = () => {
                     </FormItem>
                   )}
                 />
+
+                {accountType === 'Savings Account' && (
+                  <FormField
+                    control={form.control}
+                    name="insurance_type"
+                    render={({ field }) => (
+                      <FormItem className="max-w-md">
+                        <FormLabel>Insurance Type (Optional)</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select insurance type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="">None</SelectItem>
+                            {insuranceTypes.map(type => (
+                              <SelectItem key={type.value} value={type.value}>
+                                {type.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
                 
                 <div className="flex justify-end">
                   <Button type="submit">Save</Button>
@@ -254,8 +342,25 @@ const BankingAccounts = () => {
                   {accounts.map(account => (
                     <div key={account.id} className="p-4">
                       <div className="flex justify-between mb-1">
-                        <span className="font-medium">{account.customer_name}</span>
-                        <span>₹{account.amount.toLocaleString()}</span>
+                        <div>
+                          <span className="font-medium">{account.customer_name}</span>
+                          {account.insurance_type && (
+                            <span className="ml-2 text-xs bg-blue-100 text-blue-800 py-0.5 px-2 rounded-full">
+                              {account.insurance_type}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span>₹{account.amount.toLocaleString()}</span>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => openDeleteDialog(account.id)}
+                            className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                       <div className="text-sm text-muted-foreground">
                         {format(new Date(account.date), 'PPP')}
@@ -268,6 +373,14 @@ const BankingAccounts = () => {
           </Card>
         ))}
       </div>
+
+      <DeleteConfirmation 
+        isOpen={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        onConfirm={handleDeleteAccount}
+        title="Delete Account"
+        description="Are you sure you want to delete this account? This action cannot be undone."
+      />
     </PageWrapper>
   );
 };
