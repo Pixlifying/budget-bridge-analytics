@@ -298,14 +298,14 @@ const BankingAccounts = () => {
                     render={({ field }) => (
                       <FormItem className="max-w-md">
                         <FormLabel>Insurance Type (Optional)</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <Select onValueChange={field.onChange} value={field.value || "none"}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select insurance type" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">None</SelectItem>
+                            <SelectItem value="none">None</SelectItem>
                             {insuranceTypes.map(type => (
                               <SelectItem key={type.value} value={type.value}>
                                 {type.label}
