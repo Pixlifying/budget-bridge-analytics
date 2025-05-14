@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Sidebar from "@/components/layout/Sidebar";
 import Dashboard from "@/pages/Dashboard";
 import BankingServices from "@/pages/BankingServices";
+import BankingAccounts from "@/pages/BankingAccounts";
 import OnlineServices from "@/pages/OnlineServices";
 import Applications from "@/pages/Applications";
 import Analytics from "@/pages/Analytics";
@@ -35,6 +36,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/banking-services" element={<BankingServices />} />
+              <Route path="/banking-accounts" element={<BankingAccounts />} />
               <Route path="/online-services" element={<OnlineServices />} />
               <Route path="/applications" element={<Applications />} />
               <Route path="/photostat" element={<Photostat />} />

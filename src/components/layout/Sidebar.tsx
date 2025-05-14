@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -16,7 +15,8 @@ import {
   Users,
   Calculator,
   ChevronsRight,
-  ChevronsDown
+  ChevronsDown,
+  Landmark
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -152,6 +152,11 @@ const Sidebar = () => {
       icon: <CreditCard size={isCollapsed ? 20 : 16} />,
       label: 'Banking Services',
       to: '/banking-services',
+    },
+    {
+      icon: <Landmark size={isCollapsed ? 20 : 16} />,
+      label: 'Other Banking Accounts',
+      to: '/banking-accounts',
     },
     {
       icon: <Globe size={isCollapsed ? 20 : 16} />,

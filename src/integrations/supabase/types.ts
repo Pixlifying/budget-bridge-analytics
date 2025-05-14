@@ -36,6 +36,33 @@ export type Database = {
         }
         Relationships: []
       }
+      banking_accounts: {
+        Row: {
+          account_type: string
+          amount: number
+          created_at: string | null
+          customer_name: string
+          date: string
+          id: string
+        }
+        Insert: {
+          account_type: string
+          amount: number
+          created_at?: string | null
+          customer_name: string
+          date?: string
+          id?: string
+        }
+        Update: {
+          account_type?: string
+          amount?: number
+          created_at?: string | null
+          customer_name?: string
+          date?: string
+          id?: string
+        }
+        Relationships: []
+      }
       banking_services: {
         Row: {
           amount: number
