@@ -155,7 +155,7 @@ const Sidebar = () => {
     },
     {
       icon: <Landmark size={isCollapsed ? 20 : 16} />,
-      label: 'Other Banking Accounts',
+      label: 'Other Banking Services',
       to: '/banking-accounts',
     },
     {

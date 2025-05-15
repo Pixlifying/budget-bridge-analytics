@@ -38,6 +38,7 @@ export type Database = {
       }
       banking_accounts: {
         Row: {
+          account_number: string | null
           account_type: string
           amount: number
           created_at: string | null
@@ -47,6 +48,7 @@ export type Database = {
           insurance_type: string | null
         }
         Insert: {
+          account_number?: string | null
           account_type: string
           amount: number
           created_at?: string | null
@@ -56,6 +58,7 @@ export type Database = {
           insurance_type?: string | null
         }
         Update: {
+          account_number?: string | null
           account_type?: string
           amount?: number
           created_at?: string | null

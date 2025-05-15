@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -17,12 +17,15 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import PageWrapper from '@/components/layout/PageWrapper';
 import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
+import { exportToExcel } from '@/utils/calculateUtils';
+import StatCard from '@/components/ui/StatCard';
 
 // Define form schema
 const formSchema = z.object({
   customer_name: z.string().min(1, { message: "Customer name is required" }),
   amount: z.coerce.number().positive({ message: "Amount must be a positive number" }),
   account_type: z.string().min(1, { message: "Account type is required" }),
+  account_number: z.string().optional(),
   insurance_type: z.string().optional(),
   date: z.date()
 });
@@ -43,6 +46,7 @@ const BankingAccounts = () => {
       customer_name: '',
       amount: 0,
       account_type: '',
+      account_number: '',
       insurance_type: '',
       date: new Date()
     }
@@ -103,8 +107,13 @@ const BankingAccounts = () => {
         account_type: values.account_type
       };
 
-      // Add insurance type if it's a savings account with insurance
-      if (values.account_type === 'Savings Account' && values.insurance_type) {
+      // Add account number if provided
+      if (values.account_number) {
+        accountData.account_number = values.account_number;
+      }
+
+      // Add insurance type if it's a savings account or social security with insurance
+      if ((values.account_type === 'Savings Account' || values.account_type === 'Social Security') && values.insurance_type && values.insurance_type !== 'none') {
         accountData.insurance_type = values.insurance_type;
       }
 
@@ -183,6 +192,21 @@ const BankingAccounts = () => {
     { value: "PMJJY", label: "PMJJY" },
   ];
 
+  // Handle export to CSV
+  const handleExport = () => {
+    exportToExcel(accounts, 'other-banking-services');
+    toast({
+      title: "Success",
+      description: "Data exported successfully",
+    });
+  };
+
+  // Calculate summary statistics
+  const totalAmount = accounts.reduce((sum, acc) => sum + acc.amount, 0);
+  const totalAccounts = accounts.length;
+  const totalPMSBY = accounts.filter(acc => acc.insurance_type === 'PMSBY').length;
+  const totalPMJJY = accounts.filter(acc => acc.insurance_type === 'PMJJY').length;
+
   // Group accounts by account type
   const groupedAccounts = accounts.reduce((groups, account) => {
     const type = account.account_type;
@@ -194,7 +218,7 @@ const BankingAccounts = () => {
   }, {} as Record<string, typeof accounts>);
 
   return (
-    <PageWrapper title="Banking Accounts" subtitle="Manage banking accounts">
+    <PageWrapper title="Other Banking Services" subtitle="Manage banking services">
       <div className="flex justify-between items-center mb-6">
         <DateRangePicker 
           date={date} 
@@ -203,110 +227,88 @@ const BankingAccounts = () => {
           onModeChange={setMode} 
         />
         
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Account
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add Banking Account</DialogTitle>
-            </DialogHeader>
-            
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="customer_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Customer Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter customer name" className="max-w-md" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <div className="grid grid-cols-2 gap-4">
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleExport} className="flex items-center gap-2">
+            <Download className="h-4 w-4" /> Export
+          </Button>
+          
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Account
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add Banking Service</DialogTitle>
+              </DialogHeader>
+              
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                   <FormField
                     control={form.control}
-                    name="date"
+                    name="customer_name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Date</FormLabel>
+                        <FormLabel>Customer Name</FormLabel>
                         <FormControl>
-                          <DateRangePicker 
-                            date={field.value} 
-                            onDateChange={field.onChange}
-                            mode="day"
-                            onModeChange={() => {}}
-                          />
+                          <Input placeholder="Enter customer name" className="max-w-md" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                   
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="date"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Date</FormLabel>
+                          <FormControl>
+                            <DateRangePicker 
+                              date={field.value} 
+                              onDateChange={field.onChange}
+                              mode="day"
+                              onModeChange={() => {}}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="amount"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Amount</FormLabel>
+                          <FormControl>
+                            <Input type="number" placeholder="0" className="max-w-xs" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
                   <FormField
                     control={form.control}
-                    name="amount"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Amount</FormLabel>
-                        <FormControl>
-                          <Input type="number" placeholder="0" className="max-w-xs" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                
-                <FormField
-                  control={form.control}
-                  name="account_type"
-                  render={({ field }) => (
-                    <FormItem className="max-w-md">
-                      <FormLabel>Account Type</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select account type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {accountTypes.map(type => (
-                            <SelectItem key={type.value} value={type.value}>
-                              {type.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {accountType === 'Savings Account' && (
-                  <FormField
-                    control={form.control}
-                    name="insurance_type"
+                    name="account_type"
                     render={({ field }) => (
                       <FormItem className="max-w-md">
-                        <FormLabel>Insurance Type (Optional)</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || "none"}>
+                        <FormLabel>Account Type</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select insurance type" />
+                              <SelectValue placeholder="Select account type" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="none">None</SelectItem>
-                            {insuranceTypes.map(type => (
+                            {accountTypes.map(type => (
                               <SelectItem key={type.value} value={type.value}>
                                 {type.label}
                               </SelectItem>
@@ -317,15 +319,77 @@ const BankingAccounts = () => {
                       </FormItem>
                     )}
                   />
-                )}
-                
-                <div className="flex justify-end">
-                  <Button type="submit">Save</Button>
-                </div>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
+
+                  <FormField
+                    control={form.control}
+                    name="account_number"
+                    render={({ field }) => (
+                      <FormItem className="max-w-md">
+                        <FormLabel>Account Number (Optional)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter account number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {(accountType === 'Savings Account' || accountType === 'Social Security') && (
+                    <FormField
+                      control={form.control}
+                      name="insurance_type"
+                      render={({ field }) => (
+                        <FormItem className="max-w-md">
+                          <FormLabel>Insurance Type (Optional)</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value || "none"}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select insurance type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="none">None</SelectItem>
+                              {insuranceTypes.map(type => (
+                                <SelectItem key={type.value} value={type.value}>
+                                  {type.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                  
+                  <div className="flex justify-end">
+                    <Button type="submit">Save</Button>
+                  </div>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
+
+      {/* Summary Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <StatCard 
+          title="Total Amount" 
+          value={`₹${totalAmount.toLocaleString()}`}
+        />
+        <StatCard 
+          title="Total Accounts Opened" 
+          value={totalAccounts.toString()}
+        />
+        <StatCard 
+          title="Total PMSBY" 
+          value={totalPMSBY.toString()}
+        />
+        <StatCard 
+          title="Total PMJJY" 
+          value={totalPMJJY.toString()}
+        />
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -365,6 +429,11 @@ const BankingAccounts = () => {
                       <div className="text-sm text-muted-foreground">
                         {format(new Date(account.date), 'PPP')}
                       </div>
+                      {account.account_number && (
+                        <div className="text-sm text-muted-foreground mt-1">
+                          Account: {account.account_number}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
