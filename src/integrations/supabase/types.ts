@@ -434,6 +434,36 @@ export type Database = {
         }
         Relationships: []
       }
+      templates: {
+        Row: {
+          content: string
+          created_at: string | null
+          file_path: string | null
+          id: string
+          name: string
+          placeholders: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          file_path?: string | null
+          id?: string
+          name: string
+          placeholders?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          file_path?: string | null
+          id?: string
+          name?: string
+          placeholders?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

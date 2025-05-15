@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -200,6 +201,11 @@ const Sidebar = () => {
       icon: <Calculator size={isCollapsed ? 20 : 16} />,
       label: 'Age Calculator',
       to: '/age-calculator',
+    },
+    {
+      icon: <FileText size={isCollapsed ? 20 : 16} />,
+      label: 'Templates',
+      to: '/templates',
     },
   ];
 
