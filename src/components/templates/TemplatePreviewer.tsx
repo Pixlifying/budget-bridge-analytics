@@ -98,23 +98,25 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({ template, mode })
       )}
 
       {/* Print Styles */}
-      <style jsx global>{`
-        @media print {
-          body * {
-            visibility: hidden;
+      <style>
+        {`
+          @media print {
+            body * {
+              visibility: hidden;
+            }
+            .print-document,
+            .print-document * {
+              visibility: visible;
+            }
+            .print-document {
+              position: absolute;
+              left: 0;
+              top: 0;
+              width: 100%;
+            }
           }
-          .print-document,
-          .print-document * {
-            visibility: visible;
-          }
-          .print-document {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-          }
-        }
-      `}</style>
+        `}
+      </style>
     </div>
   );
 };

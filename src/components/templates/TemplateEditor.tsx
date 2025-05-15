@@ -80,12 +80,15 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ template, onSave }) => 
     setIsSaving(true);
     
     try {
+      // Convert the placeholders to a format that Supabase accepts
+      const placeholdersJson = placeholders as unknown as Record<string, unknown>[];
+      
       const { data, error } = await supabase
         .from("templates")
         .update({
           name,
           content,
-          placeholders,
+          placeholders: placeholdersJson,
           updated_at: new Date().toISOString()
         })
         .eq("id", template.id)
@@ -99,7 +102,12 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ template, onSave }) => 
       });
       
       if (data && data[0]) {
-        onSave(data[0] as Template);
+        // Safe type conversion for the returned data
+        const updatedTemplate: Template = {
+          ...data[0],
+          placeholders: data[0].placeholders as unknown as Placeholder[]
+        };
+        onSave(updatedTemplate);
       }
     } catch (err: any) {
       toast({

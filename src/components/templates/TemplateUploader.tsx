@@ -45,6 +45,18 @@ const TemplateUploader = ({
           const fileName = selectedFile.name.split('.')[0];
           setTemplateName(fileName);
         }
+
+        // For text files, automatically read the content
+        if (selectedFile.type === "text/plain") {
+          const reader = new FileReader();
+          reader.onload = async (e) => {
+            if (e.target?.result) {
+              // Text file content is ready to be used
+              console.log("Text file ready for upload");
+            }
+          };
+          reader.readAsText(selectedFile);
+        }
       } else {
         setFile(null);
         setError("Please upload a Word document (.doc, .docx), PDF, or text file");
@@ -79,7 +91,7 @@ const TemplateUploader = ({
         content = `File uploaded: ${file.name}`;
       }
       
-      // 3. Create template record
+      // 3. Create template record - with faster processing
       const { data: templateData, error: templateError } = await supabase
         .from("templates")
         .insert([{
@@ -100,6 +112,8 @@ const TemplateUploader = ({
       setOpen(false);
       setFile(null);
       setTemplateName("");
+      
+      // Call the success callback immediately
       onSuccess();
     } catch (err: any) {
       toast({
@@ -132,6 +146,7 @@ const TemplateUploader = ({
               value={templateName}
               onChange={(e) => setTemplateName(e.target.value)}
               placeholder="Enter template name"
+              autoFocus
             />
           </div>
           

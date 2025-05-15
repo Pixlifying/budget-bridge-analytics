@@ -13,11 +13,16 @@ import TemplateList from "@/components/templates/TemplateList";
 import TemplateEditor from "@/components/templates/TemplateEditor";
 import TemplatePreviewer from "@/components/templates/TemplatePreviewer";
 
+interface Placeholder {
+  key: string;
+  label: string;
+}
+
 interface Template {
   id: string;
   name: string;
   content: string;
-  placeholders: { key: string; label: string }[];
+  placeholders: Placeholder[];
   file_path: string | null;
   created_at: string;
   updated_at: string;
@@ -48,7 +53,10 @@ const Templates = () => {
         return [];
       }
       
-      return data as Template[];
+      return data.map(template => ({
+        ...template,
+        placeholders: template.placeholders as unknown as Placeholder[]
+      })) as Template[];
     },
   });
 
@@ -66,6 +74,13 @@ const Templates = () => {
   // Handle preview mode toggle
   const handlePreviewClick = () => {
     setIsEditing(false);
+  };
+
+  // Handle template update
+  const handleTemplateUpdate = (updatedTemplate: Template) => {
+    setSelectedTemplate(updatedTemplate);
+    setIsEditing(false);
+    queryClient.invalidateQueries({ queryKey: ["templates"] });
   };
 
   return (
@@ -170,11 +185,7 @@ const Templates = () => {
             ) : isEditing ? (
               <TemplateEditor 
                 template={selectedTemplate} 
-                onSave={(updatedTemplate) => {
-                  setSelectedTemplate(updatedTemplate);
-                  setIsEditing(false);
-                  queryClient.invalidateQueries({ queryKey: ["templates"] });
-                }}
+                onSave={handleTemplateUpdate}
               />
             ) : (
               <TemplatePreviewer
