@@ -79,7 +79,11 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
     
     template.placeholders.forEach(placeholder => {
       const value = placeholderValues[placeholder.key] || `{{${placeholder.key}}}`;
-      result = result.replace(new RegExp(`\\{\\{${placeholder.key}\\}\\}`, 'g'), value);
+      // Use a function to handle the replacement to preserve surrounding styling
+      result = result.replace(
+        new RegExp(`\\{\\{${placeholder.key}\\}\\}`, 'g'), 
+        value
+      );
     });
     
     return result;
@@ -470,6 +474,22 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
             @page { margin: 0; }
             html { margin: 0; }
             body { margin: 15mm; }
+          }
+          
+          /* Fix placeholder styling */
+          [contenteditable] {
+            outline: none;
+          }
+          
+          /* Remove background highlight from placeholders */
+          [contenteditable] *::selection {
+            background: rgba(66, 153, 225, 0.2);
+          }
+          
+          /* Ensure consistent color for placeholders */
+          [contenteditable] span.placeholder {
+            color: inherit;
+            background: none;
           }
         `}
       </style>
