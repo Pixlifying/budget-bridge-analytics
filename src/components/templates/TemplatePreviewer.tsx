@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,12 @@ interface TemplatePreviewerProps {
 const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({ template, mode }) => {
   const [placeholderValues, setPlaceholderValues] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
+
+  // Initialize placeholder values when template changes
+  useEffect(() => {
+    // Reset placeholder values when template changes
+    setPlaceholderValues({});
+  }, [template.id]);
 
   // Function to replace placeholders with actual values
   const replaceContent = (content: string) => {

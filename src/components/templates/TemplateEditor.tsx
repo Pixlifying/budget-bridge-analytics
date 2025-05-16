@@ -81,7 +81,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ template, onSave }) => 
     
     try {
       // Convert the placeholders to a format that Supabase accepts
-      const placeholdersJson = placeholders as unknown as Record<string, unknown>[];
+      const placeholdersJson = JSON.parse(JSON.stringify(placeholders));
       
       const { data, error } = await supabase
         .from("templates")
