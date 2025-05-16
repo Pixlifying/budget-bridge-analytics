@@ -39,7 +39,7 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({ template, mode, o
   const [editableContent, setEditableContent] = useState(template.content);
   const [editableName, setEditableName] = useState(template.name);
   const [showPlaceholderForm, setShowPlaceholderForm] = useState(mode === "print");
-
+  
   // Initialize content when template changes
   useEffect(() => {
     setEditableContent(template.content);
@@ -88,13 +88,16 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({ template, mode, o
         return existing || { key, label: key.charAt(0).toUpperCase() + key.slice(1) };
       });
       
+      // Convert placeholders to a format Supabase accepts
+      const placeholdersJson = JSON.parse(JSON.stringify(updatedPlaceholders));
+      
       // Update template in database
       const { data, error } = await supabase
         .from("templates")
         .update({
           name: editableName,
           content: editableContent,
-          placeholders: updatedPlaceholders,
+          placeholders: placeholdersJson,
           updated_at: new Date().toISOString()
         })
         .eq("id", template.id)
@@ -133,6 +136,22 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({ template, mode, o
     }
     
     window.print();
+  };
+
+  // Find and replace image placeholders in content
+  const renderContentWithImages = (content: string) => {
+    if (mode === "print") {
+      // For print mode, simply show the text with placeholders replaced
+      return <div className="whitespace-pre-wrap">{previewContent}</div>;
+    }
+    
+    return (
+      <Textarea
+        value={editableContent}
+        onChange={(e) => setEditableContent(e.target.value)}
+        className="font-mono min-h-[400px] w-full border-none focus-visible:ring-0 resize-none"
+      />
+    );
   };
 
   return (
@@ -189,11 +208,7 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({ template, mode, o
               <div className="whitespace-pre-wrap">{previewContent}</div>
             ) : (
               <Card className="p-6">
-                <Textarea
-                  value={editableContent}
-                  onChange={(e) => setEditableContent(e.target.value)}
-                  className="font-mono min-h-[400px] w-full border-none focus-visible:ring-0 resize-none"
-                />
+                {renderContentWithImages(editableContent)}
               </Card>
             )}
           </div>
