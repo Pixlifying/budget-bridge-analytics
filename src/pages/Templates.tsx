@@ -70,6 +70,12 @@ const Templates = () => {
     queryClient.invalidateQueries({ queryKey: ["templates"] });
   };
 
+  // Handle template deletion
+  const handleTemplateDelete = (templateId: string) => {
+    setSelectedTemplate(null);
+    queryClient.invalidateQueries({ queryKey: ["templates"] });
+  };
+
   return (
     <PageWrapper
       title="Templates"
@@ -114,7 +120,7 @@ const Templates = () => {
                 <Tabs value={activeView} onValueChange={(v) => setActiveView(v as "preview" | "print")}>
                   <TabsList>
                     <TabsTrigger value="preview">
-                      Preview & Edit
+                      Edit Document
                     </TabsTrigger>
                     <TabsTrigger value="print">
                       <Printer className="mr-2 h-4 w-4" />
@@ -153,6 +159,7 @@ const Templates = () => {
                 template={selectedTemplate}
                 mode="full"
                 onSave={handleTemplateUpdate}
+                onDelete={handleTemplateDelete}
               />
             )}
           </CardContent>
