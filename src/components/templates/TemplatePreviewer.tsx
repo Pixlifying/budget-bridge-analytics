@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { 
   Loader2, 
@@ -11,7 +10,7 @@ import {
   AlignCenter, 
   AlignRight, 
   ListOrdered, 
-  ListUnordered 
+  List 
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -329,7 +328,7 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
               <ListOrdered className="h-4 w-4" />
             </Toggle>
             <Toggle aria-label="Add unordered list" onClick={() => addBulletList(false)} size="sm">
-              <ListUnordered className="h-4 w-4" />
+              <List className="h-4 w-4" />
             </Toggle>
           </div>
         </div>
