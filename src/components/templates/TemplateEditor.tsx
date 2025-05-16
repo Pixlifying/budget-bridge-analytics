@@ -191,17 +191,17 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ template, onSave }) => 
           </p>
         ) : (
           <div className="space-y-2">
-            {placeholders.map((placeholder) => (
-              <div key={placeholder.key} className="flex items-center justify-between p-2 bg-muted/50 rounded-md">
+            {placeholders.map((p) => (
+              <div key={p.key} className="flex items-center justify-between p-2 bg-muted/50 rounded-md">
                 <div>
-                  <Badge variant="outline" className="mr-2">{`{{${placeholder.key}}}`}</Badge>
-                  <span className="text-sm">{placeholder.label}</span>
+                  <Badge variant="outline" className="mr-2">{`{{${p.key}}}`}</Badge>
+                  <span className="text-sm">{p.label}</span>
                 </div>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleRemovePlaceholder(placeholder.key)}
+                  onClick={() => handleRemovePlaceholder(p.key)}
                 >
                   <X className="h-4 w-4" />
                 </Button>
