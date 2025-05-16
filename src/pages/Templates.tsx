@@ -32,7 +32,7 @@ const Templates = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
+  const [activeView, setActiveView] = useState<"preview" | "edit" | "print">("preview");
   const [previewMode, setPreviewMode] = useState<"full" | "print">("full");
 
   // Fetch templates
@@ -63,23 +63,12 @@ const Templates = () => {
   // Handle template selection
   const handleSelectTemplate = (template: Template) => {
     setSelectedTemplate(template);
-    setIsEditing(false);
-  };
-
-  // Handle edit mode toggle
-  const handleEditClick = () => {
-    setIsEditing(true);
-  };
-
-  // Handle preview mode toggle
-  const handlePreviewClick = () => {
-    setIsEditing(false);
+    setActiveView("preview");
   };
 
   // Handle template update
   const handleTemplateUpdate = (updatedTemplate: Template) => {
     setSelectedTemplate(updatedTemplate);
-    setIsEditing(false);
     queryClient.invalidateQueries({ queryKey: ["templates"] });
   };
 
@@ -120,38 +109,29 @@ const Templates = () => {
         <Card className="lg:col-span-8">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>
-              {isEditing ? "Edit Template" : "Template Preview"}
+              {activeView === "edit" ? "Edit Template" : 
+               activeView === "print" ? "Print Template" : "Template Preview"}
             </CardTitle>
             {selectedTemplate && (
               <div className="flex items-center gap-2">
-                {isEditing ? (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={handlePreviewClick}
-                  >
-                    <Eye className="mr-2 h-4 w-4" />
-                    Preview
-                  </Button>
-                ) : (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={handleEditClick}
-                  >
-                    <FilePen className="mr-2 h-4 w-4" />
-                    Edit
-                  </Button>
-                )}
-                {!isEditing && (
-                  <Tabs value={previewMode} onValueChange={(v) => setPreviewMode(v as "full" | "print")}>
-                    <TabsList>
-                      <TabsTrigger value="full">Full Preview</TabsTrigger>
-                      <TabsTrigger value="print">Print Preview</TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                )}
-                {!isEditing && (
+                <Tabs value={activeView} onValueChange={(v) => setActiveView(v as "preview" | "edit" | "print")}>
+                  <TabsList>
+                    <TabsTrigger value="preview">
+                      <Eye className="mr-2 h-4 w-4" />
+                      Preview
+                    </TabsTrigger>
+                    <TabsTrigger value="edit">
+                      <FilePen className="mr-2 h-4 w-4" />
+                      Edit
+                    </TabsTrigger>
+                    <TabsTrigger value="print">
+                      <Printer className="mr-2 h-4 w-4" />
+                      Print
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+                
+                {activeView === "preview" && (
                   <Button 
                     variant="outline" 
                     size="sm"
@@ -182,15 +162,21 @@ const Templates = () => {
                   label="Upload Template"
                 />
               </div>
-            ) : isEditing ? (
+            ) : activeView === "edit" ? (
               <TemplateEditor 
                 template={selectedTemplate} 
                 onSave={handleTemplateUpdate}
               />
+            ) : activeView === "print" ? (
+              <TemplatePreviewer
+                template={selectedTemplate}
+                mode="print"
+              />
             ) : (
               <TemplatePreviewer
                 template={selectedTemplate}
-                mode={previewMode}
+                mode="full"
+                onSave={handleTemplateUpdate}
               />
             )}
           </CardContent>
