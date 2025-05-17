@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { 
   Loader2, 
@@ -79,7 +80,7 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
     
     template.placeholders.forEach(placeholder => {
       const value = placeholderValues[placeholder.key] || `{{${placeholder.key}}}`;
-      // Use a function to handle the replacement to preserve surrounding styling
+      // Replace placeholders with values while preserving styles
       result = result.replace(
         new RegExp(`\\{\\{${placeholder.key}\\}\\}`, 'g'), 
         value
@@ -147,6 +148,13 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
     const updatedContent = editableContent + '\n---page-break---\n';
     setEditableContent(updatedContent);
     setCurrentPage(pages.length);
+  };
+
+  // Handle pasting text to prevent placeholder formatting issues
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData('text/plain');
+    document.execCommand('insertText', false, text);
   };
 
   // Save changes to the template
@@ -237,7 +245,69 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
       return;
     }
     
-    window.print();
+    // Create a printing window that contains all pages
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast({
+        title: "Print error",
+        description: "Could not open print window. Please check your browser settings.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    printWindow.document.write('<html><head><title>Print Document</title>');
+    printWindow.document.write('<style>');
+    printWindow.document.write(`
+      @page { 
+        margin: 15mm;
+        size: auto;
+      }
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.5;
+        color: #333;
+        background: #fff;
+      }
+      .page-container {
+        width: 100%;
+        max-width: 21cm;
+        min-height: 29.7cm;
+        margin: 0 auto;
+        padding: 0 0 20mm 0;
+        page-break-after: always;
+        position: relative;
+      }
+      .page-content {
+        width: 100%;
+        height: 100%;
+      }
+      /* Last page doesn't need page break */
+      .page-container:last-child {
+        page-break-after: avoid;
+      }
+    `);
+    printWindow.document.write('</style></head><body>');
+    
+    // Add each page content to print window
+    pages.forEach((pageContent, index) => {
+      if (pageContent.trim()) {
+        printWindow.document.write('<div class="page-container">');
+        printWindow.document.write('<div class="page-content">');
+        // Replace placeholders with actual values
+        printWindow.document.write(replaceContent(pageContent));
+        printWindow.document.write('</div></div>');
+      }
+    });
+    
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    
+    // Wait for content to load before printing
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 500);
   };
 
   // Handle content change
@@ -379,7 +449,7 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
         <div className={mode === "print" ? "print-document" : ""}>
           <div className={`
             relative
-            ${mode === "print" ? "p-8 bg-white shadow-none max-w-[21cm] mx-auto min-h-[29.7cm]" : ""}
+            ${mode === "print" ? "print-preview p-8 bg-white shadow-none max-w-[21cm] mx-auto min-h-[29.7cm]" : ""}
           `}>
             {mode === "print" ? (
               <div className="whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: previewContent }} />
@@ -388,8 +458,9 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
                 <div
                   ref={setEditorRef}
                   contentEditable={mode === "full"}
-                  className="min-h-[400px] w-full focus:outline-none"
+                  className="min-h-[400px] w-full focus:outline-none editor-content"
                   onInput={handleContentChange}
+                  onPaste={handlePaste}
                   dangerouslySetInnerHTML={{ __html: previewContent }}
                 />
               </Card>
@@ -446,7 +517,7 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
         {`
           @media print {
             @page { 
-              margin: 0;
+              margin: 15mm;
               size: auto;
             }
             html, body {
@@ -467,13 +538,14 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
               top: 0;
               width: 100%;
             }
-            /* Hide URL and page info */
-            html {-webkit-print-color-adjust: exact;}
             
-            /* Remove header/footer */
-            @page { margin: 0; }
-            html { margin: 0; }
-            body { margin: 15mm; }
+            /* No headers/footers */
+            @page { margin: 15mm; }
+            
+            /* Hide app UI */
+            header, footer, nav, .sidebar, .header {
+              display: none !important;
+            }
           }
           
           /* Fix placeholder styling */
@@ -488,8 +560,32 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
           
           /* Ensure consistent color for placeholders */
           [contenteditable] span.placeholder {
-            color: inherit;
-            background: none;
+            color: inherit !important;
+            background: none !important;
+          }
+          
+          /* Fix styling for paragraphs and text */
+          .editor-content p, 
+          .editor-content div {
+            min-height: 1.2em;
+          }
+          
+          /* Make placeholders look normal */
+          .editor-content span {
+            color: inherit !important;
+            background: none !important;
+          }
+          
+          /* Print preview styling */
+          .print-preview {
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+          }
+          
+          /* Maintain consistent page margins */
+          .print-preview > div {
+            font-family: Arial, sans-serif;
+            line-height: 1.5;
           }
         `}
       </style>
