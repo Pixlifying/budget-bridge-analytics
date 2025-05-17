@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { 
   Loader2, 
@@ -11,7 +10,9 @@ import {
   AlignCenter, 
   AlignRight, 
   ListOrdered, 
-  List 
+  List,
+  Undo2,
+  Redo2
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -63,13 +64,32 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
   const [currentPage, setCurrentPage] = useState(0);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [editorRef, setEditorRef] = useState<HTMLDivElement | null>(null);
-  const editorPosition = useRef<{node: Node | null, offset: number} | null>(null);
+  
+  // Track cursor position
+  const editorSelection = useRef<{
+    startContainer: Node | null,
+    startOffset: number,
+    endContainer: Node | null,
+    endOffset: number
+  }>({
+    startContainer: null,
+    startOffset: 0,
+    endContainer: null,
+    endOffset: 0
+  });
+  
+  // History states for undo/redo functionality
+  const [history, setHistory] = useState<string[]>([template.content]);
+  const [historyIndex, setHistoryIndex] = useState(0);
+  const [isUndoRedo, setIsUndoRedo] = useState(false);
   
   // Initialize content when template changes
   useEffect(() => {
     setEditableContent(template.content);
     setEditableName(template.name);
     setPlaceholderValues({});
+    setHistory([template.content]);
+    setHistoryIndex(0);
   }, [template.id]);
 
   // Split content into pages (based on page break markers or size)
@@ -95,31 +115,34 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
   const previewContent = mode === "print" ? replaceContent(pages[currentPage] || '') : pages[currentPage] || '';
 
   // Save cursor position before any updates
-  const saveEditorPosition = () => {
+  const saveEditorSelection = () => {
     if (!editorRef) return;
     
     const selection = window.getSelection();
     if (selection && selection.rangeCount > 0) {
       const range = selection.getRangeAt(0);
-      editorPosition.current = {
-        node: range.startContainer,
-        offset: range.startOffset
+      editorSelection.current = {
+        startContainer: range.startContainer,
+        startOffset: range.startOffset,
+        endContainer: range.endContainer,
+        endOffset: range.endOffset
       };
     }
   };
 
   // Restore cursor position after updates
-  const restoreEditorPosition = () => {
-    if (!editorRef || !editorPosition.current) return;
+  const restoreEditorSelection = () => {
+    if (!editorRef || !editorSelection.current.startContainer) return;
     
     try {
       const selection = window.getSelection();
       if (selection) {
         const range = document.createRange();
-        range.setStart(editorPosition.current.node, editorPosition.current.offset);
-        range.collapse(true);
+        range.setStart(editorSelection.current.startContainer, editorSelection.current.startOffset);
+        range.setEnd(editorSelection.current.endContainer, editorSelection.current.endOffset);
         selection.removeAllRanges();
         selection.addRange(range);
+        editorRef.focus(); // Make sure editor gets focus to show cursor
       }
     } catch (error) {
       console.error("Failed to restore cursor position:", error);
@@ -145,65 +168,101 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
   const applyFormatting = (format: string) => {
     if (!editorRef) return;
     
-    saveEditorPosition();
+    saveEditorSelection();
     document.execCommand(format, false);
     // Update the editable content after formatting
     if (editorRef) {
       const updatedPages = [...pages];
       updatedPages[currentPage] = editorRef.innerHTML;
-      setEditableContent(updatedPages.join('---page-break---'));
+      addToHistory(updatedPages.join('---page-break---'));
     }
-    setTimeout(restoreEditorPosition, 0);
+    setTimeout(restoreEditorSelection, 0);
   };
 
   const handleAlignment = (alignment: string) => {
     if (!editorRef) return;
     
-    saveEditorPosition();
+    saveEditorSelection();
     document.execCommand('justify' + alignment, false);
     // Update content after alignment
     if (editorRef) {
       const updatedPages = [...pages];
       updatedPages[currentPage] = editorRef.innerHTML;
-      setEditableContent(updatedPages.join('---page-break---'));
+      addToHistory(updatedPages.join('---page-break---'));
     }
-    setTimeout(restoreEditorPosition, 0);
+    setTimeout(restoreEditorSelection, 0);
   };
 
   const addBulletList = (ordered: boolean) => {
     if (!editorRef) return;
     
-    saveEditorPosition();
+    saveEditorSelection();
     document.execCommand(ordered ? 'insertOrderedList' : 'insertUnorderedList', false);
     // Update content after adding list
     if (editorRef) {
       const updatedPages = [...pages];
       updatedPages[currentPage] = editorRef.innerHTML;
-      setEditableContent(updatedPages.join('---page-break---'));
+      addToHistory(updatedPages.join('---page-break---'));
     }
-    setTimeout(restoreEditorPosition, 0);
+    setTimeout(restoreEditorSelection, 0);
   };
 
   // Add a new page
   const addNewPage = () => {
     const updatedContent = editableContent + '\n---page-break---\n';
-    setEditableContent(updatedContent);
+    addToHistory(updatedContent);
     setCurrentPage(pages.length);
   };
 
   // Handle pasting text to prevent placeholder formatting issues
   const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
     e.preventDefault();
-    saveEditorPosition();
+    saveEditorSelection();
     const text = e.clipboardData.getData('text/plain');
     document.execCommand('insertText', false, text);
     // Manually update content after paste
     if (editorRef) {
       const updatedPages = [...pages];
       updatedPages[currentPage] = editorRef.innerHTML;
-      setEditableContent(updatedPages.join('---page-break---'));
+      addToHistory(updatedPages.join('---page-break---'));
     }
-    setTimeout(restoreEditorPosition, 0);
+    setTimeout(restoreEditorSelection, 0);
+  };
+
+  // Add to history for undo/redo
+  const addToHistory = (content: string) => {
+    // Don't add to history if we're in the middle of an undo/redo operation
+    if (isUndoRedo) {
+      setEditableContent(content);
+      return;
+    }
+    
+    // If we have history after this point, remove it
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(content);
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+    setEditableContent(content);
+  };
+
+  // Undo functionality
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      setIsUndoRedo(true);
+      setHistoryIndex(historyIndex - 1);
+      setEditableContent(history[historyIndex - 1]);
+      setTimeout(() => setIsUndoRedo(false), 0);
+    }
+  };
+
+  // Redo functionality
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) {
+      setIsUndoRedo(true);
+      setHistoryIndex(historyIndex + 1);
+      setEditableContent(history[historyIndex + 1]);
+      setTimeout(() => setIsUndoRedo(false), 0);
+    }
   };
 
   // Save changes to the template
@@ -335,6 +394,10 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
       .page-container:last-child {
         page-break-after: avoid;
       }
+      /* Hide about:blank text */
+      a[href^="about:blank"] {
+        display: none !important;
+      }
     `);
     printWindow.document.write('</style></head><body>');
     
@@ -361,26 +424,42 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
 
   // Handle content change
   const handleContentChange = (e: React.FormEvent<HTMLDivElement>) => {
-    saveEditorPosition();
+    saveEditorSelection();
     const updatedPages = [...pages];
     updatedPages[currentPage] = e.currentTarget.innerHTML;
-    setEditableContent(updatedPages.join('---page-break---'));
-    setTimeout(restoreEditorPosition, 0);
+    addToHistory(updatedPages.join('---page-break---'));
+    setTimeout(restoreEditorSelection, 0);
   };
 
   // Handle input focus to maintain cursor position
   const handleInputFocus = () => {
-    // This prevents the cursor from jumping to the beginning
-    // when clicking elsewhere in the editor
-    if (editorRef && !editorPosition.current) {
+    // This keeps cursor position when clicking elsewhere in the editor
+    if (editorRef && !editorSelection.current.startContainer) {
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0) {
         const range = selection.getRangeAt(0);
-        editorPosition.current = {
-          node: range.startContainer,
-          offset: range.startOffset
+        editorSelection.current = {
+          startContainer: range.startContainer,
+          startOffset: range.startOffset,
+          endContainer: range.endContainer,
+          endOffset: range.endOffset
         };
       }
+    }
+  };
+
+  // Handle keyboard shortcuts for undo/redo
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'z' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      if (e.shiftKey) {
+        handleRedo();
+      } else {
+        handleUndo();
+      }
+    } else if (e.key === 'y' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      handleRedo();
     }
   };
 
@@ -472,6 +551,26 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
               <List className="h-4 w-4" />
             </Toggle>
           </div>
+
+          {/* Undo/Redo Buttons */}
+          <div className="flex items-center gap-1 border rounded-md p-1">
+            <Toggle 
+              aria-label="Undo" 
+              onClick={handleUndo} 
+              disabled={historyIndex <= 0}
+              size="sm"
+            >
+              <Undo2 className="h-4 w-4" />
+            </Toggle>
+            <Toggle 
+              aria-label="Redo" 
+              onClick={handleRedo}
+              disabled={historyIndex >= history.length - 1}
+              size="sm"
+            >
+              <Redo2 className="h-4 w-4" />
+            </Toggle>
+          </div>
         </div>
       )}
 
@@ -530,6 +629,7 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
                   onPaste={handlePaste}
                   onClick={handleInputFocus}
                   onFocus={handleInputFocus}
+                  onKeyDown={handleKeyDown}
                   dangerouslySetInnerHTML={{ __html: previewContent }}
                 />
               </Card>
@@ -615,11 +715,22 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
             header, footer, nav, .sidebar, .header {
               display: none !important;
             }
+
+            /* Hide about:blank text */
+            a[href^="about:blank"] {
+              display: none !important;
+            }
           }
           
           /* Fix placeholder styling */
           [contenteditable] {
             outline: none;
+            caret-color: black; /* Ensure cursor is visible */
+          }
+          
+          /* Preserve cursor visibility */
+          [contenteditable]:focus {
+            outline: none !important;
           }
           
           /* Remove background highlight from placeholders */
@@ -630,7 +741,7 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
           /* Ensure consistent color for placeholders */
           [contenteditable] span.placeholder {
             color: inherit !important;
-            background: none !important;
+            background: transparent !important;
           }
           
           /* Fix styling for paragraphs and text */
@@ -643,7 +754,7 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
           .editor-content span,
           .print-document span {
             color: inherit !important;
-            background: none !important;
+            background: transparent !important;
           }
           
           /* Print preview styling */
@@ -659,10 +770,8 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
           }
           
           /* Remove "about:blank" text in print preview */
-          @media print {
-            a[href^="about:blank"] {
-              display: none !important;
-            }
+          a[href^="about:blank"] {
+            display: none !important;
           }
         `}
       </style>
