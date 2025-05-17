@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { 
   Loader2, 
@@ -25,6 +26,15 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import DeleteConfirmation from "@/components/ui/DeleteConfirmation";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface Placeholder {
   key: string;
@@ -64,6 +74,7 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
   const [currentPage, setCurrentPage] = useState(0);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [editorRef, setEditorRef] = useState<HTMLDivElement | null>(null);
+  const [showPrintPreview, setShowPrintPreview] = useState(false);
   
   // Track cursor position
   const editorSelection = useRef<{
@@ -346,27 +357,11 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
     }
   };
 
-  // Print document
-  const handlePrint = () => {
-    if (!showPlaceholderForm && template.placeholders.length > 0) {
-      setShowPlaceholderForm(true);
-      return;
-    }
-    
-    // Create a printing window that contains all pages
-    const printWindow = window.open('', '_blank', 'noopener,noreferrer');
-    if (!printWindow) {
-      toast({
-        title: "Print error",
-        description: "Could not open print window. Please check your browser settings.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    printWindow.document.write('<html><head><title>Print Document</title>');
-    printWindow.document.write('<style>');
-    printWindow.document.write(`
+  // Generate print preview HTML
+  const generatePrintHTML = () => {
+    let printContent = '<html><head><title>Print Document</title>';
+    printContent += '<style>';
+    printContent += `
       @page { 
         margin: 15mm;
         size: auto;
@@ -382,7 +377,7 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
         max-width: 21cm;
         min-height: 29.7cm;
         margin: 0 auto;
-        padding: 0 0 20mm 0;
+        padding: 1cm;
         page-break-after: always;
         position: relative;
       }
@@ -395,30 +390,67 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
         page-break-after: avoid;
       }
       /* Hide about:blank text */
-      a[href^="about:blank"] {
+      a, a[href^="about:blank"] {
         display: none !important;
+        visibility: hidden !important;
       }
-    `);
-    printWindow.document.write('</style></head><body>');
+      /* Print preview styling */
+      .print-preview {
+        font-family: Arial, sans-serif;
+        line-height: 1.5;
+      }
+    `;
+    printContent += '</style></head><body>';
     
-    // Add each page content to print window
+    // Add each page content to print preview
     pages.forEach((pageContent, index) => {
       if (pageContent.trim()) {
-        printWindow.document.write('<div class="page-container">');
-        printWindow.document.write('<div class="page-content">');
+        printContent += '<div class="page-container">';
+        printContent += '<div class="page-content">';
         // Replace placeholders with actual values
-        printWindow.document.write(replaceContent(pageContent));
-        printWindow.document.write('</div></div>');
+        printContent += replaceContent(pageContent);
+        printContent += '</div></div>';
       }
     });
     
-    printWindow.document.write('</body></html>');
+    printContent += '</body></html>';
+    return printContent;
+  };
+
+  // Print document via dialog
+  const openPrintPreview = () => {
+    if (!showPlaceholderForm && template.placeholders.length > 0) {
+      setShowPlaceholderForm(true);
+      return;
+    }
+    
+    setShowPrintPreview(true);
+  };
+
+  // Print document
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank', 'noopener,noreferrer');
+    if (!printWindow) {
+      toast({
+        title: "Print error",
+        description: "Could not open print window. Please check your browser settings.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Write the print HTML content to the new window
+    printWindow.document.write(generatePrintHTML());
     printWindow.document.close();
     
     // Wait for content to load before printing
     setTimeout(() => {
       printWindow.print();
-      printWindow.close();
+      // Close the print dialog after printing
+      setTimeout(() => {
+        printWindow.close();
+        setShowPrintPreview(false);
+      }, 500);
     }, 500);
   };
 
@@ -638,6 +670,36 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
         </div>
       )}
 
+      {/* Print Preview Dialog */}
+      <Dialog open={showPrintPreview} onOpenChange={setShowPrintPreview}>
+        <DialogContent className="max-w-4xl w-full h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Print Preview</DialogTitle>
+            <DialogDescription>
+              Review your document before printing
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-auto p-4 bg-gray-50">
+            <div className="print-preview bg-white p-8 mx-auto max-w-[21cm] min-h-[29.7cm] shadow-md border">
+              {pages.map((pageContent, idx) => (
+                <div key={idx} className="mb-6 page-content">
+                  <div dangerouslySetInnerHTML={{ __html: replaceContent(pageContent) }} />
+                  {idx < pages.length - 1 && <div className="border-b border-dashed my-8"></div>}
+                </div>
+              ))}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPrintPreview(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handlePrint}>
+              Print Document
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Actions */}
       <div className="flex justify-between gap-2">
         {mode === "full" && (
@@ -666,8 +728,8 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
         )}
         
         {mode === "print" && (
-          <Button onClick={handlePrint}>
-            {showPlaceholderForm && template.placeholders.length > 0 ? "Print" : "Continue to Print"}
+          <Button onClick={openPrintPreview}>
+            {showPlaceholderForm && template.placeholders.length > 0 ? "Preview and Print" : "Continue to Print"}
           </Button>
         )}
       </div>
@@ -717,20 +779,22 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
             }
 
             /* Hide about:blank text */
-            a[href^="about:blank"] {
+            a, a[href^="about:blank"] {
               display: none !important;
+              visibility: hidden !important;
             }
           }
           
           /* Fix placeholder styling */
           [contenteditable] {
             outline: none;
-            caret-color: black; /* Ensure cursor is visible */
+            caret-color: black !important; /* Ensure cursor is visible */
           }
           
           /* Preserve cursor visibility */
           [contenteditable]:focus {
             outline: none !important;
+            caret-color: black !important;
           }
           
           /* Remove background highlight from placeholders */
@@ -770,8 +834,19 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
           }
           
           /* Remove "about:blank" text in print preview */
-          a[href^="about:blank"] {
+          a, a[href^="about:blank"] {
             display: none !important;
+            visibility: hidden !important;
+          }
+
+          /* Ensure cursor visibility in editor */
+          .editor-content {
+            caret-color: black !important;
+          }
+          
+          /* Maintain cursor position on edit */
+          .editor-content:focus {
+            caret-color: black !important;
           }
         `}
       </style>
