@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
   Loader2, 
   Save, 
@@ -63,6 +63,7 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
   const [currentPage, setCurrentPage] = useState(0);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [editorRef, setEditorRef] = useState<HTMLDivElement | null>(null);
+  const editorPosition = useRef<{node: Node | null, offset: number} | null>(null);
   
   // Initialize content when template changes
   useEffect(() => {
@@ -93,6 +94,38 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
   // Extract final content
   const previewContent = mode === "print" ? replaceContent(pages[currentPage] || '') : pages[currentPage] || '';
 
+  // Save cursor position before any updates
+  const saveEditorPosition = () => {
+    if (!editorRef) return;
+    
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      editorPosition.current = {
+        node: range.startContainer,
+        offset: range.startOffset
+      };
+    }
+  };
+
+  // Restore cursor position after updates
+  const restoreEditorPosition = () => {
+    if (!editorRef || !editorPosition.current) return;
+    
+    try {
+      const selection = window.getSelection();
+      if (selection) {
+        const range = document.createRange();
+        range.setStart(editorPosition.current.node, editorPosition.current.offset);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    } catch (error) {
+      console.error("Failed to restore cursor position:", error);
+    }
+  };
+
   // Handle placeholder change
   const handlePlaceholderChange = (key: string, value: string) => {
     setPlaceholderValues(prev => ({
@@ -112,6 +145,7 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
   const applyFormatting = (format: string) => {
     if (!editorRef) return;
     
+    saveEditorPosition();
     document.execCommand(format, false);
     // Update the editable content after formatting
     if (editorRef) {
@@ -119,10 +153,13 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
       updatedPages[currentPage] = editorRef.innerHTML;
       setEditableContent(updatedPages.join('---page-break---'));
     }
+    setTimeout(restoreEditorPosition, 0);
   };
 
   const handleAlignment = (alignment: string) => {
     if (!editorRef) return;
+    
+    saveEditorPosition();
     document.execCommand('justify' + alignment, false);
     // Update content after alignment
     if (editorRef) {
@@ -130,10 +167,13 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
       updatedPages[currentPage] = editorRef.innerHTML;
       setEditableContent(updatedPages.join('---page-break---'));
     }
+    setTimeout(restoreEditorPosition, 0);
   };
 
   const addBulletList = (ordered: boolean) => {
     if (!editorRef) return;
+    
+    saveEditorPosition();
     document.execCommand(ordered ? 'insertOrderedList' : 'insertUnorderedList', false);
     // Update content after adding list
     if (editorRef) {
@@ -141,6 +181,7 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
       updatedPages[currentPage] = editorRef.innerHTML;
       setEditableContent(updatedPages.join('---page-break---'));
     }
+    setTimeout(restoreEditorPosition, 0);
   };
 
   // Add a new page
@@ -153,8 +194,16 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
   // Handle pasting text to prevent placeholder formatting issues
   const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
     e.preventDefault();
+    saveEditorPosition();
     const text = e.clipboardData.getData('text/plain');
     document.execCommand('insertText', false, text);
+    // Manually update content after paste
+    if (editorRef) {
+      const updatedPages = [...pages];
+      updatedPages[currentPage] = editorRef.innerHTML;
+      setEditableContent(updatedPages.join('---page-break---'));
+    }
+    setTimeout(restoreEditorPosition, 0);
   };
 
   // Save changes to the template
@@ -246,7 +295,7 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
     }
     
     // Create a printing window that contains all pages
-    const printWindow = window.open('', '_blank');
+    const printWindow = window.open('', '_blank', 'noopener,noreferrer');
     if (!printWindow) {
       toast({
         title: "Print error",
@@ -312,9 +361,27 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
 
   // Handle content change
   const handleContentChange = (e: React.FormEvent<HTMLDivElement>) => {
+    saveEditorPosition();
     const updatedPages = [...pages];
     updatedPages[currentPage] = e.currentTarget.innerHTML;
     setEditableContent(updatedPages.join('---page-break---'));
+    setTimeout(restoreEditorPosition, 0);
+  };
+
+  // Handle input focus to maintain cursor position
+  const handleInputFocus = () => {
+    // This prevents the cursor from jumping to the beginning
+    // when clicking elsewhere in the editor
+    if (editorRef && !editorPosition.current) {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        editorPosition.current = {
+          node: range.startContainer,
+          offset: range.startOffset
+        };
+      }
+    }
   };
 
   return (
@@ -461,6 +528,8 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
                   className="min-h-[400px] w-full focus:outline-none editor-content"
                   onInput={handleContentChange}
                   onPaste={handlePaste}
+                  onClick={handleInputFocus}
+                  onFocus={handleInputFocus}
                   dangerouslySetInnerHTML={{ __html: previewContent }}
                 />
               </Card>
@@ -571,7 +640,8 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
           }
           
           /* Make placeholders look normal */
-          .editor-content span {
+          .editor-content span,
+          .print-document span {
             color: inherit !important;
             background: none !important;
           }
@@ -586,6 +656,13 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
           .print-preview > div {
             font-family: Arial, sans-serif;
             line-height: 1.5;
+          }
+          
+          /* Remove "about:blank" text in print preview */
+          @media print {
+            a[href^="about:blank"] {
+              display: none !important;
+            }
           }
         `}
       </style>
