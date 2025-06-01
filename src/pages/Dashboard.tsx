@@ -218,7 +218,6 @@ const Dashboard = () => {
   const applicationsCount = applicationsData?.length || 0;
   const applicationsMargin = applicationsData?.reduce((sum, entry) => sum + entry.amount, 0) || 0;
 
-  // 1. Calculate Printout/Photostat Totals and Margins
   const photostatTotal = photostatData?.reduce((sum, entry) => sum + Number(entry.total_amount), 0) || 0;
   const photostatCount = photostatData?.length || 0;
   const photostatMarginTotal = photostatData?.reduce((sum, entry) => sum + Number(entry.margin), 0) || 0;
@@ -286,7 +285,7 @@ const Dashboard = () => {
         </div>
       }
     >
-      <div className="grid gap-6 mb-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 mb-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Margin"
           value={formatCurrency(totalMargin)}
@@ -294,19 +293,19 @@ const Dashboard = () => {
           onClick={() => setMarginDialogOpen(true)}
         />
         <StatCard
-          title="Photostat"
+          title="Printout & Photostat"
           value={photostatCount}
-          icon={<FileText className="h-5 w-5" />}
-        />
-        <StatCard
-          title="Printout and Photostat"
-          value={photostatCount}
-          icon={<Printer className="h-5 w-5" />} // Choose lucide icon "printer"
+          icon={<Printer className="h-5 w-5" />}
         />
         <StatCard
           title="Banking Services"
           value={bankingServicesCount}
           icon={<CreditCard className="h-5 w-5" />}
+        />
+        <StatCard
+          title="Total Expenses"
+          value={formatCurrency(expensesTotal)}
+          icon={<DollarSign className="h-5 w-5" />}
         />
       </div>
 
@@ -417,24 +416,44 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Printout/Photostat section */}
-      <div className="glassmorphism rounded-xl p-5 animate-scale-in mb-8">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-semibold text-lg">Printout and Photostat</h3>
-          <Printer className="h-5 w-5 text-primary opacity-70" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        {/* Combined Printout/Photostat section */}
+        <div className="glassmorphism rounded-xl p-5 animate-scale-in">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-semibold text-lg">Printout and Photostat</h3>
+            <Printer className="h-5 w-5 text-primary opacity-70" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Total Amount</p>
+              <p className="text-xl font-bold">{formatCurrency(photostatTotal)}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Count</p>
+              <p className="text-xl font-bold">{photostatCount}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Margin</p>
+              <p className="text-xl font-bold">{formatCurrency(photostatMarginTotal)}</p>
+            </div>
+          </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <p className="text-sm text-muted-foreground">Total Amount</p>
-            <p className="text-xl font-bold">{formatCurrency(photostatTotal)}</p>
+
+        {/* New Expenses section */}
+        <div className="glassmorphism rounded-xl p-5 animate-scale-in">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-semibold text-lg">Expenses</h3>
+            <DollarSign className="h-5 w-5 text-primary opacity-70" />
           </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Count</p>
-            <p className="text-xl font-bold">{photostatCount}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Margin</p>
-            <p className="text-xl font-bold">{formatCurrency(photostatMarginTotal)}</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Total Amount</p>
+              <p className="text-xl font-bold text-red-600">{formatCurrency(expensesTotal)}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Count</p>
+              <p className="text-xl font-bold">{expensesCount}</p>
+            </div>
           </div>
         </div>
       </div>

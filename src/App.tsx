@@ -41,14 +41,14 @@ const App = () => (
               <Route path="/online-services" element={<OnlineServices />} />
               <Route path="/applications" element={<Applications />} />
               <Route path="/photostat" element={<Photostat />} />
-              <Route path="/queries" element={<Query />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/expenses" element={<Expenses />} />
               <Route path="/fee-expenses" element={<FeeExpenses />} />
               <Route path="/misc-expenses" element={<MiscExpenses />} />
-              <Route path="/pending-balance" element={<PendingBalance />} />
-              <Route path="/customers" element={<Customers />} />
-              <Route path="/customers/:id" element={<CustomerDetails />} />
+              <Route path="/ledger" element={<Customers />} />
+              <Route path="/ledger/:id" element={<CustomerDetails />} />
+              <Route path="/ledger/queries" element={<Query />} />
+              <Route path="/ledger/pending-balance" element={<PendingBalance />} />
               <Route path="/calculator" element={<Calculator />} />
               <Route path="/age-calculator" element={<AgeCalculator />} />
               <Route path="/templates" element={<Templates />} />
