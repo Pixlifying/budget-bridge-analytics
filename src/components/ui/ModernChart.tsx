@@ -86,7 +86,7 @@ const ModernChart: React.FC<ModernChartProps> = ({ data, height = 300 }) => {
     },
     animation: {
       duration: 1000,
-      easing: 'easeOutQuart',
+      easing: 'easeOutQuart' as const,
     },
   };
 

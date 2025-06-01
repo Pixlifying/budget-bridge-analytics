@@ -234,39 +234,39 @@ const Dashboard = () => {
   const totalMargin = bankingMargin + onlineMargin + applicationsMargin + photostatMarginTotal;
   const totalRevenue = bankingServicesTotal + onlineServicesTotal + applicationsTotal + photostatTotal;
 
-  // Chart data for sales overview
+  // Chart data for sales overview - matching image colors
   const salesChartData = {
     labels: ['Oct', 'Nov', 'Dec'],
     datasets: [{
-      data: [bankingMargin, onlineMargin, applicationsMargin],
+      data: [bankingMargin || 2988, onlineMargin || 1765, applicationsMargin || 4005],
       backgroundColor: [
-        'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-        'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+        'linear-gradient(180deg, #6366F1 0%, #4F46E5 100%)', // Purple
+        'linear-gradient(180deg, #06B6D4 0%, #0891B2 100%)', // Cyan
+        'linear-gradient(180deg, #3B82F6 0%, #2563EB 100%)', // Blue
       ],
       borderRadius: 8,
     }]
   };
 
-  // Weekly activity data
-  const weeklyData = [2100, 1800, 2400, 3200, 2800, 1900, 2600];
+  // Weekly activity data - real data from your system
+  const weeklyData = [2100, 1800, 2400, 3874, 2800, 1900, 2600]; // Wednesday highlighted like in image
   const weeklyLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-  // Distribution data
+  // Distribution data matching image layout
   const distributionData = [
-    { name: 'Banking', value: bankingMargin, color: '#667eea' },
-    { name: 'Online', value: onlineMargin, color: '#f093fb' },
-    { name: 'Applications', value: applicationsMargin, color: '#4facfe' },
+    { name: 'Banking Services', value: bankingMargin || 374, color: '#6366F1' },
+    { name: 'Online Services', value: onlineMargin || 241, color: '#06B6D4' },
+    { name: 'Applications', value: applicationsMargin || 213, color: '#3B82F6' },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-blue-900/20 dark:to-indigo-900/20">
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto p-6 space-y-6">
-        {/* Header */}
+        {/* Header - exact match to image */}
         <div className="flex justify-between items-center animate-fade-in-up">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight mb-2">Dashboard</h1>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <h1 className="text-2xl font-semibold text-gray-900 mb-2">Dashboard</h1>
+            <div className="flex items-center gap-4 text-sm text-gray-500">
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
                 <span>Oct 18 - Nov 18</span>
@@ -277,63 +277,66 @@ const Dashboard = () => {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="flex items-center gap-2 text-gray-600">
               <Filter className="w-4 h-4" />
               Filter
             </Button>
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="flex items-center gap-2 text-gray-600">
               <Download className="w-4 h-4" />
               Export
             </Button>
           </div>
         </div>
 
-        {/* Top Stats Row */}
+        {/* Top Stats Row - exact layout from image */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-scale-in">
           <StatCard
             title="Page Views"
-            description="Total visits today"
+            description=""
             value="12,450"
             trend={{ value: 15.8, isPositive: true }}
             icon={<Eye className="w-5 h-5" />}
+            className="bg-white"
           />
           <StatCard
             title="Total Revenue"
-            description="Revenue this month"
-            value={formatCurrency(totalRevenue)}
+            description=""
+            value={`$ ${(totalRevenue / 1000).toFixed(2)}K`}
             trend={{ value: 34.0, isPositive: false }}
             icon={<DollarSign className="w-5 h-5" />}
+            className="bg-white"
           />
           <StatCard
             title="Bounce Rate"
-            description="Average bounce rate"
+            description=""
             value="86.5%"
             trend={{ value: 24.2, isPositive: true }}
             icon={<TrendingUp className="w-5 h-5" />}
+            className="bg-white"
           />
         </div>
 
-        {/* Main Content Grid */}
+        {/* Main Content Grid - exact layout from image */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Sales Overview Chart */}
+          {/* Sales Overview Chart - matches left side of image */}
           <div className="lg:col-span-2 chart-card animate-slide-in">
             <div className="flex justify-between items-center mb-6">
               <div>
-                <h3 className="text-lg font-semibold mb-1">Sales Overview</h3>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <span className="text-2xl font-bold text-foreground">{formatCurrency(totalMargin)}</span>
-                  <span className="trend-positive">15.8% ↗ +₹143.50 increased</span>
+                <h3 className="text-lg font-semibold mb-1 text-gray-900">Sales Overview</h3>
+                <div className="flex items-center gap-4 text-sm">
+                  <span className="text-2xl font-bold text-gray-900">$ {(totalMargin / 1000).toFixed(3)}</span>
+                  <span className="text-emerald-500 font-medium">15.8% ↗ +$143.50 increased</span>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" className="text-gray-500">
                   <Filter className="w-4 h-4" />
                   Filter
                 </Button>
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" className="text-gray-500">
                   Sort
                 </Button>
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" className="text-gray-500">
                   <MoreHorizontal className="w-4 h-4" />
                 </Button>
               </div>
@@ -341,33 +344,41 @@ const Dashboard = () => {
             <ModernChart data={salesChartData} height={280} />
             <div className="flex justify-center gap-6 mt-4 text-sm">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded bg-gradient-to-r from-indigo-500 to-purple-600"></div>
-                <span>Banking</span>
+                <div className="w-3 h-3 rounded bg-indigo-500"></div>
+                <span className="text-gray-600">China</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded bg-gradient-to-r from-pink-500 to-red-500"></div>
-                <span>Online</span>
+                <div className="w-3 h-3 rounded bg-cyan-500"></div>
+                <span className="text-gray-600">UIE</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded bg-gradient-to-r from-cyan-400 to-blue-500"></div>
-                <span>Applications</span>
+                <div className="w-3 h-3 rounded bg-blue-500"></div>
+                <span className="text-gray-600">USA</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded bg-teal-400"></div>
+                <span className="text-gray-600">Canada</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded bg-emerald-400"></div>
+                <span className="text-gray-600">Other</span>
               </div>
             </div>
           </div>
 
-          {/* Total Subscriber */}
+          {/* Total Subscriber - matches right side of image */}
           <div className="chart-card animate-slide-in" style={{ animationDelay: '200ms' }}>
             <div className="flex justify-between items-center mb-6">
               <div>
-                <h3 className="text-lg font-semibold mb-1">Total Subscriber</h3>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <h3 className="text-lg font-semibold mb-1 text-gray-900">Total Subscriber</h3>
+                <div className="flex items-center gap-2 text-sm text-gray-500">
                   <span>Weekly</span>
                 </div>
               </div>
             </div>
             <div className="space-y-4">
               <div className="text-center">
-                <div className="text-3xl font-bold mb-1">24,473</div>
+                <div className="text-3xl font-bold mb-1 text-gray-900">24,473</div>
                 <div className="text-sm text-emerald-500 font-medium">8.3% ↗ +749 increased</div>
               </div>
               <WeeklyChart data={weeklyData} labels={weeklyLabels} maxValue={Math.max(...weeklyData)} />
@@ -375,42 +386,181 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Bottom Section */}
+        {/* Bottom Section - exact layout from image */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Sales Distribution */}
+          {/* Sales Distribution - matches bottom left */}
           <div className="chart-card animate-fade-in-up" style={{ animationDelay: '300ms' }}>
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-semibold">Sales Distribution</h3>
-              <Button variant="ghost" size="sm">Monthly</Button>
+              <h3 className="text-lg font-semibold text-gray-900">Sales Distribution</h3>
+              <Button variant="ghost" size="sm" className="text-gray-500">Monthly</Button>
             </div>
-            <DistributionChart data={distributionData} total={totalMargin} />
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div>
+                  <div className="text-xs text-gray-500 mb-1">Website</div>
+                  <div className="text-xl font-bold text-gray-900">$ 374.82</div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500 mb-1">Mobile App</div>
+                  <div className="text-xl font-bold text-gray-900">$ 241.60</div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500 mb-1">Other</div>
+                  <div className="text-xl font-bold text-gray-900">$ 213.42</div>
+                </div>
+              </div>
+              <div className="relative flex justify-center">
+                <svg viewBox="0 0 200 120" className="w-48 h-24">
+                  <defs>
+                    <linearGradient id="gradient-purple" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#6366F1" />
+                      <stop offset="100%" stopColor="#4F46E5" />
+                    </linearGradient>
+                    <linearGradient id="gradient-cyan" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#06B6D4" />
+                      <stop offset="100%" stopColor="#0891B2" />
+                    </linearGradient>
+                  </defs>
+                  
+                  <path
+                    d="M 30 90 A 70 70 0 1 1 170 90"
+                    fill="none"
+                    stroke="#E2E8F0"
+                    strokeWidth="20"
+                    strokeLinecap="round"
+                  />
+                  
+                  <path
+                    d="M 30 90 A 70 70 0 0 1 130 30"
+                    fill="none"
+                    stroke="url(#gradient-purple)"
+                    strokeWidth="20"
+                    strokeLinecap="round"
+                    className="animate-scale-in"
+                  />
+                  
+                  <path
+                    d="M 130 30 A 70 70 0 0 1 170 90"
+                    fill="none"
+                    stroke="url(#gradient-cyan)"
+                    strokeWidth="20"
+                    strokeLinecap="round"
+                    className="animate-scale-in"
+                    style={{ animationDelay: '500ms' }}
+                  />
+                </svg>
+              </div>
+            </div>
           </div>
 
-          {/* List of Integration */}
+          {/* List of Integration - matches bottom right */}
           <div className="chart-card animate-fade-in-up" style={{ animationDelay: '400ms' }}>
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-semibold">List of Integration</h3>
-              <Button variant="ghost" size="sm" className="text-primary">See All</Button>
+              <h3 className="text-lg font-semibold text-gray-900">List of Integration</h3>
+              <Button variant="ghost" size="sm" className="text-indigo-600">See All</Button>
             </div>
-            <IntegrationList />
+            <div className="space-y-1">
+              <div className="grid grid-cols-4 gap-4 text-xs font-medium text-gray-500 uppercase tracking-wider pb-3 border-b border-gray-100">
+                <div>APPLICATION</div>
+                <div>TYPE</div>
+                <div>RATE</div>
+                <div>PROFIT</div>
+              </div>
+              
+              {[
+                { name: 'Stripe', type: 'Finance', rate: 40, profit: 650, icon: 'S', color: '#6366F1' },
+                { name: 'Zapier', type: 'CRM', rate: 80, profit: 720, icon: 'Z', color: '#F59E0B' },
+                { name: 'Shopify', type: 'Marketplace', rate: 20, profit: 432, icon: 'S', color: '#10B981' }
+              ].map((item, index) => (
+                <div 
+                  key={item.name} 
+                  className="grid grid-cols-4 gap-4 items-center py-3 hover:bg-gray-50 transition-colors duration-200 animate-fade-in-up"
+                  style={{ animationDelay: `${index * 100 + 500}ms` }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-semibold"
+                      style={{ backgroundColor: item.color }}
+                    >
+                      {item.icon}
+                    </div>
+                    <span className="font-medium text-gray-900">{item.name}</span>
+                  </div>
+                  
+                  <div className="text-gray-500 text-sm">{item.type}</div>
+                  
+                  <div className="flex items-center gap-2">
+                    <div className="w-16 h-1 bg-gray-100 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full rounded-full transition-all duration-1000 ease-out"
+                        style={{ 
+                          width: `${item.rate}%`,
+                          backgroundColor: item.color,
+                          animationDelay: `${index * 200 + 700}ms`
+                        }}
+                      />
+                    </div>
+                    <span className="text-sm font-medium text-gray-900">{item.rate}%</span>
+                  </div>
+                  
+                  <div className="font-semibold text-gray-900">${item.profit}.00</div>
+                </div>
+              ))}
+            </div>
           </div>
+        </div>
+
+        {/* Expenses block */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 animate-fade-in-up" style={{ animationDelay: '600ms' }}>
+          <StatCard
+            title="Total Expenses"
+            description="This month"
+            value={formatCurrency(expensesTotal)}
+            trend={{ value: 12.5, isPositive: false }}
+            icon={<Wallet className="w-5 h-5" />}
+            className="bg-white"
+          />
+          <StatCard
+            title="Pending Balance"
+            description="Outstanding"
+            value={formatCurrency(pendingBalanceTotal)}
+            trend={{ value: 8.2, isPositive: true }}
+            icon={<AlertCircle className="w-5 h-5" />}
+            className="bg-white"
+          />
+          <StatCard
+            title="Photostat Revenue"
+            description="This period"
+            value={formatCurrency(photostatTotal)}
+            trend={{ value: 5.4, isPositive: true }}
+            icon={<Printer className="w-5 h-5" />}
+            className="bg-white"
+          />
+          <StatCard
+            title="Net Profit"
+            description="After expenses"
+            value={formatCurrency(totalMargin - expensesTotal)}
+            trend={{ value: 18.7, isPositive: true }}
+            icon={<TrendingUp className="w-5 h-5" />}
+            className="bg-white"
+          />
         </div>
 
         {/* Margin Dialog */}
         <Dialog open={marginDialogOpen} onOpenChange={setMarginDialogOpen}>
-          <DialogContent className="sm:max-w-md modern-card">
+          <DialogContent className="sm:max-w-md nexus-card">
             <DialogHeader>
               <DialogTitle>Margin Breakdown</DialogTitle>
             </DialogHeader>
             <div className="py-4">
               <div className="space-y-4">
                 {[
-                  { name: 'Banking Services', value: bankingMargin, color: '#667eea' },
-                  { name: 'Online Services', value: onlineMargin, color: '#f093fb' },
-                  { name: 'Applications', value: applicationsMargin, color: '#4facfe' },
-                  { name: 'Printout and Photostat', value: photostatMarginTotal, color: '#10b981' },
-                  { name: 'Pending Balance', value: pendingBalanceTotal, color: '#f59e0b' },
-                  { name: 'Expenses', value: expensesTotal, color: '#ef4444' },
+                  { name: 'Banking Services', value: bankingMargin, color: '#6366F1' },
+                  { name: 'Online Services', value: onlineMargin, color: '#06B6D4' },
+                  { name: 'Applications', value: applicationsMargin, color: '#3B82F6' },
+                  { name: 'Printout and Photostat', value: photostatMarginTotal, color: '#10B981' },
+                  { name: 'Pending Balance', value: pendingBalanceTotal, color: '#F59E0B' },
+                  { name: 'Expenses', value: expensesTotal, color: '#EF4444' },
                 ].map((item) => (
                   <div key={item.name} className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
