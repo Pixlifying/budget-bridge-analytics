@@ -12,53 +12,70 @@ interface StatCardProps {
   };
   className?: string;
   onClick?: () => void;
-  description?: string;
+  gradient?: 'default' | 'income' | 'expense' | 'profit';
 }
 
-const StatCard = ({ title, value, icon, trend, className, onClick, description }: StatCardProps) => {
+const StatCard = ({ title, value, icon, trend, className, onClick, gradient = 'default' }: StatCardProps) => {
+  const gradientClasses = {
+    default: 'gradient-card',
+    income: 'gradient-income glow-green',
+    expense: 'gradient-expense glow-red',
+    profit: 'gradient-profit glow-purple'
+  };
+
   return (
     <div 
       className={cn(
-        "bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 cursor-pointer group", 
+        "relative overflow-hidden rounded-2xl p-6 border border-border/50 backdrop-blur-xl", 
+        "transform transition-all duration-500 ease-out hover:scale-105 hover:shadow-2xl hover:-translate-y-2",
+        "animate-fade-in card-hover group cursor-pointer",
+        gradientClasses[gradient],
+        onClick && "cursor-pointer hover:shadow-2xl",
         className
       )}
       onClick={onClick}
     >
-      <div className="flex justify-between items-start mb-4">
-        <div className="flex items-center gap-3">
+      {/* Background gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-50 group-hover:opacity-75 transition-opacity duration-500" />
+      
+      {/* Content */}
+      <div className="relative z-10">
+        <div className="flex justify-between items-start mb-4">
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-muted-foreground/80 uppercase tracking-wider">{title}</p>
+            {trend && (
+              <div className={cn(
+                "flex items-center text-xs font-semibold px-2 py-1 rounded-full",
+                trend.isPositive 
+                  ? "text-emerald-400 bg-emerald-500/20" 
+                  : "text-rose-400 bg-rose-500/20"
+              )}>
+                <span className={cn(
+                  "mr-1 text-sm",
+                  trend.isPositive ? "text-emerald-400" : "text-rose-400"
+                )}>
+                  {trend.isPositive ? '↗' : '↘'}
+                </span>
+                {Math.abs(trend.value)}%
+              </div>
+            )}
+          </div>
           {icon && (
-            <div className="p-2 rounded-lg bg-gray-50 text-gray-600 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-all duration-300">
+            <div className="text-primary/80 group-hover:text-primary transition-colors duration-300 group-hover:scale-110 transform">
               {icon}
             </div>
           )}
-          <div>
-            <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
-            {description && (
-              <p className="text-xs text-gray-400">{description}</p>
-            )}
-          </div>
         </div>
-        <div className="p-1 rounded bg-gray-50">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-gray-400">
-            <path d="M8 12C10.2091 12 12 10.2091 12 8C12 5.79086 10.2091 4 8 4C5.79086 4 4 5.79086 4 8C4 10.2091 5.79086 12 8 12Z" stroke="currentColor" strokeWidth="1.5"/>
-            <path d="M8 6V8L9.5 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
+        
+        <div className="mt-2">
+          <p className="text-3xl font-bold tracking-tight animate-number group-hover:text-primary transition-colors duration-300">
+            {value}
+          </p>
         </div>
       </div>
-      
-      <div className="space-y-2">
-        <p className="text-2xl font-bold text-gray-900 tracking-tight">{value}</p>
-        {trend && (
-          <div className={cn(
-            "flex items-center gap-1 text-sm font-medium",
-            trend.isPositive ? "text-emerald-500" : "text-red-500"
-          )}>
-            <span>{trend.isPositive ? '↗' : '↘'}</span>
-            <span>{Math.abs(trend.value)}%</span>
-            <span className="text-gray-400 font-normal">vs last period</span>
-          </div>
-        )}
-      </div>
+
+      {/* Animated border */}
+      <div className="absolute inset-0 rounded-2xl border border-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
     </div>
   );
 };
