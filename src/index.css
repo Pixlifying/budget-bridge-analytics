@@ -7,74 +7,74 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 248 250 252;
+    --foreground: 15 23 42;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 255 255 255;
+    --card-foreground: 15 23 42;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 255 255 255;
+    --popover-foreground: 15 23 42;
 
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 99 102 241;
+    --primary-foreground: 255 255 255;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 241 245 249;
+    --secondary-foreground: 51 65 85;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 248 250 252;
+    --muted-foreground: 100 116 139;
 
-    --accent: 221.2 83.2% 53.3%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 99 102 241;
+    --accent-foreground: 255 255 255;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 239 68 68;
+    --destructive-foreground: 255 255 255;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --border: 226 232 240;
+    --input: 226 232 240;
+    --ring: 99 102 241;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 221.2 83.2% 53.3%;
-    --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 0 0% 100%;
-    --sidebar-primary-foreground: 221.2 83.2% 53.3%;
-    --sidebar-accent: 217 91.2% 59.8%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 213.1 79.7% 85%;
-    --sidebar-ring: 221.2 83.2% 53.3%;
+    --sidebar-background: 255 255 255;
+    --sidebar-foreground: 15 23 42;
+    --sidebar-primary: 99 102 241;
+    --sidebar-primary-foreground: 255 255 255;
+    --sidebar-accent: 241 245 249;
+    --sidebar-accent-foreground: 51 65 85;
+    --sidebar-border: 226 232 240;
+    --sidebar-ring: 99 102 241;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 15 23 42;
+    --foreground: 248 250 252;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 30 41 59;
+    --card-foreground: 248 250 252;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 30 41 59;
+    --popover-foreground: 248 250 252;
 
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 99 102 241;
+    --primary-foreground: 255 255 255;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 51 65 85;
+    --secondary-foreground: 248 250 252;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 51 65 85;
+    --muted-foreground: 148 163 184;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 51 65 85;
+    --accent-foreground: 248 250 252;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 239 68 68;
+    --destructive-foreground: 255 255 255;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    --border: 51 65 85;
+    --input: 51 65 85;
+    --ring: 99 102 241;
   }
 }
 
@@ -84,13 +84,81 @@
   }
   body {
     @apply bg-background text-foreground font-sans;
+    font-family: 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
-  .glassmorphism {
-    @apply bg-white/70 backdrop-blur-sm border border-white/20 shadow-sm;
+  
+  .modern-card {
+    @apply bg-card/60 backdrop-blur-xl border border-border/50 shadow-lg rounded-2xl transition-all duration-300 hover:shadow-xl hover:border-border/80;
   }
-  .page-transition {
-    @apply animate-fade-in;
+  
+  .stat-card {
+    @apply modern-card p-6 hover:scale-[1.02] transform transition-all duration-300;
+  }
+  
+  .chart-card {
+    @apply modern-card p-6 backdrop-blur-xl;
+  }
+  
+  .metric-value {
+    @apply text-3xl font-bold tracking-tight;
+  }
+  
+  .metric-label {
+    @apply text-sm font-medium text-muted-foreground;
+  }
+  
+  .trend-positive {
+    @apply text-emerald-500 font-medium;
+  }
+  
+  .trend-negative {
+    @apply text-red-500 font-medium;
+  }
+  
+  .animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out forwards;
+  }
+  
+  .animate-scale-in {
+    animation: scaleIn 0.4s ease-out forwards;
+  }
+  
+  .animate-slide-in {
+    animation: slideIn 0.5s ease-out forwards;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 
@@ -112,62 +180,20 @@
   @apply bg-primary/50;
 }
 
-/* Card hover animation */
-.card-hover {
-  @apply transition-all duration-300 ease-in-out hover:shadow-md hover:-translate-y-1;
+/* Chart animations */
+.chart-bar {
+  transition: all 0.3s ease;
 }
 
-/* Button hover animation */
-.btn-hover {
-  @apply transition-all duration-300 ease-in-out hover:shadow-md hover:-translate-y-0.5;
+.chart-bar:hover {
+  transform: translateY(-2px);
 }
 
-/* Sidebar active item */
-.sidebar-item.active {
-  @apply bg-sidebar-accent text-sidebar-accent-foreground font-medium;
+/* Progress bars */
+.progress-bar {
+  @apply h-2 rounded-full overflow-hidden bg-muted;
 }
 
-/* Form transitions */
-.form-transition {
-  @apply transition-all duration-300 ease-in-out;
-}
-
-/* Page container */
-.page-container {
-  @apply w-full max-w-7xl mx-auto p-4 md:p-6 animate-fade-in;
-}
-
-/* Title styling */
-.page-title {
-  @apply text-2xl md:text-3xl font-bold text-foreground mb-6;
-}
-
-/* Subtitle */
-.page-subtitle {
-  @apply text-sm text-muted-foreground mb-6;
-}
-
-/* Stat card container */
-.stat-card-container {
-  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8;
-}
-
-/* Data table */
-.data-table {
-  @apply w-full bg-card rounded-lg overflow-hidden shadow-sm;
-}
-
-/* Data table header */
-.data-table thead {
-  @apply bg-muted;
-}
-
-/* Data table header cell */
-.data-table th {
-  @apply py-3 px-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider;
-}
-
-/* Data table body cell */
-.data-table td {
-  @apply py-3 px-4 text-sm border-t border-border;
+.progress-fill {
+  @apply h-full rounded-full transition-all duration-1000 ease-out;
 }

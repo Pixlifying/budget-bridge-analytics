@@ -12,34 +12,46 @@ interface StatCardProps {
   };
   className?: string;
   onClick?: () => void;
+  description?: string;
 }
 
-const StatCard = ({ title, value, icon, trend, className, onClick }: StatCardProps) => {
+const StatCard = ({ title, value, icon, trend, className, onClick, description }: StatCardProps) => {
   return (
     <div 
       className={cn(
-        "glassmorphism rounded-xl p-5 flex flex-col animate-scale-in card-hover", 
-        onClick && "cursor-pointer hover:shadow-md",
+        "stat-card group cursor-pointer", 
         className
       )}
       onClick={onClick}
     >
-      <div className="flex justify-between items-start mb-2">
-        <p className="text-sm font-medium text-muted-foreground">{title}</p>
-        {icon && <div className="text-primary opacity-80">{icon}</div>}
-      </div>
-      <div className="flex items-end justify-between mt-1">
-        <div>
-          <p className="text-2xl font-bold">{value}</p>
-          {trend && (
-            <p className={cn(
-              "text-xs mt-1",
-              trend.isPositive ? "text-emerald-500" : "text-rose-500"
-            )}>
-              {trend.isPositive ? '↑' : '↓'} {Math.abs(trend.value)}%
-            </p>
+      <div className="flex justify-between items-start mb-4">
+        <div className="flex items-center gap-2">
+          {icon && (
+            <div className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300">
+              {icon}
+            </div>
           )}
+          <div>
+            <p className="metric-label">{title}</p>
+            {description && (
+              <p className="text-xs text-muted-foreground/70">{description}</p>
+            )}
+          </div>
         </div>
+      </div>
+      
+      <div className="space-y-2">
+        <p className="metric-value">{value}</p>
+        {trend && (
+          <div className={cn(
+            "flex items-center gap-1 text-sm font-medium",
+            trend.isPositive ? "trend-positive" : "trend-negative"
+          )}>
+            <span>{trend.isPositive ? '↗' : '↘'}</span>
+            <span>{Math.abs(trend.value)}%</span>
+            <span className="text-muted-foreground font-normal">vs last period</span>
+          </div>
+        )}
       </div>
     </div>
   );
