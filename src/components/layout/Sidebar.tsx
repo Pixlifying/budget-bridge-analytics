@@ -17,8 +17,7 @@ import {
   Calculator,
   ChevronsRight,
   ChevronsDown,
-  Landmark,
-  BookOpen
+  Landmark
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -138,8 +137,7 @@ const Sidebar = () => {
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
     services: false,
     expenses: false,
-    apps: false,
-    ledger: false
+    apps: false
   });
 
   const toggleMenu = (menuKey: string) => {
@@ -211,25 +209,6 @@ const Sidebar = () => {
     },
   ];
 
-  // Ledger submenu items
-  const ledgerItems = [
-    {
-      icon: <Users size={isCollapsed ? 20 : 16} />,
-      label: 'Customers',
-      to: '/ledger',
-    },
-    {
-      icon: <FileText size={isCollapsed ? 20 : 16} />,
-      label: 'Queries',
-      to: '/ledger/queries',
-    },
-    {
-      icon: <AlertCircle size={isCollapsed ? 20 : 16} />,
-      label: 'Pending Balance',
-      to: '/ledger/pending-balance',
-    },
-  ];
-
   // Main sidebar items
   const sidebarItems = [
     {
@@ -253,12 +232,22 @@ const Sidebar = () => {
       hasChildren: false,
     },
     {
-      icon: <BookOpen size={isCollapsed ? 20 : 18} />,
-      label: 'Ledger',
-      to: '#',
-      hasChildren: true,
-      menuKey: 'ledger',
-      children: ledgerItems,
+      icon: <FileText size={isCollapsed ? 20 : 18} />,
+      label: 'Queries',
+      to: '/queries',
+      hasChildren: false,
+    },
+    {
+      icon: <Users size={isCollapsed ? 20 : 18} />,
+      label: 'Customers',
+      to: '/customers',
+      hasChildren: false,
+    },
+    {
+      icon: <AlertCircle size={isCollapsed ? 20 : 18} />,
+      label: 'Pending Balance',
+      to: '/pending-balance',
+      hasChildren: false,
     },
     {
       icon: <Calculator size={isCollapsed ? 20 : 18} />,

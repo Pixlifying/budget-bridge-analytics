@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Download } from 'lucide-react';
@@ -55,6 +56,7 @@ const Customers = () => {
             };
           }
           
+          // Ensure transactions have the correct type
           const typedTransactions = (transactionsData || []).map(transaction => ({
             ...transaction,
             type: transaction.type as 'debit' | 'credit'
@@ -78,10 +80,11 @@ const Customers = () => {
 
   useEffect(() => {
     fetchCustomers(dateFilter);
+    // eslint-disable-next-line
   }, [dateFilter]);
 
   const handleViewCustomer = (customerId: string) => {
-    navigate(`/ledger/${customerId}`);
+    navigate(`/customers/${customerId}`);
   };
 
   const handleDateFilterChange = (date: Date | undefined) => {
@@ -147,14 +150,13 @@ const Customers = () => {
 
   const filteredCustomers = customers.filter(customer =>
     customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.phone.includes(searchTerm) ||
-    (customer.address && customer.address.toLowerCase().includes(searchTerm.toLowerCase()))
+    customer.phone.includes(searchTerm)
   );
 
   return (
     <div className="container px-4 py-6 space-y-6 max-w-lg mx-auto">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Ledger - Customers</h1>
+        <h1 className="text-2xl font-bold">Customers</h1>
         <div className="flex gap-2">
           <CustomerForm onSubmit={handleAddCustomer} />
           <DownloadButton
@@ -170,7 +172,7 @@ const Customers = () => {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
           <Input
-            placeholder="Search by name, phone, or address..."
+            placeholder="Search by name or phone..."
             className="pl-9"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -205,3 +207,4 @@ const Customers = () => {
 };
 
 export default Customers;
+
