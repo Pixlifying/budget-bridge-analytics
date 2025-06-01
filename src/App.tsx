@@ -15,7 +15,7 @@ import Expenses from "@/pages/Expenses";
 import PendingBalance from "@/pages/PendingBalance";
 import Photostat from "@/pages/Photostat";
 import Query from "@/pages/Query";
-import Customers from "@/pages/Customers";
+import Ledger from "@/pages/Ledger";
 import CustomerDetails from "@/pages/CustomerDetails";
 import AgeCalculator from "@/pages/AgeCalculator";
 import Calculator from "@/pages/Calculator";
@@ -47,8 +47,8 @@ const App = () => (
               <Route path="/fee-expenses" element={<FeeExpenses />} />
               <Route path="/misc-expenses" element={<MiscExpenses />} />
               <Route path="/pending-balance" element={<PendingBalance />} />
-              <Route path="/customers" element={<Customers />} />
-              <Route path="/customers/:id" element={<CustomerDetails />} />
+              <Route path="/ledger" element={<Ledger />} />
+              <Route path="/ledger/:id" element={<CustomerDetails />} />
               <Route path="/calculator" element={<Calculator />} />
               <Route path="/age-calculator" element={<AgeCalculator />} />
               <Route path="/templates" element={<Templates />} />

@@ -10,6 +10,7 @@ import {
   Wallet,
   X,
   Printer,
+  Receipt,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
@@ -294,19 +295,14 @@ const Dashboard = () => {
           onClick={() => setMarginDialogOpen(true)}
         />
         <StatCard
-          title="Photostat"
-          value={photostatCount}
-          icon={<FileText className="h-5 w-5" />}
+          title="Banking Services"
+          value={bankingServicesCount}
+          icon={<CreditCard className="h-5 w-5" />}
         />
         <StatCard
           title="Printout and Photostat"
           value={photostatCount}
-          icon={<Printer className="h-5 w-5" />} // Choose lucide icon "printer"
-        />
-        <StatCard
-          title="Banking Services"
-          value={bankingServicesCount}
-          icon={<CreditCard className="h-5 w-5" />}
+          icon={<Printer className="h-5 w-5" />}
         />
       </div>
 
@@ -417,24 +413,44 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Printout/Photostat section */}
-      <div className="glassmorphism rounded-xl p-5 animate-scale-in mb-8">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-semibold text-lg">Printout and Photostat</h3>
-          <Printer className="h-5 w-5 text-primary opacity-70" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        {/* Combined Printout and Photostat section */}
+        <div className="glassmorphism rounded-xl p-5 animate-scale-in">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-semibold text-lg">Printout and Photostat</h3>
+            <Printer className="h-5 w-5 text-primary opacity-70" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Total Amount</p>
+              <p className="text-xl font-bold">{formatCurrency(photostatTotal)}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Count</p>
+              <p className="text-xl font-bold">{photostatCount}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Margin</p>
+              <p className="text-xl font-bold">{formatCurrency(photostatMarginTotal)}</p>
+            </div>
+          </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <p className="text-sm text-muted-foreground">Total Amount</p>
-            <p className="text-xl font-bold">{formatCurrency(photostatTotal)}</p>
+
+        {/* New Expenses section */}
+        <div className="glassmorphism rounded-xl p-5 animate-scale-in">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-semibold text-lg">Expenses</h3>
+            <Receipt className="h-5 w-5 text-primary opacity-70" />
           </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Count</p>
-            <p className="text-xl font-bold">{photostatCount}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Margin</p>
-            <p className="text-xl font-bold">{formatCurrency(photostatMarginTotal)}</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Total Amount</p>
+              <p className="text-xl font-bold">{formatCurrency(expensesTotal)}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Count</p>
+              <p className="text-xl font-bold">{expensesCount}</p>
+            </div>
           </div>
         </div>
       </div>
