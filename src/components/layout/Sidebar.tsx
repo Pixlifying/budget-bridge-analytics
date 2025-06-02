@@ -219,6 +219,16 @@ const Sidebar = () => {
       to: '/ledger',
     },
     {
+      icon: <BookOpen size={isCollapsed ? 20 : 16} />,
+      label: 'Khata',
+      to: '/khata',
+    },
+    {
+      icon: <FileText size={isCollapsed ? 20 : 16} />,
+      label: 'Papers',
+      to: '/papers',
+    },
+    {
       icon: <FileText size={isCollapsed ? 20 : 16} />,
       label: 'Queries',
       to: '/queries',

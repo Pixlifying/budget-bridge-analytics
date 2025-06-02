@@ -209,6 +209,74 @@ export type Database = {
         }
         Relationships: []
       }
+      khata_customers: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          opening_balance: number
+          opening_date: string
+          phone: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          opening_balance?: number
+          opening_date?: string
+          phone: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          opening_balance?: number
+          opening_date?: string
+          phone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      khata_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          customer_id: string
+          date: string
+          description: string | null
+          id: string
+          type: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          customer_id: string
+          date?: string
+          description?: string | null
+          id?: string
+          type: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          customer_id?: string
+          date?: string
+          description?: string | null
+          id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "khata_transactions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "khata_customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       misc_expenses: {
         Row: {
           created_at: string | null
@@ -298,6 +366,91 @@ export type Database = {
           total?: number
         }
         Relationships: []
+      }
+      papers_classes: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      papers_records: {
+        Row: {
+          class_id: string
+          created_at: string
+          date: string
+          id: string
+          total_amount: number
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          date?: string
+          id?: string
+          total_amount?: number
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          date?: string
+          id?: string
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "papers_records_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "papers_classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      papers_subjects: {
+        Row: {
+          amount: number
+          class_id: string
+          created_at: string
+          id: string
+          name: string
+          paper_count: number
+        }
+        Insert: {
+          amount?: number
+          class_id: string
+          created_at?: string
+          id?: string
+          name: string
+          paper_count?: number
+        }
+        Update: {
+          amount?: number
+          class_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          paper_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "papers_subjects_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "papers_classes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       passports: {
         Row: {

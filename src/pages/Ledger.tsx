@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Download } from 'lucide-react';
@@ -8,6 +9,7 @@ import { Customer } from '@/types/customer';
 import { format } from 'date-fns';
 import DownloadButton from '@/components/ui/DownloadButton';
 import { toast } from "sonner";
+import PageHeader from '@/components/layout/PageHeader';
 
 import CustomerList from '@/components/customers/CustomerList';
 import CustomerForm from '@/components/customers/CustomerForm';
@@ -153,44 +155,36 @@ const Ledger = () => {
   );
 
   return (
-    <div className="container px-4 py-6 space-y-6 max-w-lg mx-auto">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Ledger</h1>
-        <div className="flex gap-2">
-          <CustomerForm onSubmit={handleAddCustomer} />
-          <DownloadButton
-            data={customers}
-            filename="ledger"
-            currentData={filteredCustomers}
-            label="Export"
-          />
-        </div>
-      </div>
-
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
-          <Input
-            placeholder="Search by name or phone..."
-            className="pl-9"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+    <div className="flex flex-col h-screen">
+      <PageHeader
+        title="Customer Ledger"
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
+        searchPlaceholder="Search by name or phone..."
+      >
         <CustomerDateFilter dateFilter={dateFilter} onChange={handleDateFilterChange} />
-      </div>
-
-      <div className="grid gap-4">
-        <CustomerList
-          customers={filteredCustomers}
-          loading={loading}
-          searchTerm={searchTerm}
-          onView={handleViewCustomer}
-          onDelete={(id, e) => {
-            e.stopPropagation();
-            initiateDelete(id);
-          }}
+        <CustomerForm onSubmit={handleAddCustomer} />
+        <DownloadButton
+          data={customers}
+          filename="ledger"
+          currentData={filteredCustomers}
+          label="Export"
         />
+      </PageHeader>
+
+      <div className="flex-1 p-6">
+        <div className="grid gap-4">
+          <CustomerList
+            customers={filteredCustomers}
+            loading={loading}
+            searchTerm={searchTerm}
+            onView={handleViewCustomer}
+            onDelete={(id, e) => {
+              e.stopPropagation();
+              initiateDelete(id);
+            }}
+          />
+        </div>
       </div>
 
       <DeleteCustomerDialog
