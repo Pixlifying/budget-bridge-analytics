@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import {
   CreditCard,
@@ -17,7 +18,7 @@ import { useQuery } from '@tanstack/react-query';
 import { format, startOfMonth, endOfMonth, startOfDay, endOfDay } from 'date-fns';
 
 import { supabase } from '@/integrations/supabase/client';
-import PageWrapper from '@/components/layout/PageWrapper';
+import PageHeader from '@/components/layout/PageHeader';
 import StatCard from '@/components/ui/StatCard';
 import DoughnutChart from '@/components/ui/DoughnutChart';
 import DateRangePicker from '@/components/ui/DateRangePicker';
