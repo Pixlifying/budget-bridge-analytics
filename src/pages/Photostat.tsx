@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { FileText, Plus } from 'lucide-react';
 import { toast } from 'sonner';
@@ -17,7 +18,6 @@ interface PhotostatEntry {
   date: Date;
   pages_count: number;
   amount_per_page: number;
-  is_double_sided: boolean;
   total_amount: number;
   margin: number;
 }
@@ -46,7 +46,6 @@ const Photostat = () => {
         date: new Date(entry.date),
         pages_count: entry.pages_count,
         amount_per_page: Number(entry.amount_per_page),
-        is_double_sided: entry.is_double_sided,
         total_amount: Number(entry.total_amount),
         margin: Number(entry.margin)
       }));
@@ -82,7 +81,6 @@ const Photostat = () => {
           date: values.date ? new Date(values.date).toISOString() : new Date().toISOString(),
           pages_count: values.pages_count,
           amount_per_page: values.amount_per_page,
-          is_double_sided: values.is_double_sided,
           total_amount: totalAmount,
           margin: totalAmount // 100% margin as specified
         })
@@ -95,7 +93,6 @@ const Photostat = () => {
         date: new Date(data[0].date),
         pages_count: data[0].pages_count,
         amount_per_page: Number(data[0].amount_per_page),
-        is_double_sided: data[0].is_double_sided,
         total_amount: Number(data[0].total_amount),
         margin: Number(data[0].margin)
       };
@@ -121,7 +118,6 @@ const Photostat = () => {
           date: values.date ? new Date(values.date).toISOString() : editingEntry.date.toISOString(),
           pages_count: values.pages_count,
           amount_per_page: values.amount_per_page,
-          is_double_sided: values.is_double_sided,
           total_amount: totalAmount,
           margin: totalAmount // 100% margin as specified
         })
@@ -137,7 +133,6 @@ const Photostat = () => {
                 date: values.date ? new Date(values.date) : item.date,
                 pages_count: values.pages_count,
                 amount_per_page: values.amount_per_page,
-                is_double_sided: values.is_double_sided,
                 total_amount: totalAmount,
                 margin: totalAmount
               }
@@ -194,16 +189,6 @@ const Photostat = () => {
       type: 'number' as const,
       required: true,
       min: 0
-    },
-    {
-      name: 'is_double_sided',
-      label: 'Double Sided',
-      type: 'select' as const,
-      options: [
-        { value: 'false', label: 'No (Single Sided)' },
-        { value: 'true', label: 'Yes (Double Sided)' }
-      ],
-      required: true
     }
   ];
 
@@ -229,8 +214,7 @@ const Photostat = () => {
               initialValues={{
                 date: new Date(),
                 pages_count: 1,
-                amount_per_page: 0,
-                is_double_sided: false
+                amount_per_page: 0
               }}
               onSubmit={handleAddPhotostat}
               trigger={
@@ -279,13 +263,11 @@ const Photostat = () => {
               data={{
                 'Pages': entry.pages_count,
                 'Amount per Page': formatCurrency(entry.amount_per_page),
-                'Double Sided': entry.is_double_sided ? 'Yes' : 'No',
                 'Total Amount': formatCurrency(entry.total_amount)
               }}
               labels={{
                 'Pages': 'Pages',
                 'Amount per Page': 'Amount per Page',
-                'Double Sided': 'Double Sided',
                 'Total Amount': 'Total Amount'
               }}
               onEdit={() => openEditForm(entry)}
@@ -302,8 +284,7 @@ const Photostat = () => {
           initialValues={{
             date: editingEntry.date,
             pages_count: editingEntry.pages_count,
-            amount_per_page: editingEntry.amount_per_page,
-            is_double_sided: editingEntry.is_double_sided.toString()
+            amount_per_page: editingEntry.amount_per_page
           }}
           onSubmit={handleEditPhotostat}
           trigger={<></>}
