@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { Search, Bell } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import NotificationDropdown from '@/components/ui/NotificationDropdown';
 import { cn } from '@/lib/utils';
 
 interface PageHeaderProps {
@@ -48,14 +48,7 @@ const PageHeader = ({
           </h1>
           <div className="flex items-center gap-2">
             {showThemeToggle && <ThemeToggle />}
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="relative h-9 w-9 rounded-full bg-white/10 dark:bg-white/5 backdrop-blur-md border border-white/20 dark:border-white/10 hover:bg-white/20 dark:hover:bg-white/10 transition-all duration-300 hover:scale-105"
-            >
-              <Bell className="h-4 w-4" />
-              <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full text-xs animate-pulse"></span>
-            </Button>
+            <NotificationDropdown />
           </div>
         </div>
         

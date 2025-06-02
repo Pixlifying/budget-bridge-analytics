@@ -51,7 +51,7 @@
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
 
-    --card: 222.2 84% 4.9%;
+    --card: 217.2 32.6% 17.5%;
     --card-foreground: 210 40% 98%;
 
     --popover: 222.2 84% 4.9%;
@@ -75,6 +75,15 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 224.3 76.3% 48%;
+
+    --sidebar-background: 217.2 32.6% 17.5%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 210 40% 98%;
+    --sidebar-primary-foreground: 217.2 32.6% 17.5%;
+    --sidebar-accent: 224.3 76.3% 48%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217.2 32.6% 25%;
+    --sidebar-ring: 224.3 76.3% 48%;
   }
 }
 
@@ -87,7 +96,7 @@
     -webkit-font-smoothing: antialiased;
   }
   .glassmorphism {
-    @apply bg-white/70 backdrop-blur-sm border border-white/20 shadow-sm;
+    @apply bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border border-white/20 dark:border-white/10 shadow-sm;
   }
   .page-transition {
     @apply animate-fade-in;
