@@ -26,44 +26,50 @@ import FeeExpenses from "@/pages/FeeExpenses";
 import MiscExpenses from "@/pages/MiscExpenses";
 import NotFound from "@/pages/NotFound";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
+import { NotificationProvider } from "@/contexts/NotificationContext";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <BrowserRouter>
-      <TooltipProvider>
-        <div className="flex h-screen bg-background">
-          <Sidebar />
-          <main className="flex-1 overflow-auto">
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/banking-services" element={<BankingServices />} />
-              <Route path="/banking-accounts" element={<BankingAccounts />} />
-              <Route path="/online-services" element={<OnlineServices />} />
-              <Route path="/applications" element={<Applications />} />
-              <Route path="/photostat" element={<Photostat />} />
-              <Route path="/queries" element={<Query />} />
-              <Route path="/analytics" element={<Analytics />} />
-              <Route path="/expenses" element={<Expenses />} />
-              <Route path="/fee-expenses" element={<FeeExpenses />} />
-              <Route path="/misc-expenses" element={<MiscExpenses />} />
-              <Route path="/pending-balance" element={<PendingBalance />} />
-              <Route path="/ledger" element={<Ledger />} />
-              <Route path="/ledger/:id" element={<CustomerDetails />} />
-              <Route path="/khata" element={<Khata />} />
-              <Route path="/papers" element={<Papers />} />
-              <Route path="/calculator" element={<Calculator />} />
-              <Route path="/age-calculator" element={<AgeCalculator />} />
-              <Route path="/templates" element={<Templates />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </main>
-        </div>
-        <Toaster />
-        <Sonner />
-      </TooltipProvider>
-    </BrowserRouter>
+    <ThemeProvider defaultTheme="light" storageKey="dashboard-theme">
+      <NotificationProvider>
+        <BrowserRouter>
+          <TooltipProvider>
+            <div className="flex h-screen bg-background">
+              <Sidebar />
+              <main className="flex-1 overflow-auto">
+                <Routes>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/banking-services" element={<BankingServices />} />
+                  <Route path="/banking-accounts" element={<BankingAccounts />} />
+                  <Route path="/online-services" element={<OnlineServices />} />
+                  <Route path="/applications" element={<Applications />} />
+                  <Route path="/photostat" element={<Photostat />} />
+                  <Route path="/queries" element={<Query />} />
+                  <Route path="/analytics" element={<Analytics />} />
+                  <Route path="/expenses" element={<Expenses />} />
+                  <Route path="/fee-expenses" element={<FeeExpenses />} />
+                  <Route path="/misc-expenses" element={<MiscExpenses />} />
+                  <Route path="/pending-balance" element={<PendingBalance />} />
+                  <Route path="/ledger" element={<Ledger />} />
+                  <Route path="/ledger/:id" element={<CustomerDetails />} />
+                  <Route path="/khata" element={<Khata />} />
+                  <Route path="/papers" element={<Papers />} />
+                  <Route path="/calculator" element={<Calculator />} />
+                  <Route path="/age-calculator" element={<AgeCalculator />} />
+                  <Route path="/templates" element={<Templates />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </main>
+            </div>
+            <Toaster />
+            <Sonner />
+          </TooltipProvider>
+        </BrowserRouter>
+      </NotificationProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 

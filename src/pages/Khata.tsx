@@ -1,194 +1,182 @@
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Download, Trash2, Edit3 } from 'lucide-react';
+import { Plus, Download, Eye, Trash2, Edit, DollarSign, Users, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
-import { toast } from 'sonner';
+import { useNotification } from '@/contexts/NotificationContext';
 import PageHeader from '@/components/layout/PageHeader';
-
-interface KhataCustomer {
-  id: string;
-  name: string;
-  phone: string;
-  opening_balance: number;
-  opening_date: string;
-  balance?: number;
-}
-
-interface KhataTransaction {
-  id: string;
-  customer_id: string;
-  type: 'debit' | 'credit';
-  amount: number;
-  description: string;
-  date: string;
-}
+import StatCard from '@/components/ui/StatCard';
+import { KhataCustomer, KhataTransaction } from '@/types/khata';
 
 const Khata = () => {
   const [customers, setCustomers] = useState<KhataCustomer[]>([]);
   const [transactions, setTransactions] = useState<KhataTransaction[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<KhataCustomer | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
   const [showAddCustomer, setShowAddCustomer] = useState(false);
   const [showAddTransaction, setShowAddTransaction] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const { showNotification } = useNotification();
 
-  // Form states
+  // Customer form state
   const [customerForm, setCustomerForm] = useState({
     name: '',
     phone: '',
-    opening_balance: '',
-    opening_date: format(new Date(), 'yyyy-MM-dd')
+    opening_balance: 0,
+    opening_date: new Date().toISOString().split('T')[0]
   });
 
+  // Transaction form state
   const [transactionForm, setTransactionForm] = useState({
-    type: 'debit' as 'debit' | 'credit',
-    amount: '',
+    type: 'credit' as 'debit' | 'credit',
+    amount: 0,
     description: '',
-    date: format(new Date(), 'yyyy-MM-dd')
+    date: new Date().toISOString().split('T')[0]
   });
 
   const fetchCustomers = async () => {
     try {
-      setLoading(true);
       const { data, error } = await supabase
         .from('khata_customers')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-
-      // Calculate balances for each customer
-      const customersWithBalances = await Promise.all(
-        (data || []).map(async (customer) => {
-          const { data: transactionsData } = await supabase
-            .from('khata_transactions')
-            .select('*')
-            .eq('customer_id', customer.id);
-
-          const balance = (transactionsData || []).reduce((acc, transaction) => {
-            return transaction.type === 'credit' 
-              ? acc + Number(transaction.amount)
-              : acc - Number(transaction.amount);
-          }, Number(customer.opening_balance));
-
-          return { ...customer, balance };
-        })
-      );
-
-      setCustomers(customersWithBalances);
+      setCustomers(data || []);
     } catch (error) {
       console.error('Error fetching customers:', error);
-      toast.error('Failed to load customers');
-    } finally {
-      setLoading(false);
+      showNotification('Failed to load customers', 'error');
     }
   };
 
-  const fetchTransactions = async (customerId: string) => {
+  const fetchTransactions = async (customerId?: string) => {
     try {
-      const { data, error } = await supabase
-        .from('khata_transactions')
-        .select('*')
-        .eq('customer_id', customerId)
-        .order('date', { ascending: false });
+      let query = supabase.from('khata_transactions').select('*');
+      
+      if (customerId) {
+        query = query.eq('customer_id', customerId);
+      }
+      
+      const { data, error } = await query.order('date', { ascending: false });
 
       if (error) throw error;
-      setTransactions(data || []);
+      
+      // Type assertion to ensure proper typing
+      const typedTransactions = (data || []).map(transaction => ({
+        ...transaction,
+        type: transaction.type as 'debit' | 'credit'
+      }));
+      
+      setTransactions(typedTransactions);
     } catch (error) {
       console.error('Error fetching transactions:', error);
+      showNotification('Failed to load transactions', 'error');
     }
   };
 
   useEffect(() => {
-    fetchCustomers();
-  }, []);
+    const loadData = async () => {
+      setLoading(true);
+      await fetchCustomers();
+      await fetchTransactions();
+      setLoading(false);
+    };
 
-  useEffect(() => {
-    if (selectedCustomer) {
-      fetchTransactions(selectedCustomer.id);
-    }
-  }, [selectedCustomer]);
+    loadData();
 
-  const handleAddCustomer = async () => {
+    // Set up real-time subscriptions
+    const customersChannel = supabase
+      .channel('khata_customers_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'khata_customers' }, (payload) => {
+        console.log('Customer change:', payload);
+        fetchCustomers();
+        
+        if (payload.eventType === 'INSERT') {
+          showNotification('New customer added successfully!', 'success');
+        } else if (payload.eventType === 'DELETE') {
+          showNotification('Customer deleted successfully!', 'info');
+        }
+      })
+      .subscribe();
+
+    const transactionsChannel = supabase
+      .channel('khata_transactions_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'khata_transactions' }, (payload) => {
+        console.log('Transaction change:', payload);
+        fetchTransactions(selectedCustomer?.id);
+        
+        if (payload.eventType === 'INSERT') {
+          showNotification('New transaction recorded!', 'success');
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(customersChannel);
+      supabase.removeChannel(transactionsChannel);
+    };
+  }, [selectedCustomer?.id]);
+
+  const handleAddCustomer = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
       const { error } = await supabase
         .from('khata_customers')
-        .insert({
-          name: customerForm.name,
-          phone: customerForm.phone,
-          opening_balance: Number(customerForm.opening_balance),
-          opening_date: customerForm.opening_date
-        });
+        .insert([customerForm]);
 
       if (error) throw error;
 
-      toast.success('Customer added successfully');
+      setCustomerForm({
+        name: '',
+        phone: '',
+        opening_balance: 0,
+        opening_date: new Date().toISOString().split('T')[0]
+      });
       setShowAddCustomer(false);
-      setCustomerForm({ name: '', phone: '', opening_balance: '', opening_date: format(new Date(), 'yyyy-MM-dd') });
-      fetchCustomers();
     } catch (error) {
       console.error('Error adding customer:', error);
-      toast.error('Failed to add customer');
+      showNotification('Failed to add customer', 'error');
     }
   };
 
-  const handleAddTransaction = async () => {
+  const handleAddTransaction = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!selectedCustomer) return;
 
     try {
       const { error } = await supabase
         .from('khata_transactions')
-        .insert({
-          customer_id: selectedCustomer.id,
-          type: transactionForm.type,
-          amount: Number(transactionForm.amount),
-          description: transactionForm.description,
-          date: transactionForm.date
-        });
+        .insert([{
+          ...transactionForm,
+          customer_id: selectedCustomer.id
+        }]);
 
       if (error) throw error;
 
-      toast.success('Transaction added successfully');
+      setTransactionForm({
+        type: 'credit',
+        amount: 0,
+        description: '',
+        date: new Date().toISOString().split('T')[0]
+      });
       setShowAddTransaction(false);
-      setTransactionForm({ type: 'debit', amount: '', description: '', date: format(new Date(), 'yyyy-MM-dd') });
-      fetchCustomers();
-      fetchTransactions(selectedCustomer.id);
     } catch (error) {
       console.error('Error adding transaction:', error);
-      toast.error('Failed to add transaction');
+      showNotification('Failed to add transaction', 'error');
     }
   };
 
-  const exportToCSV = () => {
-    if (!selectedCustomer) return;
-
-    const csvData = [
-      ['Date', 'Description', 'Debit', 'Credit', 'Balance'],
-      ['', 'Opening Balance', '', '', selectedCustomer.opening_balance.toString()],
-      ...transactions.map(transaction => [
-        transaction.date,
-        transaction.description,
-        transaction.type === 'debit' ? transaction.amount.toString() : '',
-        transaction.type === 'credit' ? transaction.amount.toString() : '',
-        ''
-      ])
-    ];
-
-    const csvContent = csvData.map(row => row.join(',')).join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${selectedCustomer.name}_ledger.csv`;
-    link.click();
+  const calculateBalance = (customer: KhataCustomer) => {
+    const customerTransactions = transactions.filter(t => t.customer_id === customer.id);
+    const transactionTotal = customerTransactions.reduce((sum, t) => {
+      return sum + (t.type === 'credit' ? t.amount : -t.amount);
+    }, 0);
+    return customer.opening_balance + transactionTotal;
   };
 
   const filteredCustomers = customers.filter(customer =>
@@ -196,235 +184,259 @@ const Khata = () => {
     customer.phone.includes(searchTerm)
   );
 
-  const getRunningBalance = (index: number) => {
-    let balance = selectedCustomer?.opening_balance || 0;
-    for (let i = transactions.length - 1; i >= index; i--) {
-      const transaction = transactions[i];
-      balance += transaction.type === 'credit' ? Number(transaction.amount) : -Number(transaction.amount);
-    }
-    return balance;
-  };
+  const totalBalance = customers.reduce((sum, customer) => sum + calculateBalance(customer), 0);
+  const totalTransactions = transactions.length;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex h-screen bg-background">
-      {/* Customer Sidebar */}
-      <div className="w-80 border-r bg-card">
-        <div className="p-4 border-b">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Customers</h2>
-            <Dialog open={showAddCustomer} onOpenChange={setShowAddCustomer}>
-              <DialogTrigger asChild>
-                <Button size="sm">
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add New Customer</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="name">Name</Label>
-                    <Input
-                      id="name"
-                      value={customerForm.name}
-                      onChange={(e) => setCustomerForm({ ...customerForm, name: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="phone">Phone</Label>
-                    <Input
-                      id="phone"
-                      value={customerForm.phone}
-                      onChange={(e) => setCustomerForm({ ...customerForm, phone: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="opening_balance">Opening Balance</Label>
-                    <Input
-                      id="opening_balance"
-                      type="number"
-                      value={customerForm.opening_balance}
-                      onChange={(e) => setCustomerForm({ ...customerForm, opening_balance: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="opening_date">Opening Date</Label>
-                    <Input
-                      id="opening_date"
-                      type="date"
-                      value={customerForm.opening_date}
-                      onChange={(e) => setCustomerForm({ ...customerForm, opening_date: e.target.value })}
-                    />
-                  </div>
-                  <Button onClick={handleAddCustomer} className="w-full">
-                    Add Customer
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-          
-          <div className="grid grid-cols-3 gap-2 text-sm">
-            <div className="text-center p-2 bg-muted rounded">
-              <div className="font-semibold">{customers.length}</div>
-              <div className="text-xs text-muted-foreground">Customers</div>
-            </div>
-            <div className="text-center p-2 bg-muted rounded">
-              <div className="font-semibold">{transactions.length}</div>
-              <div className="text-xs text-muted-foreground">Transactions</div>
-            </div>
-            <div className="text-center p-2 bg-muted rounded">
-              <div className="font-semibold">
-                {customers.reduce((sum, customer) => sum + (customer.balance || 0), 0).toFixed(2)}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-700">
+      <PageHeader
+        title="Khata Management"
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
+        searchPlaceholder="Search customers..."
+      >
+        <Dialog open={showAddCustomer} onOpenChange={setShowAddCustomer}>
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Customer
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-white/20 dark:border-white/10">
+            <DialogHeader>
+              <DialogTitle>Add New Customer</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleAddCustomer} className="space-y-4">
+              <div>
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  value={customerForm.name}
+                  onChange={(e) => setCustomerForm({...customerForm, name: e.target.value})}
+                  required
+                  className="bg-white/50 dark:bg-white/10 backdrop-blur-sm"
+                />
               </div>
-              <div className="text-xs text-muted-foreground">Net Balance</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="overflow-auto">
-          {filteredCustomers.map((customer) => (
-            <div
-              key={customer.id}
-              className={`p-3 border-b cursor-pointer hover:bg-muted/50 ${
-                selectedCustomer?.id === customer.id ? 'bg-muted' : ''
-              }`}
-              onClick={() => setSelectedCustomer(customer)}
-            >
-              <div className="font-medium">{customer.name}</div>
-              <div className="text-sm text-muted-foreground">{customer.phone}</div>
-              <div className={`text-sm font-medium ${
-                (customer.balance || 0) >= 0 ? 'text-green-600' : 'text-red-600'
-              }`}>
-                Balance: ₹{(customer.balance || 0).toFixed(2)}
+              <div>
+                <Label htmlFor="phone">Phone</Label>
+                <Input
+                  id="phone"
+                  value={customerForm.phone}
+                  onChange={(e) => setCustomerForm({...customerForm, phone: e.target.value})}
+                  required
+                  className="bg-white/50 dark:bg-white/10 backdrop-blur-sm"
+                />
               </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        <PageHeader
-          title="Khata Management"
-          searchValue={searchTerm}
-          onSearchChange={setSearchTerm}
-          searchPlaceholder="Search customers..."
-        >
-          {selectedCustomer && (
-            <>
-              <Button onClick={exportToCSV} variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-1" />
-                Export CSV
+              <div>
+                <Label htmlFor="opening_balance">Opening Balance</Label>
+                <Input
+                  id="opening_balance"
+                  type="number"
+                  value={customerForm.opening_balance}
+                  onChange={(e) => setCustomerForm({...customerForm, opening_balance: Number(e.target.value)})}
+                  className="bg-white/50 dark:bg-white/10 backdrop-blur-sm"
+                />
+              </div>
+              <div>
+                <Label htmlFor="opening_date">Opening Date</Label>
+                <Input
+                  id="opening_date"
+                  type="date"
+                  value={customerForm.opening_date}
+                  onChange={(e) => setCustomerForm({...customerForm, opening_date: e.target.value})}
+                  required
+                  className="bg-white/50 dark:bg-white/10 backdrop-blur-sm"
+                />
+              </div>
+              <Button type="submit" className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700">
+                Add Customer
               </Button>
-              <Dialog open={showAddTransaction} onOpenChange={setShowAddTransaction}>
-                <DialogTrigger asChild>
-                  <Button size="sm">
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add Transaction
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add Transaction for {selectedCustomer.name}</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="type">Type</Label>
-                      <Select value={transactionForm.type} onValueChange={(value: 'debit' | 'credit') => 
-                        setTransactionForm({ ...transactionForm, type: value })}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="debit">Debit</SelectItem>
-                          <SelectItem value="credit">Credit</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="amount">Amount</Label>
-                      <Input
-                        id="amount"
-                        type="number"
-                        value={transactionForm.amount}
-                        onChange={(e) => setTransactionForm({ ...transactionForm, amount: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="description">Description</Label>
-                      <Textarea
-                        id="description"
-                        value={transactionForm.description}
-                        onChange={(e) => setTransactionForm({ ...transactionForm, description: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="date">Date</Label>
-                      <Input
-                        id="date"
-                        type="date"
-                        value={transactionForm.date}
-                        onChange={(e) => setTransactionForm({ ...transactionForm, date: e.target.value })}
-                      />
-                    </div>
-                    <Button onClick={handleAddTransaction} className="w-full">
-                      Add Transaction
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </>
-          )}
-        </PageHeader>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </PageHeader>
 
-        <div className="flex-1 p-6">
-          {selectedCustomer ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Ledger for {selectedCustomer.name}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-5 gap-4 font-semibold border-b pb-2">
-                    <div>Date</div>
-                    <div>Description</div>
-                    <div>Debit</div>
-                    <div>Credit</div>
-                    <div>Balance</div>
-                  </div>
-                  
-                  <div className="grid grid-cols-5 gap-4 py-2 bg-muted/50">
-                    <div>{selectedCustomer.opening_date}</div>
-                    <div>Opening Balance</div>
-                    <div></div>
-                    <div></div>
-                    <div className="font-medium">₹{selectedCustomer.opening_balance.toFixed(2)}</div>
-                  </div>
+      <div className="p-6">
+        {/* Stats Cards */}
+        <div className="grid gap-6 mb-8 grid-cols-1 md:grid-cols-3">
+          <StatCard
+            title="Total Customers"
+            value={customers.length}
+            icon={<Users className="h-5 w-5" />}
+            className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-200/50 dark:border-blue-800/50"
+          />
+          <StatCard
+            title="Total Transactions"
+            value={totalTransactions}
+            icon={<TrendingUp className="h-5 w-5" />}
+            className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-200/50 dark:border-emerald-800/50"
+          />
+          <StatCard
+            title="Net Balance"
+            value={`₹${totalBalance.toFixed(2)}`}
+            icon={<DollarSign className="h-5 w-5" />}
+            className="bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-orange-200/50 dark:border-orange-800/50"
+          />
+        </div>
 
-                  {transactions.map((transaction, index) => (
-                    <div key={transaction.id} className="grid grid-cols-5 gap-4 py-2 border-b">
-                      <div>{transaction.date}</div>
-                      <div>{transaction.description}</div>
-                      <div className="text-red-600">
-                        {transaction.type === 'debit' ? `₹${transaction.amount.toFixed(2)}` : ''}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Customer List */}
+          <div className="lg:col-span-1">
+            <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-md rounded-xl border border-white/20 dark:border-white/10 shadow-xl">
+              <div className="p-4 border-b border-white/20 dark:border-white/10">
+                <h3 className="font-semibold text-lg">Customers</h3>
+              </div>
+              <div className="max-h-96 overflow-y-auto">
+                {filteredCustomers.map((customer) => (
+                  <div
+                    key={customer.id}
+                    className={`p-4 border-b border-white/10 cursor-pointer transition-all duration-200 hover:bg-white/50 dark:hover:bg-white/5 ${
+                      selectedCustomer?.id === customer.id ? 'bg-blue-50/50 dark:bg-blue-900/20' : ''
+                    }`}
+                    onClick={() => {
+                      setSelectedCustomer(customer);
+                      fetchTransactions(customer.id);
+                    }}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="font-medium">{customer.name}</p>
+                        <p className="text-sm text-muted-foreground">{customer.phone}</p>
                       </div>
-                      <div className="text-green-600">
-                        {transaction.type === 'credit' ? `₹${transaction.amount.toFixed(2)}` : ''}
+                      <div className="text-right">
+                        <p className={`font-medium ${calculateBalance(customer) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          ₹{calculateBalance(customer).toFixed(2)}
+                        </p>
                       </div>
-                      <div className="font-medium">₹{getRunningBalance(index).toFixed(2)}</div>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="flex items-center justify-center h-full text-muted-foreground">
-              Select a customer to view their ledger
+                  </div>
+                ))}
+              </div>
             </div>
-          )}
+          </div>
+
+          {/* Transaction Details */}
+          <div className="lg:col-span-2">
+            <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-md rounded-xl border border-white/20 dark:border-white/10 shadow-xl">
+              <div className="p-4 border-b border-white/20 dark:border-white/10 flex justify-between items-center">
+                <h3 className="font-semibold text-lg">
+                  {selectedCustomer ? `${selectedCustomer.name}'s Ledger` : 'Select a Customer'}
+                </h3>
+                {selectedCustomer && (
+                  <Dialog open={showAddTransaction} onOpenChange={setShowAddTransaction}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Transaction
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-white/20 dark:border-white/10">
+                      <DialogHeader>
+                        <DialogTitle>Add Transaction</DialogTitle>
+                      </DialogHeader>
+                      <form onSubmit={handleAddTransaction} className="space-y-4">
+                        <div>
+                          <Label>Type</Label>
+                          <Select value={transactionForm.type} onValueChange={(value: 'debit' | 'credit') => setTransactionForm({...transactionForm, type: value})}>
+                            <SelectTrigger className="bg-white/50 dark:bg-white/10 backdrop-blur-sm">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="credit">Credit</SelectItem>
+                              <SelectItem value="debit">Debit</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="amount">Amount</Label>
+                          <Input
+                            id="amount"
+                            type="number"
+                            value={transactionForm.amount}
+                            onChange={(e) => setTransactionForm({...transactionForm, amount: Number(e.target.value)})}
+                            required
+                            className="bg-white/50 dark:bg-white/10 backdrop-blur-sm"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="description">Description</Label>
+                          <Textarea
+                            id="description"
+                            value={transactionForm.description}
+                            onChange={(e) => setTransactionForm({...transactionForm, description: e.target.value})}
+                            className="bg-white/50 dark:bg-white/10 backdrop-blur-sm"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="date">Date</Label>
+                          <Input
+                            id="date"
+                            type="date"
+                            value={transactionForm.date}
+                            onChange={(e) => setTransactionForm({...transactionForm, date: e.target.value})}
+                            required
+                            className="bg-white/50 dark:bg-white/10 backdrop-blur-sm"
+                          />
+                        </div>
+                        <Button type="submit" className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700">
+                          Add Transaction
+                        </Button>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </div>
+              
+              {selectedCustomer ? (
+                <div className="p-4">
+                  <div className="mb-4 p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg border border-blue-200/50 dark:border-blue-800/50">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Opening Balance</p>
+                        <p className="text-lg font-semibold">₹{selectedCustomer.opening_balance.toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Current Balance</p>
+                        <p className={`text-lg font-semibold ${calculateBalance(selectedCustomer) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          ₹{calculateBalance(selectedCustomer).toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {transactions.filter(t => t.customer_id === selectedCustomer.id).map((transaction) => (
+                      <div key={transaction.id} className="flex justify-between items-center p-3 bg-white/50 dark:bg-white/5 rounded-lg border border-white/20 dark:border-white/10 hover:bg-white/70 dark:hover:bg-white/10 transition-colors duration-200">
+                        <div>
+                          <p className="font-medium">{transaction.description || 'No description'}</p>
+                          <p className="text-sm text-muted-foreground">{transaction.date}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className={`font-semibold ${transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
+                            {transaction.type === 'credit' ? '+' : '-'}₹{transaction.amount.toFixed(2)}
+                          </p>
+                          <p className="text-xs text-muted-foreground uppercase">{transaction.type}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-8 text-center text-muted-foreground">
+                  <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Select a customer to view their transaction history</p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

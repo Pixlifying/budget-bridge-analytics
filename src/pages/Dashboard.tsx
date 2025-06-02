@@ -273,10 +273,11 @@ const Dashboard = () => {
   ];
 
   return (
-    <PageWrapper
-      title="Dashboard"
-      subtitle="At a glance summary of your business"
-      action={
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-700">
+      <PageHeader
+        title="Dashboard"
+        showThemeToggle={true}
+      >
         <div className="flex items-center">
           <DateRangePicker 
             date={date}
@@ -285,186 +286,189 @@ const Dashboard = () => {
             onModeChange={handleViewModeChange}
           />
         </div>
-      }
-    >
-      <div className="grid gap-6 mb-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-        <StatCard
-          title="Total Margin"
-          value={formatCurrency(totalMargin)}
-          icon={<Wallet className="h-5 w-5" />}
-          onClick={() => setMarginDialogOpen(true)}
-        />
-        <StatCard
-          title="Banking Services"
-          value={bankingServicesCount}
-          icon={<CreditCard className="h-5 w-5" />}
-        />
-        <StatCard
-          title="Printout and Photostat"
-          value={photostatCount}
-          icon={<Printer className="h-5 w-5" />}
-        />
-      </div>
+      </PageHeader>
 
-      <Dialog open={marginDialogOpen} onOpenChange={setMarginDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Margin Breakdown</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <div className="space-y-4">
-              {marginDetails.map((item) => (
-                <div key={item.name} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
-                    <span>{item.name}</span>
+      <div className="p-6">
+        <div className="grid gap-6 mb-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          <StatCard
+            title="Total Margin"
+            value={formatCurrency(totalMargin)}
+            icon={<Wallet className="h-5 w-5" />}
+            onClick={() => setMarginDialogOpen(true)}
+            className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-200/50 dark:border-emerald-800/50 hover:scale-105 transition-all duration-300"
+          />
+          <StatCard
+            title="Banking Services"
+            value={bankingServicesCount}
+            icon={<CreditCard className="h-5 w-5" />}
+            className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-200/50 dark:border-blue-800/50 hover:scale-105 transition-all duration-300"
+          />
+          <StatCard
+            title="Printout and Photostat"
+            value={photostatCount}
+            icon={<Printer className="h-5 w-5" />}
+            className="bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-orange-200/50 dark:border-orange-800/50 hover:scale-105 transition-all duration-300"
+          />
+        </div>
+
+        <Dialog open={marginDialogOpen} onOpenChange={setMarginDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Margin Breakdown</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <div className="space-y-4">
+                {marginDetails.map((item) => (
+                  <div key={item.name} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
+                      <span>{item.name}</span>
+                    </div>
+                    <span className="font-semibold">{formatCurrency(item.value)}</span>
                   </div>
-                  <span className="font-semibold">{formatCurrency(item.value)}</span>
-                </div>
-              ))}
-              <div className="border-t pt-2 mt-2">
-                <div className="flex items-center justify-between font-bold">
-                  <span>Total Margin</span>
-                  <span>{formatCurrency(totalMargin)}</span>
+                ))}
+                <div className="border-t pt-2 mt-2">
+                  <div className="flex items-center justify-between font-bold">
+                    <span>Total Margin</span>
+                    <span>{formatCurrency(totalMargin)}</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="glassmorphism rounded-xl p-5 animate-scale-in">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold text-lg">Banking Services</h3>
-            <BarChart3 className="h-5 w-5 text-primary opacity-70" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-md rounded-xl p-5 border border-white/20 dark:border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] animate-scale-in">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-lg bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Banking Services</h3>
+              <BarChart3 className="h-5 w-5 text-primary opacity-70" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Amount</p>
+                <p className="text-xl font-bold">{formatCurrency(bankingServicesTotal)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Margin</p>
+                <p className="text-xl font-bold">{formatCurrency(bankingMargin)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Transactions</p>
+                <p className="text-xl font-bold">{bankingServicesCount}</p>
+              </div>
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Total Amount</p>
-              <p className="text-xl font-bold">{formatCurrency(bankingServicesTotal)}</p>
+          
+          <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-md rounded-xl p-5 border border-white/20 dark:border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] animate-scale-in">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-lg bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">Online Services</h3>
+              <Globe className="h-5 w-5 text-primary opacity-70" />
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Margin</p>
-              <p className="text-xl font-bold">{formatCurrency(bankingMargin)}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Transactions</p>
-              <p className="text-xl font-bold">{bankingServicesCount}</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Amount</p>
+                <p className="text-xl font-bold">{formatCurrency(onlineServicesTotal)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Margin</p>
+                <p className="text-xl font-bold">{formatCurrency(onlineMargin)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Transactions</p>
+                <p className="text-xl font-bold">{onlineServicesCount}</p>
+              </div>
             </div>
           </div>
         </div>
-        
-        <div className="glassmorphism rounded-xl p-5 animate-scale-in">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold text-lg">Online Services</h3>
-            <Globe className="h-5 w-5 text-primary opacity-70" />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-md rounded-xl p-5 border border-white/20 dark:border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] animate-scale-in">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-lg bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Applications</h3>
+              <FilePenLine className="h-5 w-5 text-primary opacity-70" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Amount</p>
+                <p className="text-xl font-bold">{formatCurrency(applicationsTotal)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Count</p>
+                <p className="text-xl font-bold">{applicationsCount}</p>
+              </div>
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Total Amount</p>
-              <p className="text-xl font-bold">{formatCurrency(onlineServicesTotal)}</p>
+          
+          <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-md rounded-xl p-5 border border-white/20 dark:border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] animate-scale-in">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-lg bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">Pending Balance</h3>
+              <AlertCircle className="h-5 w-5 text-primary opacity-70" />
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Margin</p>
-              <p className="text-xl font-bold">{formatCurrency(onlineMargin)}</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Amount</p>
+                <p className="text-xl font-bold">{formatCurrency(pendingBalanceTotal)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Count</p>
+                <p className="text-xl font-bold">{pendingBalanceData?.length || 0}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Transactions</p>
-              <p className="text-xl font-bold">{onlineServicesCount}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-md rounded-xl p-5 border border-white/20 dark:border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] animate-scale-in">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-lg bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">Printout and Photostat</h3>
+              <Printer className="h-5 w-5 text-primary opacity-70" />
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Amount</p>
+                <p className="text-xl font-bold">{formatCurrency(photostatTotal)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Count</p>
+                <p className="text-xl font-bold">{photostatCount}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Margin</p>
+                <p className="text-xl font-bold">{formatCurrency(photostatMarginTotal)}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-md rounded-xl p-5 border border-white/20 dark:border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] animate-scale-in">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-lg bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">Expenses</h3>
+              <Receipt className="h-5 w-5 text-primary opacity-70" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Amount</p>
+                <p className="text-xl font-bold">{formatCurrency(expensesTotal)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Count</p>
+                <p className="text-xl font-bold">{expensesCount}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-md rounded-xl p-5 border border-white/20 dark:border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] animate-scale-in">
+            <h3 className="font-semibold text-lg mb-4 bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">Margin Distribution</h3>
+            <DoughnutChart
+              data={marginProportions}
+              getColor={getServiceColor}
+            />
           </div>
         </div>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="glassmorphism rounded-xl p-5 animate-scale-in">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold text-lg">Applications</h3>
-            <FilePenLine className="h-5 w-5 text-primary opacity-70" />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Total Amount</p>
-              <p className="text-xl font-bold">{formatCurrency(applicationsTotal)}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Count</p>
-              <p className="text-xl font-bold">{applicationsCount}</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="glassmorphism rounded-xl p-5 animate-scale-in">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold text-lg">Pending Balance</h3>
-            <AlertCircle className="h-5 w-5 text-primary opacity-70" />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Total Amount</p>
-              <p className="text-xl font-bold">{formatCurrency(pendingBalanceTotal)}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Count</p>
-              <p className="text-xl font-bold">{pendingBalanceData?.length || 0}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        {/* Combined Printout and Photostat section */}
-        <div className="glassmorphism rounded-xl p-5 animate-scale-in">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold text-lg">Printout and Photostat</h3>
-            <Printer className="h-5 w-5 text-primary opacity-70" />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Total Amount</p>
-              <p className="text-xl font-bold">{formatCurrency(photostatTotal)}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Count</p>
-              <p className="text-xl font-bold">{photostatCount}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Margin</p>
-              <p className="text-xl font-bold">{formatCurrency(photostatMarginTotal)}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* New Expenses section */}
-        <div className="glassmorphism rounded-xl p-5 animate-scale-in">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold text-lg">Expenses</h3>
-            <Receipt className="h-5 w-5 text-primary opacity-70" />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Total Amount</p>
-              <p className="text-xl font-bold">{formatCurrency(expensesTotal)}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Count</p>
-              <p className="text-xl font-bold">{expensesCount}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="glassmorphism rounded-xl p-5 animate-scale-in">
-          <h3 className="font-semibold text-lg mb-4">Margin Distribution</h3>
-          <DoughnutChart
-            data={marginProportions}
-            getColor={getServiceColor}
-          />
-        </div>
-      </div>
-    </PageWrapper>
+    </div>
   );
 };
 
