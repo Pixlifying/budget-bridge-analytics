@@ -9,6 +9,36 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      account_details: {
+        Row: {
+          aadhar_number: string
+          account_number: string
+          created_at: string
+          id: string
+          mobile_number: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          aadhar_number: string
+          account_number: string
+          created_at?: string
+          id?: string
+          mobile_number?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          aadhar_number?: string
+          account_number?: string
+          created_at?: string
+          id?: string
+          mobile_number?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       applications: {
         Row: {
           amount: number
@@ -276,6 +306,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ledger_customers: {
+        Row: {
+          account_number: string
+          adhar_number: string
+          created_at: string
+          id: string
+          mobile_number: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          account_number: string
+          adhar_number: string
+          created_at?: string
+          id?: string
+          mobile_number?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          account_number?: string
+          adhar_number?: string
+          created_at?: string
+          id?: string
+          mobile_number?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       misc_expenses: {
         Row: {
@@ -548,42 +608,6 @@ export type Database = {
           margin?: number
           pages_count?: number
           total_amount?: number
-        }
-        Relationships: []
-      }
-      queries: {
-        Row: {
-          address: string
-          adhar_no: string | null
-          completed: boolean
-          created_at: string | null
-          customer_name: string
-          date: string
-          description: string
-          id: string
-          mobile_no: string
-        }
-        Insert: {
-          address: string
-          adhar_no?: string | null
-          completed?: boolean
-          created_at?: string | null
-          customer_name: string
-          date?: string
-          description: string
-          id?: string
-          mobile_no: string
-        }
-        Update: {
-          address?: string
-          adhar_no?: string | null
-          completed?: boolean
-          created_at?: string | null
-          customer_name?: string
-          date?: string
-          description?: string
-          id?: string
-          mobile_no?: string
         }
         Relationships: []
       }

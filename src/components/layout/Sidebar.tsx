@@ -211,12 +211,17 @@ const Sidebar = () => {
     },
   ];
 
-  // Ledger submenu items
+  // Ledger submenu items (removed Queries, added Account Details)
   const ledgerItems = [
     {
       icon: <Users size={isCollapsed ? 20 : 16} />,
       label: 'Customers',
       to: '/ledger',
+    },
+    {
+      icon: <Users size={isCollapsed ? 20 : 16} />,
+      label: 'Account Details',
+      to: '/account-details',
     },
     {
       icon: <BookOpen size={isCollapsed ? 20 : 16} />,
@@ -227,11 +232,6 @@ const Sidebar = () => {
       icon: <FileText size={isCollapsed ? 20 : 16} />,
       label: 'Papers',
       to: '/papers',
-    },
-    {
-      icon: <FileText size={isCollapsed ? 20 : 16} />,
-      label: 'Queries',
-      to: '/queries',
     },
     {
       icon: <AlertCircle size={isCollapsed ? 20 : 16} />,

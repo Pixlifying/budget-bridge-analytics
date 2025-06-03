@@ -14,8 +14,8 @@ import Analytics from "@/pages/Analytics";
 import Expenses from "@/pages/Expenses";
 import PendingBalance from "@/pages/PendingBalance";
 import Photostat from "@/pages/Photostat";
-import Query from "@/pages/Query";
 import Ledger from "@/pages/Ledger";
+import AccountDetails from "@/pages/AccountDetails";
 import Khata from "@/pages/Khata";
 import Papers from "@/pages/Papers";
 import CustomerDetails from "@/pages/CustomerDetails";
@@ -47,7 +47,6 @@ const App = () => (
                   <Route path="/online-services" element={<OnlineServices />} />
                   <Route path="/applications" element={<Applications />} />
                   <Route path="/photostat" element={<Photostat />} />
-                  <Route path="/queries" element={<Query />} />
                   <Route path="/analytics" element={<Analytics />} />
                   <Route path="/expenses" element={<Expenses />} />
                   <Route path="/fee-expenses" element={<FeeExpenses />} />
@@ -55,6 +54,7 @@ const App = () => (
                   <Route path="/pending-balance" element={<PendingBalance />} />
                   <Route path="/ledger" element={<Ledger />} />
                   <Route path="/ledger/:id" element={<CustomerDetails />} />
+                  <Route path="/account-details" element={<AccountDetails />} />
                   <Route path="/khata" element={<Khata />} />
                   <Route path="/papers" element={<Papers />} />
                   <Route path="/calculator" element={<Calculator />} />
