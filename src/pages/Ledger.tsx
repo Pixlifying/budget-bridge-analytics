@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Download } from 'lucide-react';
+import { Search, Download, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
@@ -162,6 +162,14 @@ const Ledger = () => {
         onSearchChange={setSearchTerm}
         searchPlaceholder="Search by name or phone..."
       >
+        <Button 
+          onClick={() => navigate('/ledger/customer-details')}
+          variant="outline"
+          className="flex items-center gap-2"
+        >
+          <Users size={16} />
+          Customer Details
+        </Button>
         <CustomerDateFilter dateFilter={dateFilter} onChange={handleDateFilterChange} />
         <CustomerForm onSubmit={handleAddCustomer} />
         <DownloadButton
