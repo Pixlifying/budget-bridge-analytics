@@ -10,6 +10,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useNotification } from '@/contexts/NotificationContext';
+import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
 
 interface Notification {
   id: string;
@@ -25,35 +27,126 @@ const NotificationDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { showNotification } = useNotification();
 
-  // Sample notifications - in a real app, these would come from your backend
+  // Fetch real-time data for notifications
   useEffect(() => {
-    const sampleNotifications: Notification[] = [
-      {
-        id: '1',
-        title: 'Banking Transaction',
-        message: 'New banking service transaction recorded: ₹5,000',
-        type: 'success',
-        timestamp: new Date(Date.now() - 5 * 60 * 1000),
-        read: false,
-      },
-      {
-        id: '2',
-        title: 'Online Service',
-        message: 'Online application submitted successfully',
-        type: 'info',
-        timestamp: new Date(Date.now() - 15 * 60 * 1000),
-        read: false,
-      },
-      {
-        id: '3',
-        title: 'Payment Due',
-        message: 'Pending balance payment reminder',
-        type: 'error',
-        timestamp: new Date(Date.now() - 30 * 60 * 1000),
-        read: true,
-      },
-    ];
-    setNotifications(sampleNotifications);
+    const fetchRecentActivity = async () => {
+      try {
+        const today = new Date();
+        const todayStr = format(today, 'yyyy-MM-dd');
+        
+        // Get today's banking services
+        const { data: bankingServices } = await supabase
+          .from('banking_services')
+          .select('*')
+          .gte('date', todayStr)
+          .order('created_at', { ascending: false })
+          .limit(3);
+
+        // Get today's online services
+        const { data: onlineServices } = await supabase
+          .from('online_services')
+          .select('*')
+          .gte('date', todayStr)
+          .order('created_at', { ascending: false })
+          .limit(3);
+
+        // Get pending balances
+        const { data: pendingBalances } = await supabase
+          .from('pending_balances')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(2);
+
+        const realTimeNotifications: Notification[] = [];
+
+        // Add banking service notifications
+        bankingServices?.forEach((service) => {
+          realTimeNotifications.push({
+            id: `banking-${service.id}`,
+            title: 'Banking Service',
+            message: `New banking transaction: ₹${service.amount} (${service.transaction_count} transactions)`,
+            type: 'success',
+            timestamp: new Date(service.created_at || service.date),
+            read: false,
+          });
+        });
+
+        // Add online service notifications
+        onlineServices?.forEach((service) => {
+          realTimeNotifications.push({
+            id: `online-${service.id}`,
+            title: 'Online Service',
+            message: `${service.service} completed for ${service.customer_name || 'customer'}: ₹${service.total}`,
+            type: 'info',
+            timestamp: new Date(service.created_at || service.date),
+            read: false,
+          });
+        });
+
+        // Add pending balance notifications
+        pendingBalances?.forEach((balance) => {
+          realTimeNotifications.push({
+            id: `pending-${balance.id}`,
+            title: 'Pending Payment',
+            message: `${balance.name} - ${balance.service}: ₹${balance.amount}`,
+            type: 'error',
+            timestamp: new Date(balance.created_at || balance.date),
+            read: true, // Mark pending balances as read by default
+          });
+        });
+
+        // Sort by timestamp (newest first)
+        realTimeNotifications.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+
+        setNotifications(realTimeNotifications.slice(0, 10)); // Limit to 10 notifications
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+      }
+    };
+
+    fetchRecentActivity();
+
+    // Set up real-time subscriptions
+    const bankingChannel = supabase
+      .channel('banking-notifications')
+      .on('postgres_changes', 
+        { event: 'INSERT', schema: 'public', table: 'banking_services' },
+        (payload) => {
+          const newNotification: Notification = {
+            id: `banking-${payload.new.id}`,
+            title: 'Banking Service',
+            message: `New banking transaction: ₹${payload.new.amount}`,
+            type: 'success',
+            timestamp: new Date(),
+            read: false,
+          };
+          setNotifications(prev => [newNotification, ...prev.slice(0, 9)]);
+        }
+      )
+      .subscribe();
+
+    const onlineChannel = supabase
+      .channel('online-notifications')
+      .on('postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'online_services' },
+        (payload) => {
+          const newNotification: Notification = {
+            id: `online-${payload.new.id}`,
+            title: 'Online Service',
+            message: `${payload.new.service} completed: ₹${payload.new.total}`,
+            type: 'info',
+            timestamp: new Date(),
+            read: false,
+          };
+          setNotifications(prev => [newNotification, ...prev.slice(0, 9)]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(bankingChannel);
+      supabase.removeChannel(onlineChannel);
+    };
   }, []);
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -119,7 +212,7 @@ const NotificationDropdown = () => {
         align="end"
       >
         <div className="flex items-center justify-between p-4 border-b border-border/50">
-          <h3 className="font-semibold text-foreground">Notifications</h3>
+          <h3 className="font-semibold text-foreground">Recent Activity</h3>
           {unreadCount > 0 && (
             <Button
               variant="ghost"
@@ -135,7 +228,7 @@ const NotificationDropdown = () => {
         <div className="max-h-96 overflow-y-auto">
           {notifications.length === 0 ? (
             <div className="p-4 text-center text-muted-foreground">
-              No notifications
+              No recent activity
             </div>
           ) : (
             notifications.map((notification) => (
@@ -189,11 +282,11 @@ const NotificationDropdown = () => {
               size="sm"
               className="w-full text-xs text-muted-foreground hover:text-foreground"
               onClick={() => {
-                showNotification('Opening all notifications...', 'info');
+                showNotification('Viewing recent activity...', 'info');
                 setIsOpen(false);
               }}
             >
-              View all notifications
+              View all activity
             </Button>
           </div>
         )}
