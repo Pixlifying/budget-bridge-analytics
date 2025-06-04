@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, Download, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +13,7 @@ import PageHeader from '@/components/layout/PageHeader';
 interface PapersClass {
   id: string;
   name: string;
+  school_name?: string;
   subjects?: PapersSubject[];
 }
 
@@ -138,20 +139,31 @@ const Papers = () => {
     }
   };
 
-  const updateSubject = async (subjectId: string, updates: Partial<PapersSubject>) => {
-    try {
-      const { error } = await supabase
-        .from('papers_subjects')
-        .update(updates)
-        .eq('id', subjectId);
+  // Debounced update function to reduce lag
+  const debouncedUpdateSubject = useCallback(
+    debounce(async (subjectId: string, updates: Partial<PapersSubject>) => {
+      try {
+        const { error } = await supabase
+          .from('papers_subjects')
+          .update(updates)
+          .eq('id', subjectId);
 
-      if (error) throw error;
-      
-      fetchClassesAndSubjects();
-    } catch (error) {
-      console.error('Error updating subject:', error);
-      toast.error('Failed to update subject');
-    }
+        if (error) throw error;
+        
+        fetchClassesAndSubjects();
+      } catch (error) {
+        console.error('Error updating subject:', error);
+        toast.error('Failed to update subject');
+      }
+    }, 500),
+    []
+  );
+
+  const updateSubject = (subjectId: string, updates: Partial<PapersSubject>) => {
+    // Immediately update local state for responsive UI
+    setSubjects(prev => prev.map(s => s.id === subjectId ? { ...s, ...updates } : s));
+    // Debounced database update
+    debouncedUpdateSubject(subjectId, updates);
   };
 
   const deleteSubject = async (subjectId: string) => {
@@ -173,7 +185,7 @@ const Papers = () => {
 
   const exportToCSV = () => {
     const csvData = [
-      ['Class', 'Subject', 'Paper Count', 'Amount per Paper', 'Total Amount']
+      ['School/Class', 'Subject', 'Paper Count', 'Amount per Paper', 'Total Amount']
     ];
 
     classes.forEach(classItem => {
@@ -239,7 +251,7 @@ const Papers = () => {
         title="Papers Management"
         searchValue={searchTerm}
         onSearchChange={setSearchTerm}
-        searchPlaceholder="Search classes..."
+        searchPlaceholder="Search schools/classes..."
       >
         <Button onClick={exportToCSV} variant="outline" size="sm">
           <Download className="h-4 w-4 mr-1" />
@@ -247,12 +259,25 @@ const Papers = () => {
         </Button>
         <Button onClick={addClass} size="sm">
           <Plus className="h-4 w-4 mr-1" />
-          Add Class
+          Add School/Class
         </Button>
       </PageHeader>
 
+      {/* Grand Total Summary */}
+      <Card className="mb-6">
+        <CardContent className="pt-6">
+          <div className="flex justify-between items-center text-2xl font-bold">
+            <span>Grand Total Summary:</span>
+            <span className="text-green-600">₹{grandTotal.toFixed(2)}</span>
+          </div>
+          <p className="text-sm text-muted-foreground mt-2">
+            Total from {classes.length} schools/classes
+          </p>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-6">
-        {filteredClasses.map((classItem) => {
+        {filteredClasses.map((classItem, index) => {
           const classSubjects = subjects.filter(s => s.class_id === classItem.id);
           const classTotal = getClassTotal(classItem.id);
 
@@ -260,32 +285,37 @@ const Papers = () => {
             <Card key={classItem.id}>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {editingClass === classItem.id ? (
-                      <Input
-                        value={editingClassValue}
-                        onChange={(e) => setEditingClassValue(e.target.value)}
-                        onBlur={() => updateClassName(classItem.id, editingClassValue)}
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter') {
-                            updateClassName(classItem.id, editingClassValue);
-                          }
-                        }}
-                        className="text-lg font-semibold"
-                        autoFocus
-                      />
-                    ) : (
-                      <CardTitle 
-                        className="cursor-pointer flex items-center gap-2"
-                        onClick={() => {
-                          setEditingClass(classItem.id);
-                          setEditingClassValue(classItem.name);
-                        }}
-                      >
-                        {classItem.name}
-                        <Edit className="h-4 w-4" />
-                      </CardTitle>
-                    )}
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm font-medium bg-primary/10 px-2 py-1 rounded">
+                      #{index + 1}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      {editingClass === classItem.id ? (
+                        <Input
+                          value={editingClassValue}
+                          onChange={(e) => setEditingClassValue(e.target.value)}
+                          onBlur={() => updateClassName(classItem.id, editingClassValue)}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              updateClassName(classItem.id, editingClassValue);
+                            }
+                          }}
+                          className="text-lg font-semibold"
+                          autoFocus
+                        />
+                      ) : (
+                        <CardTitle 
+                          className="cursor-pointer flex items-center gap-2"
+                          onClick={() => {
+                            setEditingClass(classItem.id);
+                            setEditingClassValue(classItem.name);
+                          }}
+                        >
+                          {classItem.name}
+                          <Edit className="h-4 w-4" />
+                        </CardTitle>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-lg font-bold text-green-600">
@@ -317,15 +347,16 @@ const Papers = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="grid grid-cols-4 gap-4 font-semibold border-b pb-2">
+                  <div className="grid grid-cols-5 gap-4 font-semibold border-b pb-2">
                     <div>Subject</div>
                     <div>Papers</div>
                     <div>Amount per Paper</div>
                     <div>Total Amount</div>
+                    <div>Actions</div>
                   </div>
                   
                   {classSubjects.map((subject) => (
-                    <div key={subject.id} className="grid grid-cols-4 gap-4 items-center">
+                    <div key={subject.id} className="grid grid-cols-5 gap-4 items-center">
                       <Input
                         value={subject.name}
                         onChange={(e) => updateSubject(subject.id, { name: e.target.value })}
@@ -344,18 +375,16 @@ const Papers = () => {
                         onChange={(e) => updateSubject(subject.id, { amount: Number(e.target.value) })}
                         placeholder="Amount per paper"
                       />
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium">
-                          ₹{(subject.paper_count * subject.amount).toFixed(2)}
-                        </span>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => deleteSubject(subject.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                      <div className="font-medium">
+                        ₹{(subject.paper_count * subject.amount).toFixed(2)}
                       </div>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => deleteSubject(subject.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   ))}
                   
@@ -373,20 +402,20 @@ const Papers = () => {
 
       {filteredClasses.length === 0 && !loading && (
         <div className="text-center text-muted-foreground py-8">
-          No classes found. Add a new class to get started.
+          No schools/classes found. Add a new school/class to get started.
         </div>
       )}
-
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex justify-between items-center text-xl font-bold">
-            <span>Grand Total:</span>
-            <span className="text-green-600">₹{grandTotal.toFixed(2)}</span>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };
+
+// Debounce utility function
+function debounce<T extends (...args: any[]) => any>(func: T, delay: number): T {
+  let timeoutId: ReturnType<typeof setTimeout>;
+  return ((...args: any[]) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func.apply(null, args), delay);
+  }) as T;
+}
 
 export default Papers;

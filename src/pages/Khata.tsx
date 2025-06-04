@@ -62,6 +62,7 @@ const Khata = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteType, setDeleteType] = useState<'customer' | 'transaction'>('customer');
+  const [expandedCustomer, setExpandedCustomer] = useState<string | null>(null);
 
   // Form states
   const [customerForm, setCustomerForm] = useState({
@@ -104,9 +105,15 @@ const Khata = () => {
             };
           }
 
+          // Type cast the transactions to ensure proper typing
+          const typedTransactions: KhataTransaction[] = (transactionsData || []).map(t => ({
+            ...t,
+            type: t.type as 'debit' | 'credit'
+          }));
+
           return {
             ...customer,
-            transactions: transactionsData || []
+            transactions: typedTransactions
           };
         })
       );
@@ -359,6 +366,10 @@ const Khata = () => {
     return customer.opening_balance + transactionTotal;
   };
 
+  const toggleCustomerExpansion = (customerId: string) => {
+    setExpandedCustomer(expandedCustomer === customerId ? null : customerId);
+  };
+
   const filteredCustomers = customers.filter(customer =>
     customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     customer.phone.includes(searchTerm)
@@ -467,114 +478,109 @@ const Khata = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredCustomers.map((customer) => {
-                  const balance = calculateBalance(customer);
-                  return (
-                    <TableRow key={customer.id}>
-                      <TableCell className="font-medium">{customer.name}</TableCell>
-                      <TableCell>{customer.phone}</TableCell>
-                      <TableCell>₹{customer.opening_balance}</TableCell>
-                      <TableCell className={balance >= 0 ? 'text-green-600' : 'text-red-600'}>
-                        ₹{balance}
-                      </TableCell>
-                      <TableCell>{format(new Date(customer.opening_date), 'dd/MM/yyyy')}</TableCell>
-                      <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedCustomer(customer);
-                            setShowTransactionDialog(true);
-                            resetTransactionForm();
-                            setEditingTransaction(null);
-                          }}
-                        >
-                          Add Transaction ({customer.transactions.length})
-                        </Button>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openEditCustomer(customer)}
+                <>
+                  {filteredCustomers.map((customer) => {
+                    const balance = calculateBalance(customer);
+                    const isExpanded = expandedCustomer === customer.id;
+                    return (
+                      <>
+                        <TableRow key={customer.id}>
+                          <TableCell 
+                            className="font-medium cursor-pointer"
+                            onClick={() => toggleCustomerExpansion(customer.id)}
                           >
-                            <Edit size={14} />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => initiateDeleteCustomer(customer.id)}
-                          >
-                            <Trash2 size={14} />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
+                            {customer.name}
+                          </TableCell>
+                          <TableCell>{customer.phone}</TableCell>
+                          <TableCell>₹{customer.opening_balance}</TableCell>
+                          <TableCell className={balance >= 0 ? 'text-green-600' : 'text-red-600'}>
+                            ₹{balance}
+                          </TableCell>
+                          <TableCell>{format(new Date(customer.opening_date), 'dd/MM/yyyy')}</TableCell>
+                          <TableCell>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedCustomer(customer);
+                                setShowTransactionDialog(true);
+                                resetTransactionForm();
+                                setEditingTransaction(null);
+                              }}
+                            >
+                              Add Transaction ({customer.transactions.length})
+                            </Button>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openEditCustomer(customer)}
+                              >
+                                <Edit size={14} />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => initiateDeleteCustomer(customer.id)}
+                              >
+                                <Trash2 size={14} />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                        {isExpanded && customer.transactions.length > 0 && (
+                          <TableRow>
+                            <TableCell colSpan={7} className="bg-muted/50">
+                              <div className="p-4">
+                                <h4 className="font-semibold mb-3">Transactions for {customer.name}</h4>
+                                <div className="space-y-2">
+                                  {customer.transactions.map((transaction) => (
+                                    <div key={transaction.id} className="flex justify-between items-center p-2 bg-white rounded border">
+                                      <div className="flex items-center gap-4">
+                                        <span className="text-sm">{format(new Date(transaction.date), 'dd/MM/yyyy')}</span>
+                                        <span className={`px-2 py-1 rounded text-xs ${
+                                          transaction.type === 'credit' 
+                                            ? 'bg-green-100 text-green-800' 
+                                            : 'bg-red-100 text-red-800'
+                                        }`}>
+                                          {transaction.type.toUpperCase()}
+                                        </span>
+                                        <span className="font-medium">₹{transaction.amount}</span>
+                                        <span className="text-sm text-muted-foreground">{transaction.description || '-'}</span>
+                                      </div>
+                                      <div className="flex gap-2">
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => openEditTransaction(transaction)}
+                                        >
+                                          <Edit size={12} />
+                                        </Button>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => initiateDeleteTransaction(transaction.id)}
+                                        >
+                                          <Trash2 size={12} />
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </>
+                    );
+                  })}
+                </>
               )}
             </TableBody>
           </Table>
         </div>
-
-        {/* Transactions Section */}
-        {selectedCustomer && selectedCustomer.transactions.length > 0 && (
-          <div className="mt-8 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden">
-            <div className="p-4 border-b">
-              <h3 className="text-lg font-semibold">
-                Transactions for {selectedCustomer.name}
-              </h3>
-            </div>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {selectedCustomer.transactions.map((transaction) => (
-                  <TableRow key={transaction.id}>
-                    <TableCell>{format(new Date(transaction.date), 'dd/MM/yyyy')}</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded text-xs ${
-                        transaction.type === 'credit' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {transaction.type.toUpperCase()}
-                      </span>
-                    </TableCell>
-                    <TableCell>₹{transaction.amount}</TableCell>
-                    <TableCell>{transaction.description || '-'}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openEditTransaction(transaction)}
-                        >
-                          <Edit size={14} />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => initiateDeleteTransaction(transaction.id)}
-                        >
-                          <Trash2 size={14} />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
       </div>
 
       {/* Transaction Dialog */}

@@ -89,14 +89,45 @@ const AccountDetails = () => {
     }
   };
 
+  const checkDuplicates = async (accountNumber: string, aadharNumber: string, excludeId?: string) => {
+    const cleanAadhar = aadharNumber.replace(/\s/g, '');
+    
+    let query = supabase
+      .from('account_details')
+      .select('*')
+      .or(`account_number.eq.${accountNumber},aadhar_number.eq.${cleanAadhar}`);
+    
+    if (excludeId) {
+      query = query.neq('id', excludeId);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) throw error;
+    
+    return data || [];
+  };
+
   const handleAddAccount = async () => {
     try {
+      const cleanAadhar = form.aadhar_number.replace(/\s/g, '');
+      
+      // Check for duplicates
+      const duplicates = await checkDuplicates(form.account_number, cleanAadhar);
+      
+      if (duplicates.length > 0) {
+        const duplicate = duplicates[0];
+        const duplicateType = duplicate.account_number === form.account_number ? 'Account Number' : 'Aadhar Number';
+        toast.error(`${duplicateType} already exists for: ${duplicate.name}`);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('account_details')
         .insert({
           name: form.name,
           account_number: form.account_number,
-          aadhar_number: form.aadhar_number.replace(/\s/g, ''),
+          aadhar_number: cleanAadhar,
           mobile_number: form.mobile_number || null,
         })
         .select();
@@ -117,12 +148,24 @@ const AccountDetails = () => {
     if (!editingAccount) return;
 
     try {
+      const cleanAadhar = form.aadhar_number.replace(/\s/g, '');
+      
+      // Check for duplicates excluding current record
+      const duplicates = await checkDuplicates(form.account_number, cleanAadhar, editingAccount.id);
+      
+      if (duplicates.length > 0) {
+        const duplicate = duplicates[0];
+        const duplicateType = duplicate.account_number === form.account_number ? 'Account Number' : 'Aadhar Number';
+        toast.error(`${duplicateType} already exists for: ${duplicate.name}`);
+        return;
+      }
+
       const { error } = await supabase
         .from('account_details')
         .update({
           name: form.name,
           account_number: form.account_number,
-          aadhar_number: form.aadhar_number.replace(/\s/g, ''),
+          aadhar_number: cleanAadhar,
           mobile_number: form.mobile_number || null,
         })
         .eq('id', editingAccount.id);

@@ -91,7 +91,7 @@ const NotificationDropdown = () => {
             message: `${balance.name} - ${balance.service}: ₹${balance.amount}`,
             type: 'error',
             timestamp: new Date(balance.created_at || balance.date),
-            read: true, // Mark pending balances as read by default
+            read: false,
           });
         });
 
@@ -158,7 +158,7 @@ const NotificationDropdown = () => {
   };
 
   const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setNotifications([]);
   };
 
   const removeNotification = (id: string) => {
@@ -220,7 +220,7 @@ const NotificationDropdown = () => {
               onClick={markAllAsRead}
               className="text-xs text-muted-foreground hover:text-foreground"
             >
-              Mark all read
+              Clear all
             </Button>
           )}
         </div>
