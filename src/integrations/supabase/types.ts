@@ -432,19 +432,16 @@ export type Database = {
           created_at: string
           id: string
           name: string
-          school_name: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           name: string
-          school_name?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
-          school_name?: string | null
         }
         Relationships: []
       }
@@ -471,13 +468,6 @@ export type Database = {
           total_amount?: number
         }
         Relationships: [
-          {
-            foreignKeyName: "fk_papers_records_class_id"
-            columns: ["class_id"]
-            isOneToOne: false
-            referencedRelation: "papers_classes"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "papers_records_class_id_fkey"
             columns: ["class_id"]
@@ -513,13 +503,6 @@ export type Database = {
           paper_count?: number
         }
         Relationships: [
-          {
-            foreignKeyName: "fk_papers_subjects_class_id"
-            columns: ["class_id"]
-            isOneToOne: false
-            referencedRelation: "papers_classes"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "papers_subjects_class_id_fkey"
             columns: ["class_id"]

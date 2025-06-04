@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Trash2, Download, Edit, School } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Trash2, Download, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,13 +9,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import PageHeader from '@/components/layout/PageHeader';
-import DateRangePicker from '@/components/ui/DateRangePicker';
-import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
 
 interface PapersClass {
   id: string;
   name: string;
-  school_name?: string;
   subjects?: PapersSubject[];
 }
 
@@ -27,11 +24,6 @@ interface PapersSubject {
   amount: number;
 }
 
-interface School {
-  name: string;
-  classes: PapersClass[];
-}
-
 const Papers = () => {
   const [classes, setClasses] = useState<PapersClass[]>([]);
   const [subjects, setSubjects] = useState<PapersSubject[]>([]);
@@ -39,18 +31,6 @@ const Papers = () => {
   const [loading, setLoading] = useState(true);
   const [editingClass, setEditingClass] = useState<string | null>(null);
   const [editingClassValue, setEditingClassValue] = useState('');
-  const [newSchoolName, setNewSchoolName] = useState('');
-  const [isAddingSchool, setIsAddingSchool] = useState(false);
-  const [deleteConfirmation, setDeleteConfirmation] = useState<{
-    isOpen: boolean;
-    type: 'school' | 'class' | 'subject';
-    id: string;
-    name: string;
-  }>({ isOpen: false, type: 'class', id: '', name: '' });
-  
-  // Date filtering
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [dateMode, setDateMode] = useState<'day' | 'month'>('month');
 
   const fetchClassesAndSubjects = async () => {
     try {
@@ -60,7 +40,7 @@ const Papers = () => {
       const { data: classesData, error: classesError } = await supabase
         .from('papers_classes')
         .select('*')
-        .order('school_name, name');
+        .order('name');
 
       if (classesError) throw classesError;
 
@@ -86,41 +66,11 @@ const Papers = () => {
     fetchClassesAndSubjects();
   }, []);
 
-  const addSchoolWithClass = async () => {
-    if (!newSchoolName.trim()) {
-      toast.error('Please enter a school name');
-      return;
-    }
-
+  const addClass = async () => {
     try {
       const { error } = await supabase
         .from('papers_classes')
-        .insert({ 
-          name: `Class 1`,
-          school_name: newSchoolName.trim()
-        });
-
-      if (error) throw error;
-      
-      toast.success('School and class added successfully');
-      setNewSchoolName('');
-      setIsAddingSchool(false);
-      fetchClassesAndSubjects();
-    } catch (error) {
-      console.error('Error adding school:', error);
-      toast.error('Failed to add school');
-    }
-  };
-
-  const addClass = async (schoolName: string) => {
-    try {
-      const schoolClasses = classes.filter(c => c.school_name === schoolName);
-      const { error } = await supabase
-        .from('papers_classes')
-        .insert({ 
-          name: `Class ${schoolClasses.length + 1}`,
-          school_name: schoolName
-        });
+        .insert({ name: `New Class ${classes.length + 1}` });
 
       if (error) throw error;
       
@@ -129,25 +79,6 @@ const Papers = () => {
     } catch (error) {
       console.error('Error adding class:', error);
       toast.error('Failed to add class');
-    }
-  };
-
-  const deleteSchool = async (schoolName: string) => {
-    try {
-      // Delete all classes for this school (subjects and records will be deleted by CASCADE)
-      const { error } = await supabase
-        .from('papers_classes')
-        .delete()
-        .eq('school_name', schoolName);
-
-      if (error) throw error;
-      
-      toast.success('School deleted successfully');
-      fetchClassesAndSubjects();
-      setDeleteConfirmation({ isOpen: false, type: 'school', id: '', name: '' });
-    } catch (error) {
-      console.error('Error deleting school:', error);
-      toast.error('Failed to delete school');
     }
   };
 
@@ -162,7 +93,6 @@ const Papers = () => {
       
       toast.success('Class deleted successfully');
       fetchClassesAndSubjects();
-      setDeleteConfirmation({ isOpen: false, type: 'class', id: '', name: '' });
     } catch (error) {
       console.error('Error deleting class:', error);
       toast.error('Failed to delete class');
@@ -208,31 +138,20 @@ const Papers = () => {
     }
   };
 
-  // Debounced update function to reduce lag
-  const debouncedUpdateSubject = useCallback(
-    debounce(async (subjectId: string, updates: Partial<PapersSubject>) => {
-      try {
-        const { error } = await supabase
-          .from('papers_subjects')
-          .update(updates)
-          .eq('id', subjectId);
+  const updateSubject = async (subjectId: string, updates: Partial<PapersSubject>) => {
+    try {
+      const { error } = await supabase
+        .from('papers_subjects')
+        .update(updates)
+        .eq('id', subjectId);
 
-        if (error) throw error;
-        
-        fetchClassesAndSubjects();
-      } catch (error) {
-        console.error('Error updating subject:', error);
-        toast.error('Failed to update subject');
-      }
-    }, 500),
-    []
-  );
-
-  const updateSubject = (subjectId: string, updates: Partial<PapersSubject>) => {
-    // Immediately update local state for responsive UI
-    setSubjects(prev => prev.map(s => s.id === subjectId ? { ...s, ...updates } : s));
-    // Debounced database update
-    debouncedUpdateSubject(subjectId, updates);
+      if (error) throw error;
+      
+      fetchClassesAndSubjects();
+    } catch (error) {
+      console.error('Error updating subject:', error);
+      toast.error('Failed to update subject');
+    }
   };
 
   const deleteSubject = async (subjectId: string) => {
@@ -246,7 +165,6 @@ const Papers = () => {
       
       fetchClassesAndSubjects();
       toast.success('Subject deleted');
-      setDeleteConfirmation({ isOpen: false, type: 'subject', id: '', name: '' });
     } catch (error) {
       console.error('Error deleting subject:', error);
       toast.error('Failed to delete subject');
@@ -255,30 +173,25 @@ const Papers = () => {
 
   const exportToCSV = () => {
     const csvData = [
-      ['School', 'Class', 'Subject', 'Paper Count', 'Amount per Paper', 'Total Amount']
+      ['Class', 'Subject', 'Paper Count', 'Amount per Paper', 'Total Amount']
     ];
 
-    const groupedBySchool = groupClassesBySchool();
-    
-    Object.entries(groupedBySchool).forEach(([schoolName, schoolClasses]) => {
-      schoolClasses.forEach(classItem => {
-        const classSubjects = subjects.filter(s => s.class_id === classItem.id);
-        
-        if (classSubjects.length === 0) {
-          csvData.push([schoolName, classItem.name, '-', '0', '0', '0']);
-        } else {
-          classSubjects.forEach(subject => {
-            csvData.push([
-              schoolName,
-              classItem.name,
-              subject.name,
-              subject.paper_count.toString(),
-              subject.amount.toString(),
-              (subject.paper_count * subject.amount).toString()
-            ]);
-          });
-        }
-      });
+    classes.forEach(classItem => {
+      const classSubjects = subjects.filter(s => s.class_id === classItem.id);
+      
+      if (classSubjects.length === 0) {
+        csvData.push([classItem.name, '-', '0', '0', '0']);
+      } else {
+        classSubjects.forEach(subject => {
+          csvData.push([
+            classItem.name,
+            subject.name,
+            subject.paper_count.toString(),
+            subject.amount.toString(),
+            (subject.paper_count * subject.amount).toString()
+          ]);
+        });
+      }
     });
 
     const csvContent = csvData.map(row => row.join(',')).join('\n');
@@ -308,21 +221,9 @@ const Papers = () => {
     }
   };
 
-  const groupClassesBySchool = (): Record<string, PapersClass[]> => {
-    const filtered = classes.filter(classItem =>
-      classItem.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (classItem.school_name && classItem.school_name.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-
-    return filtered.reduce((acc, classItem) => {
-      const schoolName = classItem.school_name || 'Unassigned School';
-      if (!acc[schoolName]) {
-        acc[schoolName] = [];
-      }
-      acc[schoolName].push(classItem);
-      return acc;
-    }, {} as Record<string, PapersClass[]>);
-  };
+  const filteredClasses = classes.filter(classItem =>
+    classItem.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const getClassTotal = (classId: string) => {
     return subjects
@@ -330,12 +231,7 @@ const Papers = () => {
       .reduce((sum, subject) => sum + (subject.paper_count * subject.amount), 0);
   };
 
-  const getSchoolTotal = (schoolClasses: PapersClass[]) => {
-    return schoolClasses.reduce((sum, classItem) => sum + getClassTotal(classItem.id), 0);
-  };
-
-  const groupedClasses = groupClassesBySchool();
-  const grandTotal = Object.values(groupedClasses).flat().reduce((sum, classItem) => sum + getClassTotal(classItem.id), 0);
+  const grandTotal = classes.reduce((sum, classItem) => sum + getClassTotal(classItem.id), 0);
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -343,280 +239,154 @@ const Papers = () => {
         title="Papers Management"
         searchValue={searchTerm}
         onSearchChange={setSearchTerm}
-        searchPlaceholder="Search schools/classes..."
+        searchPlaceholder="Search classes..."
       >
-        <DateRangePicker
-          date={selectedDate}
-          onDateChange={setSelectedDate}
-          mode={dateMode}
-          onModeChange={setDateMode}
-        />
         <Button onClick={exportToCSV} variant="outline" size="sm">
           <Download className="h-4 w-4 mr-1" />
           Export CSV
         </Button>
-        <Dialog open={isAddingSchool} onOpenChange={setIsAddingSchool}>
-          <DialogTrigger asChild>
-            <Button size="sm">
-              <School className="h-4 w-4 mr-1" />
-              Add School
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New School</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="schoolName">School Name</Label>
-                <Input
-                  id="schoolName"
-                  value={newSchoolName}
-                  onChange={(e) => setNewSchoolName(e.target.value)}
-                  placeholder="Enter school name"
-                />
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsAddingSchool(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={addSchoolWithClass}>
-                  Add School
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={addClass} size="sm">
+          <Plus className="h-4 w-4 mr-1" />
+          Add Class
+        </Button>
       </PageHeader>
 
-      {/* Grand Total Summary */}
-      <Card className="mb-6">
-        <CardContent className="pt-6">
-          <div className="flex justify-between items-center text-2xl font-bold">
-            <span>Grand Total Summary:</span>
-            <span className="text-green-600">₹{grandTotal.toFixed(2)}</span>
-          </div>
-          <p className="text-sm text-muted-foreground mt-2">
-            Total from {Object.keys(groupedClasses).length} schools with {classes.length} classes
-          </p>
-        </CardContent>
-      </Card>
-
       <div className="grid gap-6">
-        {Object.entries(groupedClasses).map(([schoolName, schoolClasses]) => {
-          const schoolTotal = getSchoolTotal(schoolClasses);
-          
+        {filteredClasses.map((classItem) => {
+          const classSubjects = subjects.filter(s => s.class_id === classItem.id);
+          const classTotal = getClassTotal(classItem.id);
+
           return (
-            <Card key={schoolName} className="border-2 border-primary/20">
-              <CardHeader className="bg-primary/5">
+            <Card key={classItem.id}>
+              <CardHeader>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <School className="h-6 w-6 text-primary" />
-                    <div>
-                      <CardTitle className="text-xl">{schoolName}</CardTitle>
-                      <p className="text-sm text-muted-foreground">
-                        {schoolClasses.length} classes
-                      </p>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    {editingClass === classItem.id ? (
+                      <Input
+                        value={editingClassValue}
+                        onChange={(e) => setEditingClassValue(e.target.value)}
+                        onBlur={() => updateClassName(classItem.id, editingClassValue)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            updateClassName(classItem.id, editingClassValue);
+                          }
+                        }}
+                        className="text-lg font-semibold"
+                        autoFocus
+                      />
+                    ) : (
+                      <CardTitle 
+                        className="cursor-pointer flex items-center gap-2"
+                        onClick={() => {
+                          setEditingClass(classItem.id);
+                          setEditingClassValue(classItem.name);
+                        }}
+                      >
+                        {classItem.name}
+                        <Edit className="h-4 w-4" />
+                      </CardTitle>
+                    )}
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl font-bold text-green-600">
-                      School Total: ₹{schoolTotal.toFixed(2)}
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg font-bold text-green-600">
+                      Total: ₹{classTotal.toFixed(2)}
                     </span>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => saveRecord(classItem.id, classTotal)}
+                    >
+                      Save Record
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => addClass(schoolName)}
+                      onClick={() => addSubject(classItem.id)}
                     >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Add Class
+                      <Plus className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={() => setDeleteConfirmation({
-                        isOpen: true,
-                        type: 'school',
-                        id: schoolName,
-                        name: schoolName
-                      })}
+                      onClick={() => deleteClass(classItem.id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4 pt-6">
-                {schoolClasses.map((classItem, index) => {
-                  const classSubjects = subjects.filter(s => s.class_id === classItem.id);
-                  const classTotal = getClassTotal(classItem.id);
-
-                  return (
-                    <Card key={classItem.id} className="ml-4">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <span className="text-sm font-medium bg-primary/10 px-2 py-1 rounded">
-                              #{index + 1}
-                            </span>
-                            <div className="flex items-center gap-2">
-                              {editingClass === classItem.id ? (
-                                <Input
-                                  value={editingClassValue}
-                                  onChange={(e) => setEditingClassValue(e.target.value)}
-                                  onBlur={() => updateClassName(classItem.id, editingClassValue)}
-                                  onKeyPress={(e) => {
-                                    if (e.key === 'Enter') {
-                                      updateClassName(classItem.id, editingClassValue);
-                                    }
-                                  }}
-                                  className="text-lg font-semibold"
-                                  autoFocus
-                                />
-                              ) : (
-                                <CardTitle 
-                                  className="cursor-pointer flex items-center gap-2"
-                                  onClick={() => {
-                                    setEditingClass(classItem.id);
-                                    setEditingClassValue(classItem.name);
-                                  }}
-                                >
-                                  {classItem.name}
-                                  <Edit className="h-4 w-4" />
-                                </CardTitle>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-lg font-bold text-green-600">
-                              Total: ₹{classTotal.toFixed(2)}
-                            </span>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => saveRecord(classItem.id, classTotal)}
-                            >
-                              Save Record
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => addSubject(classItem.id)}
-                            >
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => setDeleteConfirmation({
-                                isOpen: true,
-                                type: 'class',
-                                id: classItem.id,
-                                name: classItem.name
-                              })}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4">
-                          <div className="grid grid-cols-5 gap-4 font-semibold border-b pb-2">
-                            <div>Subject</div>
-                            <div>Papers</div>
-                            <div>Amount per Paper</div>
-                            <div>Total Amount</div>
-                            <div>Actions</div>
-                          </div>
-                          
-                          {classSubjects.map((subject) => (
-                            <div key={subject.id} className="grid grid-cols-5 gap-4 items-center">
-                              <Input
-                                value={subject.name}
-                                onChange={(e) => updateSubject(subject.id, { name: e.target.value })}
-                                placeholder="Subject name"
-                              />
-                              <Input
-                                type="number"
-                                value={subject.paper_count}
-                                onChange={(e) => updateSubject(subject.id, { paper_count: Number(e.target.value) })}
-                                placeholder="Paper count"
-                              />
-                              <Input
-                                type="number"
-                                step="0.01"
-                                value={subject.amount}
-                                onChange={(e) => updateSubject(subject.id, { amount: Number(e.target.value) })}
-                                placeholder="Amount per paper"
-                              />
-                              <div className="font-medium">
-                                ₹{(subject.paper_count * subject.amount).toFixed(2)}
-                              </div>
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => setDeleteConfirmation({
-                                  isOpen: true,
-                                  type: 'subject',
-                                  id: subject.id,
-                                  name: subject.name
-                                })}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ))}
-                          
-                          {classSubjects.length === 0 && (
-                            <div className="text-center text-muted-foreground py-4">
-                              No subjects added yet. Click the + button to add subjects.
-                            </div>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-4 gap-4 font-semibold border-b pb-2">
+                    <div>Subject</div>
+                    <div>Papers</div>
+                    <div>Amount per Paper</div>
+                    <div>Total Amount</div>
+                  </div>
+                  
+                  {classSubjects.map((subject) => (
+                    <div key={subject.id} className="grid grid-cols-4 gap-4 items-center">
+                      <Input
+                        value={subject.name}
+                        onChange={(e) => updateSubject(subject.id, { name: e.target.value })}
+                        placeholder="Subject name"
+                      />
+                      <Input
+                        type="number"
+                        value={subject.paper_count}
+                        onChange={(e) => updateSubject(subject.id, { paper_count: Number(e.target.value) })}
+                        placeholder="Paper count"
+                      />
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={subject.amount}
+                        onChange={(e) => updateSubject(subject.id, { amount: Number(e.target.value) })}
+                        placeholder="Amount per paper"
+                      />
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium">
+                          ₹{(subject.paper_count * subject.amount).toFixed(2)}
+                        </span>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => deleteSubject(subject.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {classSubjects.length === 0 && (
+                    <div className="text-center text-muted-foreground py-4">
+                      No subjects added yet. Click the + button to add subjects.
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           );
         })}
       </div>
 
-      {Object.keys(groupedClasses).length === 0 && !loading && (
+      {filteredClasses.length === 0 && !loading && (
         <div className="text-center text-muted-foreground py-8">
-          No schools found. Add a new school to get started.
+          No classes found. Add a new class to get started.
         </div>
       )}
 
-      {/* Delete Confirmation Dialog */}
-      <DeleteConfirmation
-        isOpen={deleteConfirmation.isOpen}
-        onClose={() => setDeleteConfirmation({ isOpen: false, type: 'class', id: '', name: '' })}
-        onConfirm={() => {
-          if (deleteConfirmation.type === 'school') {
-            deleteSchool(deleteConfirmation.id);
-          } else if (deleteConfirmation.type === 'class') {
-            deleteClass(deleteConfirmation.id);
-          } else if (deleteConfirmation.type === 'subject') {
-            deleteSubject(deleteConfirmation.id);
-          }
-        }}
-        title={`Delete ${deleteConfirmation.type}`}
-        description={`Are you sure you want to delete "${deleteConfirmation.name}"? This action cannot be undone.`}
-      />
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex justify-between items-center text-xl font-bold">
+            <span>Grand Total:</span>
+            <span className="text-green-600">₹{grandTotal.toFixed(2)}</span>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
-
-// Debounce utility function
-function debounce<T extends (...args: any[]) => any>(func: T, delay: number): T {
-  let timeoutId: ReturnType<typeof setTimeout>;
-  return ((...args: any[]) => {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => func.apply(null, args), delay);
-  }) as T;
-}
 
 export default Papers;
