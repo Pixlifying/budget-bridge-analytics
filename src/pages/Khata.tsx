@@ -1,30 +1,16 @@
 
-import { useState, useEffect } from 'react';
-import { Search, Plus, Edit, Trash2, Download } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Trash2, Eye, TrendingUp, TrendingDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
-import { toast } from "sonner";
-import PageHeader from '@/components/layout/PageHeader';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
-import { exportToExcel } from '@/utils/calculateUtils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import PageHeader from '@/components/layout/PageHeader';
 
 interface KhataCustomer {
   id: string;
@@ -33,341 +19,202 @@ interface KhataCustomer {
   opening_balance: number;
   opening_date: string;
   created_at: string;
-  updated_at: string;
+  current_balance?: number;
 }
 
 interface KhataTransaction {
   id: string;
   customer_id: string;
-  type: 'debit' | 'credit';
   amount: number;
+  type: 'credit' | 'debit';
   description?: string;
   date: string;
   created_at: string;
-}
-
-interface KhataCustomerWithTransactions extends KhataCustomer {
-  transactions: KhataTransaction[];
+  running_balance?: number;
 }
 
 const Khata = () => {
-  const [customers, setCustomers] = useState<KhataCustomerWithTransactions[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [customers, setCustomers] = useState<KhataCustomer[]>([]);
+  const [transactions, setTransactions] = useState<KhataTransaction[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showCustomerDialog, setShowCustomerDialog] = useState(false);
-  const [showTransactionDialog, setShowTransactionDialog] = useState(false);
-  const [editingCustomer, setEditingCustomer] = useState<KhataCustomer | null>(null);
-  const [editingTransaction, setEditingTransaction] = useState<KhataTransaction | null>(null);
-  const [selectedCustomer, setSelectedCustomer] = useState<KhataCustomerWithTransactions | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [deleteType, setDeleteType] = useState<'customer' | 'transaction'>('customer');
-  const [expandedCustomer, setExpandedCustomer] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [showAddCustomer, setShowAddCustomer] = useState(false);
+  const [showAddTransaction, setShowAddTransaction] = useState(false);
 
   // Form states
-  const [customerForm, setCustomerForm] = useState({
+  const [newCustomer, setNewCustomer] = useState({
     name: '',
     phone: '',
-    opening_balance: 0,
-    opening_date: new Date().toISOString().split('T')[0]
+    opening_balance: 0
   });
 
-  const [transactionForm, setTransactionForm] = useState({
-    type: 'debit' as 'debit' | 'credit',
+  const [newTransaction, setNewTransaction] = useState({
     amount: 0,
-    description: '',
-    date: new Date().toISOString().split('T')[0]
+    type: 'credit' as 'credit' | 'debit',
+    description: ''
   });
 
   const fetchCustomers = async () => {
     try {
-      setLoading(true);
-      const { data: customersData, error: customersError } = await supabase
+      const { data, error } = await supabase
         .from('khata_customers')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('name');
 
-      if (customersError) throw customersError;
+      if (error) throw error;
 
-      const customersWithTransactions = await Promise.all(
-        (customersData || []).map(async (customer) => {
-          const { data: transactionsData, error: transactionsError } = await supabase
+      // Calculate current balance for each customer
+      const customersWithBalance = await Promise.all(
+        (data || []).map(async (customer) => {
+          const { data: txData } = await supabase
             .from('khata_transactions')
-            .select('*')
-            .eq('customer_id', customer.id)
-            .order('date', { ascending: false });
+            .select('amount, type')
+            .eq('customer_id', customer.id);
 
-          if (transactionsError) {
-            console.error('Error fetching transactions:', transactionsError);
-            return {
-              ...customer,
-              transactions: []
-            };
-          }
-
-          // Type cast the transactions to ensure proper typing
-          const typedTransactions: KhataTransaction[] = (transactionsData || []).map(t => ({
-            ...t,
-            type: t.type as 'debit' | 'credit'
-          }));
-
+          const totalCredits = txData?.filter(tx => tx.type === 'credit').reduce((sum, tx) => sum + tx.amount, 0) || 0;
+          const totalDebits = txData?.filter(tx => tx.type === 'debit').reduce((sum, tx) => sum + tx.amount, 0) || 0;
+          
           return {
             ...customer,
-            transactions: typedTransactions
+            current_balance: customer.opening_balance + totalCredits - totalDebits
           };
         })
       );
 
-      setCustomers(customersWithTransactions);
+      setCustomers(customersWithBalance);
     } catch (error) {
       console.error('Error fetching customers:', error);
-      toast.error("Failed to load customers");
-    } finally {
-      setLoading(false);
+      toast.error('Failed to load customers');
+    }
+  };
+
+  const fetchTransactions = async (customerId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('khata_transactions')
+        .select('*')
+        .eq('customer_id', customerId)
+        .order('date', { ascending: true });
+
+      if (error) throw error;
+
+      // Calculate running balance for each transaction
+      const customer = customers.find(c => c.id === customerId);
+      let runningBalance = customer?.opening_balance || 0;
+
+      const transactionsWithBalance = (data || []).map(transaction => {
+        if (transaction.type === 'credit') {
+          runningBalance += transaction.amount;
+        } else {
+          runningBalance -= transaction.amount;
+        }
+        
+        return {
+          ...transaction,
+          running_balance: runningBalance
+        };
+      });
+
+      setTransactions(transactionsWithBalance);
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+      toast.error('Failed to load transactions');
     }
   };
 
   useEffect(() => {
     fetchCustomers();
+    setLoading(false);
   }, []);
 
-  const handleAddCustomer = async () => {
+  useEffect(() => {
+    if (selectedCustomer) {
+      fetchTransactions(selectedCustomer);
+    }
+  }, [selectedCustomer, customers]);
+
+  const addCustomer = async () => {
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('khata_customers')
-        .insert({
-          name: customerForm.name,
-          phone: customerForm.phone,
-          opening_balance: customerForm.opening_balance,
-          opening_date: customerForm.opening_date,
-        })
-        .select();
+        .insert([newCustomer]);
 
       if (error) throw error;
-      
-      toast.success("Customer added successfully");
-      await fetchCustomers();
-      setShowCustomerDialog(false);
-      resetCustomerForm();
+
+      toast.success('Customer added successfully');
+      setNewCustomer({ name: '', phone: '', opening_balance: 0 });
+      setShowAddCustomer(false);
+      fetchCustomers();
     } catch (error) {
       console.error('Error adding customer:', error);
-      toast.error("Failed to add customer");
+      toast.error('Failed to add customer');
     }
   };
 
-  const handleEditCustomer = async () => {
-    if (!editingCustomer) return;
-
-    try {
-      const { error } = await supabase
-        .from('khata_customers')
-        .update({
-          name: customerForm.name,
-          phone: customerForm.phone,
-          opening_balance: customerForm.opening_balance,
-          opening_date: customerForm.opening_date,
-        })
-        .eq('id', editingCustomer.id);
-
-      if (error) throw error;
-      
-      toast.success("Customer updated successfully");
-      await fetchCustomers();
-      setShowCustomerDialog(false);
-      setEditingCustomer(null);
-      resetCustomerForm();
-    } catch (error) {
-      console.error('Error updating customer:', error);
-      toast.error("Failed to update customer");
-    }
-  };
-
-  const handleDeleteCustomer = async () => {
-    if (!deleteId) return;
-
-    try {
-      // First delete all transactions for this customer
-      const { error: transactionError } = await supabase
-        .from('khata_transactions')
-        .delete()
-        .eq('customer_id', deleteId);
-
-      if (transactionError) throw transactionError;
-
-      // Then delete the customer
-      const { error } = await supabase
-        .from('khata_customers')
-        .delete()
-        .eq('id', deleteId);
-
-      if (error) throw error;
-      
-      toast.success("Customer deleted successfully");
-      await fetchCustomers();
-      setShowDeleteConfirm(false);
-      setDeleteId(null);
-    } catch (error) {
-      console.error('Error deleting customer:', error);
-      toast.error("Failed to delete customer");
-    }
-  };
-
-  const handleAddTransaction = async () => {
+  const addTransaction = async () => {
     if (!selectedCustomer) return;
 
     try {
-      const { data, error } = await supabase
-        .from('khata_transactions')
-        .insert({
-          customer_id: selectedCustomer.id,
-          type: transactionForm.type,
-          amount: transactionForm.amount,
-          description: transactionForm.description,
-          date: transactionForm.date,
-        })
-        .select();
-
-      if (error) throw error;
-      
-      toast.success("Transaction added successfully");
-      await fetchCustomers();
-      setShowTransactionDialog(false);
-      resetTransactionForm();
-    } catch (error) {
-      console.error('Error adding transaction:', error);
-      toast.error("Failed to add transaction");
-    }
-  };
-
-  const handleEditTransaction = async () => {
-    if (!editingTransaction) return;
-
-    try {
       const { error } = await supabase
         .from('khata_transactions')
-        .update({
-          type: transactionForm.type,
-          amount: transactionForm.amount,
-          description: transactionForm.description,
-          date: transactionForm.date,
-        })
-        .eq('id', editingTransaction.id);
+        .insert([{
+          customer_id: selectedCustomer,
+          ...newTransaction
+        }]);
 
       if (error) throw error;
-      
-      toast.success("Transaction updated successfully");
-      await fetchCustomers();
-      setShowTransactionDialog(false);
-      setEditingTransaction(null);
-      resetTransactionForm();
+
+      toast.success('Transaction added successfully');
+      setNewTransaction({ amount: 0, type: 'credit', description: '' });
+      setShowAddTransaction(false);
+      fetchCustomers(); // Refresh to update current balance
+      fetchTransactions(selectedCustomer);
     } catch (error) {
-      console.error('Error updating transaction:', error);
-      toast.error("Failed to update transaction");
+      console.error('Error adding transaction:', error);
+      toast.error('Failed to add transaction');
     }
   };
 
-  const handleDeleteTransaction = async () => {
-    if (!deleteId) return;
+  const deleteCustomer = async (customerId: string) => {
+    try {
+      const { error } = await supabase
+        .from('khata_customers')
+        .delete()
+        .eq('id', customerId);
 
+      if (error) throw error;
+
+      toast.success('Customer deleted successfully');
+      if (selectedCustomer === customerId) {
+        setSelectedCustomer(null);
+        setTransactions([]);
+      }
+      fetchCustomers();
+    } catch (error) {
+      console.error('Error deleting customer:', error);
+      toast.error('Failed to delete customer');
+    }
+  };
+
+  const deleteTransaction = async (transactionId: string) => {
     try {
       const { error } = await supabase
         .from('khata_transactions')
         .delete()
-        .eq('id', deleteId);
+        .eq('id', transactionId);
 
       if (error) throw error;
-      
-      toast.success("Transaction deleted successfully");
-      await fetchCustomers();
-      setShowDeleteConfirm(false);
-      setDeleteId(null);
+
+      toast.success('Transaction deleted successfully');
+      fetchCustomers(); // Refresh to update current balance
+      if (selectedCustomer) {
+        fetchTransactions(selectedCustomer);
+      }
     } catch (error) {
       console.error('Error deleting transaction:', error);
-      toast.error("Failed to delete transaction");
+      toast.error('Failed to delete transaction');
     }
-  };
-
-  const resetCustomerForm = () => {
-    setCustomerForm({
-      name: '',
-      phone: '',
-      opening_balance: 0,
-      opening_date: new Date().toISOString().split('T')[0]
-    });
-  };
-
-  const resetTransactionForm = () => {
-    setTransactionForm({
-      type: 'debit',
-      amount: 0,
-      description: '',
-      date: new Date().toISOString().split('T')[0]
-    });
-  };
-
-  const openEditCustomer = (customer: KhataCustomer) => {
-    setEditingCustomer(customer);
-    setCustomerForm({
-      name: customer.name,
-      phone: customer.phone,
-      opening_balance: customer.opening_balance,
-      opening_date: customer.opening_date
-    });
-    setShowCustomerDialog(true);
-  };
-
-  const openEditTransaction = (transaction: KhataTransaction) => {
-    setEditingTransaction(transaction);
-    setTransactionForm({
-      type: transaction.type,
-      amount: transaction.amount,
-      description: transaction.description || '',
-      date: transaction.date
-    });
-    setShowTransactionDialog(true);
-  };
-
-  const initiateDeleteCustomer = (id: string) => {
-    setDeleteId(id);
-    setDeleteType('customer');
-    setShowDeleteConfirm(true);
-  };
-
-  const initiateDeleteTransaction = (id: string) => {
-    setDeleteId(id);
-    setDeleteType('transaction');
-    setShowDeleteConfirm(true);
-  };
-
-  const handleDownloadCSV = () => {
-    const csvData = filteredCustomers.map(customer => {
-      const balance = calculateBalance(customer);
-      return {
-        'Name': customer.name,
-        'Phone': customer.phone,
-        'Opening Balance': customer.opening_balance,
-        'Current Balance': balance,
-        'Opening Date': format(new Date(customer.opening_date), 'dd/MM/yyyy'),
-        'Total Transactions': customer.transactions.length
-      };
-    });
-    
-    exportToExcel(csvData, 'khata-customers');
-    toast.success("Khata data exported successfully");
-  };
-
-  const calculateBalance = (customer: KhataCustomerWithTransactions) => {
-    const transactionTotal = customer.transactions.reduce((sum, transaction) => {
-      return transaction.type === 'credit' 
-        ? sum + transaction.amount 
-        : sum - transaction.amount;
-    }, 0);
-    
-    return customer.opening_balance + transactionTotal;
-  };
-
-  const toggleCustomerExpansion = (customerId: string) => {
-    setExpandedCustomer(expandedCustomer === customerId ? null : customerId);
   };
 
   const filteredCustomers = customers.filter(customer =>
@@ -375,285 +222,266 @@ const Khata = () => {
     customer.phone.includes(searchTerm)
   );
 
+  const selectedCustomerData = customers.find(c => c.id === selectedCustomer);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-700">
+    <div className="container mx-auto p-6 space-y-6">
       <PageHeader
         title="Khata Management"
         searchValue={searchTerm}
         onSearchChange={setSearchTerm}
-        searchPlaceholder="Search by name or phone..."
+        searchPlaceholder="Search customers..."
       >
-        <Dialog open={showCustomerDialog} onOpenChange={setShowCustomerDialog}>
+        <Dialog open={showAddCustomer} onOpenChange={setShowAddCustomer}>
           <DialogTrigger asChild>
-            <Button onClick={() => { resetCustomerForm(); setEditingCustomer(null); }}>
-              <Plus size={16} className="mr-2" />
+            <Button size="sm">
+              <Plus className="h-4 w-4 mr-1" />
               Add Customer
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{editingCustomer ? 'Edit Customer' : 'Add New Customer'}</DialogTitle>
+              <DialogTitle>Add New Customer</DialogTitle>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="name">Name *</Label>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="name">Name</Label>
                 <Input
                   id="name"
-                  value={customerForm.name}
-                  onChange={(e) => setCustomerForm(prev => ({ ...prev, name: e.target.value }))}
+                  value={newCustomer.name}
+                  onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
                   placeholder="Customer name"
-                  required
                 />
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="phone">Phone *</Label>
+              <div>
+                <Label htmlFor="phone">Phone</Label>
                 <Input
                   id="phone"
-                  value={customerForm.phone}
-                  onChange={(e) => setCustomerForm(prev => ({ ...prev, phone: e.target.value }))}
+                  value={newCustomer.phone}
+                  onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
                   placeholder="Phone number"
-                  required
                 />
               </div>
-              <div className="grid gap-2">
+              <div>
                 <Label htmlFor="opening_balance">Opening Balance</Label>
                 <Input
                   id="opening_balance"
                   type="number"
-                  value={customerForm.opening_balance}
-                  onChange={(e) => setCustomerForm(prev => ({ ...prev, opening_balance: Number(e.target.value) }))}
+                  step="0.01"
+                  value={newCustomer.opening_balance}
+                  onChange={(e) => setNewCustomer({ ...newCustomer, opening_balance: Number(e.target.value) })}
                   placeholder="Opening balance"
                 />
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="opening_date">Opening Date</Label>
-                <Input
-                  id="opening_date"
-                  type="date"
-                  value={customerForm.opening_date}
-                  onChange={(e) => setCustomerForm(prev => ({ ...prev, opening_date: e.target.value }))}
-                />
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowAddCustomer(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={addCustomer}>Add Customer</Button>
               </div>
-              <Button 
-                onClick={editingCustomer ? handleEditCustomer : handleAddCustomer}
-                disabled={!customerForm.name || !customerForm.phone}
-              >
-                {editingCustomer ? 'Update Customer' : 'Save Customer'}
-              </Button>
             </div>
           </DialogContent>
         </Dialog>
-
-        <Button variant="outline" onClick={handleDownloadCSV}>
-          <Download size={16} className="mr-2" />
-          Download CSV
-        </Button>
       </PageHeader>
 
-      <div className="flex-1 p-6">
-        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Opening Balance</TableHead>
-                <TableHead>Current Balance</TableHead>
-                <TableHead>Opening Date</TableHead>
-                <TableHead>Transactions</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
-                    Loading customers...
-                  </TableCell>
-                </TableRow>
-              ) : filteredCustomers.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                    No customers found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                <>
-                  {filteredCustomers.map((customer) => {
-                    const balance = calculateBalance(customer);
-                    const isExpanded = expandedCustomer === customer.id;
-                    return (
-                      <>
-                        <TableRow key={customer.id}>
-                          <TableCell 
-                            className="font-medium cursor-pointer"
-                            onClick={() => toggleCustomerExpansion(customer.id)}
-                          >
-                            {customer.name}
-                          </TableCell>
-                          <TableCell>{customer.phone}</TableCell>
-                          <TableCell>₹{customer.opening_balance}</TableCell>
-                          <TableCell className={balance >= 0 ? 'text-green-600' : 'text-red-600'}>
-                            ₹{balance}
-                          </TableCell>
-                          <TableCell>{format(new Date(customer.opening_date), 'dd/MM/yyyy')}</TableCell>
-                          <TableCell>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedCustomer(customer);
-                                setShowTransactionDialog(true);
-                                resetTransactionForm();
-                                setEditingTransaction(null);
-                              }}
-                            >
-                              Add Transaction ({customer.transactions.length})
-                            </Button>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => openEditCustomer(customer)}
-                              >
-                                <Edit size={14} />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => initiateDeleteCustomer(customer.id)}
-                              >
-                                <Trash2 size={14} />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                        {isExpanded && customer.transactions.length > 0 && (
-                          <TableRow>
-                            <TableCell colSpan={7} className="bg-muted/50">
-                              <div className="p-4">
-                                <h4 className="font-semibold mb-3">Transactions for {customer.name}</h4>
-                                <div className="space-y-2">
-                                  {customer.transactions.map((transaction) => (
-                                    <div key={transaction.id} className="flex justify-between items-center p-2 bg-white rounded border">
-                                      <div className="flex items-center gap-4">
-                                        <span className="text-sm">{format(new Date(transaction.date), 'dd/MM/yyyy')}</span>
-                                        <span className={`px-2 py-1 rounded text-xs ${
-                                          transaction.type === 'credit' 
-                                            ? 'bg-green-100 text-green-800' 
-                                            : 'bg-red-100 text-red-800'
-                                        }`}>
-                                          {transaction.type.toUpperCase()}
-                                        </span>
-                                        <span className="font-medium">₹{transaction.amount}</span>
-                                        <span className="text-sm text-muted-foreground">{transaction.description || '-'}</span>
-                                      </div>
-                                      <div className="flex gap-2">
-                                        <Button
-                                          variant="outline"
-                                          size="sm"
-                                          onClick={() => openEditTransaction(transaction)}
-                                        >
-                                          <Edit size={12} />
-                                        </Button>
-                                        <Button
-                                          variant="outline"
-                                          size="sm"
-                                          onClick={() => initiateDeleteTransaction(transaction.id)}
-                                        >
-                                          <Trash2 size={12} />
-                                        </Button>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </>
-                    );
-                  })}
-                </>
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Customers List */}
+        <div className="lg:col-span-1">
+          <Card>
+            <CardHeader>
+              <CardTitle>Customers</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {filteredCustomers.map((customer) => (
+                <Card 
+                  key={customer.id} 
+                  className={`cursor-pointer transition-colors ${
+                    selectedCustomer === customer.id ? 'ring-2 ring-primary' : ''
+                  }`}
+                  onClick={() => setSelectedCustomer(customer.id)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-semibold">{customer.name}</h3>
+                        <p className="text-sm text-muted-foreground">{customer.phone}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className={`font-bold ${
+                          (customer.current_balance || 0) >= 0 ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          ₹{Math.abs(customer.current_balance || 0).toFixed(2)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {(customer.current_balance || 0) >= 0 ? 'Credit' : 'Debit'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex justify-end mt-2">
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteCustomer(customer.id);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              {filteredCustomers.length === 0 && (
+                <div className="text-center text-muted-foreground py-8">
+                  No customers found
+                </div>
               )}
-            </TableBody>
-          </Table>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Transactions */}
+        <div className="lg:col-span-2">
+          {selectedCustomer ? (
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>{selectedCustomerData?.name}'s Transactions</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Opening Balance: ₹{selectedCustomerData?.opening_balance.toFixed(2)}
+                    </p>
+                    <p className={`text-lg font-bold ${
+                      (selectedCustomerData?.current_balance || 0) >= 0 ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      Current Balance: ₹{Math.abs(selectedCustomerData?.current_balance || 0).toFixed(2)} 
+                      {(selectedCustomerData?.current_balance || 0) >= 0 ? ' (Credit)' : ' (Debit)'}
+                    </p>
+                  </div>
+                  <Dialog open={showAddTransaction} onOpenChange={setShowAddTransaction}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Transaction
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Add Transaction</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="amount">Amount</Label>
+                          <Input
+                            id="amount"
+                            type="number"
+                            step="0.01"
+                            value={newTransaction.amount}
+                            onChange={(e) => setNewTransaction({ ...newTransaction, amount: Number(e.target.value) })}
+                            placeholder="Amount"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="type">Type</Label>
+                          <Select value={newTransaction.type} onValueChange={(value: 'credit' | 'debit') => setNewTransaction({ ...newTransaction, type: value })}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="credit">Credit (Money In)</SelectItem>
+                              <SelectItem value="debit">Debit (Money Out)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="description">Description</Label>
+                          <Textarea
+                            id="description"
+                            value={newTransaction.description}
+                            onChange={(e) => setNewTransaction({ ...newTransaction, description: e.target.value })}
+                            placeholder="Transaction description"
+                          />
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" onClick={() => setShowAddTransaction(false)}>
+                            Cancel
+                          </Button>
+                          <Button onClick={addTransaction}>Add Transaction</Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-6 gap-4 font-semibold border-b pb-2">
+                    <div>Date</div>
+                    <div>Type</div>
+                    <div>Amount</div>
+                    <div>Description</div>
+                    <div>Balance</div>
+                    <div>Actions</div>
+                  </div>
+                  
+                  {transactions.map((transaction) => (
+                    <div key={transaction.id} className="grid grid-cols-6 gap-4 items-center border-b pb-2">
+                      <div className="text-sm">{new Date(transaction.date).toLocaleDateString()}</div>
+                      <div className="flex items-center gap-1">
+                        {transaction.type === 'credit' ? (
+                          <TrendingUp className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <TrendingDown className="h-4 w-4 text-red-600" />
+                        )}
+                        <span className={transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'}>
+                          {transaction.type === 'credit' ? 'Credit' : 'Debit'}
+                        </span>
+                      </div>
+                      <div className={`font-medium ${transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
+                        {transaction.type === 'credit' ? '+' : '-'}₹{transaction.amount.toFixed(2)}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {transaction.description || '-'}
+                      </div>
+                      <div className={`font-bold ${
+                        (transaction.running_balance || 0) >= 0 ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        ₹{Math.abs(transaction.running_balance || 0).toFixed(2)}
+                        <span className="text-xs ml-1">
+                          {(transaction.running_balance || 0) >= 0 ? '(Credit)' : '(Debit)'}
+                        </span>
+                      </div>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => deleteTransaction(transaction.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  
+                  {transactions.length === 0 && (
+                    <div className="text-center text-muted-foreground py-8">
+                      No transactions found. Add a transaction to get started.
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardContent className="flex items-center justify-center h-64">
+                <div className="text-center text-muted-foreground">
+                  <Eye className="h-12 w-12 mx-auto mb-4" />
+                  <p>Select a customer to view their transactions</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
-
-      {/* Transaction Dialog */}
-      <Dialog open={showTransactionDialog} onOpenChange={setShowTransactionDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {editingTransaction ? 'Edit Transaction' : `Add Transaction for ${selectedCustomer?.name}`}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="type">Type *</Label>
-              <select
-                id="type"
-                value={transactionForm.type}
-                onChange={(e) => setTransactionForm(prev => ({ ...prev, type: e.target.value as 'debit' | 'credit' }))}
-                className="w-full p-2 border rounded"
-                required
-              >
-                <option value="debit">Debit</option>
-                <option value="credit">Credit</option>
-              </select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="amount">Amount *</Label>
-              <Input
-                id="amount"
-                type="number"
-                value={transactionForm.amount}
-                onChange={(e) => setTransactionForm(prev => ({ ...prev, amount: Number(e.target.value) }))}
-                placeholder="Transaction amount"
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="description">Description</Label>
-              <Input
-                id="description"
-                value={transactionForm.description}
-                onChange={(e) => setTransactionForm(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Transaction description (optional)"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="date">Date</Label>
-              <Input
-                id="date"
-                type="date"
-                value={transactionForm.date}
-                onChange={(e) => setTransactionForm(prev => ({ ...prev, date: e.target.value }))}
-              />
-            </div>
-            <Button 
-              onClick={editingTransaction ? handleEditTransaction : handleAddTransaction}
-              disabled={!transactionForm.amount}
-            >
-              {editingTransaction ? 'Update Transaction' : 'Save Transaction'}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <DeleteConfirmation
-        isOpen={showDeleteConfirm}
-        onClose={() => {
-          setShowDeleteConfirm(false);
-          setDeleteId(null);
-        }}
-        onConfirm={deleteType === 'customer' ? handleDeleteCustomer : handleDeleteTransaction}
-        title={`Delete ${deleteType === 'customer' ? 'Customer' : 'Transaction'}?`}
-        description={`Are you sure you want to delete this ${deleteType}? This action cannot be undone.`}
-      />
     </div>
   );
 };

@@ -1,406 +1,334 @@
-import { useState, useEffect } from 'react';
-import { Globe, Plus } from 'lucide-react';
-import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
-import PageWrapper from '@/components/layout/PageWrapper';
-import ServiceForm from '@/components/ui/ServiceForm';
-import ServiceCard from '@/components/ui/ServiceCard';
-import DateRangePicker from '@/components/ui/DateRangePicker';
-import DownloadButton from '@/components/ui/DownloadButton';
-import { Button } from '@/components/ui/button';
-import { formatCurrency, filterByDate, filterByMonth } from '@/utils/calculateUtils';
-import { format, startOfDay, endOfDay } from 'date-fns';
 
-interface OnlineServiceEntry {
+import React, { useState, useEffect } from 'react';
+import { Plus, Trash2, Download } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import PageHeader from '@/components/layout/PageHeader';
+
+interface OnlineService {
   id: string;
-  date: Date;
+  date: string;
   service: string;
   custom_service?: string;
   customer_name?: string;
   amount: number;
   count: number;
   total: number;
-  created_at?: string;
+  created_at: string;
 }
 
 const OnlineServices = () => {
-  const [onlineServices, setOnlineServices] = useState<OnlineServiceEntry[]>([]);
-  const [filteredServices, setFilteredServices] = useState<OnlineServiceEntry[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [formOpen, setFormOpen] = useState(false);
-  const [editingEntry, setEditingEntry] = useState<OnlineServiceEntry | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [filterMode, setFilterMode] = useState<'day' | 'month'>('day');
+  const [services, setServices] = useState<OnlineService[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [showAddDialog, setShowAddDialog] = useState(false);
 
-  const fetchOnlineServices = async () => {
-    setIsLoading(true);
+  const [newService, setNewService] = useState({
+    service: '',
+    custom_service: '',
+    customer_name: '',
+    amount: 0,
+    count: 1
+  });
+
+  const predefinedServices = [
+    'Passport Application',
+    'PAN Card',
+    'Aadhar Update',
+    'Ration Card',
+    'Income Certificate',
+    'Domicile Certificate',
+    'Birth Certificate',
+    'Death Certificate',
+    'Other'
+  ];
+
+  const fetchServices = async () => {
     try {
-      let query = supabase
+      setLoading(true);
+      const { data, error } = await supabase
         .from('online_services')
         .select('*')
         .order('date', { ascending: false });
-      
-      const { data, error } = await query;
 
       if (error) throw error;
-
-      const formattedData = data.map(entry => ({
-        id: entry.id,
-        date: new Date(entry.date),
-        service: entry.service,
-        custom_service: entry.custom_service,
-        customer_name: entry.customer_name || '',
-        amount: Number(entry.amount),
-        count: Number(entry.count),
-        total: Number(entry.total),
-        created_at: entry.created_at
-      }));
-
-      console.log('All online services:', formattedData.length);
-      setOnlineServices(formattedData);
-      applyDateFilter(formattedData, selectedDate, filterMode);
+      setServices(data || []);
     } catch (error) {
-      console.error('Error fetching online services:', error);
-      toast.error('Failed to load online services data');
+      console.error('Error fetching services:', error);
+      toast.error('Failed to load services');
     } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const applyDateFilter = (data: OnlineServiceEntry[], date: Date, mode: 'day' | 'month') => {
-    console.log('Applying filter:', mode, 'for date:', date);
-    if (mode === 'day') {
-      const filtered = filterByDate(data, date);
-      console.log('Filtered services by day:', filtered.length);
-      setFilteredServices(filtered);
-    } else {
-      const filtered = filterByMonth(data, date);
-      console.log('Filtered services by month:', filtered.length);
-      setFilteredServices(filtered);
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchOnlineServices();
+    fetchServices();
   }, []);
 
-  useEffect(() => {
-    applyDateFilter(onlineServices, selectedDate, filterMode);
-  }, [selectedDate, filterMode, onlineServices]);
-
-  const handleDateChange = (date: Date) => {
-    setSelectedDate(date);
-  };
-
-  const handleModeChange = (mode: 'day' | 'month') => {
-    setFilterMode(mode);
-  };
-
-  const handleAddEntry = async (values: Partial<OnlineServiceEntry>) => {
+  const addService = async () => {
     try {
-      const finalServiceName = values.service === 'Other' && values.custom_service 
-        ? values.custom_service 
-        : values.service;
-        
-      console.log('Adding online service:', values);
+      const total = newService.amount * newService.count;
       
-      const { data, error } = await supabase
-        .from('online_services')
-        .insert({
-          date: values.date ? new Date(values.date).toISOString() : new Date().toISOString(),
-          service: values.service,
-          custom_service: values.service === 'Other' ? values.custom_service : null,
-          customer_name: values.customer_name || '',
-          amount: values.amount,
-          count: values.count,
-          total: values.amount * values.count,
-        })
-        .select();
-
-      if (error) {
-        console.error('Error adding online service:', error);
-        throw error;
-      }
-
-      if (data && data.length > 0) {
-        const newEntry: OnlineServiceEntry = {
-          id: data[0].id,
-          date: new Date(data[0].date),
-          service: data[0].service,
-          custom_service: data[0].custom_service,
-          customer_name: data[0].customer_name || '',
-          amount: Number(data[0].amount),
-          count: Number(data[0].count),
-          total: Number(data[0].total),
-          created_at: data[0].created_at
-        };
-
-        setOnlineServices(prev => [newEntry, ...prev]);
-        toast.success('Online service added successfully');
-      }
-    } catch (error) {
-      console.error('Error adding online service:', error);
-      toast.error('Failed to add online service');
-    }
-  };
-
-  const handleEditEntry = async (values: Partial<OnlineServiceEntry>) => {
-    if (!editingEntry) return;
-
-    try {
-      const finalServiceName = values.service === 'Other' && values.custom_service 
-        ? values.custom_service 
-        : values.service;
-        
       const { error } = await supabase
         .from('online_services')
-        .update({
-          date: values.date ? new Date(values.date).toISOString() : editingEntry.date.toISOString(),
-          service: values.service,
-          custom_service: values.service === 'Other' ? values.custom_service : null,
-          customer_name: values.customer_name || '',
-          amount: values.amount,
-          count: values.count,
-          total: values.amount * values.count,
-        })
-        .eq('id', editingEntry.id);
+        .insert([{
+          ...newService,
+          total
+        }]);
 
       if (error) throw error;
 
-      const updatedEntry: OnlineServiceEntry = {
-        ...editingEntry,
-        date: values.date || editingEntry.date,
-        service: values.service,
-        custom_service: values.service === 'Other' ? values.custom_service : null,
-        customer_name: values.customer_name || '',
-        amount: values.amount,
-        count: values.count,
-        total: values.amount * values.count,
-      };
-
-      setOnlineServices(prev =>
-        prev.map(entry => entry.id === editingEntry.id ? updatedEntry : entry)
-      );
-
-      setEditingEntry(null);
-      setFormOpen(false);
-      toast.success('Online service updated successfully');
+      toast.success('Service added successfully');
+      setNewService({
+        service: '',
+        custom_service: '',
+        customer_name: '',
+        amount: 0,
+        count: 1
+      });
+      setShowAddDialog(false);
+      fetchServices();
     } catch (error) {
-      console.error('Error updating online service:', error);
-      toast.error('Failed to update online service');
+      console.error('Error adding service:', error);
+      toast.error('Failed to add service');
     }
   };
 
-  const handleDeleteEntry = async (id: string) => {
+  const deleteService = async (serviceId: string) => {
     try {
       const { error } = await supabase
         .from('online_services')
         .delete()
-        .eq('id', id);
+        .eq('id', serviceId);
 
       if (error) throw error;
-
-      setOnlineServices(prev => prev.filter(entry => entry.id !== id));
-      toast.success('Online service deleted successfully');
+      
+      toast.success('Service deleted successfully');
+      fetchServices();
     } catch (error) {
-      console.error('Error deleting online service:', error);
-      toast.error('Failed to delete online service');
+      console.error('Error deleting service:', error);
+      toast.error('Failed to delete service');
     }
   };
 
-  const formFields = [
-    { 
-      name: 'date', 
-      label: 'Date', 
-      type: 'date' as const,
-      required: true
-    },
-    {
-      name: 'customer_name',
-      label: 'Customer Name',
-      type: 'text' as const,
-      required: true
-    },
-    { 
-      name: 'service', 
-      label: 'Service Type', 
-      type: 'select' as const,
-      options: [
-        { label: 'Income Certificate', value: 'Income Certificate' },
-        { label: 'Birth Certificate', value: 'Birth Certificate' },
-        { label: 'Ladli Beti', value: 'Ladli Beti' },
-        { label: 'Insurance Car/Bike', value: 'Insurance Car/Bike' },
-        { label: 'Marriage Certificate', value: 'Marriage Certificate' },
-        { label: 'Railway Tickets', value: 'Railway Tickets' },
-        { label: 'Pension Form', value: 'Pension Form' },
-        { label: 'Domicile', value: 'Domicile' },
-        { label: 'Marriage Assistance Form', value: 'Marriage Assistance Form' },
-        { label: 'Other', value: 'Other' }
-      ],
-      required: true
-    },
-    { 
-      name: 'custom_service', 
-      label: 'Custom Service Name', 
-      type: 'text' as const,
-      conditional: (values: Record<string, any>) => values.service === 'Other',
-      required: true
-    },
-    { 
-      name: 'amount', 
-      label: 'Amount per Service (₹)', 
-      type: 'number' as const,
-      min: 0,
-      required: true
-    },
-    { 
-      name: 'count', 
-      label: 'Number of Services', 
-      type: 'number' as const,
-      min: 1,
-      required: true
-    },
-  ];
+  const exportToCSV = () => {
+    const csvData = [
+      ['Date', 'Service', 'Customer Name', 'Amount per Service', 'Count', 'Total Amount']
+    ];
 
-  const totalServices = filteredServices.length;
-  const totalAmount = filteredServices.reduce((sum, service) => sum + service.total, 0);
+    filteredServices.forEach(service => {
+      csvData.push([
+        new Date(service.date).toLocaleDateString(),
+        service.service === 'Other' ? service.custom_service || 'Other' : service.service,
+        service.customer_name || '',
+        service.amount.toString(),
+        service.count.toString(),
+        service.total.toString()
+      ]);
+    });
+
+    const csvContent = csvData.map(row => row.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'online_services_report.csv';
+    link.click();
+  };
+
+  const filteredServices = services.filter(service =>
+    service.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (service.custom_service && service.custom_service.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (service.customer_name && service.customer_name.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  const totalRevenue = filteredServices.reduce((sum, service) => sum + service.total, 0);
 
   return (
-    <PageWrapper
-      title="Online Services"
-      subtitle="Manage your online services"
-      action={
-        <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-          <DateRangePicker
-            date={selectedDate}
-            onDateChange={handleDateChange}
-            mode={filterMode}
-            onModeChange={handleModeChange}
-          />
-          <div className="flex gap-2">
-            <DownloadButton 
-              data={onlineServices}
-              filename="online-services"
-              currentData={filteredServices}
-            />
-            <ServiceForm
-              title="Add Online Service"
-              fields={formFields}
-              initialValues={{
-                date: new Date(),
-                customer_name: '',
-                service: '',
-                custom_service: '',
-                amount: 0,
-                count: 1,
-              }}
-              onSubmit={handleAddEntry}
-              trigger={
-                <Button className="flex items-center gap-1">
-                  <Plus size={16} />
-                  <span>Add Service</span>
+    <div className="container mx-auto p-6 space-y-6">
+      <PageHeader
+        title="Online Services"
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
+        searchPlaceholder="Search services..."
+      >
+        <Button onClick={exportToCSV} variant="outline" size="sm">
+          <Download className="h-4 w-4 mr-1" />
+          Export CSV
+        </Button>
+        <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+          <DialogTrigger asChild>
+            <Button size="sm">
+              <Plus className="h-4 w-4 mr-1" />
+              Add Service
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New Service</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="service">Service Type</Label>
+                <Select value={newService.service} onValueChange={(value) => setNewService({ ...newService, service: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select service type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {predefinedServices.map((service) => (
+                      <SelectItem key={service} value={service}>
+                        {service}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {newService.service === 'Other' && (
+                <div>
+                  <Label htmlFor="custom_service">Custom Service</Label>
+                  <Input
+                    id="custom_service"
+                    value={newService.custom_service}
+                    onChange={(e) => setNewService({ ...newService, custom_service: e.target.value })}
+                    placeholder="Enter custom service name"
+                  />
+                </div>
+              )}
+
+              <div>
+                <Label htmlFor="customer_name">Customer Name (Optional)</Label>
+                <Input
+                  id="customer_name"
+                  value={newService.customer_name}
+                  onChange={(e) => setNewService({ ...newService, customer_name: e.target.value })}
+                  placeholder="Customer name"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="amount">Amount per Service</Label>
+                  <Input
+                    id="amount"
+                    type="number"
+                    step="0.01"
+                    value={newService.amount}
+                    onChange={(e) => setNewService({ ...newService, amount: Number(e.target.value) })}
+                    placeholder="Amount"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="count">Count</Label>
+                  <Input
+                    id="count"
+                    type="number"
+                    value={newService.count}
+                    onChange={(e) => setNewService({ ...newService, count: Number(e.target.value) })}
+                    placeholder="Count"
+                  />
+                </div>
+              </div>
+
+              <div className="p-3 bg-muted rounded">
+                <p className="text-sm font-medium">
+                  Total: ₹{(newService.amount * newService.count).toFixed(2)}
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+                  Cancel
                 </Button>
-              }
-            />
+                <Button onClick={addService}>Add Service</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </PageHeader>
+
+      {/* Summary Card */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="text-center">
+              <h3 className="text-2xl font-bold">{filteredServices.length}</h3>
+              <p className="text-muted-foreground">Total Services</p>
+            </div>
+            <div className="text-center">
+              <h3 className="text-2xl font-bold">{filteredServices.reduce((sum, s) => sum + s.count, 0)}</h3>
+              <p className="text-muted-foreground">Total Count</p>
+            </div>
+            <div className="text-center">
+              <h3 className="text-2xl font-bold text-green-600">₹{totalRevenue.toFixed(2)}</h3>
+              <p className="text-muted-foreground">Total Revenue</p>
+            </div>
           </div>
-        </div>
-      }
-    >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <ServiceCard 
-          id="summary-services"
-          title="Total Services"
-          date={selectedDate}
-          data={{ 
-            value: totalServices,
-          }}
-          labels={{ 
-            value: "Count",
-          }}
-          onEdit={() => {}}
-          onDelete={() => {}}
-          className="bg-blue-50"
-          showActions={false}
-        />
-        <ServiceCard 
-          id="summary-amount"
-          title="Total Amount"
-          date={selectedDate}
-          data={{ 
-            value: formatCurrency(totalAmount),
-          }}
-          labels={{ 
-            value: "Amount",
-          }}
-          onEdit={() => {}}
-          onDelete={() => {}}
-          className="bg-emerald-50"
-          showActions={false}
-        />
-      </div>
+        </CardContent>
+      </Card>
 
-      {isLoading ? (
-        <div className="text-center py-12">
-          <p>Loading online services data...</p>
-        </div>
-      ) : filteredServices.length === 0 ? (
-        <div className="text-center py-12 bg-muted/30 rounded-lg border border-border animate-fade-in">
-          <Globe className="mx-auto h-12 w-12 text-muted-foreground/50" />
-          <h3 className="mt-4 text-lg font-medium">No Online Services</h3>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {onlineServices.length > 0 
-              ? `No services found for the selected ${filterMode === 'day' ? 'day' : 'month'}.` 
-              : 'Add a new online service to get started.'}
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredServices.map((entry) => (
-            <ServiceCard
-              key={entry.id}
-              id={entry.id}
-              title={entry.service === 'Other' && entry.custom_service ? entry.custom_service : entry.service}
-              date={entry.date}
-              data={{
-                customer: entry.customer_name || 'Not specified',
-                amount: formatCurrency(entry.amount),
-                total: formatCurrency(entry.total),
-              }}
-              labels={{
-                customer: 'Customer',
-                amount: 'Amount per Service',
-                total: 'Total Amount',
-              }}
-              onEdit={() => {
-                setEditingEntry(entry);
-                setFormOpen(true);
-              }}
-              onDelete={() => handleDeleteEntry(entry.id)}
-            />
-          ))}
-        </div>
-      )}
-
-      {editingEntry && (
-        <ServiceForm
-          title="Edit Online Service"
-          fields={formFields}
-          initialValues={{
-            date: editingEntry.date,
-            customer_name: editingEntry.customer_name || '',
-            service: editingEntry.service,
-            custom_service: editingEntry.custom_service || '',
-            amount: editingEntry.amount,
-            count: editingEntry.count,
-          }}
-          onSubmit={handleEditEntry}
-          trigger={<div />}
-          isEdit
-          open={formOpen}
-          onOpenChange={setFormOpen}
-        />
-      )}
-    </PageWrapper>
+      {/* Services Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Services Records</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {/* Table Header */}
+            <div className="grid grid-cols-7 gap-4 font-semibold border-b pb-2">
+              <div>Date</div>
+              <div>Service Type</div>
+              <div>Customer Name</div>
+              <div>Amount</div>
+              <div>Count</div>
+              <div>Total</div>
+              <div>Actions</div>
+            </div>
+            
+            {/* Table Rows */}
+            {filteredServices.map((service) => (
+              <div key={service.id} className="grid grid-cols-7 gap-4 items-center border-b pb-2">
+                <div className="text-sm">
+                  {new Date(service.date).toLocaleDateString()}
+                </div>
+                <div className="font-medium">
+                  {service.service === 'Other' ? service.custom_service || 'Other' : service.service}
+                </div>
+                <div className="text-muted-foreground">
+                  {service.customer_name || '-'}
+                </div>
+                <div>₹{service.amount.toFixed(2)}</div>
+                <div>{service.count}</div>
+                <div className="font-semibold text-green-600">
+                  ₹{service.total.toFixed(2)}
+                </div>
+                <div>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => deleteService(service.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+            
+            {filteredServices.length === 0 && !loading && (
+              <div className="text-center text-muted-foreground py-8">
+                No services found. Add a new service to get started.
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
