@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import PageHeader from '@/components/layout/PageHeader';
+import DateRangePicker from '@/components/ui/DateRangePicker';
+import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
 
 interface PapersClass {
   id: string;
@@ -39,6 +41,16 @@ const Papers = () => {
   const [editingClassValue, setEditingClassValue] = useState('');
   const [newSchoolName, setNewSchoolName] = useState('');
   const [isAddingSchool, setIsAddingSchool] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    isOpen: boolean;
+    type: 'school' | 'class' | 'subject';
+    id: string;
+    name: string;
+  }>({ isOpen: false, type: 'class', id: '', name: '' });
+  
+  // Date filtering
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [dateMode, setDateMode] = useState<'day' | 'month'>('month');
 
   const fetchClassesAndSubjects = async () => {
     try {
@@ -120,9 +132,27 @@ const Papers = () => {
     }
   };
 
+  const deleteSchool = async (schoolName: string) => {
+    try {
+      // Delete all classes for this school (subjects and records will be deleted by CASCADE)
+      const { error } = await supabase
+        .from('papers_classes')
+        .delete()
+        .eq('school_name', schoolName);
+
+      if (error) throw error;
+      
+      toast.success('School deleted successfully');
+      fetchClassesAndSubjects();
+      setDeleteConfirmation({ isOpen: false, type: 'school', id: '', name: '' });
+    } catch (error) {
+      console.error('Error deleting school:', error);
+      toast.error('Failed to delete school');
+    }
+  };
+
   const deleteClass = async (classId: string) => {
     try {
-      // First delete related subjects and records (handled by CASCADE)
       const { error } = await supabase
         .from('papers_classes')
         .delete()
@@ -132,6 +162,7 @@ const Papers = () => {
       
       toast.success('Class deleted successfully');
       fetchClassesAndSubjects();
+      setDeleteConfirmation({ isOpen: false, type: 'class', id: '', name: '' });
     } catch (error) {
       console.error('Error deleting class:', error);
       toast.error('Failed to delete class');
@@ -215,6 +246,7 @@ const Papers = () => {
       
       fetchClassesAndSubjects();
       toast.success('Subject deleted');
+      setDeleteConfirmation({ isOpen: false, type: 'subject', id: '', name: '' });
     } catch (error) {
       console.error('Error deleting subject:', error);
       toast.error('Failed to delete subject');
@@ -313,6 +345,12 @@ const Papers = () => {
         onSearchChange={setSearchTerm}
         searchPlaceholder="Search schools/classes..."
       >
+        <DateRangePicker
+          date={selectedDate}
+          onDateChange={setSelectedDate}
+          mode={dateMode}
+          onModeChange={setDateMode}
+        />
         <Button onClick={exportToCSV} variant="outline" size="sm">
           <Download className="h-4 w-4 mr-1" />
           Export CSV
@@ -393,6 +431,18 @@ const Papers = () => {
                       <Plus className="h-4 w-4 mr-1" />
                       Add Class
                     </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setDeleteConfirmation({
+                        isOpen: true,
+                        type: 'school',
+                        id: schoolName,
+                        name: schoolName
+                      })}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
@@ -458,7 +508,12 @@ const Papers = () => {
                             <Button
                               variant="destructive"
                               size="sm"
-                              onClick={() => deleteClass(classItem.id)}
+                              onClick={() => setDeleteConfirmation({
+                                isOpen: true,
+                                type: 'class',
+                                id: classItem.id,
+                                name: classItem.name
+                              })}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -501,7 +556,12 @@ const Papers = () => {
                               <Button
                                 variant="destructive"
                                 size="sm"
-                                onClick={() => deleteSubject(subject.id)}
+                                onClick={() => setDeleteConfirmation({
+                                  isOpen: true,
+                                  type: 'subject',
+                                  id: subject.id,
+                                  name: subject.name
+                                })}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -529,6 +589,23 @@ const Papers = () => {
           No schools found. Add a new school to get started.
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmation
+        isOpen={deleteConfirmation.isOpen}
+        onClose={() => setDeleteConfirmation({ isOpen: false, type: 'class', id: '', name: '' })}
+        onConfirm={() => {
+          if (deleteConfirmation.type === 'school') {
+            deleteSchool(deleteConfirmation.id);
+          } else if (deleteConfirmation.type === 'class') {
+            deleteClass(deleteConfirmation.id);
+          } else if (deleteConfirmation.type === 'subject') {
+            deleteSubject(deleteConfirmation.id);
+          }
+        }}
+        title={`Delete ${deleteConfirmation.type}`}
+        description={`Are you sure you want to delete "${deleteConfirmation.name}"? This action cannot be undone.`}
+      />
     </div>
   );
 };

@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import PageHeader from '@/components/layout/PageHeader';
+import DateRangePicker from '@/components/ui/DateRangePicker';
+import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
 
 interface BankingService {
   id: string;
@@ -24,6 +26,14 @@ const BankingServices = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    isOpen: boolean;
+    id: string;
+  }>({ isOpen: false, id: '' });
+  
+  // Date filtering
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [dateMode, setDateMode] = useState<'day' | 'month'>('day');
 
   const [newService, setNewService] = useState({
     amount: 0,
@@ -34,10 +44,30 @@ const BankingServices = () => {
   const fetchServices = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from('banking_services')
-        .select('*')
-        .order('date', { ascending: false });
+        .select('*');
+
+      // Apply date filtering
+      if (dateMode === 'day') {
+        const startOfDay = new Date(selectedDate);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(selectedDate);
+        endOfDay.setHours(23, 59, 59, 999);
+        
+        query = query
+          .gte('date', startOfDay.toISOString())
+          .lte('date', endOfDay.toISOString());
+      } else {
+        const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+        const endOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
+        
+        query = query
+          .gte('date', startOfMonth.toISOString())
+          .lte('date', endOfMonth.toISOString());
+      }
+
+      const { data, error } = await query.order('date', { ascending: false });
 
       if (error) throw error;
       setServices(data || []);
@@ -51,7 +81,7 @@ const BankingServices = () => {
 
   useEffect(() => {
     fetchServices();
-  }, []);
+  }, [selectedDate, dateMode]);
 
   const addService = async () => {
     try {
@@ -86,6 +116,7 @@ const BankingServices = () => {
       
       toast.success('Service deleted successfully');
       fetchServices();
+      setDeleteConfirmation({ isOpen: false, id: '' });
     } catch (error) {
       console.error('Error deleting service:', error);
       toast.error('Failed to delete service');
@@ -132,6 +163,12 @@ const BankingServices = () => {
         onSearchChange={setSearchTerm}
         searchPlaceholder="Search by amount or margin..."
       >
+        <DateRangePicker
+          date={selectedDate}
+          onDateChange={setSelectedDate}
+          mode={dateMode}
+          onModeChange={setDateMode}
+        />
         <Button onClick={exportToCSV} variant="outline" size="sm">
           <Download className="h-4 w-4 mr-1" />
           Export CSV
@@ -227,7 +264,6 @@ const BankingServices = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {/* Table Header */}
             <div className="grid grid-cols-6 gap-4 font-semibold border-b pb-2">
               <div>Date</div>
               <div>Amount</div>
@@ -237,7 +273,6 @@ const BankingServices = () => {
               <div>Actions</div>
             </div>
             
-            {/* Table Rows */}
             {filteredServices.map((service) => (
               <div key={service.id} className="grid grid-cols-6 gap-4 items-center border-b pb-2">
                 <div className="text-sm">
@@ -253,7 +288,10 @@ const BankingServices = () => {
                   <Button
                     variant="destructive"
                     size="sm"
-                    onClick={() => deleteService(service.id)}
+                    onClick={() => setDeleteConfirmation({
+                      isOpen: true,
+                      id: service.id
+                    })}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -263,12 +301,21 @@ const BankingServices = () => {
             
             {filteredServices.length === 0 && !loading && (
               <div className="text-center text-muted-foreground py-8">
-                No banking services found. Add a new service to get started.
+                No banking services found for the selected {dateMode === 'day' ? 'date' : 'month'}.
               </div>
             )}
           </div>
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmation
+        isOpen={deleteConfirmation.isOpen}
+        onClose={() => setDeleteConfirmation({ isOpen: false, id: '' })}
+        onConfirm={() => deleteService(deleteConfirmation.id)}
+        title="Delete Banking Service"
+        description="Are you sure you want to delete this banking service? This action cannot be undone."
+      />
     </div>
   );
 };

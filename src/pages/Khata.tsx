@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Eye, TrendingUp, TrendingDown } from 'lucide-react';
+import { Plus, Edit, TrendingUp, TrendingDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import PageHeader from '@/components/layout/PageHeader';
+import DateRangePicker from '@/components/ui/DateRangePicker';
+import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
 
 interface KhataCustomer {
   id: string;
@@ -41,6 +43,17 @@ const Khata = () => {
   const [loading, setLoading] = useState(true);
   const [showAddCustomer, setShowAddCustomer] = useState(false);
   const [showAddTransaction, setShowAddTransaction] = useState(false);
+  const [showEditCustomer, setShowEditCustomer] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<KhataCustomer | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    isOpen: boolean;
+    type: 'transaction';
+    id: string;
+  }>({ isOpen: false, type: 'transaction', id: '' });
+  
+  // Date filtering
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [dateMode, setDateMode] = useState<'day' | 'month'>('day');
 
   // Form states
   const [newCustomer, setNewCustomer] = useState({
@@ -91,19 +104,42 @@ const Khata = () => {
 
   const fetchTransactions = async (customerId: string) => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('khata_transactions')
         .select('*')
-        .eq('customer_id', customerId)
-        .order('date', { ascending: true });
+        .eq('customer_id', customerId);
+
+      // Apply date filtering
+      if (dateMode === 'day') {
+        const startOfDay = new Date(selectedDate);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(selectedDate);
+        endOfDay.setHours(23, 59, 59, 999);
+        
+        query = query
+          .gte('date', startOfDay.toISOString().split('T')[0])
+          .lte('date', endOfDay.toISOString().split('T')[0]);
+      } else {
+        const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+        const endOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
+        
+        query = query
+          .gte('date', startOfMonth.toISOString().split('T')[0])
+          .lte('date', endOfMonth.toISOString().split('T')[0]);
+      }
+
+      const { data, error } = await query.order('date', { ascending: false });
 
       if (error) throw error;
 
-      // Calculate running balance for each transaction
+      // Calculate running balance for each transaction (in reverse for display)
       const customer = customers.find(c => c.id === customerId);
       let runningBalance = customer?.opening_balance || 0;
 
-      const transactionsWithBalance = (data || []).map(transaction => {
+      // Sort by date ascending to calculate running balance correctly
+      const sortedData = [...(data || [])].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      
+      const transactionsWithBalance = sortedData.map(transaction => {
         if (transaction.type === 'credit') {
           runningBalance += transaction.amount;
         } else {
@@ -112,11 +148,13 @@ const Khata = () => {
         
         return {
           ...transaction,
+          type: transaction.type as 'credit' | 'debit',
           running_balance: runningBalance
         };
       });
 
-      setTransactions(transactionsWithBalance);
+      // Reverse back to show latest first
+      setTransactions(transactionsWithBalance.reverse());
     } catch (error) {
       console.error('Error fetching transactions:', error);
       toast.error('Failed to load transactions');
@@ -132,7 +170,7 @@ const Khata = () => {
     if (selectedCustomer) {
       fetchTransactions(selectedCustomer);
     }
-  }, [selectedCustomer, customers]);
+  }, [selectedCustomer, customers, selectedDate, dateMode]);
 
   const addCustomer = async () => {
     try {
@@ -149,6 +187,31 @@ const Khata = () => {
     } catch (error) {
       console.error('Error adding customer:', error);
       toast.error('Failed to add customer');
+    }
+  };
+
+  const editCustomer = async () => {
+    if (!editingCustomer) return;
+
+    try {
+      const { error } = await supabase
+        .from('khata_customers')
+        .update({
+          name: editingCustomer.name,
+          phone: editingCustomer.phone,
+          opening_balance: editingCustomer.opening_balance
+        })
+        .eq('id', editingCustomer.id);
+
+      if (error) throw error;
+
+      toast.success('Customer updated successfully');
+      setShowEditCustomer(false);
+      setEditingCustomer(null);
+      fetchCustomers();
+    } catch (error) {
+      console.error('Error updating customer:', error);
+      toast.error('Failed to update customer');
     }
   };
 
@@ -176,27 +239,6 @@ const Khata = () => {
     }
   };
 
-  const deleteCustomer = async (customerId: string) => {
-    try {
-      const { error } = await supabase
-        .from('khata_customers')
-        .delete()
-        .eq('id', customerId);
-
-      if (error) throw error;
-
-      toast.success('Customer deleted successfully');
-      if (selectedCustomer === customerId) {
-        setSelectedCustomer(null);
-        setTransactions([]);
-      }
-      fetchCustomers();
-    } catch (error) {
-      console.error('Error deleting customer:', error);
-      toast.error('Failed to delete customer');
-    }
-  };
-
   const deleteTransaction = async (transactionId: string) => {
     try {
       const { error } = await supabase
@@ -211,6 +253,7 @@ const Khata = () => {
       if (selectedCustomer) {
         fetchTransactions(selectedCustomer);
       }
+      setDeleteConfirmation({ isOpen: false, type: 'transaction', id: '' });
     } catch (error) {
       console.error('Error deleting transaction:', error);
       toast.error('Failed to delete transaction');
@@ -232,6 +275,12 @@ const Khata = () => {
         onSearchChange={setSearchTerm}
         searchPlaceholder="Search customers..."
       >
+        <DateRangePicker
+          date={selectedDate}
+          onDateChange={setSelectedDate}
+          mode={dateMode}
+          onModeChange={setDateMode}
+        />
         <Dialog open={showAddCustomer} onOpenChange={setShowAddCustomer}>
           <DialogTrigger asChild>
             <Button size="sm">
@@ -319,14 +368,15 @@ const Khata = () => {
                     </div>
                     <div className="flex justify-end mt-2">
                       <Button
-                        variant="destructive"
+                        variant="outline"
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation();
-                          deleteCustomer(customer.id);
+                          setEditingCustomer(customer);
+                          setShowEditCustomer(true);
                         }}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Edit className="h-4 w-4" />
                       </Button>
                     </div>
                   </CardContent>
@@ -455,16 +505,20 @@ const Khata = () => {
                       <Button
                         variant="destructive"
                         size="sm"
-                        onClick={() => deleteTransaction(transaction.id)}
+                        onClick={() => setDeleteConfirmation({
+                          isOpen: true,
+                          type: 'transaction',
+                          id: transaction.id
+                        })}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        Delete
                       </Button>
                     </div>
                   ))}
                   
                   {transactions.length === 0 && (
                     <div className="text-center text-muted-foreground py-8">
-                      No transactions found. Add a transaction to get started.
+                      No transactions found for the selected {dateMode === 'day' ? 'date' : 'month'}.
                     </div>
                   )}
                 </div>
@@ -474,7 +528,6 @@ const Khata = () => {
             <Card>
               <CardContent className="flex items-center justify-center h-64">
                 <div className="text-center text-muted-foreground">
-                  <Eye className="h-12 w-12 mx-auto mb-4" />
                   <p>Select a customer to view their transactions</p>
                 </div>
               </CardContent>
@@ -482,6 +535,63 @@ const Khata = () => {
           )}
         </div>
       </div>
+
+      {/* Edit Customer Dialog */}
+      <Dialog open={showEditCustomer} onOpenChange={setShowEditCustomer}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Customer</DialogTitle>
+          </DialogHeader>
+          {editingCustomer && (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit-name">Name</Label>
+                <Input
+                  id="edit-name"
+                  value={editingCustomer.name}
+                  onChange={(e) => setEditingCustomer({ ...editingCustomer, name: e.target.value })}
+                  placeholder="Customer name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-phone">Phone</Label>
+                <Input
+                  id="edit-phone"
+                  value={editingCustomer.phone}
+                  onChange={(e) => setEditingCustomer({ ...editingCustomer, phone: e.target.value })}
+                  placeholder="Phone number"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-opening-balance">Opening Balance</Label>
+                <Input
+                  id="edit-opening-balance"
+                  type="number"
+                  step="0.01"
+                  value={editingCustomer.opening_balance}
+                  onChange={(e) => setEditingCustomer({ ...editingCustomer, opening_balance: Number(e.target.value) })}
+                  placeholder="Opening balance"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowEditCustomer(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={editCustomer}>Update Customer</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmation
+        isOpen={deleteConfirmation.isOpen}
+        onClose={() => setDeleteConfirmation({ isOpen: false, type: 'transaction', id: '' })}
+        onConfirm={() => deleteTransaction(deleteConfirmation.id)}
+        title="Delete Transaction"
+        description="Are you sure you want to delete this transaction? This action cannot be undone."
+      />
     </div>
   );
 };
