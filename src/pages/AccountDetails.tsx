@@ -1,6 +1,5 @@
-
 import { useState, useEffect, useMemo } from 'react';
-import { Search, Plus, Edit, Trash2, Download } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Download, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
@@ -265,16 +264,68 @@ const AccountDetails = () => {
   };
 
   const handleDownloadCSV = () => {
-    const csvData = filteredAccountDetails.map(account => ({
+    const csvData = filteredAccountDetails.map((account, index) => ({
+      'S.No': index + 1,
       'Name': account.name,
       'Account Number': account.account_number,
       'Aadhar Number': formatAadhar(account.aadhar_number),
       'Mobile Number': account.mobile_number || '',
-      'Created Date': format(new Date(account.created_at), 'dd/MM/yyyy')
     }));
     
     exportToExcel(csvData, 'account-details');
     toast.success("Account details exported successfully");
+  };
+
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Account Details</title>
+          <style>
+            @page { size: A4; margin: 20mm; }
+            body { font-family: Arial, sans-serif; font-size: 12px; }
+            h1 { text-align: center; margin-bottom: 20px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #000; padding: 8px; text-align: left; }
+            th { background-color: #f5f5f5; font-weight: bold; }
+            tr:nth-child(even) { background-color: #f9f9f9; }
+          </style>
+        </head>
+        <body>
+          <h1>Account Details</h1>
+          <table>
+            <thead>
+              <tr>
+                <th>S.No</th>
+                <th>Name</th>
+                <th>Account Number</th>
+                <th>Aadhar Number</th>
+                <th>Mobile Number</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredAccountDetails.map((account, index) => `
+                <tr>
+                  <td>${index + 1}</td>
+                  <td>${account.name}</td>
+                  <td>${account.account_number}</td>
+                  <td>${formatAadhar(account.aadhar_number)}</td>
+                  <td>${account.mobile_number || '-'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.print();
   };
 
   const filteredAccountDetails = useMemo(() => {
@@ -356,6 +407,11 @@ const AccountDetails = () => {
           </DialogContent>
         </Dialog>
 
+        <Button variant="outline" onClick={handlePrint}>
+          <Printer size={16} className="mr-2" />
+          Print
+        </Button>
+
         <Button variant="outline" onClick={handleDownloadCSV}>
           <Download size={16} className="mr-2" />
           Download CSV
@@ -367,11 +423,11 @@ const AccountDetails = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>S.No</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Account Number</TableHead>
                 <TableHead>Aadhar Number</TableHead>
                 <TableHead>Mobile Number</TableHead>
-                <TableHead>Created Date</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -389,13 +445,13 @@ const AccountDetails = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredAccountDetails.map((account) => (
+                filteredAccountDetails.map((account, index) => (
                   <TableRow key={account.id}>
+                    <TableCell>{index + 1}</TableCell>
                     <TableCell className="font-medium">{account.name}</TableCell>
                     <TableCell>{account.account_number}</TableCell>
                     <TableCell>{formatAadhar(account.aadhar_number)}</TableCell>
                     <TableCell>{account.mobile_number || '-'}</TableCell>
-                    <TableCell>{format(new Date(account.created_at), 'dd/MM/yyyy')}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         <Button
