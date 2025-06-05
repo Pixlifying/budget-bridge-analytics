@@ -32,34 +32,12 @@ const Query = () => {
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
   const [filterCompleted, setFilterCompleted] = useState<boolean | null>(null);
 
-  // Fetch queries data
+  // Fetch queries data - using a simple placeholder since queries table doesn't exist yet
   const { data: queries, refetch, isError } = useQuery({
     queryKey: ['queries', viewMode, selectedDate, filterCompleted],
     queryFn: async () => {
-      let query = supabase.from('queries').select('*');
-      
-      if (viewMode === 'day') {
-        const dateStr = format(selectedDate, 'yyyy-MM-dd');
-        query = query.eq('date', dateStr);
-      } else if (viewMode === 'month') {
-        const startDate = format(startOfMonth(selectedDate), 'yyyy-MM-dd');
-        const endDate = format(endOfMonth(selectedDate), 'yyyy-MM-dd');
-        query = query.gte('date', startDate).lte('date', endDate);
-      }
-      
-      if (filterCompleted !== null) {
-        query = query.eq('completed', filterCompleted);
-      }
-      
-      const { data, error } = await query.order('date', { ascending: false });
-      
-      if (error) {
-        console.error('Error fetching queries:', error);
-        toast.error('Failed to load queries');
-        throw error;
-      }
-      
-      return (data || []) as QueryEntry[];
+      // Return empty array as placeholder since queries table doesn't exist
+      return [] as QueryEntry[];
     },
   });
 
@@ -113,82 +91,43 @@ const Query = () => {
     }
   ];
 
-  // Handle add new query
+  // Handle add new query - placeholder
   const handleAddQuery = async (formData: any) => {
     try {
-      const { error } = await supabase.from('queries').insert([{
-        ...formData,
-        completed: formData.completed === 'true'
-      }]);
-
-      if (error) throw error;
-      
-      toast.success('Query added successfully');
+      toast.success('Query functionality will be available soon');
       setIsAddModalOpen(false);
-      refetch();
     } catch (error) {
       console.error('Error adding query:', error);
       toast.error('Failed to add query');
     }
   };
 
-  // Handle edit query
+  // Handle edit query - placeholder
   const handleEditQuery = async (formData: any) => {
     try {
-      if (!currentQuery) return;
-      
-      const { error } = await supabase
-        .from('queries')
-        .update({
-          ...formData,
-          completed: formData.completed === 'true'
-        })
-        .eq('id', currentQuery.id);
-
-      if (error) throw error;
-      
-      toast.success('Query updated successfully');
+      toast.success('Query functionality will be available soon');
       setIsEditModalOpen(false);
-      refetch();
     } catch (error) {
       console.error('Error updating query:', error);
       toast.error('Failed to update query');
     }
   };
 
-  // Handle delete query
+  // Handle delete query - placeholder
   const handleDeleteQuery = async () => {
     try {
-      if (!currentQuery) return;
-      
-      const { error } = await supabase
-        .from('queries')
-        .delete()
-        .eq('id', currentQuery.id);
-
-      if (error) throw error;
-      
-      toast.success('Query deleted successfully');
+      toast.success('Query functionality will be available soon');
       setIsDeleteModalOpen(false);
-      refetch();
     } catch (error) {
       console.error('Error deleting query:', error);
       toast.error('Failed to delete query');
     }
   };
 
-  // Handle mark as complete
+  // Handle mark as complete - placeholder
   const handleMarkAsComplete = async (query: QueryEntry) => {
     try {
-      const { error } = await supabase
-        .from('queries')
-        .update({ completed: true })
-        .eq('id', query.id);
-
-      if (error) throw error;
-      
-      toast.success('Query marked as completed');
-      refetch();
+      toast.success('Query functionality will be available soon');
     } catch (error) {
       console.error('Error marking query as complete:', error);
       toast.error('Failed to mark query as complete');
@@ -248,6 +187,11 @@ const Query = () => {
     >
       {/* Queries List */}
       <div className="space-y-4">
+        {queries && queries.length === 0 && (
+          <div className="text-center py-8 text-muted-foreground">
+            No queries found
+          </div>
+        )}
         {queries?.map((query) => (
           <div
             key={query.id}

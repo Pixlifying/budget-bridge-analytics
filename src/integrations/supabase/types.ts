@@ -126,6 +126,35 @@ export type Database = {
         }
         Relationships: []
       }
+      classes: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          school_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          school_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          school_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "classes_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_transactions: {
         Row: {
           amount: number
@@ -427,108 +456,6 @@ export type Database = {
         }
         Relationships: []
       }
-      papers_classes: {
-        Row: {
-          created_at: string
-          id: string
-          name: string
-          school_name: string | null
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          name: string
-          school_name?: string | null
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          name?: string
-          school_name?: string | null
-        }
-        Relationships: []
-      }
-      papers_records: {
-        Row: {
-          class_id: string
-          created_at: string
-          date: string
-          id: string
-          total_amount: number
-        }
-        Insert: {
-          class_id: string
-          created_at?: string
-          date?: string
-          id?: string
-          total_amount?: number
-        }
-        Update: {
-          class_id?: string
-          created_at?: string
-          date?: string
-          id?: string
-          total_amount?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_papers_records_class_id"
-            columns: ["class_id"]
-            isOneToOne: false
-            referencedRelation: "papers_classes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "papers_records_class_id_fkey"
-            columns: ["class_id"]
-            isOneToOne: false
-            referencedRelation: "papers_classes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      papers_subjects: {
-        Row: {
-          amount: number
-          class_id: string
-          created_at: string
-          id: string
-          name: string
-          paper_count: number
-        }
-        Insert: {
-          amount?: number
-          class_id: string
-          created_at?: string
-          id?: string
-          name: string
-          paper_count?: number
-        }
-        Update: {
-          amount?: number
-          class_id?: string
-          created_at?: string
-          id?: string
-          name?: string
-          paper_count?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_papers_subjects_class_id"
-            columns: ["class_id"]
-            isOneToOne: false
-            referencedRelation: "papers_classes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "papers_subjects_class_id_fkey"
-            columns: ["class_id"]
-            isOneToOne: false
-            referencedRelation: "papers_classes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       passports: {
         Row: {
           amount: number
@@ -627,6 +554,68 @@ export type Database = {
           total_amount?: number
         }
         Relationships: []
+      }
+      schools: {
+        Row: {
+          address: string | null
+          created_at: string
+          id: string
+          name: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      subjects: {
+        Row: {
+          amount: number
+          class_id: string
+          created_at: string
+          id: string
+          name: string
+          paper_count: number
+        }
+        Insert: {
+          amount?: number
+          class_id: string
+          created_at?: string
+          id?: string
+          name: string
+          paper_count?: number
+        }
+        Update: {
+          amount?: number
+          class_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          paper_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subjects_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       templates: {
         Row: {

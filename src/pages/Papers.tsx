@@ -4,7 +4,6 @@ import { Plus, Edit, Trash2, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { toast } from "sonner";
 import PageHeader from '@/components/layout/PageHeader';
 import {
@@ -16,17 +15,25 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
-import DateRangePicker from '@/components/ui/DateRangePicker';
 import { exportToPDF } from '@/utils/calculateUtils';
 
-interface PapersClass {
+interface School {
   id: string;
   name: string;
-  school_name?: string;
+  address?: string;
+  phone?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface Class {
+  id: string;
+  school_id: string;
+  name: string;
   created_at: string;
 }
 
-interface PapersSubject {
+interface Subject {
   id: string;
   class_id: string;
   name: string;
@@ -35,221 +42,191 @@ interface PapersSubject {
   created_at: string;
 }
 
-interface PapersRecord {
-  id: string;
-  class_id: string;
-  total_amount: number;
-  date: string;
-  created_at: string;
-}
-
-interface ClassWithSubjects extends PapersClass {
-  subjects: PapersSubject[];
-  records: PapersRecord[];
+interface SchoolWithClasses extends School {
+  classes: (Class & { subjects: Subject[] })[];
 }
 
 const Papers = () => {
-  const [classes, setClasses] = useState<ClassWithSubjects[]>([]);
+  const [schools, setSchools] = useState<SchoolWithClasses[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [viewMode, setViewMode] = useState<'day' | 'month'>('month');
+  const [selectedSchool, setSelectedSchool] = useState<SchoolWithClasses | null>(null);
 
   // Dialog states
-  const [showClassDialog, setShowClassDialog] = useState(false);
-  const [showSubjectDialog, setShowSubjectDialog] = useState(false);
+  const [showSchoolDialog, setShowSchoolDialog] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleteType, setDeleteType] = useState<'class' | 'subject'>('class');
+  const [deleteType, setDeleteType] = useState<'school' | 'class' | 'subject'>('school');
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [editingClass, setEditingClass] = useState<PapersClass | null>(null);
-  const [editingSubject, setEditingSubject] = useState<PapersSubject | null>(null);
-  const [selectedClassId, setSelectedClassId] = useState<string>('');
+  const [editingSchool, setEditingSchool] = useState<School | null>(null);
 
   // Form states
-  const [classForm, setClassForm] = useState({
+  const [schoolForm, setSchoolForm] = useState({
     name: '',
-    school_name: ''
+    address: '',
+    phone: ''
   });
 
-  const [subjectForm, setSubjectForm] = useState({
+  const [newClassName, setNewClassName] = useState('');
+  const [newSubject, setNewSubject] = useState({
     name: '',
-    paper_count: 0,
-    amount: 0
+    paper_count: '',
+    amount: ''
   });
 
-  const fetchClasses = useCallback(async () => {
+  const fetchSchools = useCallback(async () => {
     try {
       setLoading(true);
-      const { data: classesData, error: classesError } = await supabase
-        .from('papers_classes')
+      const { data: schoolsData, error: schoolsError } = await supabase
+        .from('schools')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (classesError) throw classesError;
+      if (schoolsError) throw schoolsError;
 
-      const classesWithData = await Promise.all(
-        (classesData || []).map(async (classItem) => {
-          // Fetch subjects
-          const { data: subjectsData, error: subjectsError } = await supabase
-            .from('papers_subjects')
+      const schoolsWithData = await Promise.all(
+        (schoolsData || []).map(async (school) => {
+          // Fetch classes
+          const { data: classesData, error: classesError } = await supabase
+            .from('classes')
             .select('*')
-            .eq('class_id', classItem.id)
+            .eq('school_id', school.id)
             .order('created_at', { ascending: false });
 
-          if (subjectsError) {
-            console.error('Error fetching subjects:', subjectsError);
+          if (classesError) {
+            console.error('Error fetching classes:', classesError);
           }
 
-          // Fetch records with date filtering
-          let recordsQuery = supabase
-            .from('papers_records')
-            .select('*')
-            .eq('class_id', classItem.id);
+          const classesWithSubjects = await Promise.all(
+            (classesData || []).map(async (classItem) => {
+              const { data: subjectsData, error: subjectsError } = await supabase
+                .from('subjects')
+                .select('*')
+                .eq('class_id', classItem.id)
+                .order('created_at', { ascending: false });
 
-          if (viewMode === 'day') {
-            const dateStr = format(selectedDate, 'yyyy-MM-dd');
-            recordsQuery = recordsQuery.eq('date', dateStr);
-          } else if (viewMode === 'month') {
-            const startDate = format(startOfMonth(selectedDate), 'yyyy-MM-dd');
-            const endDate = format(endOfMonth(selectedDate), 'yyyy-MM-dd');
-            recordsQuery = recordsQuery.gte('date', startDate).lte('date', endDate);
-          }
+              if (subjectsError) {
+                console.error('Error fetching subjects:', subjectsError);
+              }
 
-          const { data: recordsData, error: recordsError } = await recordsQuery
-            .order('date', { ascending: false });
-
-          if (recordsError) {
-            console.error('Error fetching records:', recordsError);
-          }
+              return {
+                ...classItem,
+                subjects: subjectsData || []
+              };
+            })
+          );
 
           return {
-            ...classItem,
-            subjects: subjectsData || [],
-            records: recordsData || []
+            ...school,
+            classes: classesWithSubjects
           };
         })
       );
 
-      setClasses(classesWithData);
+      setSchools(schoolsWithData);
     } catch (error) {
-      console.error('Error fetching classes:', error);
+      console.error('Error fetching schools:', error);
       toast.error("Failed to load papers data");
     } finally {
       setLoading(false);
     }
-  }, [selectedDate, viewMode]);
+  }, []);
 
   useEffect(() => {
-    fetchClasses();
-  }, [fetchClasses]);
+    fetchSchools();
+  }, [fetchSchools]);
 
-  const handleAddClass = async () => {
+  const handleAddSchool = async () => {
     try {
       const { data, error } = await supabase
-        .from('papers_classes')
+        .from('schools')
         .insert({
-          name: classForm.name,
-          school_name: classForm.school_name || null,
+          name: schoolForm.name,
+          address: schoolForm.address || null,
+          phone: schoolForm.phone || null,
         })
         .select();
 
       if (error) throw error;
 
+      toast.success("School added successfully");
+      setShowSchoolDialog(false);
+      setSchoolForm({ name: '', address: '', phone: '' });
+      await fetchSchools();
+    } catch (error) {
+      console.error('Error adding school:', error);
+      toast.error("Failed to add school");
+    }
+  };
+
+  const handleEditSchool = async () => {
+    if (!editingSchool) return;
+
+    try {
+      const { error } = await supabase
+        .from('schools')
+        .update({
+          name: schoolForm.name,
+          address: schoolForm.address || null,
+          phone: schoolForm.phone || null,
+        })
+        .eq('id', editingSchool.id);
+
+      if (error) throw error;
+
+      toast.success("School updated successfully");
+      setShowSchoolDialog(false);
+      setEditingSchool(null);
+      setSchoolForm({ name: '', address: '', phone: '' });
+      await fetchSchools();
+    } catch (error) {
+      console.error('Error updating school:', error);
+      toast.error("Failed to update school");
+    }
+  };
+
+  const handleAddClass = async (schoolId: string) => {
+    if (!newClassName.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from('classes')
+        .insert({
+          school_id: schoolId,
+          name: newClassName,
+        });
+
+      if (error) throw error;
+
       toast.success("Class added successfully");
-      setShowClassDialog(false);
-      setClassForm({ name: '', school_name: '' });
-      await fetchClasses();
+      setNewClassName('');
+      await fetchSchools();
     } catch (error) {
       console.error('Error adding class:', error);
       toast.error("Failed to add class");
     }
   };
 
-  const handleEditClass = async () => {
-    if (!editingClass) return;
+  const handleAddSubject = async (classId: string) => {
+    if (!newSubject.name.trim() || !newSubject.paper_count || !newSubject.amount) return;
 
     try {
       const { error } = await supabase
-        .from('papers_classes')
-        .update({
-          name: classForm.name,
-          school_name: classForm.school_name || null,
-        })
-        .eq('id', editingClass.id);
-
-      if (error) throw error;
-
-      toast.success("Class updated successfully");
-      setShowClassDialog(false);
-      setEditingClass(null);
-      setClassForm({ name: '', school_name: '' });
-      await fetchClasses();
-    } catch (error) {
-      console.error('Error updating class:', error);
-      toast.error("Failed to update class");
-    }
-  };
-
-  const handleAddSubject = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('papers_subjects')
+        .from('subjects')
         .insert({
-          class_id: selectedClassId,
-          name: subjectForm.name,
-          paper_count: subjectForm.paper_count,
-          amount: subjectForm.amount,
-        })
-        .select();
-
-      if (error) throw error;
-
-      // Create a record for this subject
-      const { error: recordError } = await supabase
-        .from('papers_records')
-        .insert({
-          class_id: selectedClassId,
-          total_amount: subjectForm.amount,
-          date: format(new Date(), 'yyyy-MM-dd'),
+          class_id: classId,
+          name: newSubject.name,
+          paper_count: parseInt(newSubject.paper_count),
+          amount: parseFloat(newSubject.amount),
         });
 
-      if (recordError) {
-        console.error('Error creating record:', recordError);
-      }
+      if (error) throw error;
 
       toast.success("Subject added successfully");
-      setShowSubjectDialog(false);
-      setSubjectForm({ name: '', paper_count: 0, amount: 0 });
-      await fetchClasses();
+      setNewSubject({ name: '', paper_count: '', amount: '' });
+      await fetchSchools();
     } catch (error) {
       console.error('Error adding subject:', error);
       toast.error("Failed to add subject");
-    }
-  };
-
-  const handleEditSubject = async () => {
-    if (!editingSubject) return;
-
-    try {
-      const { error } = await supabase
-        .from('papers_subjects')
-        .update({
-          name: subjectForm.name,
-          paper_count: subjectForm.paper_count,
-          amount: subjectForm.amount,
-        })
-        .eq('id', editingSubject.id);
-
-      if (error) throw error;
-
-      toast.success("Subject updated successfully");
-      setShowSubjectDialog(false);
-      setEditingSubject(null);
-      setSubjectForm({ name: '', paper_count: 0, amount: 0 });
-      await fetchClasses();
-    } catch (error) {
-      console.error('Error updating subject:', error);
-      toast.error("Failed to update subject");
     }
   };
 
@@ -257,105 +234,89 @@ const Papers = () => {
     if (!deleteId) return;
 
     try {
-      if (deleteType === 'class') {
-        // Delete all subjects first
-        const { error: subjectsError } = await supabase
-          .from('papers_subjects')
-          .delete()
-          .eq('class_id', deleteId);
-
-        if (subjectsError) throw subjectsError;
-
-        // Delete all records
-        const { error: recordsError } = await supabase
-          .from('papers_records')
-          .delete()
-          .eq('class_id', deleteId);
-
-        if (recordsError) throw recordsError;
-
-        // Delete the class
-        const { error: classError } = await supabase
-          .from('papers_classes')
-          .delete()
-          .eq('id', deleteId);
-
-        if (classError) throw classError;
-
-        toast.success("Class deleted successfully");
-      } else {
-        // Delete subject
+      if (deleteType === 'school') {
         const { error } = await supabase
-          .from('papers_subjects')
+          .from('schools')
           .delete()
           .eq('id', deleteId);
 
         if (error) throw error;
+        toast.success("School deleted successfully");
+      } else if (deleteType === 'class') {
+        const { error } = await supabase
+          .from('classes')
+          .delete()
+          .eq('id', deleteId);
 
+        if (error) throw error;
+        toast.success("Class deleted successfully");
+      } else {
+        const { error } = await supabase
+          .from('subjects')
+          .delete()
+          .eq('id', deleteId);
+
+        if (error) throw error;
         toast.success("Subject deleted successfully");
       }
 
       setShowDeleteConfirm(false);
       setDeleteId(null);
-      await fetchClasses();
+      await fetchSchools();
     } catch (error) {
       console.error('Error deleting:', error);
       toast.error(`Failed to delete ${deleteType}`);
     }
   };
 
-  const openEditClass = (classItem: PapersClass) => {
-    setEditingClass(classItem);
-    setClassForm({
-      name: classItem.name,
-      school_name: classItem.school_name || ''
+  const openEditSchool = (school: School) => {
+    setEditingSchool(school);
+    setSchoolForm({
+      name: school.name,
+      address: school.address || '',
+      phone: school.phone || ''
     });
-    setShowClassDialog(true);
+    setShowSchoolDialog(true);
   };
 
-  const openEditSubject = (subject: PapersSubject) => {
-    setEditingSubject(subject);
-    setSubjectForm({
-      name: subject.name,
-      paper_count: subject.paper_count,
-      amount: subject.amount
-    });
-    setShowSubjectDialog(true);
-  };
-
-  const initiateDelete = (id: string, type: 'class' | 'subject') => {
+  const initiateDelete = (id: string, type: 'school' | 'class' | 'subject') => {
     setDeleteId(id);
     setDeleteType(type);
     setShowDeleteConfirm(true);
   };
 
   const handleDownloadPDF = () => {
-    const pdfData = classes.flatMap(classItem =>
-      classItem.subjects.map(subject => ({
-        class: classItem.name,
-        school: classItem.school_name || '',
-        subject: subject.name,
-        papers: subject.paper_count,
-        amount: subject.amount
-      }))
+    const pdfData = schools.flatMap(school =>
+      school.classes.flatMap(classItem =>
+        classItem.subjects.map(subject => ({
+          school: school.name,
+          class: classItem.name,
+          subject: subject.name,
+          papers: subject.paper_count,
+          amount: subject.amount
+        }))
+      )
     );
     
     exportToPDF(pdfData, 'papers-report');
     toast.success("Papers report downloaded successfully");
   };
 
-  const filteredClasses = useMemo(() => {
-    return classes.filter(classItem =>
-      classItem.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (classItem.school_name && classItem.school_name.toLowerCase().includes(searchTerm.toLowerCase()))
+  const filteredSchools = useMemo(() => {
+    return schools.filter(school =>
+      school.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [classes, searchTerm]);
+  }, [schools, searchTerm]);
 
   const grandTotal = useMemo(() => {
-    return classes.reduce((total, classItem) => {
-      return total + classItem.records.reduce((recordTotal, record) => recordTotal + record.total_amount, 0);
+    return schools.reduce((total, school) => {
+      return total + school.classes.reduce((classTotal, classItem) => {
+        return classTotal + classItem.subjects.reduce((subjectTotal, subject) => {
+          return subjectTotal + subject.amount;
+        }, 0);
+      }, 0);
     }, 0);
-  }, [classes]);
+  }, [schools]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-700">
@@ -363,55 +324,57 @@ const Papers = () => {
         title="Papers Management"
         searchValue={searchTerm}
         onSearchChange={setSearchTerm}
-        searchPlaceholder="Search by class or school name..."
+        searchPlaceholder="Search by school name..."
       >
-        <DateRangePicker
-          date={selectedDate}
-          onDateChange={setSelectedDate}
-          mode={viewMode}
-          onModeChange={setViewMode}
-        />
-        
         <Button onClick={handleDownloadPDF} variant="outline">
           <FileText size={16} className="mr-2" />
           Download PDF
         </Button>
 
-        <Dialog open={showClassDialog} onOpenChange={setShowClassDialog}>
+        <Dialog open={showSchoolDialog} onOpenChange={setShowSchoolDialog}>
           <DialogTrigger asChild>
-            <Button onClick={() => { setEditingClass(null); setClassForm({ name: '', school_name: '' }); }}>
+            <Button onClick={() => { setEditingSchool(null); setSchoolForm({ name: '', address: '', phone: '' }); }}>
               <Plus size={16} className="mr-2" />
-              Add Class
+              Add School
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{editingClass ? 'Edit Class' : 'Add New Class'}</DialogTitle>
+              <DialogTitle>{editingSchool ? 'Edit School' : 'Add New School'}</DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="class_name">Class Name *</Label>
+                <Label htmlFor="school_name">School Name *</Label>
                 <Input
-                  id="class_name"
-                  value={classForm.name}
-                  onChange={(e) => setClassForm(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Class name"
+                  id="school_name"
+                  value={schoolForm.name}
+                  onChange={(e) => setSchoolForm(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="School name"
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="school_name">School Name</Label>
+                <Label htmlFor="school_address">Address</Label>
                 <Input
-                  id="school_name"
-                  value={classForm.school_name}
-                  onChange={(e) => setClassForm(prev => ({ ...prev, school_name: e.target.value }))}
-                  placeholder="School name (optional)"
+                  id="school_address"
+                  value={schoolForm.address}
+                  onChange={(e) => setSchoolForm(prev => ({ ...prev, address: e.target.value }))}
+                  placeholder="School address (optional)"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="school_phone">Phone Number</Label>
+                <Input
+                  id="school_phone"
+                  value={schoolForm.phone}
+                  onChange={(e) => setSchoolForm(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="Phone number (optional)"
                 />
               </div>
               <Button 
-                onClick={editingClass ? handleEditClass : handleAddClass}
-                disabled={!classForm.name}
+                onClick={editingSchool ? handleEditSchool : handleAddSchool}
+                disabled={!schoolForm.name}
               >
-                {editingClass ? 'Update Class' : 'Save Class'}
+                {editingSchool ? 'Update School' : 'Save School'}
               </Button>
             </div>
           </DialogContent>
@@ -421,152 +384,163 @@ const Papers = () => {
       <div className="flex-1 p-6">
         {/* Grand Total Summary */}
         <div className="mb-6 p-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg shadow-lg">
-          <h3 className="text-lg font-semibold mb-2">Summary for {viewMode === 'day' ? format(selectedDate, 'dd/MM/yyyy') : format(selectedDate, 'MMMM yyyy')}</h3>
-          <p className="text-2xl font-bold text-primary">Grand Total: ₹{grandTotal.toFixed(2)}</p>
+          <h3 className="text-lg font-semibold mb-2">Grand Total</h3>
+          <p className="text-2xl font-bold text-primary">₹{grandTotal.toFixed(2)}</p>
         </div>
 
         <div className="space-y-6">
           {loading ? (
-            <div className="text-center py-8">Loading papers data...</div>
-          ) : filteredClasses.length === 0 ? (
+            <div className="text-center py-8">Loading schools data...</div>
+          ) : filteredSchools.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No classes found
+              No schools found
             </div>
           ) : (
-            filteredClasses.map((classItem) => {
-              const classTotal = classItem.records.reduce((total, record) => total + record.total_amount, 0);
-              
-              return (
-                <div key={classItem.id} className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg shadow-lg p-6">
-                  <div className="flex justify-between items-center mb-4">
-                    <div>
-                      <h3 className="text-xl font-semibold">{classItem.name}</h3>
-                      {classItem.school_name && (
-                        <p className="text-muted-foreground">{classItem.school_name}</p>
-                      )}
-                      <p className="text-lg font-medium text-primary">
-                        Total: ₹{classTotal.toFixed(2)}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedClassId(classItem.id);
-                          setEditingSubject(null);
-                          setSubjectForm({ name: '', paper_count: 0, amount: 0 });
-                          setShowSubjectDialog(true);
-                        }}
-                      >
-                        <Plus size={14} className="mr-1" />
-                        Add Subject
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEditClass(classItem)}
-                      >
-                        <Edit size={14} className="mr-1" />
-                        Edit
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => initiateDelete(classItem.id, 'class')}
-                      >
-                        <Trash2 size={14} className="mr-1" />
-                        Delete
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Subjects:</h4>
-                    {classItem.subjects.length === 0 ? (
-                      <p className="text-muted-foreground">No subjects added</p>
-                    ) : (
-                      classItem.subjects.map((subject) => (
-                        <div key={subject.id} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-slate-700 rounded">
-                          <div>
-                            <p className="font-medium">{subject.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              Papers: {subject.paper_count} | Amount: ₹{subject.amount.toFixed(2)}
-                            </p>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openEditSubject(subject)}
-                            >
-                              <Edit size={12} />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => initiateDelete(subject.id, 'subject')}
-                            >
-                              <Trash2 size={12} />
-                            </Button>
-                          </div>
-                        </div>
-                      ))
+            filteredSchools.map((school) => (
+              <div key={school.id} className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg shadow-lg p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <div className="cursor-pointer" onClick={() => setSelectedSchool(selectedSchool?.id === school.id ? null : school)}>
+                    <h3 className="text-xl font-semibold hover:text-primary transition-colors">{school.name}</h3>
+                    {school.address && (
+                      <p className="text-muted-foreground">📍 {school.address}</p>
+                    )}
+                    {school.phone && (
+                      <p className="text-muted-foreground">📞 {school.phone}</p>
                     )}
                   </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openEditSchool(school)}
+                    >
+                      <Edit size={14} className="mr-1" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => initiateDelete(school.id, 'school')}
+                    >
+                      <Trash2 size={14} className="mr-1" />
+                      Delete
+                    </Button>
+                  </div>
                 </div>
-              );
-            })
+
+                {selectedSchool?.id === school.id && (
+                  <div className="space-y-4 border-t pt-4">
+                    {/* Add Class Section */}
+                    <div className="bg-gray-50 dark:bg-slate-700 p-4 rounded">
+                      <h4 className="font-medium mb-2">Add Class</h4>
+                      <div className="flex gap-2">
+                        <Input
+                          value={newClassName}
+                          onChange={(e) => setNewClassName(e.target.value)}
+                          placeholder="Class name"
+                          className="flex-1"
+                        />
+                        <Button onClick={() => handleAddClass(school.id)} disabled={!newClassName.trim()}>
+                          Add Class
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Classes List */}
+                    <div className="space-y-3">
+                      {school.classes.map((classItem) => {
+                        const classTotal = classItem.subjects.reduce((total, subject) => total + subject.amount, 0);
+                        
+                        return (
+                          <div key={classItem.id} className="bg-gray-50 dark:bg-slate-700 p-4 rounded">
+                            <div className="flex justify-between items-center mb-3">
+                              <div>
+                                <h5 className="font-medium">{classItem.name}</h5>
+                                <p className="text-sm text-primary font-medium">Total: ₹{classTotal.toFixed(2)}</p>
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => initiateDelete(classItem.id, 'class')}
+                              >
+                                <Trash2 size={12} />
+                              </Button>
+                            </div>
+
+                            {/* Add Subject Section */}
+                            <div className="mb-3 p-3 bg-white dark:bg-slate-600 rounded">
+                              <h6 className="font-medium mb-2">Add Subject</h6>
+                              <div className="grid grid-cols-4 gap-2">
+                                <Input
+                                  value={newSubject.name}
+                                  onChange={(e) => setNewSubject(prev => ({ ...prev, name: e.target.value }))}
+                                  placeholder="Subject name"
+                                />
+                                <Input
+                                  type="number"
+                                  value={newSubject.paper_count}
+                                  onChange={(e) => setNewSubject(prev => ({ ...prev, paper_count: e.target.value }))}
+                                  placeholder="Paper count"
+                                />
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  value={newSubject.amount}
+                                  onChange={(e) => setNewSubject(prev => ({ ...prev, amount: e.target.value }))}
+                                  placeholder="Amount"
+                                />
+                                <Button 
+                                  onClick={() => handleAddSubject(classItem.id)}
+                                  disabled={!newSubject.name.trim() || !newSubject.paper_count || !newSubject.amount}
+                                  size="sm"
+                                >
+                                  Add
+                                </Button>
+                              </div>
+                            </div>
+
+                            {/* Subjects List */}
+                            <div className="space-y-2">
+                              {classItem.subjects.length === 0 ? (
+                                <p className="text-muted-foreground text-sm">No subjects added</p>
+                              ) : (
+                                <div className="grid gap-2">
+                                  <div className="grid grid-cols-5 gap-2 text-sm font-medium text-muted-foreground">
+                                    <span>Subject</span>
+                                    <span>Papers</span>
+                                    <span>Amount</span>
+                                    <span>Total</span>
+                                    <span>Action</span>
+                                  </div>
+                                  {classItem.subjects.map((subject) => (
+                                    <div key={subject.id} className="grid grid-cols-5 gap-2 text-sm p-2 bg-white dark:bg-slate-600 rounded">
+                                      <span className="font-medium">{subject.name}</span>
+                                      <span>{subject.paper_count}</span>
+                                      <span>₹{subject.amount.toFixed(2)}</span>
+                                      <span className="font-medium">₹{(subject.paper_count * subject.amount).toFixed(2)}</span>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => initiateDelete(subject.id, 'subject')}
+                                      >
+                                        <Trash2 size={12} />
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))
           )}
         </div>
       </div>
-
-      {/* Add/Edit Subject Dialog */}
-      <Dialog open={showSubjectDialog} onOpenChange={setShowSubjectDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingSubject ? 'Edit Subject' : 'Add New Subject'}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="subject_name">Subject Name *</Label>
-              <Input
-                id="subject_name"
-                value={subjectForm.name}
-                onChange={(e) => setSubjectForm(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Subject name"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="paper_count">Paper Count *</Label>
-              <Input
-                id="paper_count"
-                type="number"
-                value={subjectForm.paper_count}
-                onChange={(e) => setSubjectForm(prev => ({ ...prev, paper_count: Number(e.target.value) }))}
-                placeholder="Number of papers"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="amount">Amount *</Label>
-              <Input
-                id="amount"
-                type="number"
-                step="0.01"
-                value={subjectForm.amount}
-                onChange={(e) => setSubjectForm(prev => ({ ...prev, amount: Number(e.target.value) }))}
-                placeholder="Amount"
-              />
-            </div>
-            <Button 
-              onClick={editingSubject ? handleEditSubject : handleAddSubject}
-              disabled={!subjectForm.name || subjectForm.paper_count <= 0 || subjectForm.amount <= 0}
-            >
-              {editingSubject ? 'Update Subject' : 'Save Subject'}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <DeleteConfirmation
@@ -576,8 +550,8 @@ const Papers = () => {
           setDeleteId(null);
         }}
         onConfirm={handleDeleteConfirm}
-        title={`Delete ${deleteType === 'class' ? 'Class' : 'Subject'}?`}
-        description={`Are you sure you want to delete this ${deleteType}? ${deleteType === 'class' ? 'This will also delete all subjects and records for this class.' : ''} This action cannot be undone.`}
+        title={`Delete ${deleteType === 'school' ? 'School' : deleteType === 'class' ? 'Class' : 'Subject'}?`}
+        description={`Are you sure you want to delete this ${deleteType}? ${deleteType === 'school' ? 'This will also delete all classes and subjects for this school.' : deleteType === 'class' ? 'This will also delete all subjects for this class.' : ''} This action cannot be undone.`}
       />
     </div>
   );
