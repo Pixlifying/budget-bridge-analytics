@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Search, Plus, Edit, Trash2, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -91,17 +91,55 @@ const AccountDetails = () => {
 
   const handleAddAccount = async () => {
     try {
+      const cleanAadhar = form.aadhar_number.replace(/\s/g, '');
+      
+      // Check for duplicates before inserting
+      const { data: existingAadhar } = await supabase
+        .from('account_details')
+        .select('id')
+        .eq('aadhar_number', cleanAadhar)
+        .single();
+
+      if (existingAadhar) {
+        toast.error("An account with this Aadhar number already exists");
+        return;
+      }
+
+      const { data: existingAccount } = await supabase
+        .from('account_details')
+        .select('id')
+        .eq('account_number', form.account_number)
+        .single();
+
+      if (existingAccount) {
+        toast.error("An account with this account number already exists");
+        return;
+      }
+
       const { data, error } = await supabase
         .from('account_details')
         .insert({
           name: form.name,
           account_number: form.account_number,
-          aadhar_number: form.aadhar_number.replace(/\s/g, ''),
+          aadhar_number: cleanAadhar,
           mobile_number: form.mobile_number || null,
         })
         .select();
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === '23505') {
+          if (error.message.includes('unique_aadhar_number')) {
+            toast.error("An account with this Aadhar number already exists");
+          } else if (error.message.includes('unique_account_number')) {
+            toast.error("An account with this account number already exists");
+          } else {
+            toast.error("This data already exists in the system");
+          }
+        } else {
+          throw error;
+        }
+        return;
+      }
       
       toast.success("Account details added successfully");
       await fetchAccountDetails();
@@ -117,17 +155,57 @@ const AccountDetails = () => {
     if (!editingAccount) return;
 
     try {
+      const cleanAadhar = form.aadhar_number.replace(/\s/g, '');
+      
+      // Check for duplicates before updating (excluding current record)
+      const { data: existingAadhar } = await supabase
+        .from('account_details')
+        .select('id')
+        .eq('aadhar_number', cleanAadhar)
+        .neq('id', editingAccount.id)
+        .single();
+
+      if (existingAadhar) {
+        toast.error("An account with this Aadhar number already exists");
+        return;
+      }
+
+      const { data: existingAccount } = await supabase
+        .from('account_details')
+        .select('id')
+        .eq('account_number', form.account_number)
+        .neq('id', editingAccount.id)
+        .single();
+
+      if (existingAccount) {
+        toast.error("An account with this account number already exists");
+        return;
+      }
+
       const { error } = await supabase
         .from('account_details')
         .update({
           name: form.name,
           account_number: form.account_number,
-          aadhar_number: form.aadhar_number.replace(/\s/g, ''),
+          aadhar_number: cleanAadhar,
           mobile_number: form.mobile_number || null,
         })
         .eq('id', editingAccount.id);
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === '23505') {
+          if (error.message.includes('unique_aadhar_number')) {
+            toast.error("An account with this Aadhar number already exists");
+          } else if (error.message.includes('unique_account_number')) {
+            toast.error("An account with this account number already exists");
+          } else {
+            toast.error("This data already exists in the system");
+          }
+        } else {
+          throw error;
+        }
+        return;
+      }
       
       toast.success("Account details updated successfully");
       await fetchAccountDetails();
@@ -199,12 +277,14 @@ const AccountDetails = () => {
     toast.success("Account details exported successfully");
   };
 
-  const filteredAccountDetails = accountDetails.filter(account =>
-    account.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    account.account_number.includes(searchTerm) ||
-    account.aadhar_number.includes(searchTerm.replace(/\s/g, '')) ||
-    (account.mobile_number && account.mobile_number.includes(searchTerm))
-  );
+  const filteredAccountDetails = useMemo(() => {
+    return accountDetails.filter(account =>
+      account.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      account.account_number.includes(searchTerm) ||
+      account.aadhar_number.includes(searchTerm.replace(/\s/g, '')) ||
+      (account.mobile_number && account.mobile_number.includes(searchTerm))
+    );
+  }, [accountDetails, searchTerm]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-700">
