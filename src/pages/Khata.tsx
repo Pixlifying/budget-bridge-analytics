@@ -124,6 +124,7 @@ const Khata = () => {
         })
       );
 
+      console.log('Khata customers fetched:', customersWithTransactions);
       setCustomers(customersWithTransactions);
     } catch (error) {
       console.error('Error fetching customers:', error);
@@ -188,7 +189,7 @@ const Khata = () => {
 
   const handleAddTransaction = async (customerId: string) => {
     const form = newTransactionForms[customerId];
-    if (!form) return;
+    if (!form || !form.amount || !form.date) return;
 
     try {
       const { error } = await supabase
@@ -497,9 +498,9 @@ const Khata = () => {
                   </div>
 
                   {/* Transaction Form */}
-                  <div className="border-t pt-4 mb-4">
+                  <div className="border-t pt-4 mb-4 bg-gray-50 dark:bg-slate-700 p-4 rounded">
                     <h4 className="font-medium mb-3">Add Transaction</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
                       <div>
                         <Label htmlFor={`date-${customer.id}`}>Date</Label>
                         <Input
@@ -520,27 +521,28 @@ const Khata = () => {
                       </div>
                       <div>
                         <Label htmlFor={`amount-${customer.id}`}>Amount</Label>
-                        <div className="flex gap-2">
-                          <Input
-                            id={`amount-${customer.id}`}
-                            type="number"
-                            value={currentForm?.amount || 0}
-                            onChange={(e) => updateTransactionForm(customer.id, 'amount', Number(e.target.value))}
-                            placeholder="Amount"
-                          />
-                          <Select 
-                            value={currentForm?.type || 'debit'} 
-                            onValueChange={(value) => updateTransactionForm(customer.id, 'type', value)}
-                          >
-                            <SelectTrigger className="w-24">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="debit">Debit</SelectItem>
-                              <SelectItem value="credit">Credit</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                        <Input
+                          id={`amount-${customer.id}`}
+                          type="number"
+                          value={currentForm?.amount || 0}
+                          onChange={(e) => updateTransactionForm(customer.id, 'amount', Number(e.target.value))}
+                          placeholder="Amount"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor={`type-${customer.id}`}>Type</Label>
+                        <Select 
+                          value={currentForm?.type || 'debit'} 
+                          onValueChange={(value) => updateTransactionForm(customer.id, 'type', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="debit">Debit</SelectItem>
+                            <SelectItem value="credit">Credit</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                       <Button 
                         onClick={() => handleAddTransaction(customer.id)}

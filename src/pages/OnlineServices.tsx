@@ -1,13 +1,27 @@
 import { useState, useEffect } from 'react';
-import { Globe, Plus } from 'lucide-react';
+import { Globe, Plus, Edit, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import PageWrapper from '@/components/layout/PageWrapper';
-import ServiceForm from '@/components/ui/ServiceForm';
 import ServiceCard from '@/components/ui/ServiceCard';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import DownloadButton from '@/components/ui/DownloadButton';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { formatCurrency, filterByDate, filterByMonth } from '@/utils/calculateUtils';
 import { format, startOfDay, endOfDay } from 'date-fns';
 
@@ -27,10 +41,41 @@ const OnlineServices = () => {
   const [onlineServices, setOnlineServices] = useState<OnlineServiceEntry[]>([]);
   const [filteredServices, setFilteredServices] = useState<OnlineServiceEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [formOpen, setFormOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<OnlineServiceEntry | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [filterMode, setFilterMode] = useState<'day' | 'month'>('day');
+
+  // Form state for inline entry
+  const [newEntry, setNewEntry] = useState({
+    date: new Date().toISOString().split('T')[0],
+    customer_name: '',
+    service: '',
+    custom_service: '',
+    amount: 0,
+    count: 1,
+  });
+
+  const [editForm, setEditForm] = useState({
+    date: '',
+    customer_name: '',
+    service: '',
+    custom_service: '',
+    amount: 0,
+    count: 1,
+  });
+
+  const serviceOptions = [
+    { label: 'Income Certificate', value: 'Income Certificate' },
+    { label: 'Birth Certificate', value: 'Birth Certificate' },
+    { label: 'Ladli Beti', value: 'Ladli Beti' },
+    { label: 'Insurance Car/Bike', value: 'Insurance Car/Bike' },
+    { label: 'Marriage Certificate', value: 'Marriage Certificate' },
+    { label: 'Railway Tickets', value: 'Railway Tickets' },
+    { label: 'Pension Form', value: 'Pension Form' },
+    { label: 'Domicile', value: 'Domicile' },
+    { label: 'Marriage Assistance Form', value: 'Marriage Assistance Form' },
+    { label: 'Other', value: 'Other' }
+  ];
 
   const fetchOnlineServices = async () => {
     setIsLoading(true);
@@ -96,24 +141,25 @@ const OnlineServices = () => {
     setFilterMode(mode);
   };
 
-  const handleAddEntry = async (values: Partial<OnlineServiceEntry>) => {
+  const handleAddEntry = async () => {
+    if (!newEntry.customer_name || !newEntry.service || !newEntry.amount || !newEntry.count) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
     try {
-      const finalServiceName = values.service === 'Other' && values.custom_service 
-        ? values.custom_service 
-        : values.service;
-        
-      console.log('Adding online service:', values);
+      console.log('Adding online service:', newEntry);
       
       const { data, error } = await supabase
         .from('online_services')
         .insert({
-          date: values.date ? new Date(values.date).toISOString() : new Date().toISOString(),
-          service: values.service,
-          custom_service: values.service === 'Other' ? values.custom_service : null,
-          customer_name: values.customer_name || '',
-          amount: values.amount,
-          count: values.count,
-          total: values.amount * values.count,
+          date: new Date(newEntry.date).toISOString(),
+          service: newEntry.service,
+          custom_service: newEntry.service === 'Other' ? newEntry.custom_service : null,
+          customer_name: newEntry.customer_name,
+          amount: newEntry.amount,
+          count: newEntry.count,
+          total: newEntry.amount * newEntry.count,
         })
         .select();
 
@@ -123,7 +169,7 @@ const OnlineServices = () => {
       }
 
       if (data && data.length > 0) {
-        const newEntry: OnlineServiceEntry = {
+        const newServiceEntry: OnlineServiceEntry = {
           id: data[0].id,
           date: new Date(data[0].date),
           service: data[0].service,
@@ -135,7 +181,15 @@ const OnlineServices = () => {
           created_at: data[0].created_at
         };
 
-        setOnlineServices(prev => [newEntry, ...prev]);
+        setOnlineServices(prev => [newServiceEntry, ...prev]);
+        setNewEntry({
+          date: new Date().toISOString().split('T')[0],
+          customer_name: '',
+          service: '',
+          custom_service: '',
+          amount: 0,
+          count: 1,
+        });
         toast.success('Online service added successfully');
       }
     } catch (error) {
@@ -144,24 +198,20 @@ const OnlineServices = () => {
     }
   };
 
-  const handleEditEntry = async (values: Partial<OnlineServiceEntry>) => {
+  const handleEditEntry = async () => {
     if (!editingEntry) return;
 
     try {
-      const finalServiceName = values.service === 'Other' && values.custom_service 
-        ? values.custom_service 
-        : values.service;
-        
       const { error } = await supabase
         .from('online_services')
         .update({
-          date: values.date ? new Date(values.date).toISOString() : editingEntry.date.toISOString(),
-          service: values.service,
-          custom_service: values.service === 'Other' ? values.custom_service : null,
-          customer_name: values.customer_name || '',
-          amount: values.amount,
-          count: values.count,
-          total: values.amount * values.count,
+          date: new Date(editForm.date).toISOString(),
+          service: editForm.service,
+          custom_service: editForm.service === 'Other' ? editForm.custom_service : null,
+          customer_name: editForm.customer_name,
+          amount: editForm.amount,
+          count: editForm.count,
+          total: editForm.amount * editForm.count,
         })
         .eq('id', editingEntry.id);
 
@@ -169,13 +219,13 @@ const OnlineServices = () => {
 
       const updatedEntry: OnlineServiceEntry = {
         ...editingEntry,
-        date: values.date || editingEntry.date,
-        service: values.service,
-        custom_service: values.service === 'Other' ? values.custom_service : null,
-        customer_name: values.customer_name || '',
-        amount: values.amount,
-        count: values.count,
-        total: values.amount * values.count,
+        date: new Date(editForm.date),
+        service: editForm.service,
+        custom_service: editForm.service === 'Other' ? editForm.custom_service : null,
+        customer_name: editForm.customer_name,
+        amount: editForm.amount,
+        count: editForm.count,
+        total: editForm.amount * editForm.count,
       };
 
       setOnlineServices(prev =>
@@ -183,7 +233,6 @@ const OnlineServices = () => {
       );
 
       setEditingEntry(null);
-      setFormOpen(false);
       toast.success('Online service updated successfully');
     } catch (error) {
       console.error('Error updating online service:', error);
@@ -208,59 +257,72 @@ const OnlineServices = () => {
     }
   };
 
-  const formFields = [
-    { 
-      name: 'date', 
-      label: 'Date', 
-      type: 'date' as const,
-      required: true
-    },
-    {
-      name: 'customer_name',
-      label: 'Customer Name',
-      type: 'text' as const,
-      required: true
-    },
-    { 
-      name: 'service', 
-      label: 'Service Type', 
-      type: 'select' as const,
-      options: [
-        { label: 'Income Certificate', value: 'Income Certificate' },
-        { label: 'Birth Certificate', value: 'Birth Certificate' },
-        { label: 'Ladli Beti', value: 'Ladli Beti' },
-        { label: 'Insurance Car/Bike', value: 'Insurance Car/Bike' },
-        { label: 'Marriage Certificate', value: 'Marriage Certificate' },
-        { label: 'Railway Tickets', value: 'Railway Tickets' },
-        { label: 'Pension Form', value: 'Pension Form' },
-        { label: 'Domicile', value: 'Domicile' },
-        { label: 'Marriage Assistance Form', value: 'Marriage Assistance Form' },
-        { label: 'Other', value: 'Other' }
-      ],
-      required: true
-    },
-    { 
-      name: 'custom_service', 
-      label: 'Custom Service Name', 
-      type: 'text' as const,
-      conditional: (values: Record<string, any>) => values.service === 'Other',
-      required: true
-    },
-    { 
-      name: 'amount', 
-      label: 'Amount per Service (₹)', 
-      type: 'number' as const,
-      min: 0,
-      required: true
-    },
-    { 
-      name: 'count', 
-      label: 'Number of Services', 
-      type: 'number' as const,
-      min: 1,
-      required: true
-    },
-  ];
+  const openEditEntry = (entry: OnlineServiceEntry) => {
+    setEditingEntry(entry);
+    setEditForm({
+      date: format(entry.date, 'yyyy-MM-dd'),
+      customer_name: entry.customer_name || '',
+      service: entry.service,
+      custom_service: entry.custom_service || '',
+      amount: entry.amount,
+      count: entry.count,
+    });
+  };
+
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Online Services Report</title>
+          <style>
+            @page { size: A4; margin: 20mm; }
+            body { font-family: Arial, sans-serif; font-size: 12px; }
+            h1 { text-align: center; margin-bottom: 20px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th, td { border: 1px solid #000; padding: 8px; text-align: left; font-size: 10px; }
+            th { background-color: #f5f5f5; font-weight: bold; }
+            .total { font-weight: bold; text-align: right; margin-top: 10px; }
+          </style>
+        </head>
+        <body>
+          <h1>Online Services Report</h1>
+          <div class="total">Total Services: ${totalServices} | Total Amount: ₹${totalAmount.toFixed(2)}</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Customer</th>
+                <th>Service</th>
+                <th>Amount</th>
+                <th>Count</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredServices.map((service) => `
+                <tr>
+                  <td>${format(service.date, 'dd/MM/yyyy')}</td>
+                  <td>${service.customer_name}</td>
+                  <td>${service.service === 'Other' && service.custom_service ? service.custom_service : service.service}</td>
+                  <td>₹${service.amount.toFixed(2)}</td>
+                  <td>${service.count}</td>
+                  <td>₹${service.total.toFixed(2)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.print();
+  };
 
   const totalServices = filteredServices.length;
   const totalAmount = filteredServices.reduce((sum, service) => sum + service.total, 0);
@@ -278,34 +340,94 @@ const OnlineServices = () => {
             onModeChange={handleModeChange}
           />
           <div className="flex gap-2">
+            <Button onClick={handlePrint} variant="outline">
+              <Printer size={16} className="mr-2" />
+              Print
+            </Button>
             <DownloadButton 
               data={onlineServices}
               filename="online-services"
               currentData={filteredServices}
             />
-            <ServiceForm
-              title="Add Online Service"
-              fields={formFields}
-              initialValues={{
-                date: new Date(),
-                customer_name: '',
-                service: '',
-                custom_service: '',
-                amount: 0,
-                count: 1,
-              }}
-              onSubmit={handleAddEntry}
-              trigger={
-                <Button className="flex items-center gap-1">
-                  <Plus size={16} />
-                  <span>Add Service</span>
-                </Button>
-              }
-            />
           </div>
         </div>
       }
     >
+      {/* Add Service Form */}
+      <div className="mb-6 p-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg shadow-lg">
+        <h3 className="text-lg font-semibold mb-4">Add Online Service</h3>
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
+          <div>
+            <Label htmlFor="date">Date</Label>
+            <Input
+              id="date"
+              type="date"
+              value={newEntry.date}
+              onChange={(e) => setNewEntry(prev => ({ ...prev, date: e.target.value }))}
+            />
+          </div>
+          <div>
+            <Label htmlFor="customer">Customer Name</Label>
+            <Input
+              id="customer"
+              value={newEntry.customer_name}
+              onChange={(e) => setNewEntry(prev => ({ ...prev, customer_name: e.target.value }))}
+              placeholder="Customer name"
+            />
+          </div>
+          <div>
+            <Label htmlFor="service">Service Type</Label>
+            <Select value={newEntry.service} onValueChange={(value) => setNewEntry(prev => ({ ...prev, service: value }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select service" />
+              </SelectTrigger>
+              <SelectContent>
+                {serviceOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {newEntry.service === 'Other' && (
+            <div>
+              <Label htmlFor="custom_service">Custom Service</Label>
+              <Input
+                id="custom_service"
+                value={newEntry.custom_service}
+                onChange={(e) => setNewEntry(prev => ({ ...prev, custom_service: e.target.value }))}
+                placeholder="Enter service name"
+              />
+            </div>
+          )}
+          <div>
+            <Label htmlFor="amount">Amount</Label>
+            <Input
+              id="amount"
+              type="number"
+              value={newEntry.amount}
+              onChange={(e) => setNewEntry(prev => ({ ...prev, amount: Number(e.target.value) }))}
+              placeholder="Amount"
+            />
+          </div>
+          <div>
+            <Label htmlFor="count">Count</Label>
+            <Input
+              id="count"
+              type="number"
+              value={newEntry.count}
+              onChange={(e) => setNewEntry(prev => ({ ...prev, count: Number(e.target.value) }))}
+              placeholder="Count"
+              min="1"
+            />
+          </div>
+          <Button onClick={handleAddEntry}>
+            Save
+          </Button>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <ServiceCard 
           id="summary-services"
@@ -371,35 +493,89 @@ const OnlineServices = () => {
                 amount: 'Amount per Service',
                 total: 'Total Amount',
               }}
-              onEdit={() => {
-                setEditingEntry(entry);
-                setFormOpen(true);
-              }}
+              onEdit={() => openEditEntry(entry)}
               onDelete={() => handleDeleteEntry(entry.id)}
             />
           ))}
         </div>
       )}
 
-      {editingEntry && (
-        <ServiceForm
-          title="Edit Online Service"
-          fields={formFields}
-          initialValues={{
-            date: editingEntry.date,
-            customer_name: editingEntry.customer_name || '',
-            service: editingEntry.service,
-            custom_service: editingEntry.custom_service || '',
-            amount: editingEntry.amount,
-            count: editingEntry.count,
-          }}
-          onSubmit={handleEditEntry}
-          trigger={<div />}
-          isEdit
-          open={formOpen}
-          onOpenChange={setFormOpen}
-        />
-      )}
+      {/* Edit Entry Dialog */}
+      <Dialog open={!!editingEntry} onOpenChange={() => setEditingEntry(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Online Service</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="edit_date">Date</Label>
+              <Input
+                id="edit_date"
+                type="date"
+                value={editForm.date}
+                onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit_customer">Customer Name</Label>
+              <Input
+                id="edit_customer"
+                value={editForm.customer_name}
+                onChange={(e) => setEditForm(prev => ({ ...prev, customer_name: e.target.value }))}
+                placeholder="Customer name"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit_service">Service Type</Label>
+              <Select value={editForm.service} onValueChange={(value) => setEditForm(prev => ({ ...prev, service: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select service" />
+                </SelectTrigger>
+                <SelectContent>
+                  {serviceOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {editForm.service === 'Other' && (
+              <div className="grid gap-2">
+                <Label htmlFor="edit_custom_service">Custom Service</Label>
+                <Input
+                  id="edit_custom_service"
+                  value={editForm.custom_service}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, custom_service: e.target.value }))}
+                  placeholder="Enter service name"
+                />
+              </div>
+            )}
+            <div className="grid gap-2">
+              <Label htmlFor="edit_amount">Amount</Label>
+              <Input
+                id="edit_amount"
+                type="number"
+                value={editForm.amount}
+                onChange={(e) => setEditForm(prev => ({ ...prev, amount: Number(e.target.value) }))}
+                placeholder="Amount"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit_count">Count</Label>
+              <Input
+                id="edit_count"
+                type="number"
+                value={editForm.count}
+                onChange={(e) => setEditForm(prev => ({ ...prev, count: Number(e.target.value) }))}
+                placeholder="Count"
+                min="1"
+              />
+            </div>
+            <Button onClick={handleEditEntry}>Update Service</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </PageWrapper>
   );
 };

@@ -1,6 +1,5 @@
-
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Plus, Edit, Trash2, FileText } from 'lucide-react';
+import { Plus, Edit, Trash2, FileText, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
@@ -285,6 +284,72 @@ const Papers = () => {
     setShowDeleteConfirm(true);
   };
 
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Papers Report</title>
+          <style>
+            @page { size: A4; margin: 20mm; }
+            body { font-family: Arial, sans-serif; font-size: 12px; }
+            h1 { text-align: center; margin-bottom: 20px; }
+            .school-section { margin-bottom: 30px; border: 1px solid #000; padding: 15px; }
+            .school-header { font-weight: bold; font-size: 14px; margin-bottom: 10px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th, td { border: 1px solid #000; padding: 5px; text-align: left; font-size: 10px; }
+            th { background-color: #f5f5f5; font-weight: bold; }
+            .total { font-weight: bold; text-align: right; margin-top: 10px; }
+          </style>
+        </head>
+        <body>
+          <h1>Papers Report</h1>
+          <div class="total">Grand Total: ₹${grandTotal.toFixed(2)}</div>
+          ${filteredSchools.map((school) => `
+            <div class="school-section">
+              <div class="school-header">
+                ${school.name}
+                ${school.address ? `<br/>Address: ${school.address}` : ''}
+                ${school.phone ? `<br/>Phone: ${school.phone}` : ''}
+              </div>
+              ${school.classes.map((classItem) => `
+                <h4>${classItem.name}</h4>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Subject</th>
+                      <th>Paper Count</th>
+                      <th>Amount per Paper</th>
+                      <th>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${classItem.subjects.map((subject) => `
+                      <tr>
+                        <td>${subject.name}</td>
+                        <td>${subject.paper_count}</td>
+                        <td>₹${subject.amount.toFixed(2)}</td>
+                        <td>₹${(subject.paper_count * subject.amount).toFixed(2)}</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+                <div class="total">Class Total: ₹${classItem.subjects.reduce((total, subject) => total + (subject.paper_count * subject.amount), 0).toFixed(2)}</div>
+              `).join('')}
+            </div>
+          `).join('')}
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.print();
+  };
+
   const handleDownloadPDF = () => {
     const pdfData = schools.flatMap(school =>
       school.classes.flatMap(classItem =>
@@ -293,7 +358,8 @@ const Papers = () => {
           class: classItem.name,
           subject: subject.name,
           papers: subject.paper_count,
-          amount: subject.amount
+          amount: subject.amount,
+          total: subject.paper_count * subject.amount
         }))
       )
     );
@@ -312,7 +378,7 @@ const Papers = () => {
     return schools.reduce((total, school) => {
       return total + school.classes.reduce((classTotal, classItem) => {
         return classTotal + classItem.subjects.reduce((subjectTotal, subject) => {
-          return subjectTotal + subject.amount;
+          return subjectTotal + (subject.paper_count * subject.amount);
         }, 0);
       }, 0);
     }, 0);
@@ -326,6 +392,11 @@ const Papers = () => {
         onSearchChange={setSearchTerm}
         searchPlaceholder="Search by school name..."
       >
+        <Button onClick={handlePrint} variant="outline">
+          <Printer size={16} className="mr-2" />
+          Print
+        </Button>
+
         <Button onClick={handleDownloadPDF} variant="outline">
           <FileText size={16} className="mr-2" />
           Download PDF
@@ -449,7 +520,7 @@ const Papers = () => {
                     {/* Classes List */}
                     <div className="space-y-3">
                       {school.classes.map((classItem) => {
-                        const classTotal = classItem.subjects.reduce((total, subject) => total + subject.amount, 0);
+                        const classTotal = classItem.subjects.reduce((total, subject) => total + (subject.paper_count * subject.amount), 0);
                         
                         return (
                           <div key={classItem.id} className="bg-gray-50 dark:bg-slate-700 p-4 rounded">
