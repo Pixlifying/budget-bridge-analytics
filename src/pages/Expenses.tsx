@@ -1,18 +1,21 @@
 
 import { useState, useEffect } from 'react';
-import { Receipt, Plus } from 'lucide-react';
+import { Receipt, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import PageWrapper from '@/components/layout/PageWrapper';
-import ServiceForm from '@/components/ui/ServiceForm';
 import ServiceCard from '@/components/ui/ServiceCard';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
   filterByDate, 
   filterByMonth,
   formatCurrency
 } from '@/utils/calculateUtils';
+import { format } from 'date-fns';
 
 interface ExpenseEntry {
   id: string;
@@ -27,9 +30,14 @@ const Expenses = () => {
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
   const [expenses, setExpenses] = useState<ExpenseEntry[]>([]);
   const [filteredExpenses, setFilteredExpenses] = useState<ExpenseEntry[]>([]);
-  const [editingEntry, setEditingEntry] = useState<ExpenseEntry | null>(null);
-  const [formOpen, setFormOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Form state for inline entry
+  const [newEntry, setNewEntry] = useState({
+    date: new Date().toISOString().split('T')[0],
+    name: '',
+    amount: 0,
+  });
   
   const fetchExpenses = async () => {
     try {
@@ -123,16 +131,19 @@ const Expenses = () => {
     }
   }, [date, viewMode, expenses]);
 
-  const handleAddEntry = async (values: Partial<ExpenseEntry>) => {
+  const handleAddEntry = async () => {
+    if (!newEntry.name || !newEntry.amount) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
     try {
-      const amount = Number(values.amount);
-      
       const { data, error } = await supabase
         .from('expenses')
         .insert({
-          date: values.date ? values.date.toISOString() : new Date().toISOString(),
-          name: values.name || '',
-          amount
+          date: new Date(newEntry.date).toISOString(),
+          name: newEntry.name,
+          amount: newEntry.amount
         })
         .select();
       
@@ -141,7 +152,7 @@ const Expenses = () => {
       }
       
       if (data && data.length > 0) {
-        const newEntry: ExpenseEntry = {
+        const newExpenseEntry: ExpenseEntry = {
           id: data[0].id,
           date: new Date(data[0].date),
           name: data[0].name,
@@ -149,51 +160,17 @@ const Expenses = () => {
           type: 'general'
         };
         
-        setExpenses(prev => [newEntry, ...prev]);
+        setExpenses(prev => [newExpenseEntry, ...prev]);
+        setNewEntry({
+          date: new Date().toISOString().split('T')[0],
+          name: '',
+          amount: 0,
+        });
         toast.success('Expense added successfully');
       }
     } catch (error) {
       console.error('Error adding expense:', error);
       toast.error('Failed to add expense');
-    }
-  };
-
-  const handleEditEntry = async (values: Partial<ExpenseEntry>) => {
-    if (!editingEntry) return;
-    
-    try {
-      const amount = Number(values.amount);
-      
-      const { error } = await supabase
-        .from('expenses')
-        .update({
-          date: values.date ? values.date.toISOString() : editingEntry.date.toISOString(),
-          name: values.name || editingEntry.name,
-          amount
-        })
-        .eq('id', editingEntry.id);
-      
-      if (error) {
-        throw error;
-      }
-      
-      const updatedEntry: ExpenseEntry = {
-        ...editingEntry,
-        date: values.date ? new Date(values.date) : new Date(editingEntry.date),
-        name: values.name || editingEntry.name,
-        amount
-      };
-      
-      setExpenses(prev => 
-        prev.map(entry => entry.id === editingEntry.id ? updatedEntry : entry)
-      );
-      
-      setEditingEntry(null);
-      setFormOpen(false);
-      toast.success('Expense updated successfully');
-    } catch (error) {
-      console.error('Error updating expense:', error);
-      toast.error('Failed to update expense');
     }
   };
 
@@ -237,27 +214,58 @@ const Expenses = () => {
     }
   };
 
-  const formFields = [
-    { 
-      name: 'date', 
-      label: 'Date', 
-      type: 'date' as const,
-      required: true
-    },
-    { 
-      name: 'name', 
-      label: 'Expense Name', 
-      type: 'text' as const,
-      required: true
-    },
-    { 
-      name: 'amount', 
-      label: 'Amount (₹)', 
-      type: 'number' as const,
-      min: 0,
-      required: true
-    },
-  ];
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Expenses Report</title>
+          <style>
+            @page { size: A4; margin: 20mm; }
+            body { font-family: Arial, sans-serif; font-size: 12px; }
+            h1 { text-align: center; margin-bottom: 20px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th, td { border: 1px solid #000; padding: 8px; text-align: left; font-size: 10px; }
+            th { background-color: #f5f5f5; font-weight: bold; }
+            .total { font-weight: bold; text-align: right; margin-top: 10px; }
+          </style>
+        </head>
+        <body>
+          <h1>Expenses Report</h1>
+          <div class="total">Total Expenses: ${expenseCount} | Total Amount: ₹${totalExpenses.toFixed(2)}</div>
+          <table>
+            <thead>
+              <tr>
+                <th>S.No.</th>
+                <th>Date</th>
+                <th>Expense Name</th>
+                <th>Amount</th>
+                <th>Type</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredExpenses.map((expense, index) => `
+                <tr>
+                  <td>${index + 1}</td>
+                  <td>${format(expense.date, 'dd/MM/yyyy')}</td>
+                  <td>${expense.name}</td>
+                  <td>₹${expense.amount.toFixed(2)}</td>
+                  <td>${expense.type}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.print();
+  };
 
   const totalExpenses = filteredExpenses.reduce((sum, entry) => sum + entry.amount, 0);
   const expenseCount = filteredExpenses.length;
@@ -275,71 +283,76 @@ const Expenses = () => {
             mode={viewMode} 
             onModeChange={setViewMode} 
           />
-          <ServiceForm
-            title="Add Expense"
-            fields={formFields}
-            initialValues={{
-              date: new Date(),
-              name: '',
-              amount: 0,
-            }}
-            onSubmit={handleAddEntry}
-            trigger={
-              <Button className="flex items-center gap-1">
-                <Plus size={16} />
-                <span>Add Expense</span>
-              </Button>
-            }
-          />
+          <Button onClick={handlePrint} variant="outline">
+            <Printer size={16} className="mr-2" />
+            Print
+          </Button>
         </div>
       }
     >
+      {/* Add Expense Form */}
+      <div className="mb-6 p-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg shadow-lg">
+        <h3 className="text-lg font-semibold mb-4">Add Expense</h3>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+          <div>
+            <Label htmlFor="date">Date</Label>
+            <Input
+              id="date"
+              type="date"
+              value={newEntry.date}
+              onChange={(e) => setNewEntry(prev => ({ ...prev, date: e.target.value }))}
+            />
+          </div>
+          <div>
+            <Label htmlFor="name">Expense Name</Label>
+            <Input
+              id="name"
+              value={newEntry.name}
+              onChange={(e) => setNewEntry(prev => ({ ...prev, name: e.target.value }))}
+              placeholder="Expense name"
+            />
+          </div>
+          <div>
+            <Label htmlFor="amount">Amount</Label>
+            <Input
+              id="amount"
+              type="number"
+              value={newEntry.amount}
+              onChange={(e) => setNewEntry(prev => ({ ...prev, amount: Number(e.target.value) }))}
+              placeholder="Amount"
+            />
+          </div>
+          <Button onClick={handleAddEntry}>
+            Save
+          </Button>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <ServiceCard 
-          id="summary-count"
-          title="Total Expenses"
-          date={date}
-          data={{ 
-            value: expenseCount,
-          }}
-          labels={{ 
-            value: "Count",
-          }}
-          onEdit={() => {}}
-          onDelete={() => {}}
-          className="bg-blue-50"
-          showActions={false}
-        />
-        <ServiceCard 
-          id="summary-amount"
-          title="Total Amount"
-          date={date}
-          data={{ 
-            value: formatCurrency(totalExpenses),
-          }}
-          labels={{ 
-            value: "Amount",
-          }}
-          onEdit={() => {}}
-          onDelete={() => {}}
-          className="bg-rose-50"
-          showActions={false}
-        />
-        <ServiceCard 
-          id="summary-average"
-          title="Average Expense"
-          date={date}
-          data={{ 
-            value: formatCurrency(avgExpense),
-          }}
-          labels={{ 
-            value: "Amount",
-          }}
-          onEdit={() => {}}
-          onDelete={() => {}}
-          className="bg-orange-50"
-          showActions={false}
-        />
+        <Card className="bg-blue-50">
+          <CardHeader>
+            <CardTitle>Total Expenses</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-blue-700">{expenseCount}</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-rose-50">
+          <CardHeader>
+            <CardTitle>Total Amount</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-rose-700">{formatCurrency(totalExpenses)}</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-orange-50">
+          <CardHeader>
+            <CardTitle>Average Expense</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-orange-700">{formatCurrency(avgExpense)}</p>
+          </CardContent>
+        </Card>
       </div>
 
       {isLoading ? (
@@ -364,14 +377,16 @@ const Expenses = () => {
               date={entry.date}
               data={{
                 amount: formatCurrency(entry.amount),
+                type: entry.type,
               }}
               labels={{
                 amount: 'Amount',
+                type: 'Type',
               }}
               onEdit={() => {
                 if (entry.type === 'general') {
-                  setEditingEntry(entry);
-                  setFormOpen(true);
+                  // Edit functionality can be added here if needed
+                  toast.info("Edit functionality coming soon");
                 } else {
                   toast.info("You can only edit general expenses here. Edit fee or misc expenses in their respective pages.");
                 }
@@ -380,19 +395,6 @@ const Expenses = () => {
             />
           ))}
         </div>
-      )}
-
-      {editingEntry && (
-        <ServiceForm
-          title="Edit Expense"
-          fields={formFields}
-          initialValues={editingEntry}
-          onSubmit={handleEditEntry}
-          trigger={<div />}
-          isEdit
-          open={formOpen}
-          onOpenChange={setFormOpen}
-        />
       )}
     </PageWrapper>
   );
