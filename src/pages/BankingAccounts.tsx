@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Printer, Trash2 } from 'lucide-react';
+import { Printer, Trash2, Edit } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -31,10 +31,21 @@ const BankingAccounts = () => {
   const [filteredAccounts, setFilteredAccounts] = useState<BankingAccount[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [accountToDelete, setAccountToDelete] = useState<string | null>(null);
+  const [editingAccount, setEditingAccount] = useState<BankingAccount | null>(null);
 
   // Form state for inline entry
   const [newEntry, setNewEntry] = useState({
     date: new Date().toISOString().split('T')[0],
+    customer_name: '',
+    amount: 0,
+    account_type: '',
+    account_number: '',
+    insurance_type: '',
+  });
+
+  // Form state for editing
+  const [editForm, setEditForm] = useState({
+    date: '',
     customer_name: '',
     amount: 0,
     account_type: '',
@@ -159,6 +170,68 @@ const BankingAccounts = () => {
         description: "Failed to add banking account",
       });
     }
+  };
+
+  const handleEditAccount = async () => {
+    if (!editingAccount) return;
+
+    try {
+      const accountData: any = {
+        customer_name: editForm.customer_name,
+        date: new Date(editForm.date).toISOString(),
+        amount: editForm.amount,
+        account_type: editForm.account_type
+      };
+
+      if (editForm.account_number) {
+        accountData.account_number = editForm.account_number;
+      }
+
+      if ((editForm.account_type === 'Savings Account' || editForm.account_type === 'Social Security') && 
+          editForm.insurance_type && editForm.insurance_type !== 'none') {
+        accountData.insurance_type = editForm.insurance_type;
+      }
+
+      const { error } = await supabase
+        .from('banking_accounts')
+        .update(accountData)
+        .eq('id', editingAccount.id);
+
+      if (error) throw error;
+
+      setAllAccounts(prev => 
+        prev.map(account => 
+          account.id === editingAccount.id 
+            ? { ...accountData, id: editingAccount.id, date: accountData.date, amount: Number(accountData.amount) }
+            : account
+        )
+      );
+
+      setEditingAccount(null);
+      toast({
+        title: "Success",
+        description: "Banking account updated successfully",
+      });
+    } catch (error) {
+      console.error('Error updating banking account:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update banking account",
+      });
+    }
+  };
+
+  const openEditAccount = (account: BankingAccount) => {
+    setEditingAccount(account);
+    setEditForm({
+      date: format(new Date(account.date), 'yyyy-MM-dd'),
+      customer_name: account.customer_name,
+      amount: account.amount,
+      account_type: account.account_type,
+      account_number: account.account_number || '',
+      insurance_type: account.insurance_type || '',
+    });
   };
 
   const handleDeleteAccount = async () => {
@@ -392,39 +465,117 @@ const BankingAccounts = () => {
               <CardHeader className="bg-blue-50 pb-2">
                 <div className="flex justify-between items-start">
                   <CardTitle className="text-lg">{account.customer_name}</CardTitle>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                    onClick={() => {
-                      setAccountToDelete(account.id);
-                      setDeleteDialogOpen(true);
-                    }}
-                  >
-                    <Trash2 size={16} />
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => openEditAccount(account)}
+                    >
+                      <Edit size={16} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                      onClick={() => {
+                        setAccountToDelete(account.id);
+                        setDeleteDialogOpen(true);
+                      }}
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  </div>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   {format(new Date(account.date), 'MMMM d, yyyy')}
                 </p>
               </CardHeader>
               <CardContent className="pt-4">
-                <div className="space-y-2">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Account Type</p>
-                    <p className="font-semibold">{account.account_type}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Amount</p>
-                    <p className="text-lg font-bold text-blue-700">{formatCurrency(account.amount)}</p>
-                  </div>
-                  {account.insurance_type && (
+                {editingAccount?.id === account.id ? (
+                  <div className="space-y-3">
                     <div>
-                      <p className="text-sm text-muted-foreground">Insurance</p>
-                      <p className="font-semibold text-green-700">{account.insurance_type}</p>
+                      <Label htmlFor={`edit-date-${account.id}`}>Date</Label>
+                      <Input
+                        id={`edit-date-${account.id}`}
+                        type="date"
+                        value={editForm.date}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))}
+                      />
                     </div>
-                  )}
-                </div>
+                    <div>
+                      <Label htmlFor={`edit-customer-${account.id}`}>Customer Name</Label>
+                      <Input
+                        id={`edit-customer-${account.id}`}
+                        value={editForm.customer_name}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, customer_name: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor={`edit-amount-${account.id}`}>Amount</Label>
+                      <Input
+                        id={`edit-amount-${account.id}`}
+                        type="number"
+                        value={editForm.amount}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, amount: Number(e.target.value) }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor={`edit-account-type-${account.id}`}>Account Type</Label>
+                      <Select value={editForm.account_type} onValueChange={(value) => setEditForm(prev => ({ ...prev, account_type: value }))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {accountTypes.map(type => (
+                            <SelectItem key={type.value} value={type.value}>
+                              {type.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {(editForm.account_type === 'Savings Account' || editForm.account_type === 'Social Security') && (
+                      <div>
+                        <Label htmlFor={`edit-insurance-${account.id}`}>Insurance</Label>
+                        <Select value={editForm.insurance_type} onValueChange={(value) => setEditForm(prev => ({ ...prev, insurance_type: value }))}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            {insuranceTypes.map(type => (
+                              <SelectItem key={type.value} value={type.value}>
+                                {type.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      <Button onClick={handleEditAccount} size="sm">Save</Button>
+                      <Button onClick={() => setEditingAccount(null)} variant="outline" size="sm">Cancel</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Account Type</p>
+                      <p className="font-semibold">{account.account_type}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Amount</p>
+                      <p className="text-lg font-bold text-blue-700">{formatCurrency(account.amount)}</p>
+                    </div>
+                    {account.insurance_type && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">Insurance</p>
+                        <p className="font-semibold text-green-700">{account.insurance_type}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}

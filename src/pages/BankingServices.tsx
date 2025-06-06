@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { Printer } from 'lucide-react';
+import { Printer, Edit, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import PageWrapper from '@/components/layout/PageWrapper';
 import DownloadButton from '@/components/ui/DownloadButton';
+import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
 import { formatCurrency, filterByDate, filterByMonth } from '@/utils/calculateUtils';
 
 interface BankingService {
@@ -27,10 +28,20 @@ const BankingServices = () => {
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
   const [allServices, setAllServices] = useState<BankingService[]>([]);
   const [filteredServices, setFilteredServices] = useState<BankingService[]>([]);
+  const [editingService, setEditingService] = useState<BankingService | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [serviceToDelete, setServiceToDelete] = useState<string | null>(null);
 
   // Form state for inline entry
   const [newEntry, setNewEntry] = useState({
     date: new Date().toISOString().split('T')[0],
+    amount: 0,
+    transaction_count: 1,
+  });
+
+  // Form state for editing
+  const [editForm, setEditForm] = useState({
+    date: '',
     amount: 0,
     transaction_count: 1,
   });
@@ -134,6 +145,91 @@ const BankingServices = () => {
         description: "Failed to add banking service",
       });
     }
+  };
+
+  const handleEditService = async () => {
+    if (!editingService) return;
+
+    try {
+      const calculatedMargin = (editForm.amount * 0.5) / 100;
+      
+      const { error } = await supabase
+        .from('banking_services')
+        .update({
+          date: new Date(editForm.date).toISOString(),
+          amount: editForm.amount,
+          margin: calculatedMargin,
+          transaction_count: editForm.transaction_count,
+        })
+        .eq('id', editingService.id);
+
+      if (error) throw error;
+
+      setAllServices(prev => 
+        prev.map(service => 
+          service.id === editingService.id 
+            ? {
+                ...service,
+                date: new Date(editForm.date).toISOString(),
+                amount: editForm.amount,
+                margin: calculatedMargin,
+                transaction_count: editForm.transaction_count
+              }
+            : service
+        )
+      );
+
+      setEditingService(null);
+      toast({
+        title: "Success",
+        description: "Banking service updated successfully",
+      });
+    } catch (error) {
+      console.error('Error updating banking service:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update banking service",
+      });
+    }
+  };
+
+  const handleDeleteService = async () => {
+    if (!serviceToDelete) return;
+    
+    try {
+      const { error } = await supabase
+        .from('banking_services')
+        .delete()
+        .eq('id', serviceToDelete);
+
+      if (error) throw error;
+
+      setAllServices(prev => prev.filter(service => service.id !== serviceToDelete));
+      setDeleteDialogOpen(false);
+      setServiceToDelete(null);
+      
+      toast({
+        title: "Success",
+        description: "Banking service deleted successfully",
+      });
+    } catch (error) {
+      console.error("Error deleting banking service:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete banking service",
+      });
+    }
+  };
+
+  const openEditService = (service: BankingService) => {
+    setEditingService(service);
+    setEditForm({
+      date: format(new Date(service.date), 'yyyy-MM-dd'),
+      amount: service.amount,
+      transaction_count: service.transaction_count,
+    });
   };
 
   const handlePrint = () => {
@@ -302,31 +398,97 @@ const BankingServices = () => {
               <CardHeader className="bg-blue-50 pb-2">
                 <div className="flex justify-between items-start">
                   <CardTitle className="text-lg">Banking Service #{index + 1}</CardTitle>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => openEditService(service)}
+                    >
+                      <Edit size={16} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                      onClick={() => {
+                        setServiceToDelete(service.id);
+                        setDeleteDialogOpen(true);
+                      }}
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  </div>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   {format(new Date(service.date), 'MMMM d, yyyy')}
                 </p>
               </CardHeader>
               <CardContent className="pt-4">
-                <div className="space-y-2">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Amount</p>
-                    <p className="text-lg font-bold text-blue-700">{formatCurrency(service.amount)}</p>
+                {editingService?.id === service.id ? (
+                  <div className="space-y-3">
+                    <div>
+                      <Label htmlFor={`edit-date-${service.id}`}>Date</Label>
+                      <Input
+                        id={`edit-date-${service.id}`}
+                        type="date"
+                        value={editForm.date}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor={`edit-amount-${service.id}`}>Amount</Label>
+                      <Input
+                        id={`edit-amount-${service.id}`}
+                        type="number"
+                        value={editForm.amount}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, amount: Number(e.target.value) }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor={`edit-transactions-${service.id}`}>Transactions</Label>
+                      <Input
+                        id={`edit-transactions-${service.id}`}
+                        type="number"
+                        value={editForm.transaction_count}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, transaction_count: Number(e.target.value) }))}
+                        min="1"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button onClick={handleEditService} size="sm">Save</Button>
+                      <Button onClick={() => setEditingService(null)} variant="outline" size="sm">Cancel</Button>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Transactions</p>
-                    <p className="text-lg font-bold">{service.transaction_count}</p>
+                ) : (
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Amount</p>
+                      <p className="text-lg font-bold text-blue-700">{formatCurrency(service.amount)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Transactions</p>
+                      <p className="text-lg font-bold">{service.transaction_count}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Margin</p>
+                      <p className="text-lg font-bold text-green-700">{formatCurrency(service.margin)}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Margin</p>
-                    <p className="text-lg font-bold text-green-700">{formatCurrency(service.margin)}</p>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           ))}
         </div>
       )}
+
+      <DeleteConfirmation 
+        isOpen={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        onConfirm={handleDeleteService}
+        title="Delete Banking Service"
+        description="Are you sure you want to delete this banking service? This action cannot be undone."
+      />
     </PageWrapper>
   );
 };

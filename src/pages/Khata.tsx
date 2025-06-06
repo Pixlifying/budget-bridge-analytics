@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Search, Plus, Edit, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -497,7 +498,7 @@ const Khata = () => {
                     </div>
                   </div>
 
-                  {/* Transaction Form */}
+                  {/* Inline Transaction Form */}
                   <div className="border-t pt-4 mb-4 bg-gray-50 dark:bg-slate-700 p-4 rounded">
                     <h4 className="font-medium mb-3">Add Transaction</h4>
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
