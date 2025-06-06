@@ -102,79 +102,72 @@ const Templates = () => {
     setShowFindReplace(true);
   };
 
-  // Generate print preview HTML
-  const generatePrintHTML = () => {
-    const pages = processedContent.split('---page-break---');
-    
-    let printContent = '<html><head><title>Print Document</title>';
-    printContent += '<style>';
-    printContent += `
-      @page { 
-        margin: 15mm;
-        size: A4;
-      }
-      body {
-        font-family: Arial, sans-serif;
-        line-height: 1.5;
-        color: #333;
-        background: #fff;
-        margin: 0;
-        padding: 0;
-      }
-      .page-container {
-        width: 100%;
-        max-width: 21cm;
-        min-height: 29.7cm;
-        margin: 0 auto;
-        padding: 1cm;
-        page-break-after: always;
-        position: relative;
-      }
-      .page-content {
-        width: 100%;
-        height: 100%;
-      }
-      .page-container:last-child {
-        page-break-after: avoid;
-      }
-    `;
-    printContent += '</style></head><body>';
-    
-    pages.forEach((pageContent, index) => {
-      if (pageContent.trim()) {
-        printContent += '<div class="page-container">';
-        printContent += '<div class="page-content">';
-        printContent += pageContent;
-        printContent += '</div></div>';
-      }
-    });
-    
-    printContent += '</body></html>';
-    return printContent;
-  };
-
   // Handle print
   const handlePrint = () => {
-    const printWindow = window.open('', '_blank', 'noopener,noreferrer');
-    if (!printWindow) {
+    try {
+      // Create a temporary div to hold the content
+      const printContent = document.createElement('div');
+      printContent.innerHTML = processedContent;
+      
+      // Apply print styles
+      printContent.style.fontFamily = 'Arial, sans-serif';
+      printContent.style.lineHeight = '1.5';
+      printContent.style.color = '#333';
+      printContent.style.fontSize = '12pt';
+      printContent.style.margin = '0';
+      printContent.style.padding = '20px';
+      
+      // Hide the original content
+      const originalContents = document.body.innerHTML;
+      
+      // Replace body content with print content
+      document.body.innerHTML = printContent.outerHTML;
+      
+      // Add print styles to the document
+      const style = document.createElement('style');
+      style.textContent = `
+        @media print {
+          @page {
+            size: A4;
+            margin: 20mm;
+          }
+          body {
+            font-family: Arial, sans-serif;
+            line-height: 1.5;
+            color: #333;
+            font-size: 12pt;
+          }
+          * {
+            -webkit-print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
+        }
+      `;
+      document.head.appendChild(style);
+      
+      // Print
+      window.print();
+      
+      // Restore original content
+      document.body.innerHTML = originalContents;
+      document.head.removeChild(style);
+      
+      // Close dialog
+      setShowFindReplace(false);
+      
+      toast({
+        title: "Document sent to printer",
+        description: "Your document has been sent to the printer successfully."
+      });
+      
+    } catch (error) {
+      console.error('Print error:', error);
       toast({
         title: "Print error",
-        description: "Could not open print window. Please check your browser settings.",
+        description: "There was an error while printing. Please try again.",
         variant: "destructive"
       });
-      return;
     }
-    
-    printWindow.document.write(generatePrintHTML());
-    printWindow.document.close();
-    
-    setTimeout(() => {
-      printWindow.print();
-      setTimeout(() => {
-        printWindow.close();
-        setShowFindReplace(false);
-      }, 500);
-    }, 500);
   };
 
   // Reset processed content when template changes
