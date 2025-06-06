@@ -1,36 +1,41 @@
 
-import { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import { Printer, Edit, Trash2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { CreditCard, Plus, Edit, Trash2, Printer } from 'lucide-react';
+import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import { formatCurrency, formatDate, filterByDate, filterByMonth } from '@/utils/calculateUtils';
+import PageWrapper from '@/components/layout/PageWrapper';
 import { Button } from '@/components/ui/button';
+import ServiceCard from '@/components/ui/ServiceCard';
+import StatCard from '@/components/ui/StatCard';
+import DateRangePicker from '@/components/ui/DateRangePicker';
+import DownloadButton from '@/components/ui/DownloadButton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import DateRangePicker from '@/components/ui/DateRangePicker';
-import PageWrapper from '@/components/layout/PageWrapper';
-import DownloadButton from '@/components/ui/DownloadButton';
-import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
-import { formatCurrency, filterByDate, filterByMonth } from '@/utils/calculateUtils';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { format } from 'date-fns';
 
 interface BankingService {
   id: string;
-  date: string;
+  date: Date;
   amount: number;
   margin: number;
   transaction_count: number;
+  created_at?: string;
 }
 
 const BankingServices = () => {
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
-  const [allServices, setAllServices] = useState<BankingService[]>([]);
+  const [bankingServices, setBankingServices] = useState<BankingService[]>([]);
   const [filteredServices, setFilteredServices] = useState<BankingService[]>([]);
-  const [editingService, setEditingService] = useState<BankingService | null>(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [serviceToDelete, setServiceToDelete] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [editingEntry, setEditingEntry] = useState<BankingService | null>(null);
+  const [date, setDate] = useState<Date>(new Date());
+  const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
 
   // Form state for inline entry
   const [newEntry, setNewEntry] = useState({
@@ -39,196 +44,158 @@ const BankingServices = () => {
     transaction_count: 1,
   });
 
-  // Form state for editing
   const [editForm, setEditForm] = useState({
     date: '',
     amount: 0,
     transaction_count: 1,
   });
 
-  const fetchServices = async () => {
+  const fetchBankingServices = async () => {
+    setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from('banking_services')
         .select('*')
         .order('date', { ascending: false });
-      
+
       if (error) throw error;
-      
-      const formattedData = (data || []).map(service => ({
-        ...service,
-        date: service.date,
-        amount: Number(service.amount),
-        margin: Number(service.margin),
-        transaction_count: Number(service.transaction_count)
+
+      const formattedData = data.map(entry => ({
+        id: entry.id,
+        date: new Date(entry.date),
+        amount: Number(entry.amount),
+        margin: Number(entry.margin),
+        transaction_count: Number(entry.transaction_count),
+        created_at: entry.created_at
       }));
-      
-      setAllServices(formattedData);
+
+      setBankingServices(formattedData);
     } catch (error) {
       console.error('Error fetching banking services:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to load banking services",
-      });
+      toast.error('Failed to load banking services');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchServices();
+    fetchBankingServices();
   }, []);
 
   useEffect(() => {
-    const servicesWithDate = allServices.map(service => ({
-      ...service,
-      date: new Date(service.date)
-    }));
-
     if (viewMode === 'day') {
-      setFilteredServices(filterByDate(servicesWithDate, selectedDate));
+      setFilteredServices(filterByDate(bankingServices, date));
     } else {
-      setFilteredServices(filterByMonth(servicesWithDate, selectedDate));
+      setFilteredServices(filterByMonth(bankingServices, date));
     }
-  }, [selectedDate, viewMode, allServices]);
+  }, [date, viewMode, bankingServices]);
 
   const handleAddEntry = async () => {
     if (!newEntry.amount || !newEntry.transaction_count) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Please fill in all required fields",
-      });
+      toast.error('Please fill in all required fields');
       return;
     }
 
     try {
-      const calculatedMargin = (newEntry.amount * 0.5) / 100;
+      const margin = newEntry.amount; // 100% margin as per original logic
       
       const { data, error } = await supabase
         .from('banking_services')
         .insert({
           date: new Date(newEntry.date).toISOString(),
           amount: newEntry.amount,
-          margin: calculatedMargin,
+          margin: margin,
           transaction_count: newEntry.transaction_count,
         })
         .select();
 
       if (error) throw error;
-      
+
       if (data && data.length > 0) {
         const newService: BankingService = {
           id: data[0].id,
-          date: data[0].date,
+          date: new Date(data[0].date),
           amount: Number(data[0].amount),
           margin: Number(data[0].margin),
-          transaction_count: Number(data[0].transaction_count)
+          transaction_count: Number(data[0].transaction_count),
+          created_at: data[0].created_at
         };
 
-        setAllServices(prev => [newService, ...prev]);
+        setBankingServices(prev => [newService, ...prev]);
         setNewEntry({
           date: new Date().toISOString().split('T')[0],
           amount: 0,
           transaction_count: 1,
         });
-        
-        toast({
-          title: "Success",
-          description: "Banking service added successfully",
-        });
+        toast.success('Banking service added successfully');
       }
     } catch (error) {
       console.error('Error adding banking service:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to add banking service",
-      });
+      toast.error('Failed to add banking service');
     }
   };
 
-  const handleEditService = async () => {
-    if (!editingService) return;
+  const handleEditEntry = async () => {
+    if (!editingEntry) return;
 
     try {
-      const calculatedMargin = (editForm.amount * 0.5) / 100;
+      const margin = editForm.amount; // 100% margin
       
       const { error } = await supabase
         .from('banking_services')
         .update({
           date: new Date(editForm.date).toISOString(),
           amount: editForm.amount,
-          margin: calculatedMargin,
+          margin: margin,
           transaction_count: editForm.transaction_count,
         })
-        .eq('id', editingService.id);
+        .eq('id', editingEntry.id);
 
       if (error) throw error;
 
-      setAllServices(prev => 
-        prev.map(service => 
-          service.id === editingService.id 
-            ? {
-                ...service,
-                date: new Date(editForm.date).toISOString(),
-                amount: editForm.amount,
-                margin: calculatedMargin,
-                transaction_count: editForm.transaction_count
-              }
-            : service
-        )
+      const updatedEntry: BankingService = {
+        ...editingEntry,
+        date: new Date(editForm.date),
+        amount: editForm.amount,
+        margin: margin,
+        transaction_count: editForm.transaction_count,
+      };
+
+      setBankingServices(prev =>
+        prev.map(entry => entry.id === editingEntry.id ? updatedEntry : entry)
       );
 
-      setEditingService(null);
-      toast({
-        title: "Success",
-        description: "Banking service updated successfully",
-      });
+      setEditingEntry(null);
+      toast.success('Banking service updated successfully');
     } catch (error) {
       console.error('Error updating banking service:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to update banking service",
-      });
+      toast.error('Failed to update banking service');
     }
   };
 
-  const handleDeleteService = async () => {
-    if (!serviceToDelete) return;
-    
+  const handleDeleteEntry = async (id: string) => {
     try {
       const { error } = await supabase
         .from('banking_services')
         .delete()
-        .eq('id', serviceToDelete);
+        .eq('id', id);
 
       if (error) throw error;
 
-      setAllServices(prev => prev.filter(service => service.id !== serviceToDelete));
-      setDeleteDialogOpen(false);
-      setServiceToDelete(null);
-      
-      toast({
-        title: "Success",
-        description: "Banking service deleted successfully",
-      });
+      setBankingServices(prev => prev.filter(entry => entry.id !== id));
+      toast.success('Banking service deleted successfully');
     } catch (error) {
-      console.error("Error deleting banking service:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to delete banking service",
-      });
+      console.error('Error deleting banking service:', error);
+      toast.error('Failed to delete banking service');
     }
   };
 
-  const openEditService = (service: BankingService) => {
-    setEditingService(service);
+  const openEditEntry = (entry: BankingService) => {
+    setEditingEntry(entry);
     setEditForm({
-      date: format(new Date(service.date), 'yyyy-MM-dd'),
-      amount: service.amount,
-      transaction_count: service.transaction_count,
+      date: format(entry.date, 'yyyy-MM-dd'),
+      amount: entry.amount,
+      transaction_count: entry.transaction_count,
     });
   };
 
@@ -253,24 +220,22 @@ const BankingServices = () => {
         </head>
         <body>
           <h1>Banking Services Report</h1>
-          <div class="total">Total Amount: ₹${totalAmount.toFixed(2)} | Total Transactions: ${totalTransactions} | Total Margin: ₹${totalMargin.toFixed(2)}</div>
+          <div class="total">Total Services: ${totalServices} | Total Amount: ₹${totalAmount.toFixed(2)} | Total Margin: ₹${totalMargin.toFixed(2)}</div>
           <table>
             <thead>
               <tr>
-                <th>S.No.</th>
                 <th>Date</th>
+                <th>Transaction Count</th>
                 <th>Amount</th>
-                <th>Transactions</th>
                 <th>Margin</th>
               </tr>
             </thead>
             <tbody>
-              ${filteredServices.map((service, index) => `
+              ${filteredServices.map((service) => `
                 <tr>
-                  <td>${index + 1}</td>
-                  <td>${format(new Date(service.date), 'dd/MM/yyyy')}</td>
-                  <td>₹${service.amount.toFixed(2)}</td>
+                  <td>${format(service.date, 'dd/MM/yyyy')}</td>
                   <td>${service.transaction_count}</td>
+                  <td>₹${service.amount.toFixed(2)}</td>
                   <td>₹${service.margin.toFixed(2)}</td>
                 </tr>
               `).join('')}
@@ -285,21 +250,22 @@ const BankingServices = () => {
     printWindow.print();
   };
 
+  const totalServices = filteredServices.length;
   const totalAmount = filteredServices.reduce((sum, service) => sum + service.amount, 0);
-  const totalTransactions = filteredServices.reduce((sum, service) => sum + service.transaction_count, 0);
   const totalMargin = filteredServices.reduce((sum, service) => sum + service.margin, 0);
+  const totalTransactions = filteredServices.reduce((sum, service) => sum + service.transaction_count, 0);
 
   return (
     <PageWrapper
       title="Banking Services"
-      subtitle="Manage banking transactions"
+      subtitle="Manage banking services and view analytics"
       action={
         <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
           <DateRangePicker 
-            date={selectedDate}
-            onDateChange={setSelectedDate}
-            mode={viewMode}
-            onModeChange={setViewMode}
+            date={date} 
+            onDateChange={setDate} 
+            mode={viewMode} 
+            onModeChange={setViewMode} 
           />
           <div className="flex gap-2">
             <Button onClick={handlePrint} variant="outline">
@@ -307,8 +273,8 @@ const BankingServices = () => {
               Print
             </Button>
             <DownloadButton
-              data={allServices}
-              filename="banking-services"
+              data={bankingServices}
+              filename="banking-services-data"
               currentData={filteredServices}
             />
           </div>
@@ -329,6 +295,17 @@ const BankingServices = () => {
             />
           </div>
           <div>
+            <Label htmlFor="transaction_count">Transaction Count</Label>
+            <Input
+              id="transaction_count"
+              type="number"
+              value={newEntry.transaction_count}
+              onChange={(e) => setNewEntry(prev => ({ ...prev, transaction_count: Number(e.target.value) }))}
+              placeholder="Transaction count"
+              min="1"
+            />
+          </div>
+          <div>
             <Label htmlFor="amount">Amount</Label>
             <Input
               id="amount"
@@ -338,157 +315,105 @@ const BankingServices = () => {
               placeholder="Amount"
             />
           </div>
-          <div>
-            <Label htmlFor="transactions">Number of Transactions</Label>
-            <Input
-              id="transactions"
-              type="number"
-              value={newEntry.transaction_count}
-              onChange={(e) => setNewEntry(prev => ({ ...prev, transaction_count: Number(e.target.value) }))}
-              placeholder="Transactions"
-              min="1"
-            />
-          </div>
           <Button onClick={handleAddEntry}>
             Save
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card className="bg-blue-50">
-          <CardHeader>
-            <CardTitle>Total Amount</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-blue-700">{formatCurrency(totalAmount)}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-green-50">
-          <CardHeader>
-            <CardTitle>Total Transactions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-green-700">{totalTransactions}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-purple-50">
-          <CardHeader>
-            <CardTitle>Total Margin</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-purple-700">{formatCurrency(totalMargin)}</p>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <StatCard 
+          title="Total Services"
+          value={totalServices.toString()}
+          icon={<CreditCard size={20} />}
+        />
+        <StatCard 
+          title="Total Transactions"
+          value={totalTransactions.toString()}
+          icon={<CreditCard size={20} />}
+        />
+        <StatCard 
+          title="Total Amount"
+          value={formatCurrency(totalAmount)}
+          icon={<CreditCard size={20} />}
+        />
+        <StatCard 
+          title="Total Margin"
+          value={formatCurrency(totalMargin)}
+          icon={<CreditCard size={20} />}
+        />
       </div>
 
-      {filteredServices.length === 0 ? (
-        <div className="text-center py-12 bg-muted/30 rounded-lg border border-border">
-          <h3 className="mt-4 text-lg font-medium">No Banking Services</h3>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {viewMode === 'day' 
-              ? `No banking services found for ${format(selectedDate, 'MMMM d, yyyy')}.` 
-              : `No banking services found for ${format(selectedDate, 'MMMM yyyy')}.`}
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredServices.map((service, index) => (
-            <Card key={service.id} className="overflow-hidden">
-              <CardHeader className="bg-blue-50 pb-2">
-                <div className="flex justify-between items-start">
-                  <CardTitle className="text-lg">Banking Service #{index + 1}</CardTitle>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => openEditService(service)}
-                    >
-                      <Edit size={16} />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                      onClick={() => {
-                        setServiceToDelete(service.id);
-                        setDeleteDialogOpen(true);
-                      }}
-                    >
-                      <Trash2 size={16} />
-                    </Button>
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {format(new Date(service.date), 'MMMM d, yyyy')}
-                </p>
-              </CardHeader>
-              <CardContent className="pt-4">
-                {editingService?.id === service.id ? (
-                  <div className="space-y-3">
-                    <div>
-                      <Label htmlFor={`edit-date-${service.id}`}>Date</Label>
-                      <Input
-                        id={`edit-date-${service.id}`}
-                        type="date"
-                        value={editForm.date}
-                        onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor={`edit-amount-${service.id}`}>Amount</Label>
-                      <Input
-                        id={`edit-amount-${service.id}`}
-                        type="number"
-                        value={editForm.amount}
-                        onChange={(e) => setEditForm(prev => ({ ...prev, amount: Number(e.target.value) }))}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor={`edit-transactions-${service.id}`}>Transactions</Label>
-                      <Input
-                        id={`edit-transactions-${service.id}`}
-                        type="number"
-                        value={editForm.transaction_count}
-                        onChange={(e) => setEditForm(prev => ({ ...prev, transaction_count: Number(e.target.value) }))}
-                        min="1"
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <Button onClick={handleEditService} size="sm">Save</Button>
-                      <Button onClick={() => setEditingService(null)} variant="outline" size="sm">Cancel</Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Amount</p>
-                      <p className="text-lg font-bold text-blue-700">{formatCurrency(service.amount)}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Transactions</p>
-                      <p className="text-lg font-bold">{service.transaction_count}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Margin</p>
-                      <p className="text-lg font-bold text-green-700">{formatCurrency(service.margin)}</p>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredServices.length === 0 ? (
+          <div className="col-span-full text-center py-8 bg-muted/30 rounded-lg">
+            <p className="text-muted-foreground">No banking services found for this {viewMode === 'day' ? 'day' : 'month'}.</p>
+          </div>
+        ) : (
+          filteredServices.map(entry => (
+            <ServiceCard
+              key={entry.id}
+              id={entry.id}
+              title="Banking Service"
+              date={entry.date}
+              data={{
+                transactions: entry.transaction_count,
+                amount: formatCurrency(entry.amount),
+                margin: formatCurrency(entry.margin)
+              }}
+              labels={{
+                transactions: 'Transactions',
+                amount: 'Amount',
+                margin: 'Margin'
+              }}
+              onEdit={() => openEditEntry(entry)}
+              onDelete={() => handleDeleteEntry(entry.id)}
+            />
+          ))
+        )}
+      </div>
 
-      <DeleteConfirmation 
-        isOpen={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
-        onConfirm={handleDeleteService}
-        title="Delete Banking Service"
-        description="Are you sure you want to delete this banking service? This action cannot be undone."
-      />
+      {/* Edit Entry Dialog */}
+      <Dialog open={!!editingEntry} onOpenChange={() => setEditingEntry(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Banking Service</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="edit_date">Date</Label>
+              <Input
+                id="edit_date"
+                type="date"
+                value={editForm.date}
+                onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit_transaction_count">Transaction Count</Label>
+              <Input
+                id="edit_transaction_count"
+                type="number"
+                value={editForm.transaction_count}
+                onChange={(e) => setEditForm(prev => ({ ...prev, transaction_count: Number(e.target.value) }))}
+                placeholder="Transaction count"
+                min="1"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit_amount">Amount</Label>
+              <Input
+                id="edit_amount"
+                type="number"
+                value={editForm.amount}
+                onChange={(e) => setEditForm(prev => ({ ...prev, amount: Number(e.target.value) }))}
+                placeholder="Amount"
+              />
+            </div>
+            <Button onClick={handleEditEntry}>Update Banking Service</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </PageWrapper>
   );
 };

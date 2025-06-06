@@ -1,17 +1,24 @@
 
 import { useState, useEffect } from 'react';
-import { FileText, Plus } from 'lucide-react';
+import { FileText, Plus, Edit, Trash2, Printer } from 'lucide-react';
 import { toast } from 'sonner';
-import { v4 } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency, formatDate, filterByDate, filterByMonth } from '@/utils/calculateUtils';
 import PageWrapper from '@/components/layout/PageWrapper';
 import { Button } from '@/components/ui/button';
-import ServiceForm from '@/components/ui/ServiceForm';
 import ServiceCard from '@/components/ui/ServiceCard';
 import StatCard from '@/components/ui/StatCard';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import DownloadButton from '@/components/ui/DownloadButton';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { format } from 'date-fns';
 
 interface PhotostatEntry {
   id: string;
@@ -27,9 +34,21 @@ const Photostat = () => {
   const [filteredPhotostats, setFilteredPhotostats] = useState<PhotostatEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editingEntry, setEditingEntry] = useState<PhotostatEntry | null>(null);
-  const [formOpen, setFormOpen] = useState(false);
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
+
+  // Form state for inline entry
+  const [newEntry, setNewEntry] = useState({
+    date: new Date().toISOString().split('T')[0],
+    pages_count: 1,
+    amount_per_page: 0,
+  });
+
+  const [editForm, setEditForm] = useState({
+    date: '',
+    pages_count: 1,
+    amount_per_page: 0,
+  });
 
   const fetchPhotostats = async () => {
     setIsLoading(true);
@@ -71,16 +90,21 @@ const Photostat = () => {
     }
   }, [date, viewMode, photostats]);
 
-  const handleAddPhotostat = async (values: Record<string, any>) => {
+  const handleAddPhotostat = async () => {
+    if (!newEntry.pages_count || !newEntry.amount_per_page) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
     try {
-      const totalAmount = values.pages_count * values.amount_per_page;
+      const totalAmount = newEntry.pages_count * newEntry.amount_per_page;
       
       const { data, error } = await supabase
         .from('photostats')
         .insert({
-          date: values.date ? new Date(values.date).toISOString() : new Date().toISOString(),
-          pages_count: values.pages_count,
-          amount_per_page: values.amount_per_page,
+          date: new Date(newEntry.date).toISOString(),
+          pages_count: newEntry.pages_count,
+          amount_per_page: newEntry.amount_per_page,
           total_amount: totalAmount,
           margin: totalAmount // 100% margin as specified
         })
@@ -88,7 +112,7 @@ const Photostat = () => {
 
       if (error) throw error;
 
-      const newEntry: PhotostatEntry = {
+      const newPhotostat: PhotostatEntry = {
         id: data[0].id,
         date: new Date(data[0].date),
         pages_count: data[0].pages_count,
@@ -97,27 +121,31 @@ const Photostat = () => {
         margin: Number(data[0].margin)
       };
 
-      setPhotostats(prev => [newEntry, ...prev]);
+      setPhotostats(prev => [newPhotostat, ...prev]);
+      setNewEntry({
+        date: new Date().toISOString().split('T')[0],
+        pages_count: 1,
+        amount_per_page: 0,
+      });
       toast.success('Photostat entry added successfully');
-      setFormOpen(false);
     } catch (error) {
       console.error('Error adding photostat:', error);
       toast.error('Failed to add photostat entry');
     }
   };
 
-  const handleEditPhotostat = async (values: Record<string, any>) => {
+  const handleEditPhotostat = async () => {
     if (!editingEntry) return;
 
     try {
-      const totalAmount = values.pages_count * values.amount_per_page;
+      const totalAmount = editForm.pages_count * editForm.amount_per_page;
       
       const { error } = await supabase
         .from('photostats')
         .update({
-          date: values.date ? new Date(values.date).toISOString() : editingEntry.date.toISOString(),
-          pages_count: values.pages_count,
-          amount_per_page: values.amount_per_page,
+          date: new Date(editForm.date).toISOString(),
+          pages_count: editForm.pages_count,
+          amount_per_page: editForm.amount_per_page,
           total_amount: totalAmount,
           margin: totalAmount // 100% margin as specified
         })
@@ -130,9 +158,9 @@ const Photostat = () => {
           item.id === editingEntry.id
             ? {
                 ...item,
-                date: values.date ? new Date(values.date) : item.date,
-                pages_count: values.pages_count,
-                amount_per_page: values.amount_per_page,
+                date: new Date(editForm.date),
+                pages_count: editForm.pages_count,
+                amount_per_page: editForm.amount_per_page,
                 total_amount: totalAmount,
                 margin: totalAmount
               }
@@ -167,30 +195,63 @@ const Photostat = () => {
 
   const openEditForm = (entry: PhotostatEntry) => {
     setEditingEntry(entry);
+    setEditForm({
+      date: format(entry.date, 'yyyy-MM-dd'),
+      pages_count: entry.pages_count,
+      amount_per_page: entry.amount_per_page
+    });
   };
 
-  const photostatFormFields = [
-    {
-      name: 'date',
-      label: 'Date',
-      type: 'date' as const,
-      required: true
-    },
-    {
-      name: 'pages_count',
-      label: 'Number of Pages',
-      type: 'number' as const,
-      required: true,
-      min: 1
-    },
-    {
-      name: 'amount_per_page',
-      label: 'Amount per Page',
-      type: 'number' as const,
-      required: true,
-      min: 0
-    }
-  ];
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Photostat Services Report</title>
+          <style>
+            @page { size: A4; margin: 20mm; }
+            body { font-family: Arial, sans-serif; font-size: 12px; }
+            h1 { text-align: center; margin-bottom: 20px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th, td { border: 1px solid #000; padding: 8px; text-align: left; font-size: 10px; }
+            th { background-color: #f5f5f5; font-weight: bold; }
+            .total { font-weight: bold; text-align: right; margin-top: 10px; }
+          </style>
+        </head>
+        <body>
+          <h1>Photostat Services Report</h1>
+          <div class="total">Total Pages: ${totalPages} | Total Amount: ₹${totalAmount.toFixed(2)}</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Pages Count</th>
+                <th>Amount per Page</th>
+                <th>Total Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredPhotostats.map((photostat) => `
+                <tr>
+                  <td>${format(photostat.date, 'dd/MM/yyyy')}</td>
+                  <td>${photostat.pages_count}</td>
+                  <td>₹${photostat.amount_per_page.toFixed(2)}</td>
+                  <td>₹${photostat.total_amount.toFixed(2)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.print();
+  };
 
   const totalPages = filteredPhotostats.reduce((sum, entry) => sum + entry.pages_count, 0);
   const totalAmount = filteredPhotostats.reduce((sum, entry) => sum + entry.total_amount, 0);
@@ -208,24 +269,10 @@ const Photostat = () => {
             onModeChange={setViewMode} 
           />
           <div className="flex gap-2">
-            <ServiceForm
-              title="Add Photostat Entry"
-              fields={photostatFormFields}
-              initialValues={{
-                date: new Date(),
-                pages_count: 1,
-                amount_per_page: 0
-              }}
-              onSubmit={handleAddPhotostat}
-              trigger={
-                <Button className="flex items-center gap-2">
-                  <Plus size={16} />
-                  <span>Add Entry</span>
-                </Button>
-              }
-              open={formOpen}
-              onOpenChange={setFormOpen}
-            />
+            <Button onClick={handlePrint} variant="outline">
+              <Printer size={16} className="mr-2" />
+              Print
+            </Button>
             <DownloadButton
               data={photostats}
               filename="photostat-data"
@@ -235,6 +282,47 @@ const Photostat = () => {
         </div>
       }
     >
+      {/* Add Photostat Form */}
+      <div className="mb-6 p-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg shadow-lg">
+        <h3 className="text-lg font-semibold mb-4">Add Photostat Entry</h3>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+          <div>
+            <Label htmlFor="date">Date</Label>
+            <Input
+              id="date"
+              type="date"
+              value={newEntry.date}
+              onChange={(e) => setNewEntry(prev => ({ ...prev, date: e.target.value }))}
+            />
+          </div>
+          <div>
+            <Label htmlFor="pages_count">Number of Pages</Label>
+            <Input
+              id="pages_count"
+              type="number"
+              value={newEntry.pages_count}
+              onChange={(e) => setNewEntry(prev => ({ ...prev, pages_count: Number(e.target.value) }))}
+              placeholder="Pages"
+              min="1"
+            />
+          </div>
+          <div>
+            <Label htmlFor="amount_per_page">Amount per Page</Label>
+            <Input
+              id="amount_per_page"
+              type="number"
+              value={newEntry.amount_per_page}
+              onChange={(e) => setNewEntry(prev => ({ ...prev, amount_per_page: Number(e.target.value) }))}
+              placeholder="Amount per page"
+              min="0"
+            />
+          </div>
+          <Button onClick={handleAddPhotostat}>
+            Save
+          </Button>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <StatCard 
           title="Total Pages"
@@ -277,23 +365,49 @@ const Photostat = () => {
         )}
       </div>
 
+      {/* Edit Entry Dialog */}
       {editingEntry && (
-        <ServiceForm
-          title="Edit Photostat Entry"
-          fields={photostatFormFields}
-          initialValues={{
-            date: editingEntry.date,
-            pages_count: editingEntry.pages_count,
-            amount_per_page: editingEntry.amount_per_page
-          }}
-          onSubmit={handleEditPhotostat}
-          trigger={<></>}
-          isEdit
-          open={!!editingEntry}
-          onOpenChange={(open) => {
-            if (!open) setEditingEntry(null);
-          }}
-        />
+        <Dialog open={!!editingEntry} onOpenChange={() => setEditingEntry(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Photostat Entry</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit_date">Date</Label>
+                <Input
+                  id="edit_date"
+                  type="date"
+                  value={editForm.date}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit_pages_count">Number of Pages</Label>
+                <Input
+                  id="edit_pages_count"
+                  type="number"
+                  value={editForm.pages_count}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, pages_count: Number(e.target.value) }))}
+                  placeholder="Pages"
+                  min="1"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit_amount_per_page">Amount per Page</Label>
+                <Input
+                  id="edit_amount_per_page"
+                  type="number"
+                  value={editForm.amount_per_page}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, amount_per_page: Number(e.target.value) }))}
+                  placeholder="Amount per page"
+                  min="0"
+                />
+              </div>
+              <Button onClick={handleEditPhotostat}>Update Entry</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </PageWrapper>
   );
