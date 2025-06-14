@@ -43,14 +43,22 @@ const PrintTemplates = () => {
     const files = Array.from(event.target.files || []);
     if (files.length === 0) return;
 
-    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg', 'text/plain'];
+    const allowedTypes = [
+      'application/pdf', 
+      'image/jpeg', 
+      'image/png', 
+      'image/jpg', 
+      'text/plain',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
     const validFiles: FileWithPreview[] = [];
 
     for (const file of files) {
       if (!allowedTypes.includes(file.type)) {
         toast({
           title: "Invalid file type",
-          description: `${file.name}: Please upload PDF, image, or text files only.`,
+          description: `${file.name}: Please upload PDF, image, text, or Word document files only.`,
           variant: "destructive",
         });
         continue;
@@ -248,6 +256,14 @@ const PrintTemplates = () => {
     });
   };
 
+  const getFileTypeIcon = (fileType: string) => {
+    if (fileType.startsWith('image/')) return '🖼️';
+    if (fileType === 'application/pdf') return '📄';
+    if (fileType === 'text/plain') return '📝';
+    if (fileType === 'application/msword' || fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return '📘';
+    return '📁';
+  };
+
   const activeDocument = uploadedDocs[activeDocIndex];
   const allFiles = [...selectedFiles, ...uploadedDocs];
 
@@ -271,12 +287,12 @@ const PrintTemplates = () => {
                   type="file"
                   ref={fileInputRef}
                   onChange={handleFileSelect}
-                  accept=".pdf,.jpg,.jpeg,.png,.txt"
+                  accept=".pdf,.jpg,.jpeg,.png,.txt,.doc,.docx"
                   multiple
                   className="mt-1"
                 />
                 <p className="text-sm text-muted-foreground mt-1">
-                  Supported formats: PDF, JPG, PNG, TXT (Multiple files allowed)
+                  Supported formats: PDF, JPG, PNG, TXT, DOC, DOCX (Multiple files allowed)
                 </p>
               </div>
 
@@ -369,6 +385,24 @@ const PrintTemplates = () => {
                           {activeDocument.content}
                         </div>
                       </div>
+                    ) : (activeDocument.file_type === 'application/msword' || activeDocument.file_type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') ? (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-50 rounded">
+                        <div className="text-center">
+                          <div className="text-4xl mb-2">📘</div>
+                          <p className="text-sm font-medium">{activeDocument.file_name}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Word document uploaded successfully
+                          </p>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="mt-2"
+                            onClick={() => window.open(`https://ihnsvmyfuyetvcdufzff.supabase.co/storage/v1/object/public/documents/${activeDocument.file_path}`, '_blank')}
+                          >
+                            Download Document
+                          </Button>
+                        </div>
+                      </div>
                     ) : (
                       <div className="text-center">
                         <p className="text-sm text-muted-foreground">
@@ -410,11 +444,11 @@ const PrintTemplates = () => {
                     onClick={() => setActiveDocIndex(index)}
                   >
                     <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-lg">{getFileTypeIcon(doc.file_type)}</span>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{doc.file_name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {(doc.file_size / 1024 / 1024).toFixed(2)} MB • {doc.file_type.split('/')[1].toUpperCase()}
+                          {(doc.file_size / 1024 / 1024).toFixed(2)} MB • {doc.file_type.includes('word') ? 'DOCX' : doc.file_type.split('/')[1].toUpperCase()}
                         </p>
                       </div>
                     </div>
