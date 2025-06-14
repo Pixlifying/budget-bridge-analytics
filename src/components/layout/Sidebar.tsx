@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -192,7 +191,7 @@ const Sidebar = () => {
     },
   ];
 
-  // Apps submenu items
+  // Apps submenu items (removed Templates)
   const appsItems = [
     {
       icon: <Calculator size={isCollapsed ? 20 : 16} />,
@@ -203,11 +202,6 @@ const Sidebar = () => {
       icon: <Calculator size={isCollapsed ? 20 : 16} />,
       label: 'Age Calculator',
       to: '/age-calculator',
-    },
-    {
-      icon: <FileText size={isCollapsed ? 20 : 16} />,
-      label: 'Templates',
-      to: '/templates',
     },
   ];
 
