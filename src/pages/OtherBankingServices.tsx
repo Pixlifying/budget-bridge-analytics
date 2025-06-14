@@ -13,6 +13,13 @@ import DownloadButton from '@/components/ui/DownloadButton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -20,20 +27,22 @@ import {
 } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 
-interface BankingService {
+interface OtherBankingService {
   id: string;
   date: Date;
   amount: number;
   margin: number;
   transaction_count: number;
+  account_type?: string;
+  insurance_type?: string;
   created_at?: string;
 }
 
-const BankingServices = () => {
-  const [bankingServices, setBankingServices] = useState<BankingService[]>([]);
-  const [filteredServices, setFilteredServices] = useState<BankingService[]>([]);
+const OtherBankingServices = () => {
+  const [otherBankingServices, setOtherBankingServices] = useState<OtherBankingService[]>([]);
+  const [filteredServices, setFilteredServices] = useState<OtherBankingService[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [editingEntry, setEditingEntry] = useState<BankingService | null>(null);
+  const [editingEntry, setEditingEntry] = useState<OtherBankingService | null>(null);
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
 
@@ -42,19 +51,28 @@ const BankingServices = () => {
     date: new Date().toISOString().split('T')[0],
     amount: 0,
     transaction_count: 1,
+    account_type: '',
+    insurance_type: '',
   });
 
   const [editForm, setEditForm] = useState({
     date: '',
     amount: 0,
     transaction_count: 1,
+    account_type: '',
+    insurance_type: '',
   });
 
-  const fetchBankingServices = async () => {
+  const accountTypes = ['Saving A/C', 'FD/RD'];
+  const insuranceTypes = ['PMJJY', 'PMSBY'];
+  const showInsuranceField = newEntry.account_type === 'Saving A/C' || newEntry.account_type === 'FD/RD';
+  const showEditInsuranceField = editForm.account_type === 'Saving A/C' || editForm.account_type === 'FD/RD';
+
+  const fetchOtherBankingServices = async () => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase
-        .from('banking_services')
+        .from('banking_accounts')
         .select('*')
         .order('date', { ascending: false });
 
@@ -64,138 +82,160 @@ const BankingServices = () => {
         id: entry.id,
         date: new Date(entry.date),
         amount: Number(entry.amount),
-        margin: Number(entry.margin),
-        transaction_count: Number(entry.transaction_count),
+        margin: calculateBankingServicesMargin(Number(entry.amount)),
+        transaction_count: 1, // Default since banking_accounts doesn't have this field
+        account_type: entry.account_type,
+        insurance_type: entry.insurance_type,
         created_at: entry.created_at
       }));
 
-      setBankingServices(formattedData);
+      setOtherBankingServices(formattedData);
     } catch (error) {
-      console.error('Error fetching banking services:', error);
-      toast.error('Failed to load banking services');
+      console.error('Error fetching other banking services:', error);
+      toast.error('Failed to load other banking services');
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchBankingServices();
+    fetchOtherBankingServices();
   }, []);
 
   useEffect(() => {
     if (viewMode === 'day') {
-      setFilteredServices(filterByDate(bankingServices, date));
+      setFilteredServices(filterByDate(otherBankingServices, date));
     } else {
-      setFilteredServices(filterByMonth(bankingServices, date));
+      setFilteredServices(filterByMonth(otherBankingServices, date));
     }
-  }, [date, viewMode, bankingServices]);
+  }, [date, viewMode, otherBankingServices]);
 
   const handleAddEntry = async () => {
-    if (!newEntry.amount || !newEntry.transaction_count) {
+    if (!newEntry.amount || !newEntry.transaction_count || !newEntry.account_type) {
       toast.error('Please fill in all required fields');
       return;
     }
 
+    if (showInsuranceField && !newEntry.insurance_type) {
+      toast.error('Please select an insurance type');
+      return;
+    }
+
     try {
-      const margin = calculateBankingServicesMargin(newEntry.amount);
-      
       const { data, error } = await supabase
-        .from('banking_services')
+        .from('banking_accounts')
         .insert({
           date: new Date(newEntry.date).toISOString(),
           amount: newEntry.amount,
-          margin: margin,
-          transaction_count: newEntry.transaction_count,
+          account_type: newEntry.account_type,
+          insurance_type: showInsuranceField ? newEntry.insurance_type : null,
+          customer_name: 'N/A', // Required field in banking_accounts
         })
         .select();
 
       if (error) throw error;
 
       if (data && data.length > 0) {
-        const newService: BankingService = {
+        const newService: OtherBankingService = {
           id: data[0].id,
           date: new Date(data[0].date),
           amount: Number(data[0].amount),
-          margin: Number(data[0].margin),
-          transaction_count: Number(data[0].transaction_count),
+          margin: calculateBankingServicesMargin(Number(data[0].amount)),
+          transaction_count: newEntry.transaction_count,
+          account_type: data[0].account_type,
+          insurance_type: data[0].insurance_type,
           created_at: data[0].created_at
         };
 
-        setBankingServices(prev => [newService, ...prev]);
+        setOtherBankingServices(prev => [newService, ...prev]);
         setNewEntry({
           date: new Date().toISOString().split('T')[0],
           amount: 0,
           transaction_count: 1,
+          account_type: '',
+          insurance_type: '',
         });
-        toast.success('Banking service added successfully');
+        toast.success('Other banking service added successfully');
       }
     } catch (error) {
-      console.error('Error adding banking service:', error);
-      toast.error('Failed to add banking service');
+      console.error('Error adding other banking service:', error);
+      toast.error('Failed to add other banking service');
     }
   };
 
   const handleEditEntry = async () => {
     if (!editingEntry) return;
 
+    if (!editForm.account_type) {
+      toast.error('Please select an account type');
+      return;
+    }
+
+    if (showEditInsuranceField && !editForm.insurance_type) {
+      toast.error('Please select an insurance type');
+      return;
+    }
+
     try {
-      const margin = calculateBankingServicesMargin(editForm.amount);
-      
       const { error } = await supabase
-        .from('banking_services')
+        .from('banking_accounts')
         .update({
           date: new Date(editForm.date).toISOString(),
           amount: editForm.amount,
-          margin: margin,
-          transaction_count: editForm.transaction_count,
+          account_type: editForm.account_type,
+          insurance_type: showEditInsuranceField ? editForm.insurance_type : null,
         })
         .eq('id', editingEntry.id);
 
       if (error) throw error;
 
-      const updatedEntry: BankingService = {
+      const updatedEntry: OtherBankingService = {
         ...editingEntry,
         date: new Date(editForm.date),
         amount: editForm.amount,
-        margin: margin,
+        margin: calculateBankingServicesMargin(editForm.amount),
         transaction_count: editForm.transaction_count,
+        account_type: editForm.account_type,
+        insurance_type: showEditInsuranceField ? editForm.insurance_type : undefined,
       };
 
-      setBankingServices(prev =>
+      setOtherBankingServices(prev =>
         prev.map(entry => entry.id === editingEntry.id ? updatedEntry : entry)
       );
 
       setEditingEntry(null);
-      toast.success('Banking service updated successfully');
+      toast.success('Other banking service updated successfully');
     } catch (error) {
-      console.error('Error updating banking service:', error);
-      toast.error('Failed to update banking service');
+      console.error('Error updating other banking service:', error);
+      toast.error('Failed to update other banking service');
     }
   };
 
   const handleDeleteEntry = async (id: string) => {
     try {
       const { error } = await supabase
-        .from('banking_services')
+        .from('banking_accounts')
         .delete()
         .eq('id', id);
 
       if (error) throw error;
 
-      setBankingServices(prev => prev.filter(entry => entry.id !== id));
-      toast.success('Banking service deleted successfully');
+      setOtherBankingServices(prev => prev.filter(entry => entry.id !== id));
+      toast.success('Other banking service deleted successfully');
     } catch (error) {
-      console.error('Error deleting banking service:', error);
-      toast.error('Failed to delete banking service');
+      console.error('Error deleting other banking service:', error);
+      toast.error('Failed to delete other banking service');
     }
   };
 
-  const openEditEntry = (entry: BankingService) => {
+  const openEditEntry = (entry: OtherBankingService) => {
     setEditingEntry(entry);
     setEditForm({
       date: format(entry.date, 'yyyy-MM-dd'),
       amount: entry.amount,
       transaction_count: entry.transaction_count,
+      account_type: entry.account_type || '',
+      insurance_type: entry.insurance_type || '',
     });
   };
 
@@ -207,7 +247,7 @@ const BankingServices = () => {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Banking Services Report</title>
+          <title>Other Banking Services Report</title>
           <style>
             @page { size: A4; margin: 20mm; }
             body { font-family: Arial, sans-serif; font-size: 12px; }
@@ -219,12 +259,14 @@ const BankingServices = () => {
           </style>
         </head>
         <body>
-          <h1>Banking Services Report</h1>
+          <h1>Other Banking Services Report</h1>
           <div class="total">Total Services: ${totalServices} | Total Amount: ₹${totalAmount.toFixed(2)} | Total Margin: ₹${totalMargin.toFixed(2)}</div>
           <table>
             <thead>
               <tr>
                 <th>Date</th>
+                <th>Account Type</th>
+                <th>Insurance Type</th>
                 <th>Transaction Count</th>
                 <th>Amount</th>
                 <th>Margin</th>
@@ -234,6 +276,8 @@ const BankingServices = () => {
               ${filteredServices.map((service) => `
                 <tr>
                   <td>${format(service.date, 'dd/MM/yyyy')}</td>
+                  <td>${service.account_type || '-'}</td>
+                  <td>${service.insurance_type || '-'}</td>
                   <td>${service.transaction_count}</td>
                   <td>₹${service.amount.toFixed(2)}</td>
                   <td>₹${service.margin.toFixed(2)}</td>
@@ -257,8 +301,8 @@ const BankingServices = () => {
 
   return (
     <PageWrapper
-      title="Banking Services"
-      subtitle="Manage banking services and view analytics"
+      title="Other Banking Services"
+      subtitle="Manage other banking services with account types and insurance options"
       action={
         <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
           <DateRangePicker 
@@ -273,18 +317,18 @@ const BankingServices = () => {
               Print
             </Button>
             <DownloadButton
-              data={bankingServices}
-              filename="banking-services-data"
+              data={otherBankingServices}
+              filename="other-banking-services-data"
               currentData={filteredServices}
             />
           </div>
         </div>
       }
     >
-      {/* Add Banking Service Form */}
+      {/* Add Other Banking Service Form */}
       <div className="mb-6 p-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg shadow-lg">
-        <h3 className="text-lg font-semibold mb-4">Add Banking Service</h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <h3 className="text-lg font-semibold mb-4">Add Other Banking Service</h3>
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
           <div>
             <Label htmlFor="date">Date</Label>
             <Input
@@ -294,6 +338,48 @@ const BankingServices = () => {
               onChange={(e) => setNewEntry(prev => ({ ...prev, date: e.target.value }))}
             />
           </div>
+          <div>
+            <Label htmlFor="account_type">Account Type</Label>
+            <Select
+              value={newEntry.account_type}
+              onValueChange={(value) => setNewEntry(prev => ({ 
+                ...prev, 
+                account_type: value,
+                insurance_type: '' // Reset insurance type when account type changes
+              }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select account type" />
+              </SelectTrigger>
+              <SelectContent>
+                {accountTypes.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {showInsuranceField && (
+            <div>
+              <Label htmlFor="insurance_type">Insurance Type</Label>
+              <Select
+                value={newEntry.insurance_type}
+                onValueChange={(value) => setNewEntry(prev => ({ ...prev, insurance_type: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select insurance type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {insuranceTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div>
             <Label htmlFor="transaction_count">Transaction Count</Label>
             <Input
@@ -347,21 +433,25 @@ const BankingServices = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredServices.length === 0 ? (
           <div className="col-span-full text-center py-8 bg-muted/30 rounded-lg">
-            <p className="text-muted-foreground">No banking services found for this {viewMode === 'day' ? 'day' : 'month'}.</p>
+            <p className="text-muted-foreground">No other banking services found for this {viewMode === 'day' ? 'day' : 'month'}.</p>
           </div>
         ) : (
           filteredServices.map(entry => (
             <ServiceCard
               key={entry.id}
               id={entry.id}
-              title="Banking Service"
+              title="Other Banking Service"
               date={entry.date}
               data={{
+                account_type: entry.account_type || 'N/A',
+                insurance_type: entry.insurance_type || 'N/A',
                 transactions: entry.transaction_count,
                 amount: formatCurrency(entry.amount),
                 margin: formatCurrency(entry.margin)
               }}
               labels={{
+                account_type: 'Account Type',
+                insurance_type: 'Insurance Type',
                 transactions: 'Transactions',
                 amount: 'Amount',
                 margin: 'Margin'
@@ -377,7 +467,7 @@ const BankingServices = () => {
       <Dialog open={!!editingEntry} onOpenChange={() => setEditingEntry(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Banking Service</DialogTitle>
+            <DialogTitle>Edit Other Banking Service</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
@@ -389,6 +479,48 @@ const BankingServices = () => {
                 onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))}
               />
             </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit_account_type">Account Type</Label>
+              <Select
+                value={editForm.account_type}
+                onValueChange={(value) => setEditForm(prev => ({ 
+                  ...prev, 
+                  account_type: value,
+                  insurance_type: '' // Reset insurance type when account type changes
+                }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select account type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {accountTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {showEditInsuranceField && (
+              <div className="grid gap-2">
+                <Label htmlFor="edit_insurance_type">Insurance Type</Label>
+                <Select
+                  value={editForm.insurance_type}
+                  onValueChange={(value) => setEditForm(prev => ({ ...prev, insurance_type: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select insurance type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {insuranceTypes.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="grid gap-2">
               <Label htmlFor="edit_transaction_count">Transaction Count</Label>
               <Input
@@ -410,7 +542,7 @@ const BankingServices = () => {
                 placeholder="Amount"
               />
             </div>
-            <Button onClick={handleEditEntry}>Update Banking Service</Button>
+            <Button onClick={handleEditEntry}>Update Other Banking Service</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -418,4 +550,4 @@ const BankingServices = () => {
   );
 };
 
-export default BankingServices;
+export default OtherBankingServices;

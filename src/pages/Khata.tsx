@@ -100,9 +100,20 @@ const Khata = () => {
 
           if (transactionsError) throw transactionsError;
 
+          // Properly type cast the transactions
+          const typedTransactions: KhataTransaction[] = (transactionsData || []).map(transaction => ({
+            id: transaction.id,
+            customer_id: transaction.customer_id,
+            type: transaction.type as 'debit' | 'credit',
+            amount: Number(transaction.amount),
+            date: transaction.date,
+            description: transaction.description || undefined,
+            created_at: transaction.created_at
+          }));
+
           return {
             ...customer,
-            transactions: transactionsData || []
+            transactions: typedTransactions
           };
         })
       );
@@ -138,7 +149,7 @@ const Khata = () => {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        const newCustomer = { ...data[0], transactions: [] };
+        const newCustomer: KhataCustomer = { ...data[0], transactions: [] };
         setCustomers(prev => [newCustomer, ...prev]);
         setCustomerForm({
           name: '',
@@ -259,7 +270,16 @@ const Khata = () => {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        const newTransaction = data[0];
+        const newTransaction: KhataTransaction = {
+          id: data[0].id,
+          customer_id: data[0].customer_id,
+          type: data[0].type as 'debit' | 'credit',
+          amount: Number(data[0].amount),
+          date: data[0].date,
+          description: data[0].description || undefined,
+          created_at: data[0].created_at
+        };
+
         setCustomers(prev =>
           prev.map(customer =>
             customer.id === selectedCustomer.id
@@ -307,7 +327,7 @@ const Khata = () => {
 
       if (error) throw error;
 
-      const updatedTransaction = {
+      const updatedTransaction: KhataTransaction = {
         ...editingTransaction,
         type: transactionForm.type,
         amount: transactionForm.amount,
