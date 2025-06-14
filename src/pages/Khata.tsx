@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Search, Plus, Edit, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -79,26 +78,38 @@ const Khata = () => {
   const fetchCustomers = async () => {
     try {
       setLoading(true);
+      console.log('Fetching khata customers...');
+      
       const { data: customersData, error } = await supabase
         .from('khata_customers')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching customers:', error);
+        throw error;
+      }
+
+      console.log('Khata customers data:', customersData);
 
       const customersWithTransactions = await Promise.all(
         (customersData || []).map(async (customer) => {
+          console.log(`Fetching transactions for customer: ${customer.name}`);
+          
           let transactionQuery = supabase
             .from('khata_transactions')
             .select('*')
             .eq('customer_id', customer.id);
 
+          // Fix the date filtering to work with PostgreSQL date type
           if (viewMode === 'day') {
             const dateStr = format(selectedDate, 'yyyy-MM-dd');
             transactionQuery = transactionQuery.eq('date', dateStr);
           } else if (viewMode === 'month') {
-            const monthStr = format(selectedDate, 'yyyy-MM');
-            transactionQuery = transactionQuery.like('date', `${monthStr}%`);
+            const yearMonth = format(selectedDate, 'yyyy-MM');
+            const startDate = `${yearMonth}-01`;
+            const endDate = format(new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0), 'yyyy-MM-dd');
+            transactionQuery = transactionQuery.gte('date', startDate).lte('date', endDate);
           }
 
           const { data: transactionsData, error: transactionsError } = await transactionQuery
@@ -106,12 +117,14 @@ const Khata = () => {
             .order('created_at', { ascending: false });
 
           if (transactionsError) {
-            console.error('Error fetching transactions:', transactionsError);
+            console.error(`Error fetching transactions for customer ${customer.id}:`, transactionsError);
             return {
               ...customer,
               transactions: []
             };
           }
+
+          console.log(`Transactions for ${customer.name}:`, transactionsData);
 
           const typedTransactions = (transactionsData || []).map(transaction => ({
             ...transaction,
@@ -125,7 +138,7 @@ const Khata = () => {
         })
       );
 
-      console.log('Khata customers fetched:', customersWithTransactions);
+      console.log('Khata customers with transactions:', customersWithTransactions);
       setCustomers(customersWithTransactions);
     } catch (error) {
       console.error('Error fetching customers:', error);
@@ -140,18 +153,29 @@ const Khata = () => {
   }, [selectedDate, viewMode]);
 
   const handleAddCustomer = async () => {
+    if (!customerForm.name.trim() || !customerForm.phone.trim()) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
     try {
+      console.log('Adding customer:', customerForm);
+      
       const { data, error } = await supabase
         .from('khata_customers')
         .insert({
-          name: customerForm.name,
-          phone: customerForm.phone,
+          name: customerForm.name.trim(),
+          phone: customerForm.phone.trim(),
           opening_balance: customerForm.opening_balance,
         })
         .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error adding customer:', error);
+        throw error;
+      }
 
+      console.log('Customer added successfully:', data);
       toast.success("Customer added successfully");
       setShowAddCustomerDialog(false);
       setCustomerForm({ name: '', phone: '', opening_balance: 0 });
@@ -165,18 +189,29 @@ const Khata = () => {
   const handleEditCustomer = async () => {
     if (!selectedCustomer) return;
 
+    if (!customerForm.name.trim() || !customerForm.phone.trim()) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
     try {
+      console.log('Updating customer:', selectedCustomer.id, customerForm);
+      
       const { error } = await supabase
         .from('khata_customers')
         .update({
-          name: customerForm.name,
-          phone: customerForm.phone,
+          name: customerForm.name.trim(),
+          phone: customerForm.phone.trim(),
           opening_balance: customerForm.opening_balance,
         })
         .eq('id', selectedCustomer.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating customer:', error);
+        throw error;
+      }
 
+      console.log('Customer updated successfully');
       toast.success("Customer updated successfully");
       setShowEditCustomerDialog(false);
       setSelectedCustomer(null);
@@ -190,21 +225,30 @@ const Khata = () => {
 
   const handleAddTransaction = async (customerId: string) => {
     const form = newTransactionForms[customerId];
-    if (!form || !form.amount || !form.date) return;
+    if (!form || !form.amount || !form.date) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
 
     try {
+      console.log('Adding transaction:', { customerId, form });
+      
       const { error } = await supabase
         .from('khata_transactions')
         .insert({
           customer_id: customerId,
           amount: form.amount,
           type: form.type,
-          description: form.description || null,
+          description: form.description.trim() || null,
           date: form.date,
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error adding transaction:', error);
+        throw error;
+      }
 
+      console.log('Transaction added successfully');
       toast.success("Transaction added successfully");
       setNewTransactionForms(prev => ({ ...prev, [customerId]: {
         date: new Date().toISOString().split('T')[0],
@@ -222,19 +266,30 @@ const Khata = () => {
   const handleEditTransaction = async () => {
     if (!editingTransaction) return;
 
+    if (!editTransactionForm.amount || !editTransactionForm.date) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
     try {
+      console.log('Updating transaction:', editingTransaction.id, editTransactionForm);
+      
       const { error } = await supabase
         .from('khata_transactions')
         .update({
           amount: editTransactionForm.amount,
           type: editTransactionForm.type,
-          description: editTransactionForm.description || null,
+          description: editTransactionForm.description.trim() || null,
           date: editTransactionForm.date,
         })
         .eq('id', editingTransaction.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating transaction:', error);
+        throw error;
+      }
 
+      console.log('Transaction updated successfully');
       toast.success("Transaction updated successfully");
       setEditingTransaction(null);
       setEditTransactionForm({ date: '', amount: 0, type: 'debit', description: '' });
@@ -424,21 +479,23 @@ const Khata = () => {
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="name">Name</Label>
+                <Label htmlFor="name">Name *</Label>
                 <Input
                   id="name"
                   value={customerForm.name}
                   onChange={(e) => setCustomerForm(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="Customer name"
+                  required
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="phone">Phone</Label>
+                <Label htmlFor="phone">Phone *</Label>
                 <Input
                   id="phone"
                   value={customerForm.phone}
                   onChange={(e) => setCustomerForm(prev => ({ ...prev, phone: e.target.value }))}
                   placeholder="Phone number"
+                  required
                 />
               </div>
               <div className="grid gap-2">
@@ -503,12 +560,13 @@ const Khata = () => {
                     <h4 className="font-medium mb-3">Add Transaction</h4>
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
                       <div>
-                        <Label htmlFor={`date-${customer.id}`}>Date</Label>
+                        <Label htmlFor={`date-${customer.id}`}>Date *</Label>
                         <Input
                           id={`date-${customer.id}`}
                           type="date"
                           value={currentForm?.date || ''}
                           onChange={(e) => updateTransactionForm(customer.id, 'date', e.target.value)}
+                          required
                         />
                       </div>
                       <div>
@@ -521,13 +579,16 @@ const Khata = () => {
                         />
                       </div>
                       <div>
-                        <Label htmlFor={`amount-${customer.id}`}>Amount</Label>
+                        <Label htmlFor={`amount-${customer.id}`}>Amount *</Label>
                         <Input
                           id={`amount-${customer.id}`}
                           type="number"
-                          value={currentForm?.amount || 0}
+                          step="0.01"
+                          min="0"
+                          value={currentForm?.amount || ''}
                           onChange={(e) => updateTransactionForm(customer.id, 'amount', Number(e.target.value))}
                           placeholder="Amount"
+                          required
                         />
                       </div>
                       <div>
@@ -622,21 +683,23 @@ const Khata = () => {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="edit_name">Name</Label>
+              <Label htmlFor="edit_name">Name *</Label>
               <Input
                 id="edit_name"
                 value={customerForm.name}
                 onChange={(e) => setCustomerForm(prev => ({ ...prev, name: e.target.value }))}
                 placeholder="Customer name"
+                required
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="edit_phone">Phone</Label>
+              <Label htmlFor="edit_phone">Phone *</Label>
               <Input
                 id="edit_phone"
                 value={customerForm.phone}
                 onChange={(e) => setCustomerForm(prev => ({ ...prev, phone: e.target.value }))}
                 placeholder="Phone number"
+                required
               />
             </div>
             <div className="grid gap-2">
@@ -662,22 +725,26 @@ const Khata = () => {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="edit_transaction_date">Date</Label>
+              <Label htmlFor="edit_transaction_date">Date *</Label>
               <Input
                 id="edit_transaction_date"
                 type="date"
                 value={editTransactionForm.date}
                 onChange={(e) => setEditTransactionForm(prev => ({ ...prev, date: e.target.value }))}
+                required
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="edit_transaction_amount">Amount</Label>
+              <Label htmlFor="edit_transaction_amount">Amount *</Label>
               <Input
                 id="edit_transaction_amount"
                 type="number"
+                step="0.01"
+                min="0"
                 value={editTransactionForm.amount}
                 onChange={(e) => setEditTransactionForm(prev => ({ ...prev, amount: Number(e.target.value) }))}
                 placeholder="Transaction amount"
+                required
               />
             </div>
             <div className="grid gap-2">
