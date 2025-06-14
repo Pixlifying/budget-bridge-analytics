@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { CreditCard, Plus, Edit, Trash2, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { formatCurrency, formatDate, filterByDate, filterByMonth } from '@/utils/calculateUtils';
+import { formatCurrency, formatDate, filterByDate, filterByMonth, calculateBankingServicesMargin } from '@/utils/calculateUtils';
 import PageWrapper from '@/components/layout/PageWrapper';
 import { Button } from '@/components/ui/button';
 import ServiceCard from '@/components/ui/ServiceCard';
@@ -97,7 +97,7 @@ const BankingServices = () => {
     }
 
     try {
-      const margin = newEntry.amount; // 100% margin as per original logic
+      const margin = calculateBankingServicesMargin(newEntry.amount);
       
       const { data, error } = await supabase
         .from('banking_services')
@@ -139,7 +139,7 @@ const BankingServices = () => {
     if (!editingEntry) return;
 
     try {
-      const margin = editForm.amount; // 100% margin
+      const margin = calculateBankingServicesMargin(editForm.amount);
       
       const { error } = await supabase
         .from('banking_services')
