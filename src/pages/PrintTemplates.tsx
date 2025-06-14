@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -333,7 +334,7 @@ Note: For best results, please convert .doc files to .docx format and re-upload.
       return;
     }
 
-    // Create a new window for printing
+    // Create a new window for printing with completely clean content
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       toast({
@@ -344,38 +345,72 @@ Note: For best results, please convert .doc files to .docx format and re-upload.
       return;
     }
 
-    // Generate clean print-friendly HTML without headers
+    // Generate completely clean print-friendly HTML
     const printHTML = `
       <!DOCTYPE html>
       <html>
         <head>
-          <title></title>
           <style>
-            body {
+            @page {
+              margin: 0.5in;
+              size: auto;
+            }
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+            html, body {
               font-family: 'Times New Roman', serif;
               font-size: 12pt;
               line-height: 1.6;
-              margin: 0.5in;
               color: #000;
               background: #fff;
+              margin: 0;
+              padding: 0;
             }
-            .document-content {
+            body {
+              padding: 0.5in;
+            }
+            .content {
               white-space: pre-wrap;
               word-wrap: break-word;
               text-align: left;
+              width: 100%;
             }
             @media print {
+              html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #fff !important;
+              }
               body {
-                margin: 0.5in;
+                padding: 0.5in !important;
               }
               @page {
-                margin: 0.5in;
+                margin: 0.5in !important;
+              }
+              /* Hide any potential browser elements */
+              header, footer, nav, .no-print {
+                display: none !important;
+                visibility: hidden !important;
               }
             }
           </style>
         </head>
         <body>
-          <div class="document-content">${contentToPrint.replace(/\n/g, '<br>')}</div>
+          <div class="content">${contentToPrint.replace(/\n/g, '<br>')}</div>
+          <script>
+            // Auto-print when page loads
+            window.onload = function() {
+              setTimeout(function() {
+                window.print();
+                window.onafterprint = function() {
+                  window.close();
+                };
+              }, 500);
+            };
+          </script>
         </body>
       </html>
     `;
@@ -383,17 +418,6 @@ Note: For best results, please convert .doc files to .docx format and re-upload.
     // Write the HTML to the print window
     printWindow.document.write(printHTML);
     printWindow.document.close();
-
-    // Wait for content to load, then print
-    printWindow.onload = () => {
-      printWindow.focus();
-      printWindow.print();
-      
-      // Close the print window after printing
-      printWindow.onafterprint = () => {
-        printWindow.close();
-      };
-    };
 
     toast({
       title: "Print initiated",
