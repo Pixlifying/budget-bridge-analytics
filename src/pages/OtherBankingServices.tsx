@@ -82,7 +82,7 @@ const OtherBankingServices = () => {
         date: new Date(entry.date),
         amount: Number(entry.amount),
         margin: calculateBankingServicesMargin(Number(entry.amount)),
-        transaction_count: 1, // Default since banking_accounts doesn't have this field
+        transaction_count: 1,
         account_type: entry.account_type,
         insurance_type: entry.insurance_type,
         created_at: entry.created_at
@@ -128,7 +128,7 @@ const OtherBankingServices = () => {
           amount: newEntry.amount,
           account_type: newEntry.account_type,
           insurance_type: showInsuranceField ? newEntry.insurance_type : null,
-          customer_name: 'N/A', // Required field in banking_accounts
+          customer_name: 'N/A',
         })
         .select();
 
@@ -345,15 +345,15 @@ const OtherBankingServices = () => {
               onValueChange={(value) => setNewEntry(prev => ({ 
                 ...prev, 
                 account_type: value,
-                insurance_type: '' // Reset insurance type when account type changes
+                insurance_type: ''
               }))}
             >
-              <SelectTrigger className="w-full bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600">
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select account type" />
               </SelectTrigger>
-              <SelectContent className="bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 z-50">
+              <SelectContent className="z-50">
                 {accountTypes.map((type) => (
-                  <SelectItem key={type} value={type} className="hover:bg-gray-100 dark:hover:bg-slate-700">
+                  <SelectItem key={type} value={type}>
                     {type}
                   </SelectItem>
                 ))}
@@ -368,12 +368,12 @@ const OtherBankingServices = () => {
                 value={newEntry.insurance_type}
                 onValueChange={(value) => setNewEntry(prev => ({ ...prev, insurance_type: value }))}
               >
-                <SelectTrigger className="w-full bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600">
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select insurance type" />
                 </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 z-50">
+                <SelectContent className="z-50">
                   {insuranceTypes.map((type) => (
-                    <SelectItem key={type} value={type} className="hover:bg-gray-100 dark:hover:bg-slate-700">
+                    <SelectItem key={type} value={type}>
                       {type}
                     </SelectItem>
                   ))}
@@ -491,15 +491,15 @@ const OtherBankingServices = () => {
                 onValueChange={(value) => setEditForm(prev => ({ 
                   ...prev, 
                   account_type: value,
-                  insurance_type: '' // Reset insurance type when account type changes
+                  insurance_type: ''
                 }))}
               >
-                <SelectTrigger className="w-full bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600">
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select account type" />
                 </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 z-50">
+                <SelectContent className="z-50">
                   {accountTypes.map((type) => (
-                    <SelectItem key={type} value={type} className="hover:bg-gray-100 dark:hover:bg-slate-700">
+                    <SelectItem key={type} value={type}>
                       {type}
                     </SelectItem>
                   ))}
@@ -514,12 +514,12 @@ const OtherBankingServices = () => {
                   value={editForm.insurance_type}
                   onValueChange={(value) => setEditForm(prev => ({ ...prev, insurance_type: value }))}
                 >
-                  <SelectTrigger className="w-full bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600">
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select insurance type" />
                   </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 z-50">
+                  <SelectContent className="z-50">
                     {insuranceTypes.map((type) => (
-                      <SelectItem key={type} value={type} className="hover:bg-gray-100 dark:hover:bg-slate-700">
+                      <SelectItem key={type} value={type}>
                         {type}
                       </SelectItem>
                     ))}

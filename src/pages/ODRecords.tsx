@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
@@ -47,6 +48,7 @@ interface ODRecord {
   amount_received: number;
   amount_given: number;
   cash_in_hand: number;
+  last_balance: number;
   date: string;
   created_at: string;
 }
@@ -54,11 +56,12 @@ interface ODRecord {
 const ODRecords = () => {
   const [records, setRecords] = useState<ODRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filterMode, setFilterMode] = useState<'day' | 'month'>('day');
+  const [filterMode, setFilterMode] = useState<'day' | 'month' | 'year'>('day');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   
   // Form state
   const [formData, setFormData] = useState({
+    last_balance: 0,
     amount_received: '',
     amount_given: '',
     date: format(new Date(), 'yyyy-MM-dd')
@@ -67,6 +70,7 @@ const ODRecords = () => {
   // Edit state
   const [editingRecord, setEditingRecord] = useState<ODRecord | null>(null);
   const [editFormData, setEditFormData] = useState({
+    last_balance: 0,
     amount_received: '',
     amount_given: '',
     date: ''
@@ -84,10 +88,14 @@ const ODRecords = () => {
       if (filterMode === 'day') {
         const dateStr = format(selectedDate, 'yyyy-MM-dd');
         query = query.eq('date', dateStr);
-      } else {
+      } else if (filterMode === 'month') {
         const startOfMonth = format(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1), 'yyyy-MM-dd');
         const endOfMonth = format(new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0), 'yyyy-MM-dd');
         query = query.gte('date', startOfMonth).lte('date', endOfMonth);
+      } else if (filterMode === 'year') {
+        const startOfYear = format(new Date(selectedDate.getFullYear(), 0, 1), 'yyyy-MM-dd');
+        const endOfYear = format(new Date(selectedDate.getFullYear(), 11, 31), 'yyyy-MM-dd');
+        query = query.gte('date', startOfYear).lte('date', endOfYear);
       }
 
       const { data, error } = await query.order('date', { ascending: false });
@@ -136,12 +144,14 @@ const ODRecords = () => {
       return;
     }
 
+    const lastBalance = parseFloat(formData.last_balance.toString()) || 0;
     const receivedAmount = parseFloat(formData.amount_received) || 0;
     const givenAmount = parseFloat(formData.amount_given) || 0;
-    const calculatedCashInHand = receivedAmount - givenAmount;
+    const calculatedCashInHand = lastBalance + receivedAmount - givenAmount;
 
     try {
       const { error } = await supabase.from('od_records').insert({
+        last_balance: lastBalance,
         amount_received: receivedAmount,
         amount_given: givenAmount,
         cash_in_hand: calculatedCashInHand,
@@ -152,6 +162,7 @@ const ODRecords = () => {
 
       toast.success('OD record added successfully');
       setFormData({
+        last_balance: 0,
         amount_received: '',
         amount_given: '',
         date: format(new Date(), 'yyyy-MM-dd')
@@ -165,6 +176,7 @@ const ODRecords = () => {
   const handleEdit = (record: ODRecord) => {
     setEditingRecord(record);
     setEditFormData({
+      last_balance: record.last_balance || 0,
       amount_received: record.amount_received.toString(),
       amount_given: record.amount_given.toString(),
       date: record.date
@@ -181,14 +193,16 @@ const ODRecords = () => {
       return;
     }
 
+    const lastBalance = parseFloat(editFormData.last_balance.toString()) || 0;
     const receivedAmount = parseFloat(editFormData.amount_received) || 0;
     const givenAmount = parseFloat(editFormData.amount_given) || 0;
-    const calculatedCashInHand = receivedAmount - givenAmount;
+    const calculatedCashInHand = lastBalance + receivedAmount - givenAmount;
 
     try {
       const { error } = await supabase
         .from('od_records')
         .update({
+          last_balance: lastBalance,
           amount_received: receivedAmount,
           amount_given: givenAmount,
           cash_in_hand: calculatedCashInHand,
@@ -201,6 +215,7 @@ const ODRecords = () => {
       toast.success('OD record updated successfully');
       setEditingRecord(null);
       setEditFormData({
+        last_balance: 0,
         amount_received: '',
         amount_given: '',
         date: ''
@@ -236,17 +251,18 @@ const ODRecords = () => {
     }
   };
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleEditInputChange = (field: string, value: string) => {
+  const handleEditInputChange = (field: string, value: string | number) => {
     setEditFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const totalReceived = records.reduce((sum, record) => sum + record.amount_received, 0);
   const totalGiven = records.reduce((sum, record) => sum + record.amount_given, 0);
-  const totalCashInHand = totalReceived - totalGiven;
+  const totalCashInHand = records.reduce((sum, record) => sum + record.cash_in_hand, 0);
+  const totalLastBalance = records.reduce((sum, record) => sum + (record.last_balance || 0), 0);
 
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
@@ -254,7 +270,9 @@ const ODRecords = () => {
 
     const periodText = filterMode === 'day' 
       ? format(selectedDate, 'dd MMM yyyy')
-      : format(selectedDate, 'MMMM yyyy');
+      : filterMode === 'month'
+      ? format(selectedDate, 'MMMM yyyy')
+      : format(selectedDate, 'yyyy');
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -275,6 +293,7 @@ const ODRecords = () => {
         <body>
           <h1>OD Records Report - ${periodText}</h1>
           <div class="summary">
+            <p><strong>Total Last Balance:</strong> ₹${totalLastBalance.toFixed(2)}</p>
             <p><strong>Total Amount Received:</strong> ₹${totalReceived.toFixed(2)}</p>
             <p><strong>Total Amount Given:</strong> ₹${totalGiven.toFixed(2)}</p>
             <p><strong>Net Cash in Hand:</strong> ₹${totalCashInHand.toFixed(2)}</p>
@@ -283,6 +302,7 @@ const ODRecords = () => {
             <thead>
               <tr>
                 <th>Date</th>
+                <th>Last Balance</th>
                 <th>Amount Received</th>
                 <th>Amount Given</th>
                 <th>Cash in Hand</th>
@@ -292,6 +312,7 @@ const ODRecords = () => {
               ${records.map(record => `
                 <tr>
                   <td>${format(new Date(record.date), 'dd MMM yyyy')}</td>
+                  <td class="text-right">₹${(record.last_balance || 0).toFixed(2)}</td>
                   <td class="text-right">₹${record.amount_received.toFixed(2)}</td>
                   <td class="text-right">₹${record.amount_given.toFixed(2)}</td>
                   <td class="text-right">₹${record.cash_in_hand.toFixed(2)}</td>
@@ -310,9 +331,9 @@ const ODRecords = () => {
 
   const handleDownload = () => {
     const csvContent = [
-      'Date,Amount Received,Amount Given,Cash in Hand',
+      'Date,Last Balance,Amount Received,Amount Given,Cash in Hand',
       ...records.map(record => 
-        `${format(new Date(record.date), 'yyyy-MM-dd')},${record.amount_received},${record.amount_given},${record.cash_in_hand}`
+        `${format(new Date(record.date), 'yyyy-MM-dd')},${record.last_balance || 0},${record.amount_received},${record.amount_given},${record.cash_in_hand}`
       )
     ].join('\n');
 
@@ -326,13 +347,15 @@ const ODRecords = () => {
     toast.success('CSV downloaded successfully');
   };
 
+  const lastBalance = parseFloat(formData.last_balance.toString()) || 0;
   const receivedAmount = parseFloat(formData.amount_received) || 0;
   const givenAmount = parseFloat(formData.amount_given) || 0;
-  const previewCashInHand = receivedAmount - givenAmount;
+  const previewCashInHand = lastBalance + receivedAmount - givenAmount;
 
+  const editLastBalance = parseFloat(editFormData.last_balance.toString()) || 0;
   const editReceivedAmount = parseFloat(editFormData.amount_received) || 0;
   const editGivenAmount = parseFloat(editFormData.amount_given) || 0;
-  const editPreviewCashInHand = editReceivedAmount - editGivenAmount;
+  const editPreviewCashInHand = editLastBalance + editReceivedAmount - editGivenAmount;
 
   return (
     <PageWrapper title="OD Records">
@@ -347,7 +370,29 @@ const ODRecords = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+            <div>
+              <Label htmlFor="date">Date</Label>
+              <Input
+                id="date"
+                type="date"
+                value={formData.date}
+                onChange={(e) => handleInputChange('date', e.target.value)}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="last_balance">Last Balance (₹)</Label>
+              <Input
+                id="last_balance"
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                value={formData.last_balance}
+                onChange={(e) => handleInputChange('last_balance', Number(e.target.value))}
+              />
+            </div>
+
             <div>
               <Label htmlFor="amount_received">Amount Received (₹)</Label>
               <Input
@@ -372,20 +417,10 @@ const ODRecords = () => {
               />
             </div>
 
-            <div>
-              <Label htmlFor="date">Date</Label>
-              <Input
-                id="date"
-                type="date"
-                value={formData.date}
-                onChange={(e) => handleInputChange('date', e.target.value)}
-              />
-            </div>
-
             <Button type="submit" className="hover-scale">Add Record</Button>
           </form>
           
-          {(receivedAmount > 0 || givenAmount > 0) && (
+          {(lastBalance > 0 || receivedAmount > 0 || givenAmount > 0) && (
             <div className="mt-4 p-3 bg-muted rounded-md animate-fade-in">
               <p className="text-sm text-muted-foreground">
                 Preview Cash in Hand: <span className={`font-semibold ${previewCashInHand >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -403,13 +438,14 @@ const ODRecords = () => {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <CardTitle>OD Records</CardTitle>
             <div className="flex flex-wrap items-center gap-2">
-              <Select value={filterMode} onValueChange={(value: 'day' | 'month') => setFilterMode(value)}>
+              <Select value={filterMode} onValueChange={(value: 'day' | 'month' | 'year') => setFilterMode(value)}>
                 <SelectTrigger className="w-32">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="day">Daily</SelectItem>
                   <SelectItem value="month">Monthly</SelectItem>
+                  <SelectItem value="year">Yearly</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -417,7 +453,11 @@ const ODRecords = () => {
                 <PopoverTrigger asChild>
                   <Button variant="outline" className={cn("w-64 justify-start text-left font-normal")}>
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {format(selectedDate, filterMode === 'day' ? 'PPP' : 'MMMM yyyy')}
+                    {format(selectedDate, 
+                      filterMode === 'day' ? 'PPP' : 
+                      filterMode === 'month' ? 'MMMM yyyy' : 
+                      'yyyy'
+                    )}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -444,7 +484,13 @@ const ODRecords = () => {
         </CardHeader>
         <CardContent>
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <Card className="animate-scale-in">
+              <CardContent className="p-4">
+                <div className="text-sm text-muted-foreground">Total Last Balance</div>
+                <div className="text-2xl font-bold text-blue-600">₹{totalLastBalance.toFixed(2)}</div>
+              </CardContent>
+            </Card>
             <Card className="animate-scale-in">
               <CardContent className="p-4">
                 <div className="text-sm text-muted-foreground">Total Received</div>
@@ -480,6 +526,7 @@ const ODRecords = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date</TableHead>
+                    <TableHead className="text-right">Last Balance</TableHead>
                     <TableHead className="text-right">Amount Received</TableHead>
                     <TableHead className="text-right">Amount Given</TableHead>
                     <TableHead className="text-right">Cash in Hand</TableHead>
@@ -490,6 +537,9 @@ const ODRecords = () => {
                   {records.map((record) => (
                     <TableRow key={record.id} className="hover-scale">
                       <TableCell>{format(new Date(record.date), 'dd MMM yyyy')}</TableCell>
+                      <TableCell className="text-right text-blue-600">
+                        ₹{(record.last_balance || 0).toFixed(2)}
+                      </TableCell>
                       <TableCell className="text-right text-green-600">
                         ₹{record.amount_received.toFixed(2)}
                       </TableCell>
@@ -540,6 +590,32 @@ const ODRecords = () => {
           <form onSubmit={handleEditSubmit}>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit_date" className="text-right">
+                  Date
+                </Label>
+                <Input
+                  id="edit_date"
+                  type="date"
+                  value={editFormData.date}
+                  onChange={(e) => handleEditInputChange('date', e.target.value)}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit_last_balance" className="text-right">
+                  Last Balance
+                </Label>
+                <Input
+                  id="edit_last_balance"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={editFormData.last_balance}
+                  onChange={(e) => handleEditInputChange('last_balance', Number(e.target.value))}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="edit_amount_received" className="text-right">
                   Amount Received
                 </Label>
@@ -567,19 +643,7 @@ const ODRecords = () => {
                   className="col-span-3"
                 />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit_date" className="text-right">
-                  Date
-                </Label>
-                <Input
-                  id="edit_date"
-                  type="date"
-                  value={editFormData.date}
-                  onChange={(e) => handleEditInputChange('date', e.target.value)}
-                  className="col-span-3"
-                />
-              </div>
-              {(editReceivedAmount > 0 || editGivenAmount > 0) && (
+              {(editLastBalance > 0 || editReceivedAmount > 0 || editGivenAmount > 0) && (
                 <div className="col-span-4 p-3 bg-muted rounded-md">
                   <p className="text-sm text-muted-foreground">
                     Preview Cash in Hand: <span className={`font-semibold ${editPreviewCashInHand >= 0 ? 'text-green-600' : 'text-red-600'}`}>
