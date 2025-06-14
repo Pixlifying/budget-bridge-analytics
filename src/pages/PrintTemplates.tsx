@@ -175,13 +175,8 @@ const PrintTemplates = () => {
   };
 
   return (
-    <PageWrapper>
+    <PageWrapper title="Print and Templates" subtitle="Upload documents, preview, edit, and print them.">
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Print and Templates</h1>
-          <p className="text-muted-foreground">Upload documents, preview, edit, and print them.</p>
-        </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Upload Section */}
           <Card>
@@ -242,11 +237,23 @@ const PrintTemplates = () => {
                         className="max-w-full max-h-[300px] object-contain mx-auto rounded"
                       />
                     ) : uploadedDoc?.file_type === 'application/pdf' ? (
-                      <iframe 
-                        src={previewUrl} 
-                        className="w-full h-[300px] border rounded"
-                        title="PDF Preview"
-                      />
+                      <div className="w-full h-[300px] flex items-center justify-center bg-gray-50 rounded">
+                        <div className="text-center">
+                          <div className="text-4xl mb-2">📄</div>
+                          <p className="text-sm font-medium">{uploadedDoc.file_name}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            PDF file uploaded successfully
+                          </p>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="mt-2"
+                            onClick={() => window.open(previewUrl, '_blank')}
+                          >
+                            Open PDF
+                          </Button>
+                        </div>
+                      </div>
                     ) : (
                       <div className="text-center">
                         <p className="text-sm text-muted-foreground">
