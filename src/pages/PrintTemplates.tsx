@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, Search, Replace, Printer, X, FileText } from 'lucide-react';
+import { Upload, Search, Replace, Printer, X, FileText, Download, Eye } from 'lucide-react';
 import PageWrapper from '@/components/layout/PageWrapper';
 
 interface UploadedDocument {
@@ -18,12 +17,14 @@ interface UploadedDocument {
   file_size: number;
   uploaded_at: string;
   content?: string;
+  extractedText?: string;
 }
 
 interface FileWithPreview extends File {
   id: string;
   preview?: string;
   content?: string;
+  extractedText?: string;
 }
 
 const PrintTemplates = () => {
@@ -34,10 +35,44 @@ const PrintTemplates = () => {
   const [findText, setFindText] = useState('');
   const [replaceText, setReplaceText] = useState('');
   const [isReplaceDialogOpen, setIsReplaceDialogOpen] = useState(false);
+  const [isExtractingText, setIsExtractingText] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const generateFileId = () => Math.random().toString(36).substr(2, 9);
+
+  // Function to extract text from Word documents (mock implementation)
+  const extractTextFromDocument = async (file: File): Promise<string> => {
+    // In a real implementation, you would use a library like mammoth.js for .docx files
+    // For now, we'll return a placeholder that indicates the document structure
+    if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      return `Document: ${file.name}
+
+This is a Word document preview. The actual content would be extracted here using a proper document parser.
+
+You can still perform find and replace operations on this extracted text content.
+
+File size: ${(file.size / 1024).toFixed(2)} KB
+File type: Microsoft Word Document
+Upload date: ${new Date().toLocaleDateString()}
+
+[Document content would appear here in a real implementation]`;
+    }
+    
+    if (file.type === 'application/msword') {
+      return `Document: ${file.name}
+
+This is a legacy Word document (.doc). The content extraction would require specialized parsing.
+
+File size: ${(file.size / 1024).toFixed(2)} KB
+File type: Microsoft Word 97-2003 Document
+Upload date: ${new Date().toLocaleDateString()}
+
+[Document content would appear here in a real implementation]`;
+    }
+    
+    return '';
+  };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -53,6 +88,8 @@ const PrintTemplates = () => {
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     ];
     const validFiles: FileWithPreview[] = [];
+
+    setIsExtractingText(true);
 
     for (const file of files) {
       if (!allowedTypes.includes(file.type)) {
@@ -83,10 +120,21 @@ const PrintTemplates = () => {
         }
       }
 
+      // Extract text from Word documents
+      if (file.type === 'application/msword' || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+        try {
+          const extractedText = await extractTextFromDocument(file);
+          fileWithPreview.extractedText = extractedText;
+        } catch (error) {
+          console.error('Error extracting text from document:', error);
+        }
+      }
+
       validFiles.push(fileWithPreview);
     }
 
     setSelectedFiles(prev => [...prev, ...validFiles]);
+    setIsExtractingText(false);
   };
 
   const removeFile = (fileId: string) => {
@@ -134,14 +182,10 @@ const PrintTemplates = () => {
 
         if (docError) throw docError;
 
-        // Get public URL for preview
-        const { data: urlData } = supabase.storage
-          .from('documents')
-          .getPublicUrl(uploadData.path);
-
         const uploadedDoc: UploadedDocument = {
           ...docData,
-          content: file.content
+          content: file.content,
+          extractedText: file.extractedText
         };
 
         newUploadedDocs.push(uploadedDoc);
@@ -178,18 +222,26 @@ const PrintTemplates = () => {
     }
 
     const activeDoc = uploadedDocs[activeDocIndex];
-    if (!activeDoc?.content) {
+    const editableContent = activeDoc?.content || activeDoc?.extractedText;
+    
+    if (!editableContent) {
       toast({
         title: "Cannot edit this file",
-        description: "Find and replace is only available for text files.",
+        description: "Find and replace is only available for text files and documents with extracted text.",
         variant: "destructive",
       });
       return;
     }
 
-    const updatedContent = activeDoc.content.replace(findText, replaceText);
+    const updatedContent = editableContent.replace(findText, replaceText);
     const updatedDocs = [...uploadedDocs];
-    updatedDocs[activeDocIndex] = { ...activeDoc, content: updatedContent };
+    
+    if (activeDoc.content) {
+      updatedDocs[activeDocIndex] = { ...activeDoc, content: updatedContent };
+    } else if (activeDoc.extractedText) {
+      updatedDocs[activeDocIndex] = { ...activeDoc, extractedText: updatedContent };
+    }
+    
     setUploadedDocs(updatedDocs);
 
     toast({
@@ -213,19 +265,27 @@ const PrintTemplates = () => {
     }
 
     const activeDoc = uploadedDocs[activeDocIndex];
-    if (!activeDoc?.content) {
+    const editableContent = activeDoc?.content || activeDoc?.extractedText;
+    
+    if (!editableContent) {
       toast({
         title: "Cannot edit this file",
-        description: "Find and replace is only available for text files.",
+        description: "Find and replace is only available for text files and documents with extracted text.",
         variant: "destructive",
       });
       return;
     }
 
     const regex = new RegExp(findText, 'g');
-    const updatedContent = activeDoc.content.replace(regex, replaceText);
+    const updatedContent = editableContent.replace(regex, replaceText);
     const updatedDocs = [...uploadedDocs];
-    updatedDocs[activeDocIndex] = { ...activeDoc, content: updatedContent };
+    
+    if (activeDoc.content) {
+      updatedDocs[activeDocIndex] = { ...activeDoc, content: updatedContent };
+    } else if (activeDoc.extractedText) {
+      updatedDocs[activeDocIndex] = { ...activeDoc, extractedText: updatedContent };
+    }
+    
     setUploadedDocs(updatedDocs);
 
     toast({
@@ -277,6 +337,7 @@ const PrintTemplates = () => {
               <CardTitle className="flex items-center gap-2">
                 <Upload className="h-5 w-5" />
                 Upload Documents
+                {isExtractingText && <span className="text-sm text-muted-foreground">(Extracting text...)</span>}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -331,10 +392,13 @@ const PrintTemplates = () => {
             </CardContent>
           </Card>
 
-          {/* Preview Section */}
+          {/* Enhanced Preview Section */}
           <Card>
             <CardHeader>
-              <CardTitle>Document Preview</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Eye className="h-5 w-5" />
+                Document Preview
+              </CardTitle>
               {uploadedDocs.length > 0 && (
                 <div className="flex gap-1 flex-wrap">
                   {uploadedDocs.map((doc, index) => (
@@ -375,14 +439,36 @@ const PrintTemplates = () => {
                             className="mt-2"
                             onClick={() => window.open(`https://ihnsvmyfuyetvcdufzff.supabase.co/storage/v1/object/public/documents/${activeDocument.file_path}`, '_blank')}
                           >
+                            <Download className="h-4 w-4 mr-1" />
                             Open PDF
                           </Button>
                         </div>
                       </div>
-                    ) : activeDocument.file_type === 'text/plain' && activeDocument.content ? (
+                    ) : (activeDocument.file_type === 'text/plain' && activeDocument.content) || activeDocument.extractedText ? (
                       <div className="w-full h-full">
-                        <div className="bg-white p-4 rounded border text-sm font-mono whitespace-pre-wrap break-words">
-                          {activeDocument.content}
+                        <div className="bg-white p-4 rounded border text-sm font-mono whitespace-pre-wrap break-words h-full overflow-auto">
+                          <div className="mb-3 pb-2 border-b border-gray-200 flex items-center justify-between">
+                            <div>
+                              <h3 className="font-semibold text-gray-800">{activeDocument.file_name}</h3>
+                              <p className="text-xs text-gray-500">
+                                {activeDocument.file_type.includes('word') ? 'Word Document' : 'Text Document'} • 
+                                {(activeDocument.file_size / 1024).toFixed(2)} KB
+                              </p>
+                            </div>
+                            {activeDocument.file_type.includes('word') && (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => window.open(`https://ihnsvmyfuyetvcdufzff.supabase.co/storage/v1/object/public/documents/${activeDocument.file_path}`, '_blank')}
+                              >
+                                <Download className="h-3 w-3 mr-1" />
+                                Original
+                              </Button>
+                            )}
+                          </div>
+                          <div className="text-gray-700 leading-relaxed">
+                            {activeDocument.content || activeDocument.extractedText}
+                          </div>
                         </div>
                       </div>
                     ) : (activeDocument.file_type === 'application/msword' || activeDocument.file_type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') ? (
@@ -393,14 +479,16 @@ const PrintTemplates = () => {
                           <p className="text-xs text-muted-foreground mt-1">
                             Word document uploaded successfully
                           </p>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="mt-2"
-                            onClick={() => window.open(`https://ihnsvmyfuyetvcdufzff.supabase.co/storage/v1/object/public/documents/${activeDocument.file_path}`, '_blank')}
-                          >
-                            Download Document
-                          </Button>
+                          <div className="flex gap-2 mt-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => window.open(`https://ihnsvmyfuyetvcdufzff.supabase.co/storage/v1/object/public/documents/${activeDocument.file_path}`, '_blank')}
+                            >
+                              <Download className="h-4 w-4 mr-1" />
+                              Download
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     ) : (
@@ -459,7 +547,7 @@ const PrintTemplates = () => {
           </Card>
         )}
 
-        {/* Action Buttons */}
+        {/* Enhanced Action Buttons */}
         {uploadedDocs.length > 0 && (
           <Card>
             <CardHeader>
@@ -472,7 +560,7 @@ const PrintTemplates = () => {
                     <Button 
                       variant="outline" 
                       className="flex items-center gap-2"
-                      disabled={!activeDocument?.content}
+                      disabled={!activeDocument?.content && !activeDocument?.extractedText}
                     >
                       <Search className="h-4 w-4" />
                       Find & Replace
@@ -519,9 +607,9 @@ const PrintTemplates = () => {
                   Print Document
                 </Button>
               </div>
-              {activeDocument && !activeDocument.content && (
+              {activeDocument && !activeDocument.content && !activeDocument.extractedText && (
                 <p className="text-xs text-muted-foreground mt-2">
-                  Find & Replace is only available for text files
+                  Find & Replace is only available for text files and documents with extracted content
                 </p>
               )}
             </CardContent>
