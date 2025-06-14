@@ -163,6 +163,11 @@ const Sidebar = () => {
       to: '/banking-accounts',
     },
     {
+      icon: <PiggyBank size={isCollapsed ? 20 : 16} />,
+      label: 'OD Records',
+      to: '/od-records',
+    },
+    {
       icon: <Globe size={isCollapsed ? 20 : 16} />,
       label: 'Digital Services',
       to: '/online-services',

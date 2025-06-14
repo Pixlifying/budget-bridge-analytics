@@ -390,6 +390,36 @@ export type Database = {
         }
         Relationships: []
       }
+      od_records: {
+        Row: {
+          amount_given: number
+          amount_received: number
+          cash_in_hand: number
+          created_at: string
+          date: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          amount_given?: number
+          amount_received?: number
+          cash_in_hand?: number
+          created_at?: string
+          date?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          amount_given?: number
+          amount_received?: number
+          cash_in_hand?: number
+          created_at?: string
+          date?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       online_services: {
         Row: {
           amount: number

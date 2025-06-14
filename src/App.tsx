@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -29,6 +28,7 @@ import NotFound from "@/pages/NotFound";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import ODRecords from "@/pages/ODRecords";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +45,7 @@ const App = () => (
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/banking-services" element={<BankingServices />} />
                   <Route path="/banking-accounts" element={<BankingAccounts />} />
+                  <Route path="/od-records" element={<ODRecords />} />
                   <Route path="/online-services" element={<OnlineServices />} />
                   <Route path="/applications" element={<Applications />} />
                   <Route path="/photostat" element={<Photostat />} />
