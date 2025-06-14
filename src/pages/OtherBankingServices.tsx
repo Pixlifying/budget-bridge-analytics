@@ -348,12 +348,12 @@ const OtherBankingServices = () => {
                 insurance_type: '' // Reset insurance type when account type changes
               }))}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600">
                 <SelectValue placeholder="Select account type" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 z-50">
                 {accountTypes.map((type) => (
-                  <SelectItem key={type} value={type}>
+                  <SelectItem key={type} value={type} className="hover:bg-gray-100 dark:hover:bg-slate-700">
                     {type}
                   </SelectItem>
                 ))}
@@ -368,12 +368,12 @@ const OtherBankingServices = () => {
                 value={newEntry.insurance_type}
                 onValueChange={(value) => setNewEntry(prev => ({ ...prev, insurance_type: value }))}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600">
                   <SelectValue placeholder="Select insurance type" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 z-50">
                   {insuranceTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
+                    <SelectItem key={type} value={type} className="hover:bg-gray-100 dark:hover:bg-slate-700">
                       {type}
                     </SelectItem>
                   ))}
@@ -469,7 +469,7 @@ const OtherBankingServices = () => {
 
       {/* Edit Entry Dialog */}
       <Dialog open={!!editingEntry} onOpenChange={() => setEditingEntry(null)}>
-        <DialogContent>
+        <DialogContent className="bg-white dark:bg-slate-800">
           <DialogHeader>
             <DialogTitle>Edit Other Banking Service</DialogTitle>
           </DialogHeader>
@@ -494,12 +494,12 @@ const OtherBankingServices = () => {
                   insurance_type: '' // Reset insurance type when account type changes
                 }))}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600">
                   <SelectValue placeholder="Select account type" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 z-50">
                   {accountTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
+                    <SelectItem key={type} value={type} className="hover:bg-gray-100 dark:hover:bg-slate-700">
                       {type}
                     </SelectItem>
                   ))}
@@ -514,12 +514,12 @@ const OtherBankingServices = () => {
                   value={editForm.insurance_type}
                   onValueChange={(value) => setEditForm(prev => ({ ...prev, insurance_type: value }))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600">
                     <SelectValue placeholder="Select insurance type" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 z-50">
                     {insuranceTypes.map((type) => (
-                      <SelectItem key={type} value={type}>
+                      <SelectItem key={type} value={type} className="hover:bg-gray-100 dark:hover:bg-slate-700">
                         {type}
                       </SelectItem>
                     ))}
