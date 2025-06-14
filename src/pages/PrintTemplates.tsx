@@ -283,7 +283,7 @@ Note: For best results, please convert .doc files to .docx format and re-upload.
       return;
     }
 
-    const regex = new RegExp(findText, 'g');
+    const regex = new RegExp(findText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
     const updatedContent = editableContent.replace(regex, replaceText);
     const updatedDocs = [...uploadedDocs];
     
