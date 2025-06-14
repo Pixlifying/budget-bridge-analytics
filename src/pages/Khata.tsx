@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Edit, Trash2, Download, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Download, ArrowLeft, ArrowRight, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -442,6 +442,102 @@ const Khata = () => {
     return customer.opening_balance + totalCredits - totalDebits;
   };
 
+  // Calculate running balance for transactions
+  const calculateRunningBalance = (transactions: KhataTransaction[], openingBalance: number) => {
+    let runningBalance = openingBalance;
+    return transactions.map(transaction => {
+      if (transaction.type === 'credit') {
+        runningBalance += Number(transaction.amount);
+      } else {
+        runningBalance -= Number(transaction.amount);
+      }
+      return { ...transaction, runningBalance };
+    });
+  };
+
+  const handlePrintCustomer = () => {
+    if (!selectedCustomer) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const balance = calculateBalance(selectedCustomer);
+    const transactionsWithBalance = calculateRunningBalance(
+      [...selectedCustomer.transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
+      selectedCustomer.opening_balance
+    );
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Khata Report - ${selectedCustomer.name}</title>
+          <style>
+            @page { size: A4; margin: 20mm; }
+            body { font-family: Arial, sans-serif; font-size: 12px; }
+            h1 { text-align: center; margin-bottom: 20px; }
+            .customer-info { margin-bottom: 20px; padding: 10px; border: 1px solid #ddd; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+            th, td { border: 1px solid #000; padding: 8px; text-align: left; }
+            th { background-color: #f0f0f0; }
+            .text-right { text-align: right; }
+            .text-center { text-align: center; }
+            .print-date { text-align: right; margin-bottom: 10px; font-size: 10px; }
+            .credit { color: green; }
+            .debit { color: red; }
+            .balance { font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          <div class="print-date">Printed on: ${format(new Date(), 'dd MMM yyyy, HH:mm')}</div>
+          <h1>Khata Report - ${selectedCustomer.name}</h1>
+          <div class="customer-info">
+            <p><strong>Customer Name:</strong> ${selectedCustomer.name}</p>
+            <p><strong>Phone:</strong> ${selectedCustomer.phone}</p>
+            <p><strong>Opening Balance:</strong> ${formatCurrency(selectedCustomer.opening_balance)}</p>
+            <p><strong>Opening Date:</strong> ${format(new Date(selectedCustomer.opening_date), 'dd MMM yyyy')}</p>
+            <p><strong>Current Balance:</strong> <span class="${balance >= 0 ? 'credit' : 'debit'}">${formatCurrency(balance)}</span></p>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Type</th>
+                <th class="text-right">Amount</th>
+                <th class="text-right">Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>${format(new Date(selectedCustomer.opening_date), 'dd/MM/yyyy')}</td>
+                <td>Opening Balance</td>
+                <td class="text-center">-</td>
+                <td class="text-center">-</td>
+                <td class="text-right balance">${formatCurrency(selectedCustomer.opening_balance)}</td>
+              </tr>
+              ${transactionsWithBalance.map(transaction => `
+                <tr>
+                  <td>${format(new Date(transaction.date), 'dd/MM/yyyy')}</td>
+                  <td>${transaction.description || '-'}</td>
+                  <td class="text-center ${transaction.type}">${transaction.type.toUpperCase()}</td>
+                  <td class="text-right ${transaction.type}">
+                    ${transaction.type === 'credit' ? '+' : '-'}${formatCurrency(transaction.amount)}
+                  </td>
+                  <td class="text-right balance">${formatCurrency(transaction.runningBalance)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
   const filteredCustomers = customers.filter(customer =>
     customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     customer.phone.includes(searchTerm)
@@ -456,65 +552,78 @@ const Khata = () => {
     return transactions;
   };
 
-  const renderTransactionTable = (transactions: KhataTransaction[]) => (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Date</TableHead>
-          <TableHead>Description</TableHead>
-          <TableHead>Type</TableHead>
-          <TableHead>Amount</TableHead>
-          <TableHead>Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {transactions.length === 0 ? (
+  const renderTransactionTable = (transactions: KhataTransaction[]) => {
+    const transactionsWithBalance = calculateRunningBalance(
+      [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
+      selectedCustomer?.opening_balance || 0
+    );
+
+    return (
+      <Table>
+        <TableHeader>
           <TableRow>
-            <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-              No transactions found
-            </TableCell>
+            <TableHead>Date</TableHead>
+            <TableHead>Description</TableHead>
+            <TableHead>Type</TableHead>
+            <TableHead>Amount</TableHead>
+            <TableHead>Balance</TableHead>
+            <TableHead>Actions</TableHead>
           </TableRow>
-        ) : (
-          transactions.map((transaction) => (
-            <TableRow key={transaction.id}>
-              <TableCell>{format(new Date(transaction.date), 'dd/MM/yyyy')}</TableCell>
-              <TableCell>{transaction.description || '-'}</TableCell>
-              <TableCell>
-                <span className={`px-2 py-1 rounded text-xs ${
-                  transaction.type === 'credit' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                }`}>
-                  {transaction.type.toUpperCase()}
-                </span>
-              </TableCell>
-              <TableCell>
-                <span className={transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'}>
-                  {transaction.type === 'credit' ? '+' : '-'}{formatCurrency(transaction.amount)}
-                </span>
-              </TableCell>
-              <TableCell>
-                <div className="flex gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => openEditTransaction(transaction)}
-                  >
-                    <Edit size={16} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => initiateDelete(transaction.id, 'transaction')}
-                  >
-                    <Trash2 size={16} />
-                  </Button>
-                </div>
+        </TableHeader>
+        <TableBody>
+          {transactionsWithBalance.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                No transactions found
               </TableCell>
             </TableRow>
-          ))
-        )}
-      </TableBody>
-    </Table>
-  );
+          ) : (
+            transactionsWithBalance.map((transaction) => (
+              <TableRow key={transaction.id}>
+                <TableCell>{format(new Date(transaction.date), 'dd/MM/yyyy')}</TableCell>
+                <TableCell>{transaction.description || '-'}</TableCell>
+                <TableCell>
+                  <span className={`px-2 py-1 rounded text-xs ${
+                    transaction.type === 'credit' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  }`}>
+                    {transaction.type.toUpperCase()}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <span className={transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'}>
+                    {transaction.type === 'credit' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <span className={`font-semibold ${transaction.runningBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {formatCurrency(transaction.runningBalance)}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openEditTransaction(transaction)}
+                    >
+                      <Edit size={16} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => initiateDelete(transaction.id, 'transaction')}
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+    );
+  };
 
   if (selectedCustomer) {
     const balance = calculateBalance(selectedCustomer);
@@ -538,6 +647,14 @@ const Khata = () => {
             <p className="text-muted-foreground">{selectedCustomer.phone}</p>
           </div>
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePrintCustomer}
+            >
+              <Printer size={16} className="mr-2" />
+              Print Report
+            </Button>
             <Button
               variant="outline"
               size="sm"

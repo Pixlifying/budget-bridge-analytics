@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
@@ -288,9 +287,11 @@ const ODRecords = () => {
             th, td { border: 1px solid #000; padding: 8px; text-align: left; }
             th { background-color: #f0f0f0; }
             .text-right { text-align: right; }
+            .print-date { text-align: right; margin-bottom: 10px; font-size: 10px; }
           </style>
         </head>
         <body>
+          <div class="print-date">Printed on: ${format(new Date(), 'dd MMM yyyy, HH:mm')}</div>
           <h1>OD Records Report - ${periodText}</h1>
           <div class="summary">
             <p><strong>Total Last Balance:</strong> ₹${totalLastBalance.toFixed(2)}</p>
