@@ -344,59 +344,37 @@ Note: For best results, please convert .doc files to .docx format and re-upload.
       return;
     }
 
-    // Generate print-friendly HTML
+    // Generate clean print-friendly HTML without headers
     const printHTML = `
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Print - ${activeDoc.file_name}</title>
+          <title></title>
           <style>
             body {
               font-family: 'Times New Roman', serif;
               font-size: 12pt;
               line-height: 1.6;
-              margin: 1in;
+              margin: 0.5in;
               color: #000;
               background: #fff;
-            }
-            .document-header {
-              text-align: center;
-              margin-bottom: 30px;
-              border-bottom: 2px solid #333;
-              padding-bottom: 15px;
-            }
-            .document-title {
-              font-size: 16pt;
-              font-weight: bold;
-              margin-bottom: 5px;
-            }
-            .document-info {
-              font-size: 10pt;
-              color: #666;
             }
             .document-content {
               white-space: pre-wrap;
               word-wrap: break-word;
-              text-align: justify;
+              text-align: left;
             }
             @media print {
               body {
                 margin: 0.5in;
               }
-              .no-print {
-                display: none;
+              @page {
+                margin: 0.5in;
               }
             }
           </style>
         </head>
         <body>
-          <div class="document-header">
-            <div class="document-title">${activeDoc.file_name}</div>
-            <div class="document-info">
-              Printed on: ${new Date().toLocaleDateString()} | 
-              File size: ${(activeDoc.file_size / 1024).toFixed(2)} KB
-            </div>
-          </div>
           <div class="document-content">${contentToPrint.replace(/\n/g, '<br>')}</div>
         </body>
       </html>
@@ -419,7 +397,7 @@ Note: For best results, please convert .doc files to .docx format and re-upload.
 
     toast({
       title: "Print initiated",
-      description: `Printing ${activeDoc.file_name} with your changes.`,
+      description: `Printing document content with your changes.`,
     });
   };
 
