@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Edit, Trash2, Download, ArrowLeft, ArrowRight } from 'lucide-react';
@@ -32,6 +31,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
 
 interface KhataCustomer {
   id: string;
@@ -442,8 +447,79 @@ const Khata = () => {
     customer.phone.includes(searchTerm)
   );
 
+  // Helper functions to filter transactions for tabs
+  const getTransactionsByType = (transactions: KhataTransaction[], type: 'credit' | 'debit') => {
+    return transactions.filter(t => t.type === type);
+  };
+
+  const getAllTransactions = (transactions: KhataTransaction[]) => {
+    return transactions;
+  };
+
+  const renderTransactionTable = (transactions: KhataTransaction[]) => (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Date</TableHead>
+          <TableHead>Description</TableHead>
+          <TableHead>Type</TableHead>
+          <TableHead>Amount</TableHead>
+          <TableHead>Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {transactions.length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+              No transactions found
+            </TableCell>
+          </TableRow>
+        ) : (
+          transactions.map((transaction) => (
+            <TableRow key={transaction.id}>
+              <TableCell>{format(new Date(transaction.date), 'dd/MM/yyyy')}</TableCell>
+              <TableCell>{transaction.description || '-'}</TableCell>
+              <TableCell>
+                <span className={`px-2 py-1 rounded text-xs ${
+                  transaction.type === 'credit' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                }`}>
+                  {transaction.type.toUpperCase()}
+                </span>
+              </TableCell>
+              <TableCell>
+                <span className={transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'}>
+                  {transaction.type === 'credit' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                </span>
+              </TableCell>
+              <TableCell>
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => openEditTransaction(transaction)}
+                  >
+                    <Edit size={16} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => initiateDelete(transaction.id, 'transaction')}
+                  >
+                    <Trash2 size={16} />
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))
+        )}
+      </TableBody>
+    </Table>
+  );
+
   if (selectedCustomer) {
     const balance = calculateBalance(selectedCustomer);
+    const creditTransactions = getTransactionsByType(selectedCustomer.transactions, 'credit');
+    const debitTransactions = getTransactionsByType(selectedCustomer.transactions, 'debit');
     
     return (
       <div className="container px-4 py-6 space-y-6 max-w-4xl mx-auto">
@@ -512,63 +588,28 @@ const Khata = () => {
             <h3 className="text-lg font-semibold">Transactions</h3>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {selectedCustomer.transactions.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                      No transactions found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  selectedCustomer.transactions.map((transaction) => (
-                    <TableRow key={transaction.id}>
-                      <TableCell>{format(new Date(transaction.date), 'dd/MM/yyyy')}</TableCell>
-                      <TableCell>{transaction.description || '-'}</TableCell>
-                      <TableCell>
-                        <span className={`px-2 py-1 rounded text-xs ${
-                          transaction.type === 'credit' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                        }`}>
-                          {transaction.type.toUpperCase()}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className={transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'}>
-                          {transaction.type === 'credit' ? '+' : '-'}{formatCurrency(transaction.amount)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openEditTransaction(transaction)}
-                          >
-                            <Edit size={16} />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => initiateDelete(transaction.id, 'transaction')}
-                          >
-                            <Trash2 size={16} />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+            <Tabs defaultValue="all" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="all">
+                  All ({selectedCustomer.transactions.length})
+                </TabsTrigger>
+                <TabsTrigger value="credit" className="text-green-600">
+                  Credits ({creditTransactions.length})
+                </TabsTrigger>
+                <TabsTrigger value="debit" className="text-red-600">
+                  Debits ({debitTransactions.length})
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="all" className="mt-4">
+                {renderTransactionTable(getAllTransactions(selectedCustomer.transactions))}
+              </TabsContent>
+              <TabsContent value="credit" className="mt-4">
+                {renderTransactionTable(creditTransactions)}
+              </TabsContent>
+              <TabsContent value="debit" className="mt-4">
+                {renderTransactionTable(debitTransactions)}
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
 
