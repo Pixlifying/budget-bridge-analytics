@@ -13,6 +13,13 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
 import { exportToPDF } from '@/utils/calculateUtils';
 
@@ -50,6 +57,7 @@ const Papers = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSchool, setSelectedSchool] = useState<SchoolWithClasses | null>(null);
+  const [printSchoolId, setPrintSchoolId] = useState<string>('all');
 
   // Dialog states
   const [showSchoolDialog, setShowSchoolDialog] = useState(false);
@@ -284,7 +292,23 @@ const Papers = () => {
     setShowDeleteConfirm(true);
   };
 
+  const getSchoolsToPrint = () => {
+    if (printSchoolId === 'all') {
+      return filteredSchools;
+    }
+    return filteredSchools.filter(school => school.id === printSchoolId);
+  };
+
   const handlePrint = () => {
+    const schoolsToPrint = getSchoolsToPrint();
+    const schoolTotal = schoolsToPrint.reduce((total, school) => {
+      return total + school.classes.reduce((classTotal, classItem) => {
+        return classTotal + classItem.subjects.reduce((subjectTotal, subject) => {
+          return subjectTotal + (subject.paper_count * subject.amount);
+        }, 0);
+      }, 0);
+    }, 0);
+
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
@@ -294,8 +318,27 @@ const Papers = () => {
         <head>
           <title>Papers Report</title>
           <style>
-            @page { size: A4; margin: 20mm; }
-            body { font-family: Arial, sans-serif; font-size: 12px; }
+            @page { 
+              size: A4; 
+              margin: 20mm;
+              @top-left { content: none; }
+              @top-center { content: none; }
+              @top-right { content: none; }
+              @bottom-left { content: none; }
+              @bottom-center { content: none; }
+              @bottom-right { content: none; }
+            }
+            @media print {
+              * { -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }
+              html, body { margin: 0 !important; padding: 0 !important; }
+              header, footer { display: none !important; }
+            }
+            body { 
+              font-family: Arial, sans-serif; 
+              font-size: 12px; 
+              margin: 0;
+              padding: 0;
+            }
             h1 { text-align: center; margin-bottom: 20px; }
             .school-section { margin-bottom: 30px; border: 1px solid #000; padding: 15px; }
             .school-header { font-weight: bold; font-size: 14px; margin-bottom: 10px; }
@@ -306,9 +349,9 @@ const Papers = () => {
           </style>
         </head>
         <body>
-          <h1>Papers Report</h1>
-          <div class="total">Grand Total: ₹${grandTotal.toFixed(2)}</div>
-          ${filteredSchools.map((school) => `
+          <h1>Papers Report${printSchoolId !== 'all' ? ` - ${schoolsToPrint[0]?.name || ''}` : ''}</h1>
+          <div class="total">Total Amount: ₹${schoolTotal.toFixed(2)}</div>
+          ${schoolsToPrint.map((school) => `
             <div class="school-section">
               <div class="school-header">
                 ${school.name}
@@ -351,7 +394,8 @@ const Papers = () => {
   };
 
   const handleDownloadPDF = () => {
-    const pdfData = schools.flatMap(school =>
+    const schoolsToPrint = getSchoolsToPrint();
+    const pdfData = schoolsToPrint.flatMap(school =>
       school.classes.flatMap(classItem =>
         classItem.subjects.map(subject => ({
           school: school.name,
@@ -364,7 +408,8 @@ const Papers = () => {
       )
     );
     
-    exportToPDF(pdfData, 'papers-report');
+    const fileName = printSchoolId === 'all' ? 'papers-report' : `papers-report-${schoolsToPrint[0]?.name.replace(/\s+/g, '-').toLowerCase()}`;
+    exportToPDF(pdfData, fileName);
     toast.success("Papers report downloaded successfully");
   };
 
@@ -392,6 +437,22 @@ const Papers = () => {
         onSearchChange={setSearchTerm}
         searchPlaceholder="Search by school name..."
       >
+        <div className="flex items-center gap-2">
+          <Select value={printSchoolId} onValueChange={setPrintSchoolId}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Select school to print" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Schools</SelectItem>
+              {schools.map((school) => (
+                <SelectItem key={school.id} value={school.id}>
+                  {school.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         <Button onClick={handlePrint} variant="outline">
           <Printer size={16} className="mr-2" />
           Print
