@@ -27,17 +27,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CalendarIcon, Printer, Download, Plus, TrendingUp } from 'lucide-react';
+import { CalendarIcon, Printer, Download, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import PageHeader from '@/components/layout/PageHeader';
 import PageWrapper from '@/components/layout/PageWrapper';
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from '@/components/ui/chart';
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 
 interface ODRecord {
   id: string;
@@ -47,21 +41,6 @@ interface ODRecord {
   date: string;
   created_at: string;
 }
-
-const chartConfig = {
-  received: {
-    label: "Amount Received",
-    color: "hsl(142, 76%, 36%)",
-  },
-  given: {
-    label: "Amount Given", 
-    color: "hsl(0, 84%, 60%)",
-  },
-  cash_in_hand: {
-    label: "Cash in Hand",
-    color: "hsl(221, 83%, 53%)",
-  },
-};
 
 const ODRecords = () => {
   const [records, setRecords] = useState<ODRecord[]>([]);
@@ -169,18 +148,6 @@ const ODRecords = () => {
   const totalReceived = records.reduce((sum, record) => sum + record.amount_received, 0);
   const totalGiven = records.reduce((sum, record) => sum + record.amount_given, 0);
   const totalCashInHand = totalReceived - totalGiven;
-
-  // Prepare chart data
-  const chartData = records
-    .slice()
-    .reverse()
-    .map((record, index) => ({
-      date: format(new Date(record.date), 'MMM dd'),
-      received: record.amount_received,
-      given: record.amount_given,
-      cash_in_hand: record.cash_in_hand,
-      index
-    }));
 
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
@@ -326,68 +293,6 @@ const ODRecords = () => {
           )}
         </CardContent>
       </Card>
-
-      {/* Analytics Chart */}
-      {chartData.length > 0 && (
-        <Card className="mb-6 animate-fade-in">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp size={20} />
-              OD Analytics
-              <div className="ml-auto text-sm text-muted-foreground">
-                Net Change: <span className={`font-semibold ${totalCashInHand >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {totalCashInHand >= 0 ? '+' : ''}₹{totalCashInHand.toFixed(2)}
-                </span>
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={chartConfig} className="h-80 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
-                  <XAxis 
-                    dataKey="date" 
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                  />
-                  <YAxis 
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                  />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Line
-                    type="monotone"
-                    dataKey="received"
-                    stroke="var(--color-received)"
-                    strokeWidth={3}
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6, className: "animate-pulse" }}
-                    className="animate-fade-in"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="given"
-                    stroke="var(--color-given)"
-                    strokeWidth={3}
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6, className: "animate-pulse" }}
-                    className="animate-fade-in"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="cash_in_hand"
-                    stroke="var(--color-cash_in_hand)"
-                    strokeWidth={3}
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6, className: "animate-pulse" }}
-                    className="animate-fade-in"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Filters and Actions */}
       <Card className="mb-6 animate-fade-in">
