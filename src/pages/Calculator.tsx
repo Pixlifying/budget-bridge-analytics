@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -90,6 +90,67 @@ const Calculator = () => {
     setWaitingForSecondOperand(false);
   };
 
+  // Keyboard event handler
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      const key = event.key;
+
+      // Prevent default behavior for calculator keys
+      if (/[0-9+\-*/.%=]/.test(key) || key === 'Enter' || key === 'Escape' || key === 'Backspace') {
+        event.preventDefault();
+      }
+
+      // Handle number keys
+      if (/[0-9]/.test(key)) {
+        inputDigit(key);
+      }
+      // Handle decimal point
+      else if (key === '.') {
+        inputDecimal();
+      }
+      // Handle operators
+      else if (key === '+') {
+        handleOperator('+');
+      }
+      else if (key === '-') {
+        handleOperator('-');
+      }
+      else if (key === '*') {
+        handleOperator('*');
+      }
+      else if (key === '/') {
+        handleOperator('/');
+      }
+      else if (key === '%') {
+        handleOperator('%');
+      }
+      // Handle equals/enter
+      else if (key === '=' || key === 'Enter') {
+        calculateResult();
+      }
+      // Handle clear
+      else if (key === 'Escape' || key === 'c' || key === 'C') {
+        clear();
+      }
+      // Handle backspace (delete last digit)
+      else if (key === 'Backspace') {
+        if (display.length > 1) {
+          setDisplay(display.slice(0, -1));
+        } else {
+          setDisplay('0');
+        }
+      }
+    };
+
+    // Add event listener
+    window.addEventListener('keydown', handleKeyPress);
+
+    // Cleanup event listener on component unmount
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress);
+    };
+  }, [display, firstOperand, operator, waitingForSecondOperand]);
+
   return (
     <PageWrapper 
       title="Calculator" 
@@ -137,6 +198,10 @@ const Calculator = () => {
               <Button onClick={() => inputDigit('0')} className="col-span-2">0</Button>
               <Button onClick={() => inputDecimal()}>.</Button>
               <Button variant="default" onClick={() => calculateResult()}>=</Button>
+            </div>
+            
+            <div className="mt-4 text-xs text-muted-foreground text-center">
+              <p>Keyboard shortcuts: Numbers (0-9), Operators (+, -, *, /, %), Enter/= (calculate), Esc (clear), Backspace (delete)</p>
             </div>
           </CardContent>
         </Card>
