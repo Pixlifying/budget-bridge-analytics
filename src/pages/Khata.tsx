@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Edit, Trash2, Download, ArrowLeft, ArrowRight, Printer } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Download, ArrowLeft, ArrowRight, Printer, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,12 +31,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs';
 
 interface KhataCustomer {
   id: string;
@@ -70,6 +64,7 @@ const Khata = () => {
   const [deleteType, setDeleteType] = useState<'customer' | 'transaction'>('customer');
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [editingTransaction, setEditingTransaction] = useState<KhataTransaction | null>(null);
+  const [transactionFilter, setTransactionFilter] = useState<'all' | 'credit' | 'debit'>('all');
 
   const [customerForm, setCustomerForm] = useState({
     name: '',
@@ -543,92 +538,19 @@ const Khata = () => {
     customer.phone.includes(searchTerm)
   );
 
-  // Helper functions to filter transactions for tabs
-  const getTransactionsByType = (transactions: KhataTransaction[], type: 'credit' | 'debit') => {
-    return transactions.filter(t => t.type === type);
-  };
-
-  const getAllTransactions = (transactions: KhataTransaction[]) => {
-    return transactions;
-  };
-
-  const renderTransactionTable = (transactions: KhataTransaction[]) => {
-    const transactionsWithBalance = calculateRunningBalance(
-      [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
-      selectedCustomer?.opening_balance || 0
-    );
-
-    return (
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Date</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Amount</TableHead>
-            <TableHead>Balance</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {transactionsWithBalance.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                No transactions found
-              </TableCell>
-            </TableRow>
-          ) : (
-            transactionsWithBalance.map((transaction) => (
-              <TableRow key={transaction.id}>
-                <TableCell>{format(new Date(transaction.date), 'dd/MM/yyyy')}</TableCell>
-                <TableCell>{transaction.description || '-'}</TableCell>
-                <TableCell>
-                  <span className={`px-2 py-1 rounded text-xs ${
-                    transaction.type === 'credit' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}>
-                    {transaction.type.toUpperCase()}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <span className={transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'}>
-                    {transaction.type === 'credit' ? '+' : '-'}{formatCurrency(transaction.amount)}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <span className={`font-semibold ${transaction.runningBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {formatCurrency(transaction.runningBalance)}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openEditTransaction(transaction)}
-                    >
-                      <Edit size={16} />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => initiateDelete(transaction.id, 'transaction')}
-                    >
-                      <Trash2 size={16} />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
-    );
+  // Filter transactions based on the selected filter
+  const getFilteredTransactions = (transactions: KhataTransaction[]) => {
+    if (transactionFilter === 'all') return transactions;
+    return transactions.filter(t => t.type === transactionFilter);
   };
 
   if (selectedCustomer) {
     const balance = calculateBalance(selectedCustomer);
-    const creditTransactions = getTransactionsByType(selectedCustomer.transactions, 'credit');
-    const debitTransactions = getTransactionsByType(selectedCustomer.transactions, 'debit');
+    const filteredTransactions = getFilteredTransactions(selectedCustomer.transactions);
+    const transactionsWithBalance = calculateRunningBalance(
+      [...filteredTransactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
+      selectedCustomer.opening_balance
+    );
     
     return (
       <div className="container px-4 py-6 space-y-6 max-w-4xl mx-auto">
@@ -702,31 +624,87 @@ const Khata = () => {
 
         <Card>
           <CardHeader>
-            <h3 className="text-lg font-semibold">Transactions</h3>
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Transactions</h3>
+              <div className="flex items-center gap-2">
+                <Filter size={16} className="text-muted-foreground" />
+                <Select value={transactionFilter} onValueChange={(value: 'all' | 'credit' | 'debit') => setTransactionFilter(value)}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All ({selectedCustomer.transactions.length})</SelectItem>
+                    <SelectItem value="credit">Credits ({selectedCustomer.transactions.filter(t => t.type === 'credit').length})</SelectItem>
+                    <SelectItem value="debit">Debits ({selectedCustomer.transactions.filter(t => t.type === 'debit').length})</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="all" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="all">
-                  All ({selectedCustomer.transactions.length})
-                </TabsTrigger>
-                <TabsTrigger value="credit" className="text-green-600">
-                  Credits ({creditTransactions.length})
-                </TabsTrigger>
-                <TabsTrigger value="debit" className="text-red-600">
-                  Debits ({debitTransactions.length})
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="all" className="mt-4">
-                {renderTransactionTable(getAllTransactions(selectedCustomer.transactions))}
-              </TabsContent>
-              <TabsContent value="credit" className="mt-4">
-                {renderTransactionTable(creditTransactions)}
-              </TabsContent>
-              <TabsContent value="debit" className="mt-4">
-                {renderTransactionTable(debitTransactions)}
-              </TabsContent>
-            </Tabs>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Balance</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {transactionsWithBalance.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      No transactions found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  transactionsWithBalance.map((transaction) => (
+                    <TableRow key={transaction.id}>
+                      <TableCell>{format(new Date(transaction.date), 'dd/MM/yyyy')}</TableCell>
+                      <TableCell>{transaction.description || '-'}</TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          transaction.type === 'credit' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}>
+                          {transaction.type.toUpperCase()}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className={transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'}>
+                          {transaction.type === 'credit' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className={`font-semibold ${transaction.runningBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {formatCurrency(transaction.runningBalance)}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEditTransaction(transaction)}
+                          >
+                            <Edit size={16} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => initiateDelete(transaction.id, 'transaction')}
+                          >
+                            <Trash2 size={16} />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
 
