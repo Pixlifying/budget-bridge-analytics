@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
@@ -59,7 +58,7 @@ const ODRecords = () => {
   const [filterMode, setFilterMode] = useState<'day' | 'month' | 'year'>('day');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   
-  // Form state
+  // Form state - use selected date from filter
   const [formData, setFormData] = useState({
     last_balance: 0,
     amount_received: '',
@@ -113,6 +112,14 @@ const ODRecords = () => {
   useEffect(() => {
     fetchRecords();
   }, [fetchRecords]);
+
+  // Update form date when selectedDate changes
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      date: format(selectedDate, 'yyyy-MM-dd')
+    }));
+  }, [selectedDate]);
 
   // Optimized real-time subscription with debouncing
   useEffect(() => {
@@ -172,7 +179,7 @@ const ODRecords = () => {
         last_balance: 0,
         amount_received: '',
         amount_given: '',
-        date: format(new Date(), 'yyyy-MM-dd')
+        date: format(selectedDate, 'yyyy-MM-dd') // Reset to selected date
       });
     } catch (error) {
       console.error('Error adding OD record:', error);

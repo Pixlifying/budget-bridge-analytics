@@ -63,7 +63,6 @@ const Khata = () => {
   const [customers, setCustomers] = useState<KhataCustomer[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<KhataCustomer | null>(null);
-  const [showAddCustomer, setShowAddCustomer] = useState(false);
   const [showEditCustomer, setShowEditCustomer] = useState(false);
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [showEditTransaction, setShowEditTransaction] = useState(false);
@@ -134,7 +133,9 @@ const Khata = () => {
     fetchCustomers();
   }, []);
 
-  const handleAddCustomer = async () => {
+  const handleAddCustomer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
     if (!customerForm.name || !customerForm.phone) {
       toast.error('Please fill in all required fields');
       return;
@@ -162,7 +163,6 @@ const Khata = () => {
           opening_balance: 0,
           opening_date: new Date().toISOString().split('T')[0],
         });
-        setShowAddCustomer(false);
         toast.success('Customer added successfully');
       }
     } catch (error) {
@@ -911,11 +911,61 @@ const Khata = () => {
     <div className="container px-4 py-6 space-y-6 max-w-4xl mx-auto">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Khata Management</h1>
-        <Button onClick={() => setShowAddCustomer(true)}>
-          <Plus size={16} className="mr-2" />
-          Add Customer
-        </Button>
       </div>
+
+      {/* Inline Add Customer Form */}
+      <Card>
+        <CardHeader>
+          <h3 className="text-lg font-semibold">Add New Customer</h3>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleAddCustomer} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+            <div>
+              <Label htmlFor="customer_name">Name</Label>
+              <Input
+                id="customer_name"
+                value={customerForm.name}
+                onChange={(e) => setCustomerForm(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Customer name"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="customer_phone">Phone</Label>
+              <Input
+                id="customer_phone"
+                value={customerForm.phone}
+                onChange={(e) => setCustomerForm(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="Phone number"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="customer_opening_balance">Opening Balance</Label>
+              <Input
+                id="customer_opening_balance"
+                type="number"
+                value={customerForm.opening_balance}
+                onChange={(e) => setCustomerForm(prev => ({ ...prev, opening_balance: Number(e.target.value) }))}
+                placeholder="Opening balance"
+              />
+            </div>
+            <div>
+              <Label htmlFor="customer_opening_date">Opening Date</Label>
+              <Input
+                id="customer_opening_date"
+                type="date"
+                value={customerForm.opening_date}
+                onChange={(e) => setCustomerForm(prev => ({ ...prev, opening_date: e.target.value }))}
+              />
+            </div>
+            <Button type="submit">
+              <Plus size={16} className="mr-2" />
+              Add Customer
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
       <div className="flex gap-4">
         <div className="relative flex-1">
@@ -995,55 +1045,6 @@ const Khata = () => {
           })
         )}
       </div>
-
-      {/* Add Customer Dialog */}
-      <Dialog open={showAddCustomer} onOpenChange={setShowAddCustomer}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Customer</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="customer_name">Name</Label>
-              <Input
-                id="customer_name"
-                value={customerForm.name}
-                onChange={(e) => setCustomerForm(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Customer name"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="customer_phone">Phone</Label>
-              <Input
-                id="customer_phone"
-                value={customerForm.phone}
-                onChange={(e) => setCustomerForm(prev => ({ ...prev, phone: e.target.value }))}
-                placeholder="Phone number"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="customer_opening_balance">Opening Balance</Label>
-              <Input
-                id="customer_opening_balance"
-                type="number"
-                value={customerForm.opening_balance}
-                onChange={(e) => setCustomerForm(prev => ({ ...prev, opening_balance: Number(e.target.value) }))}
-                placeholder="Opening balance"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="customer_opening_date">Opening Date</Label>
-              <Input
-                id="customer_opening_date"
-                type="date"
-                value={customerForm.opening_date}
-                onChange={(e) => setCustomerForm(prev => ({ ...prev, opening_date: e.target.value }))}
-              />
-            </div>
-            <Button onClick={handleAddCustomer}>Add Customer</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Edit Customer Dialog */}
       <Dialog open={showEditCustomer} onOpenChange={setShowEditCustomer}>
