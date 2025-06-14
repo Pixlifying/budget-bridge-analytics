@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,6 +18,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
   Table,
   TableBody,
   TableCell,
@@ -27,11 +35,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CalendarIcon, Printer, Download, Plus } from 'lucide-react';
+import { CalendarIcon, Printer, Download, Plus, Edit, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import PageHeader from '@/components/layout/PageHeader';
 import PageWrapper from '@/components/layout/PageWrapper';
+import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
 
 interface ODRecord {
   id: string;
@@ -54,6 +63,18 @@ const ODRecords = () => {
     amount_given: '',
     date: format(new Date(), 'yyyy-MM-dd')
   });
+
+  // Edit state
+  const [editingRecord, setEditingRecord] = useState<ODRecord | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    amount_received: '',
+    amount_given: '',
+    date: ''
+  });
+
+  // Delete state
+  const [deletingRecord, setDeletingRecord] = useState<ODRecord | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const fetchRecords = async () => {
     try {
@@ -141,8 +162,86 @@ const ODRecords = () => {
     }
   };
 
+  const handleEdit = (record: ODRecord) => {
+    setEditingRecord(record);
+    setEditFormData({
+      amount_received: record.amount_received.toString(),
+      amount_given: record.amount_given.toString(),
+      date: record.date
+    });
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!editingRecord) return;
+
+    if (!editFormData.amount_received && !editFormData.amount_given) {
+      toast.error('Please enter at least one amount');
+      return;
+    }
+
+    const receivedAmount = parseFloat(editFormData.amount_received) || 0;
+    const givenAmount = parseFloat(editFormData.amount_given) || 0;
+    const calculatedCashInHand = receivedAmount - givenAmount;
+
+    try {
+      const { error } = await supabase
+        .from('od_records')
+        .update({
+          amount_received: receivedAmount,
+          amount_given: givenAmount,
+          cash_in_hand: calculatedCashInHand,
+          date: editFormData.date
+        })
+        .eq('id', editingRecord.id);
+
+      if (error) throw error;
+
+      toast.success('OD record updated successfully');
+      setEditingRecord(null);
+      setEditFormData({
+        amount_received: '',
+        amount_given: '',
+        date: ''
+      });
+    } catch (error) {
+      console.error('Error updating OD record:', error);
+      toast.error('Failed to update OD record');
+    }
+  };
+
+  const handleDelete = (record: ODRecord) => {
+    setDeletingRecord(record);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingRecord) return;
+
+    try {
+      const { error } = await supabase
+        .from('od_records')
+        .delete()
+        .eq('id', deletingRecord.id);
+
+      if (error) throw error;
+
+      toast.success('OD record deleted successfully');
+      setShowDeleteDialog(false);
+      setDeletingRecord(null);
+    } catch (error) {
+      console.error('Error deleting OD record:', error);
+      toast.error('Failed to delete OD record');
+    }
+  };
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleEditInputChange = (field: string, value: string) => {
+    setEditFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const totalReceived = records.reduce((sum, record) => sum + record.amount_received, 0);
@@ -230,6 +329,10 @@ const ODRecords = () => {
   const receivedAmount = parseFloat(formData.amount_received) || 0;
   const givenAmount = parseFloat(formData.amount_given) || 0;
   const previewCashInHand = receivedAmount - givenAmount;
+
+  const editReceivedAmount = parseFloat(editFormData.amount_received) || 0;
+  const editGivenAmount = parseFloat(editFormData.amount_given) || 0;
+  const editPreviewCashInHand = editReceivedAmount - editGivenAmount;
 
   return (
     <PageWrapper title="OD Records">
@@ -380,6 +483,7 @@ const ODRecords = () => {
                     <TableHead className="text-right">Amount Received</TableHead>
                     <TableHead className="text-right">Amount Given</TableHead>
                     <TableHead className="text-right">Cash in Hand</TableHead>
+                    <TableHead className="text-center">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -395,6 +499,26 @@ const ODRecords = () => {
                       <TableCell className={`text-right font-medium ${record.cash_in_hand >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
                         ₹{record.cash_in_hand.toFixed(2)}
                       </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex justify-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(record)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDelete(record)}
+                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -403,6 +527,89 @@ const ODRecords = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editingRecord} onOpenChange={() => setEditingRecord(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit OD Record</DialogTitle>
+            <DialogDescription>
+              Make changes to the OD record. Click save when you're done.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEditSubmit}>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit_amount_received" className="text-right">
+                  Amount Received
+                </Label>
+                <Input
+                  id="edit_amount_received"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={editFormData.amount_received}
+                  onChange={(e) => handleEditInputChange('amount_received', e.target.value)}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit_amount_given" className="text-right">
+                  Amount Given
+                </Label>
+                <Input
+                  id="edit_amount_given"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={editFormData.amount_given}
+                  onChange={(e) => handleEditInputChange('amount_given', e.target.value)}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit_date" className="text-right">
+                  Date
+                </Label>
+                <Input
+                  id="edit_date"
+                  type="date"
+                  value={editFormData.date}
+                  onChange={(e) => handleEditInputChange('date', e.target.value)}
+                  className="col-span-3"
+                />
+              </div>
+              {(editReceivedAmount > 0 || editGivenAmount > 0) && (
+                <div className="col-span-4 p-3 bg-muted rounded-md">
+                  <p className="text-sm text-muted-foreground">
+                    Preview Cash in Hand: <span className={`font-semibold ${editPreviewCashInHand >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      ₹{editPreviewCashInHand.toFixed(2)}
+                    </span>
+                  </p>
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditingRecord(null)}>
+                Cancel
+              </Button>
+              <Button type="submit">Save changes</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <DeleteConfirmation
+        isOpen={showDeleteDialog}
+        onClose={() => {
+          setShowDeleteDialog(false);
+          setDeletingRecord(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Delete OD Record"
+        description={`Are you sure you want to delete this OD record from ${deletingRecord ? format(new Date(deletingRecord.date), 'dd MMM yyyy') : ''}? This action cannot be undone.`}
+      />
     </PageWrapper>
   );
 };

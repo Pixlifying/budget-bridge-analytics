@@ -572,7 +572,6 @@ const Analytics = () => {
                   <RadialBar
                     label={{ position: 'insideStart', fill: '#fff' }}
                     background
-                    clockWise
                     dataKey="value"
                   />
                   <ChartTooltip content={<ChartTooltipContent />} />
