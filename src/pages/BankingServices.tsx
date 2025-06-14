@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { CreditCard, Plus, Edit, Trash2, Printer } from 'lucide-react';
 import { toast } from 'sonner';
@@ -13,6 +12,13 @@ import DownloadButton from '@/components/ui/DownloadButton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -26,6 +32,8 @@ interface BankingService {
   amount: number;
   margin: number;
   transaction_count: number;
+  account_type?: string;
+  insurance_type?: string;
   created_at?: string;
 }
 
@@ -42,13 +50,22 @@ const BankingServices = () => {
     date: new Date().toISOString().split('T')[0],
     amount: 0,
     transaction_count: 1,
+    account_type: '',
+    insurance_type: '',
   });
 
   const [editForm, setEditForm] = useState({
     date: '',
     amount: 0,
     transaction_count: 1,
+    account_type: '',
+    insurance_type: '',
   });
+
+  const accountTypes = ['Saving A/C', 'FD/RD'];
+  const insuranceTypes = ['PMJJY', 'PMSBY'];
+  const showInsuranceField = newEntry.account_type === 'Saving A/C' || newEntry.account_type === 'FD/RD';
+  const showEditInsuranceField = editForm.account_type === 'Saving A/C' || editForm.account_type === 'FD/RD';
 
   const fetchBankingServices = async () => {
     setIsLoading(true);
@@ -66,6 +83,8 @@ const BankingServices = () => {
         amount: Number(entry.amount),
         margin: Number(entry.margin),
         transaction_count: Number(entry.transaction_count),
+        account_type: entry.account_type,
+        insurance_type: entry.insurance_type,
         created_at: entry.created_at
       }));
 
@@ -91,8 +110,13 @@ const BankingServices = () => {
   }, [date, viewMode, bankingServices]);
 
   const handleAddEntry = async () => {
-    if (!newEntry.amount || !newEntry.transaction_count) {
+    if (!newEntry.amount || !newEntry.transaction_count || !newEntry.account_type) {
       toast.error('Please fill in all required fields');
+      return;
+    }
+
+    if (showInsuranceField && !newEntry.insurance_type) {
+      toast.error('Please select an insurance type');
       return;
     }
 
@@ -106,6 +130,8 @@ const BankingServices = () => {
           amount: newEntry.amount,
           margin: margin,
           transaction_count: newEntry.transaction_count,
+          account_type: newEntry.account_type,
+          insurance_type: showInsuranceField ? newEntry.insurance_type : null,
         })
         .select();
 
@@ -118,6 +144,8 @@ const BankingServices = () => {
           amount: Number(data[0].amount),
           margin: Number(data[0].margin),
           transaction_count: Number(data[0].transaction_count),
+          account_type: data[0].account_type,
+          insurance_type: data[0].insurance_type,
           created_at: data[0].created_at
         };
 
@@ -126,6 +154,8 @@ const BankingServices = () => {
           date: new Date().toISOString().split('T')[0],
           amount: 0,
           transaction_count: 1,
+          account_type: '',
+          insurance_type: '',
         });
         toast.success('Banking service added successfully');
       }
@@ -138,6 +168,16 @@ const BankingServices = () => {
   const handleEditEntry = async () => {
     if (!editingEntry) return;
 
+    if (!editForm.account_type) {
+      toast.error('Please select an account type');
+      return;
+    }
+
+    if (showEditInsuranceField && !editForm.insurance_type) {
+      toast.error('Please select an insurance type');
+      return;
+    }
+
     try {
       const margin = calculateBankingServicesMargin(editForm.amount);
       
@@ -148,6 +188,8 @@ const BankingServices = () => {
           amount: editForm.amount,
           margin: margin,
           transaction_count: editForm.transaction_count,
+          account_type: editForm.account_type,
+          insurance_type: showEditInsuranceField ? editForm.insurance_type : null,
         })
         .eq('id', editingEntry.id);
 
@@ -159,6 +201,8 @@ const BankingServices = () => {
         amount: editForm.amount,
         margin: margin,
         transaction_count: editForm.transaction_count,
+        account_type: editForm.account_type,
+        insurance_type: showEditInsuranceField ? editForm.insurance_type : undefined,
       };
 
       setBankingServices(prev =>
@@ -196,6 +240,8 @@ const BankingServices = () => {
       date: format(entry.date, 'yyyy-MM-dd'),
       amount: entry.amount,
       transaction_count: entry.transaction_count,
+      account_type: entry.account_type || '',
+      insurance_type: entry.insurance_type || '',
     });
   };
 
@@ -225,6 +271,8 @@ const BankingServices = () => {
             <thead>
               <tr>
                 <th>Date</th>
+                <th>Account Type</th>
+                <th>Insurance Type</th>
                 <th>Transaction Count</th>
                 <th>Amount</th>
                 <th>Margin</th>
@@ -234,6 +282,8 @@ const BankingServices = () => {
               ${filteredServices.map((service) => `
                 <tr>
                   <td>${format(service.date, 'dd/MM/yyyy')}</td>
+                  <td>${service.account_type || '-'}</td>
+                  <td>${service.insurance_type || '-'}</td>
                   <td>${service.transaction_count}</td>
                   <td>₹${service.amount.toFixed(2)}</td>
                   <td>₹${service.margin.toFixed(2)}</td>
@@ -284,7 +334,7 @@ const BankingServices = () => {
       {/* Add Banking Service Form */}
       <div className="mb-6 p-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg shadow-lg">
         <h3 className="text-lg font-semibold mb-4">Add Banking Service</h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
           <div>
             <Label htmlFor="date">Date</Label>
             <Input
@@ -294,6 +344,48 @@ const BankingServices = () => {
               onChange={(e) => setNewEntry(prev => ({ ...prev, date: e.target.value }))}
             />
           </div>
+          <div>
+            <Label htmlFor="account_type">Account Type</Label>
+            <Select
+              value={newEntry.account_type}
+              onValueChange={(value) => setNewEntry(prev => ({ 
+                ...prev, 
+                account_type: value,
+                insurance_type: '' // Reset insurance type when account type changes
+              }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select account type" />
+              </SelectTrigger>
+              <SelectContent>
+                {accountTypes.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {showInsuranceField && (
+            <div>
+              <Label htmlFor="insurance_type">Insurance Type</Label>
+              <Select
+                value={newEntry.insurance_type}
+                onValueChange={(value) => setNewEntry(prev => ({ ...prev, insurance_type: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select insurance type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {insuranceTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div>
             <Label htmlFor="transaction_count">Transaction Count</Label>
             <Input
@@ -357,11 +449,15 @@ const BankingServices = () => {
               title="Banking Service"
               date={entry.date}
               data={{
+                account_type: entry.account_type || 'N/A',
+                insurance_type: entry.insurance_type || 'N/A',
                 transactions: entry.transaction_count,
                 amount: formatCurrency(entry.amount),
                 margin: formatCurrency(entry.margin)
               }}
               labels={{
+                account_type: 'Account Type',
+                insurance_type: 'Insurance Type',
                 transactions: 'Transactions',
                 amount: 'Amount',
                 margin: 'Margin'
@@ -389,6 +485,48 @@ const BankingServices = () => {
                 onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))}
               />
             </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit_account_type">Account Type</Label>
+              <Select
+                value={editForm.account_type}
+                onValueChange={(value) => setEditForm(prev => ({ 
+                  ...prev, 
+                  account_type: value,
+                  insurance_type: '' // Reset insurance type when account type changes
+                }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select account type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {accountTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {showEditInsuranceField && (
+              <div className="grid gap-2">
+                <Label htmlFor="edit_insurance_type">Insurance Type</Label>
+                <Select
+                  value={editForm.insurance_type}
+                  onValueChange={(value) => setEditForm(prev => ({ ...prev, insurance_type: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select insurance type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {insuranceTypes.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="grid gap-2">
               <Label htmlFor="edit_transaction_count">Transaction Count</Label>
               <Input
