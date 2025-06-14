@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -17,7 +18,8 @@ import {
   ChevronsRight,
   ChevronsDown,
   Landmark,
-  BookOpen
+  BookOpen,
+  Printer
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -191,7 +193,7 @@ const Sidebar = () => {
     },
   ];
 
-  // Apps submenu items (removed Templates)
+  // Apps submenu items
   const appsItems = [
     {
       icon: <Calculator size={isCollapsed ? 20 : 16} />,
@@ -202,6 +204,11 @@ const Sidebar = () => {
       icon: <Calculator size={isCollapsed ? 20 : 16} />,
       label: 'Age Calculator',
       to: '/age-calculator',
+    },
+    {
+      icon: <Printer size={isCollapsed ? 20 : 16} />,
+      label: 'Print & Templates',
+      to: '/print-templates',
     },
   ];
 
