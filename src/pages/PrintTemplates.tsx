@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -345,15 +344,23 @@ Note: For best results, please convert .doc files to .docx format and re-upload.
       return;
     }
 
-    // Generate completely clean print-friendly HTML
+    // Generate completely clean print-friendly HTML that suppresses all browser headers/footers
     const printHTML = `
       <!DOCTYPE html>
       <html>
         <head>
+          <meta charset="utf-8">
           <style>
             @page {
               margin: 0.5in;
               size: auto;
+              /* Completely hide headers and footers */
+              @top-left { content: ""; }
+              @top-center { content: ""; }
+              @top-right { content: ""; }
+              @bottom-left { content: ""; }
+              @bottom-center { content: ""; }
+              @bottom-right { content: ""; }
             }
             * {
               margin: 0;
@@ -368,6 +375,8 @@ Note: For best results, please convert .doc files to .docx format and re-upload.
               background: #fff;
               margin: 0;
               padding: 0;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
             }
             body {
               padding: 0.5in;
@@ -383,17 +392,31 @@ Note: For best results, please convert .doc files to .docx format and re-upload.
                 margin: 0 !important;
                 padding: 0 !important;
                 background: #fff !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
               }
               body {
                 padding: 0.5in !important;
               }
               @page {
                 margin: 0.5in !important;
+                /* Force empty headers and footers */
+                @top-left { content: "" !important; }
+                @top-center { content: "" !important; }
+                @top-right { content: "" !important; }
+                @bottom-left { content: "" !important; }
+                @bottom-center { content: "" !important; }
+                @bottom-right { content: "" !important;
               }
               /* Hide any potential browser elements */
               header, footer, nav, .no-print {
                 display: none !important;
                 visibility: hidden !important;
+              }
+              /* Ensure no page numbering or URL display */
+              * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
               }
             }
           </style>
@@ -403,6 +426,8 @@ Note: For best results, please convert .doc files to .docx format and re-upload.
           <script>
             // Auto-print when page loads
             window.onload = function() {
+              // Remove the title to prevent showing in print header
+              document.title = "";
               setTimeout(function() {
                 window.print();
                 window.onafterprint = function() {
