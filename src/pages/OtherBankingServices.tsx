@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { CreditCard, Plus, Edit, Trash2, Printer } from 'lucide-react';
 import { toast } from 'sonner';
@@ -338,6 +337,7 @@ const OtherBankingServices = () => {
               onChange={(e) => setNewEntry(prev => ({ ...prev, date: e.target.value }))}
             />
           </div>
+          
           <div>
             <Label htmlFor="account_type">Account Type</Label>
             <Select
@@ -360,6 +360,7 @@ const OtherBankingServices = () => {
               </SelectContent>
             </Select>
           </div>
+          
           {showInsuranceField && (
             <div>
               <Label htmlFor="insurance_type">Insurance Type</Label>
@@ -380,6 +381,7 @@ const OtherBankingServices = () => {
               </Select>
             </div>
           )}
+          
           <div>
             <Label htmlFor="transaction_count">Transaction Count</Label>
             <Input
@@ -391,6 +393,7 @@ const OtherBankingServices = () => {
               min="1"
             />
           </div>
+          
           <div>
             <Label htmlFor="amount">Amount</Label>
             <Input
@@ -401,6 +404,7 @@ const OtherBankingServices = () => {
               placeholder="Amount"
             />
           </div>
+          
           <Button onClick={handleAddEntry}>
             Save
           </Button>
@@ -479,6 +483,7 @@ const OtherBankingServices = () => {
                 onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))}
               />
             </div>
+            
             <div className="grid gap-2">
               <Label htmlFor="edit_account_type">Account Type</Label>
               <Select
@@ -501,6 +506,7 @@ const OtherBankingServices = () => {
                 </SelectContent>
               </Select>
             </div>
+            
             {showEditInsuranceField && (
               <div className="grid gap-2">
                 <Label htmlFor="edit_insurance_type">Insurance Type</Label>
@@ -521,6 +527,7 @@ const OtherBankingServices = () => {
                 </Select>
               </div>
             )}
+            
             <div className="grid gap-2">
               <Label htmlFor="edit_transaction_count">Transaction Count</Label>
               <Input
@@ -532,6 +539,7 @@ const OtherBankingServices = () => {
                 min="1"
               />
             </div>
+            
             <div className="grid gap-2">
               <Label htmlFor="edit_amount">Amount</Label>
               <Input
@@ -542,6 +550,7 @@ const OtherBankingServices = () => {
                 placeholder="Amount"
               />
             </div>
+            
             <Button onClick={handleEditEntry}>Update Other Banking Service</Button>
           </div>
         </DialogContent>
