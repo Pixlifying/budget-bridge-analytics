@@ -35,7 +35,6 @@ const PrintTemplates = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [findText, setFindText] = useState('');
   const [replaceText, setReplaceText] = useState('');
-  const [isReplaceDialogOpen, setIsReplaceDialogOpen] = useState(false);
   const [isExtractingText, setIsExtractingText] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -229,7 +228,9 @@ Note: For best results, please convert .doc files to .docx format and re-upload.
     }
 
     const activeDoc = uploadedDocs[activeDocIndex];
-    const editableContent = activeDoc?.content || activeDoc?.extractedText;
+    if (!activeDoc) return;
+
+    const editableContent = activeDoc.content || activeDoc.extractedText;
     
     if (!editableContent) {
       toast({
@@ -255,10 +256,6 @@ Note: For best results, please convert .doc files to .docx format and re-upload.
       title: "Find and Replace",
       description: `Replaced first instance of "${findText}" with "${replaceText}"`,
     });
-    
-    setIsReplaceDialogOpen(false);
-    setFindText('');
-    setReplaceText('');
   };
 
   const handleReplaceAll = () => {
@@ -272,7 +269,9 @@ Note: For best results, please convert .doc files to .docx format and re-upload.
     }
 
     const activeDoc = uploadedDocs[activeDocIndex];
-    const editableContent = activeDoc?.content || activeDoc?.extractedText;
+    if (!activeDoc) return;
+
+    const editableContent = activeDoc.content || activeDoc.extractedText;
     
     if (!editableContent) {
       toast({
@@ -295,14 +294,11 @@ Note: For best results, please convert .doc files to .docx format and re-upload.
     
     setUploadedDocs(updatedDocs);
 
+    const matches = (editableContent.match(regex) || []).length;
     toast({
       title: "Replace All",
-      description: `Replaced all instances of "${findText}" with "${replaceText}"`,
+      description: `Replaced ${matches} instances of "${findText}" with "${replaceText}"`,
     });
-    
-    setIsReplaceDialogOpen(false);
-    setFindText('');
-    setReplaceText('');
   };
 
   const handlePrint = () => {
@@ -554,71 +550,68 @@ Note: For best results, please convert .doc files to .docx format and re-upload.
           </Card>
         )}
 
-        {/* Enhanced Action Buttons */}
+        {/* Inline Find and Replace Section */}
+        {uploadedDocs.length > 0 && activeDocument && (activeDocument.content || activeDocument.extractedText) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Search className="h-5 w-5" />
+                Find & Replace in {activeDocument.file_name}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                <div>
+                  <Label htmlFor="find-input">Find</Label>
+                  <Input
+                    id="find-input"
+                    value={findText}
+                    onChange={(e) => setFindText(e.target.value)}
+                    placeholder="Enter text to find..."
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="replace-input">Replace with</Label>
+                  <Input
+                    id="replace-input"
+                    value={replaceText}
+                    onChange={(e) => setReplaceText(e.target.value)}
+                    placeholder="Enter replacement text..."
+                  />
+                </div>
+                <Button 
+                  onClick={handleFindReplace} 
+                  disabled={!findText.trim()}
+                  className="flex items-center gap-2"
+                >
+                  <Replace className="h-4 w-4" />
+                  Replace
+                </Button>
+                <Button 
+                  onClick={handleReplaceAll} 
+                  variant="outline" 
+                  disabled={!findText.trim()}
+                  className="flex items-center gap-2"
+                >
+                  <Replace className="h-4 w-4" />
+                  Replace All
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Print Action */}
         {uploadedDocs.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle>Document Actions</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap gap-3">
-                <Dialog open={isReplaceDialogOpen} onOpenChange={setIsReplaceDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      className="flex items-center gap-2"
-                      disabled={!activeDocument?.content && !activeDocument?.extractedText}
-                    >
-                      <Search className="h-4 w-4" />
-                      Find & Replace
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Find and Replace in {activeDocument?.file_name}</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="find-text">Find</Label>
-                        <Input
-                          id="find-text"
-                          value={findText}
-                          onChange={(e) => setFindText(e.target.value)}
-                          placeholder="Enter text to find..."
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="replace-text">Replace with</Label>
-                        <Input
-                          id="replace-text"
-                          value={replaceText}
-                          onChange={(e) => setReplaceText(e.target.value)}
-                          placeholder="Enter replacement text..."
-                        />
-                      </div>
-                      <div className="flex gap-2">
-                        <Button onClick={handleFindReplace} className="flex-1">
-                          <Replace className="h-4 w-4 mr-2" />
-                          Replace
-                        </Button>
-                        <Button onClick={handleReplaceAll} variant="outline" className="flex-1">
-                          Replace All
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-
-                <Button onClick={handlePrint} className="flex items-center gap-2">
-                  <Printer className="h-4 w-4" />
-                  Print Document
-                </Button>
-              </div>
-              {activeDocument && !activeDocument.content && !activeDocument.extractedText && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  Find & Replace is only available for text files and documents with extracted content
-                </p>
-              )}
+              <Button onClick={handlePrint} className="flex items-center gap-2">
+                <Printer className="h-4 w-4" />
+                Print Document
+              </Button>
             </CardContent>
           </Card>
         )}
