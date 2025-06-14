@@ -164,7 +164,7 @@ const Sidebar = () => {
     },
     {
       icon: <PiggyBank size={isCollapsed ? 20 : 16} />,
-      label: 'OD Records',
+      label: 'Over Drafts',
       to: '/od-records',
     },
     {

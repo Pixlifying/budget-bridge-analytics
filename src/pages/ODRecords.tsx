@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+
+import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -79,7 +80,7 @@ const ODRecords = () => {
   const [deletingRecord, setDeletingRecord] = useState<ODRecord | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  const fetchRecords = async () => {
+  const fetchRecords = useCallback(async () => {
     try {
       setLoading(true);
       let query = supabase.from('od_records').select('*');
@@ -103,18 +104,20 @@ const ODRecords = () => {
       setRecords(data || []);
     } catch (error) {
       console.error('Error fetching OD records:', error);
-      toast.error('Failed to fetch OD records');
+      toast.error('Failed to fetch over draft records');
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedDate, filterMode]);
 
   useEffect(() => {
     fetchRecords();
-  }, [selectedDate, filterMode]);
+  }, [fetchRecords]);
 
-  // Set up real-time subscription
+  // Optimized real-time subscription with debouncing
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    
     const channel = supabase
       .channel('od_records_changes')
       .on(
@@ -125,15 +128,20 @@ const ODRecords = () => {
           table: 'od_records'
         },
         () => {
-          fetchRecords();
+          // Debounce the fetch to avoid multiple rapid calls
+          clearTimeout(timeoutId);
+          timeoutId = setTimeout(() => {
+            fetchRecords();
+          }, 500);
         }
       )
       .subscribe();
 
     return () => {
+      clearTimeout(timeoutId);
       supabase.removeChannel(channel);
     };
-  }, [selectedDate, filterMode]);
+  }, [fetchRecords]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -159,7 +167,7 @@ const ODRecords = () => {
 
       if (error) throw error;
 
-      toast.success('OD record added successfully');
+      toast.success('Over draft record added successfully');
       setFormData({
         last_balance: 0,
         amount_received: '',
@@ -168,7 +176,7 @@ const ODRecords = () => {
       });
     } catch (error) {
       console.error('Error adding OD record:', error);
-      toast.error('Failed to add OD record');
+      toast.error('Failed to add over draft record');
     }
   };
 
@@ -211,7 +219,7 @@ const ODRecords = () => {
 
       if (error) throw error;
 
-      toast.success('OD record updated successfully');
+      toast.success('Over draft record updated successfully');
       setEditingRecord(null);
       setEditFormData({
         last_balance: 0,
@@ -221,7 +229,7 @@ const ODRecords = () => {
       });
     } catch (error) {
       console.error('Error updating OD record:', error);
-      toast.error('Failed to update OD record');
+      toast.error('Failed to update over draft record');
     }
   };
 
@@ -241,12 +249,12 @@ const ODRecords = () => {
 
       if (error) throw error;
 
-      toast.success('OD record deleted successfully');
+      toast.success('Over draft record deleted successfully');
       setShowDeleteDialog(false);
       setDeletingRecord(null);
     } catch (error) {
       console.error('Error deleting OD record:', error);
-      toast.error('Failed to delete OD record');
+      toast.error('Failed to delete over draft record');
     }
   };
 
@@ -277,7 +285,7 @@ const ODRecords = () => {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>OD Records Report - ${periodText}</title>
+          <title>Over Draft Records Report - ${periodText}</title>
           <style>
             @page { size: A4; margin: 20mm; }
             body { font-family: Arial, sans-serif; font-size: 12px; }
@@ -292,9 +300,9 @@ const ODRecords = () => {
         </head>
         <body>
           <div class="print-date">Printed on: ${format(new Date(), 'dd MMM yyyy, HH:mm')}</div>
-          <h1>OD Records Report - ${periodText}</h1>
+          <h1>Over Draft Records Report - ${periodText}</h1>
           <div class="summary">
-            <p><strong>Total Last Balance:</strong> ₹${totalLastBalance.toFixed(2)}</p>
+            <p><strong>Total OD from Bank:</strong> ₹${totalLastBalance.toFixed(2)}</p>
             <p><strong>Total Amount Received:</strong> ₹${totalReceived.toFixed(2)}</p>
             <p><strong>Total Amount Given:</strong> ₹${totalGiven.toFixed(2)}</p>
             <p><strong>Net Cash in Hand:</strong> ₹${totalCashInHand.toFixed(2)}</p>
@@ -303,7 +311,7 @@ const ODRecords = () => {
             <thead>
               <tr>
                 <th>Date</th>
-                <th>Last Balance</th>
+                <th>OD from Bank</th>
                 <th>Amount Received</th>
                 <th>Amount Given</th>
                 <th>Cash in Hand</th>
@@ -332,7 +340,7 @@ const ODRecords = () => {
 
   const handleDownload = () => {
     const csvContent = [
-      'Date,Last Balance,Amount Received,Amount Given,Cash in Hand',
+      'Date,OD from Bank,Amount Received,Amount Given,Cash in Hand',
       ...records.map(record => 
         `${format(new Date(record.date), 'yyyy-MM-dd')},${record.last_balance || 0},${record.amount_received},${record.amount_given},${record.cash_in_hand}`
       )
@@ -342,7 +350,7 @@ const ODRecords = () => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `od-records-${format(selectedDate, 'yyyy-MM-dd')}.csv`;
+    a.download = `over-draft-records-${format(selectedDate, 'yyyy-MM-dd')}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
     toast.success('CSV downloaded successfully');
@@ -359,15 +367,15 @@ const ODRecords = () => {
   const editPreviewCashInHand = editLastBalance + editReceivedAmount - editGivenAmount;
 
   return (
-    <PageWrapper title="OD Records">
-      <PageHeader title="OD Records" />
+    <PageWrapper title="Over Drafts">
+      <PageHeader title="Over Drafts" />
 
       {/* Add Record Form */}
       <Card className="mb-6 animate-fade-in">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Plus size={20} />
-            Add New OD Record
+            Add New Over Draft Record
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -383,7 +391,7 @@ const ODRecords = () => {
             </div>
 
             <div>
-              <Label htmlFor="last_balance">Last Balance (₹)</Label>
+              <Label htmlFor="last_balance">OD from Bank (₹)</Label>
               <Input
                 id="last_balance"
                 type="number"
@@ -437,7 +445,7 @@ const ODRecords = () => {
       <Card className="mb-6 animate-fade-in">
         <CardHeader>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <CardTitle>OD Records</CardTitle>
+            <CardTitle>Over Draft Records</CardTitle>
             <div className="flex flex-wrap items-center gap-2">
               <Select value={filterMode} onValueChange={(value: 'day' | 'month' | 'year') => setFilterMode(value)}>
                 <SelectTrigger className="w-32">
@@ -488,7 +496,7 @@ const ODRecords = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <Card className="animate-scale-in">
               <CardContent className="p-4">
-                <div className="text-sm text-muted-foreground">Total Last Balance</div>
+                <div className="text-sm text-muted-foreground">Total OD from Bank</div>
                 <div className="text-2xl font-bold text-blue-600">₹{totalLastBalance.toFixed(2)}</div>
               </CardContent>
             </Card>
@@ -519,7 +527,7 @@ const ODRecords = () => {
             <div className="text-center py-4">Loading...</div>
           ) : records.length === 0 ? (
             <div className="text-center py-4 text-muted-foreground">
-              No OD records found for the selected period
+              No over draft records found for the selected period
             </div>
           ) : (
             <div className="overflow-x-auto animate-fade-in">
@@ -527,7 +535,7 @@ const ODRecords = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date</TableHead>
-                    <TableHead className="text-right">Last Balance</TableHead>
+                    <TableHead className="text-right">OD from Bank</TableHead>
                     <TableHead className="text-right">Amount Received</TableHead>
                     <TableHead className="text-right">Amount Given</TableHead>
                     <TableHead className="text-right">Cash in Hand</TableHead>
@@ -583,9 +591,9 @@ const ODRecords = () => {
       <Dialog open={!!editingRecord} onOpenChange={() => setEditingRecord(null)}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Edit OD Record</DialogTitle>
+            <DialogTitle>Edit Over Draft Record</DialogTitle>
             <DialogDescription>
-              Make changes to the OD record. Click save when you're done.
+              Make changes to the over draft record. Click save when you're done.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleEditSubmit}>
@@ -604,7 +612,7 @@ const ODRecords = () => {
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="edit_last_balance" className="text-right">
-                  Last Balance
+                  OD from Bank
                 </Label>
                 <Input
                   id="edit_last_balance"
@@ -672,8 +680,8 @@ const ODRecords = () => {
           setDeletingRecord(null);
         }}
         onConfirm={confirmDelete}
-        title="Delete OD Record"
-        description={`Are you sure you want to delete this OD record from ${deletingRecord ? format(new Date(deletingRecord.date), 'dd MMM yyyy') : ''}? This action cannot be undone.`}
+        title="Delete Over Draft Record"
+        description={`Are you sure you want to delete this over draft record from ${deletingRecord ? format(new Date(deletingRecord.date), 'dd MMM yyyy') : ''}? This action cannot be undone.`}
       />
     </PageWrapper>
   );
