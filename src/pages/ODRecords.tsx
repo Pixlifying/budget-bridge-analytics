@@ -27,11 +27,17 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CalendarIcon, Printer, Download, Plus } from 'lucide-react';
+import { CalendarIcon, Printer, Download, Plus, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import PageHeader from '@/components/layout/PageHeader';
 import PageWrapper from '@/components/layout/PageWrapper';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from '@/components/ui/chart';
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 
 interface ODRecord {
   id: string;
@@ -41,6 +47,21 @@ interface ODRecord {
   date: string;
   created_at: string;
 }
+
+const chartConfig = {
+  received: {
+    label: "Amount Received",
+    color: "hsl(142, 76%, 36%)",
+  },
+  given: {
+    label: "Amount Given", 
+    color: "hsl(0, 84%, 60%)",
+  },
+  cash_in_hand: {
+    label: "Cash in Hand",
+    color: "hsl(221, 83%, 53%)",
+  },
+};
 
 const ODRecords = () => {
   const [records, setRecords] = useState<ODRecord[]>([]);
@@ -52,7 +73,6 @@ const ODRecords = () => {
   const [formData, setFormData] = useState({
     amount_received: '',
     amount_given: '',
-    cash_in_hand: '',
     date: format(new Date(), 'yyyy-MM-dd')
   });
 
@@ -86,19 +106,45 @@ const ODRecords = () => {
     fetchRecords();
   }, [selectedDate, filterMode]);
 
+  // Set up real-time subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel('od_records_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'od_records'
+        },
+        () => {
+          fetchRecords();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedDate, filterMode]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.amount_received && !formData.amount_given && !formData.cash_in_hand) {
+    if (!formData.amount_received && !formData.amount_given) {
       toast.error('Please enter at least one amount');
       return;
     }
 
+    const receivedAmount = parseFloat(formData.amount_received) || 0;
+    const givenAmount = parseFloat(formData.amount_given) || 0;
+    const calculatedCashInHand = receivedAmount - givenAmount;
+
     try {
       const { error } = await supabase.from('od_records').insert({
-        amount_received: parseFloat(formData.amount_received) || 0,
-        amount_given: parseFloat(formData.amount_given) || 0,
-        cash_in_hand: parseFloat(formData.cash_in_hand) || 0,
+        amount_received: receivedAmount,
+        amount_given: givenAmount,
+        cash_in_hand: calculatedCashInHand,
         date: formData.date
       });
 
@@ -108,10 +154,8 @@ const ODRecords = () => {
       setFormData({
         amount_received: '',
         amount_given: '',
-        cash_in_hand: '',
         date: format(new Date(), 'yyyy-MM-dd')
       });
-      fetchRecords();
     } catch (error) {
       console.error('Error adding OD record:', error);
       toast.error('Failed to add OD record');
@@ -124,7 +168,19 @@ const ODRecords = () => {
 
   const totalReceived = records.reduce((sum, record) => sum + record.amount_received, 0);
   const totalGiven = records.reduce((sum, record) => sum + record.amount_given, 0);
-  const totalCashInHand = records.reduce((sum, record) => sum + record.cash_in_hand, 0);
+  const totalCashInHand = totalReceived - totalGiven;
+
+  // Prepare chart data
+  const chartData = records
+    .slice()
+    .reverse()
+    .map((record, index) => ({
+      date: format(new Date(record.date), 'MMM dd'),
+      received: record.amount_received,
+      given: record.amount_given,
+      cash_in_hand: record.cash_in_hand,
+      index
+    }));
 
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
@@ -155,7 +211,7 @@ const ODRecords = () => {
           <div class="summary">
             <p><strong>Total Amount Received:</strong> ₹${totalReceived.toFixed(2)}</p>
             <p><strong>Total Amount Given:</strong> ₹${totalGiven.toFixed(2)}</p>
-            <p><strong>Total Cash in Hand:</strong> ₹${totalCashInHand.toFixed(2)}</p>
+            <p><strong>Net Cash in Hand:</strong> ₹${totalCashInHand.toFixed(2)}</p>
           </div>
           <table>
             <thead>
@@ -204,15 +260,16 @@ const ODRecords = () => {
     toast.success('CSV downloaded successfully');
   };
 
+  const receivedAmount = parseFloat(formData.amount_received) || 0;
+  const givenAmount = parseFloat(formData.amount_given) || 0;
+  const previewCashInHand = receivedAmount - givenAmount;
+
   return (
-    <PageWrapper>
-      <PageHeader
-        title="OD Records"
-        subtitle="Manage overdraft records from bank"
-      />
+    <PageWrapper title="OD Records">
+      <PageHeader title="OD Records" />
 
       {/* Add Record Form */}
-      <Card className="mb-6">
+      <Card className="mb-6 animate-fade-in">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Plus size={20} />
@@ -220,7 +277,7 @@ const ODRecords = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             <div>
               <Label htmlFor="amount_received">Amount Received (₹)</Label>
               <Input
@@ -246,18 +303,6 @@ const ODRecords = () => {
             </div>
 
             <div>
-              <Label htmlFor="cash_in_hand">Cash in Hand (₹)</Label>
-              <Input
-                id="cash_in_hand"
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                value={formData.cash_in_hand}
-                onChange={(e) => handleInputChange('cash_in_hand', e.target.value)}
-              />
-            </div>
-
-            <div>
               <Label htmlFor="date">Date</Label>
               <Input
                 id="date"
@@ -267,13 +312,85 @@ const ODRecords = () => {
               />
             </div>
 
-            <Button type="submit">Add Record</Button>
+            <Button type="submit" className="hover-scale">Add Record</Button>
           </form>
+          
+          {(receivedAmount > 0 || givenAmount > 0) && (
+            <div className="mt-4 p-3 bg-muted rounded-md animate-fade-in">
+              <p className="text-sm text-muted-foreground">
+                Preview Cash in Hand: <span className={`font-semibold ${previewCashInHand >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  ₹{previewCashInHand.toFixed(2)}
+                </span>
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
+      {/* Analytics Chart */}
+      {chartData.length > 0 && (
+        <Card className="mb-6 animate-fade-in">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp size={20} />
+              OD Analytics
+              <div className="ml-auto text-sm text-muted-foreground">
+                Net Change: <span className={`font-semibold ${totalCashInHand >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {totalCashInHand >= 0 ? '+' : ''}₹{totalCashInHand.toFixed(2)}
+                </span>
+              </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={chartConfig} className="h-80 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData}>
+                  <XAxis 
+                    dataKey="date" 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                  />
+                  <YAxis 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                  />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Line
+                    type="monotone"
+                    dataKey="received"
+                    stroke="var(--color-received)"
+                    strokeWidth={3}
+                    dot={{ r: 4 }}
+                    activeDot={{ r: 6, className: "animate-pulse" }}
+                    className="animate-fade-in"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="given"
+                    stroke="var(--color-given)"
+                    strokeWidth={3}
+                    dot={{ r: 4 }}
+                    activeDot={{ r: 6, className: "animate-pulse" }}
+                    className="animate-fade-in"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="cash_in_hand"
+                    stroke="var(--color-cash_in_hand)"
+                    strokeWidth={3}
+                    dot={{ r: 4 }}
+                    activeDot={{ r: 6, className: "animate-pulse" }}
+                    className="animate-fade-in"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Filters and Actions */}
-      <Card className="mb-6">
+      <Card className="mb-6 animate-fade-in">
         <CardHeader>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <CardTitle>OD Records</CardTitle>
@@ -305,12 +422,12 @@ const ODRecords = () => {
                 </PopoverContent>
               </Popover>
 
-              <Button onClick={handlePrint} variant="outline" size="sm">
+              <Button onClick={handlePrint} variant="outline" size="sm" className="hover-scale">
                 <Printer className="h-4 w-4 mr-2" />
                 Print
               </Button>
 
-              <Button onClick={handleDownload} variant="outline" size="sm">
+              <Button onClick={handleDownload} variant="outline" size="sm" className="hover-scale">
                 <Download className="h-4 w-4 mr-2" />
                 Download CSV
               </Button>
@@ -320,22 +437,24 @@ const ODRecords = () => {
         <CardContent>
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <Card>
+            <Card className="animate-scale-in">
               <CardContent className="p-4">
                 <div className="text-sm text-muted-foreground">Total Received</div>
                 <div className="text-2xl font-bold text-green-600">₹{totalReceived.toFixed(2)}</div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="animate-scale-in">
               <CardContent className="p-4">
                 <div className="text-sm text-muted-foreground">Total Given</div>
                 <div className="text-2xl font-bold text-red-600">₹{totalGiven.toFixed(2)}</div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="animate-scale-in">
               <CardContent className="p-4">
-                <div className="text-sm text-muted-foreground">Total Cash in Hand</div>
-                <div className="text-2xl font-bold text-blue-600">₹{totalCashInHand.toFixed(2)}</div>
+                <div className="text-sm text-muted-foreground">Net Cash in Hand</div>
+                <div className={`text-2xl font-bold ${totalCashInHand >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                  ₹{totalCashInHand.toFixed(2)}
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -348,7 +467,7 @@ const ODRecords = () => {
               No OD records found for the selected period
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto animate-fade-in">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -360,7 +479,7 @@ const ODRecords = () => {
                 </TableHeader>
                 <TableBody>
                   {records.map((record) => (
-                    <TableRow key={record.id}>
+                    <TableRow key={record.id} className="hover-scale">
                       <TableCell>{format(new Date(record.date), 'dd MMM yyyy')}</TableCell>
                       <TableCell className="text-right text-green-600">
                         ₹{record.amount_received.toFixed(2)}
@@ -368,7 +487,7 @@ const ODRecords = () => {
                       <TableCell className="text-right text-red-600">
                         ₹{record.amount_given.toFixed(2)}
                       </TableCell>
-                      <TableCell className="text-right text-blue-600">
+                      <TableCell className={`text-right font-medium ${record.cash_in_hand >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
                         ₹{record.cash_in_hand.toFixed(2)}
                       </TableCell>
                     </TableRow>
