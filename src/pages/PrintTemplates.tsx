@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Upload, Search, Replace, Printer, X, FileText, Download, Eye } from 'lucide-react';
 import PageWrapper from '@/components/layout/PageWrapper';
+import mammoth from 'mammoth';
 
 interface UploadedDocument {
   id: string;
@@ -41,34 +42,39 @@ const PrintTemplates = () => {
 
   const generateFileId = () => Math.random().toString(36).substr(2, 9);
 
-  // Function to extract text from Word documents (mock implementation)
+  // Enhanced function to extract text from Word documents using mammoth
   const extractTextFromDocument = async (file: File): Promise<string> => {
-    // In a real implementation, you would use a library like mammoth.js for .docx files
-    // For now, we'll return a placeholder that indicates the document structure
+    console.log('Extracting text from:', file.name, 'Type:', file.type);
+    
     if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-      return `Document: ${file.name}
-
-This is a Word document preview. The actual content would be extracted here using a proper document parser.
-
-You can still perform find and replace operations on this extracted text content.
-
-File size: ${(file.size / 1024).toFixed(2)} KB
-File type: Microsoft Word Document
-Upload date: ${new Date().toLocaleDateString()}
-
-[Document content would appear here in a real implementation]`;
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        console.log('File converted to array buffer, size:', arrayBuffer.byteLength);
+        
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        console.log('Text extracted successfully, length:', result.value.length);
+        
+        if (result.messages.length > 0) {
+          console.log('Mammoth messages:', result.messages);
+        }
+        
+        return result.value || 'Unable to extract text from this document.';
+      } catch (error) {
+        console.error('Error extracting text from .docx file:', error);
+        return `Error extracting text from ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      }
     }
     
     if (file.type === 'application/msword') {
       return `Document: ${file.name}
 
-This is a legacy Word document (.doc). The content extraction would require specialized parsing.
+This is a legacy Word document (.doc). The content extraction would require specialized parsing for older Word formats.
 
 File size: ${(file.size / 1024).toFixed(2)} KB
 File type: Microsoft Word 97-2003 Document
 Upload date: ${new Date().toLocaleDateString()}
 
-[Document content would appear here in a real implementation]`;
+Note: For best results, please convert .doc files to .docx format and re-upload.`;
     }
     
     return '';
@@ -127,6 +133,7 @@ Upload date: ${new Date().toLocaleDateString()}
           fileWithPreview.extractedText = extractedText;
         } catch (error) {
           console.error('Error extracting text from document:', error);
+          fileWithPreview.extractedText = `Error processing ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
         }
       }
 
