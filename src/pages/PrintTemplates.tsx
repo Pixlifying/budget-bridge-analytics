@@ -311,11 +311,115 @@ Note: For best results, please convert .doc files to .docx format and re-upload.
       return;
     }
 
-    window.print();
+    const activeDoc = uploadedDocs[activeDocIndex];
+    if (!activeDoc) {
+      toast({
+        title: "No active document",
+        description: "Please select a document to print.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Get the content to print (either edited text or original)
+    const contentToPrint = activeDoc.content || activeDoc.extractedText;
     
+    if (!contentToPrint) {
+      toast({
+        title: "Cannot print this document",
+        description: "This document type cannot be printed with changes. Only text and Word documents are supported.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast({
+        title: "Print blocked",
+        description: "Please allow popups to print documents.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Generate print-friendly HTML
+    const printHTML = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Print - ${activeDoc.file_name}</title>
+          <style>
+            body {
+              font-family: 'Times New Roman', serif;
+              font-size: 12pt;
+              line-height: 1.6;
+              margin: 1in;
+              color: #000;
+              background: #fff;
+            }
+            .document-header {
+              text-align: center;
+              margin-bottom: 30px;
+              border-bottom: 2px solid #333;
+              padding-bottom: 15px;
+            }
+            .document-title {
+              font-size: 16pt;
+              font-weight: bold;
+              margin-bottom: 5px;
+            }
+            .document-info {
+              font-size: 10pt;
+              color: #666;
+            }
+            .document-content {
+              white-space: pre-wrap;
+              word-wrap: break-word;
+              text-align: justify;
+            }
+            @media print {
+              body {
+                margin: 0.5in;
+              }
+              .no-print {
+                display: none;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="document-header">
+            <div class="document-title">${activeDoc.file_name}</div>
+            <div class="document-info">
+              Printed on: ${new Date().toLocaleDateString()} | 
+              File size: ${(activeDoc.file_size / 1024).toFixed(2)} KB
+            </div>
+          </div>
+          <div class="document-content">${contentToPrint.replace(/\n/g, '<br>')}</div>
+        </body>
+      </html>
+    `;
+
+    // Write the HTML to the print window
+    printWindow.document.write(printHTML);
+    printWindow.document.close();
+
+    // Wait for content to load, then print
+    printWindow.onload = () => {
+      printWindow.focus();
+      printWindow.print();
+      
+      // Close the print window after printing
+      printWindow.onafterprint = () => {
+        printWindow.close();
+      };
+    };
+
     toast({
       title: "Print initiated",
-      description: "Document sent to printer.",
+      description: `Printing ${activeDoc.file_name} with your changes.`,
     });
   };
 
@@ -433,7 +537,7 @@ Note: For best results, please convert .doc files to .docx format and re-upload.
                         <div className="text-center">
                           <div className="text-4xl mb-2">📄</div>
                           <p className="text-sm font-medium">{activeDocument.file_name}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
+                          <p className="text-xs text-muted-foreground">
                             PDF file uploaded successfully
                           </p>
                           <Button 
