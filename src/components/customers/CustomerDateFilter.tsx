@@ -18,13 +18,59 @@ import {
 } from "@/components/ui/select";
 
 interface CustomerDateFilterProps {
-  viewMode: 'day' | 'month' | 'year';
-  selectedDate: Date;
-  onViewModeChange: (mode: 'day' | 'month' | 'year') => void;
-  onDateChange: (date: Date) => void;
+  // For Customers page
+  viewMode?: 'day' | 'month' | 'year';
+  selectedDate?: Date;
+  onViewModeChange?: (mode: 'day' | 'month' | 'year') => void;
+  onDateChange?: (date: Date) => void;
+  
+  // For Ledger page
+  dateFilter?: Date | null;
+  onChange?: (date: Date | undefined) => void;
 }
 
-const CustomerDateFilter = ({ viewMode, selectedDate, onViewModeChange, onDateChange }: CustomerDateFilterProps) => {
+const CustomerDateFilter = ({ 
+  viewMode, 
+  selectedDate, 
+  onViewModeChange, 
+  onDateChange,
+  dateFilter,
+  onChange
+}: CustomerDateFilterProps) => {
+  // Handle Ledger page props
+  if (onChange && dateFilter !== undefined) {
+    return (
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className={cn(
+              "justify-start text-left font-normal h-9 border-border",
+              !dateFilter && "text-muted-foreground"
+            )}
+          >
+            <CalendarRange className="mr-2 h-4 w-4" />
+            {dateFilter ? format(dateFilter, 'PPP') : <span>Pick a date</span>}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0 border-border" align="start">
+          <Calendar
+            mode="single"
+            selected={dateFilter || undefined}
+            onSelect={onChange}
+            initialFocus
+            className="p-3 pointer-events-auto"
+          />
+        </PopoverContent>
+      </Popover>
+    );
+  }
+
+  // Handle Customers page props
+  if (!viewMode || !selectedDate || !onViewModeChange || !onDateChange) {
+    return null;
+  }
+
   const dateFormat = viewMode === 'day' ? 'd MMM yyyy' : viewMode === 'month' ? 'MMMM yyyy' : 'yyyy';
 
   return (

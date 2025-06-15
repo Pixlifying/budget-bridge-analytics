@@ -23,12 +23,16 @@ interface Customer {
 }
 
 interface CustomerFormProps {
+  // For Customers page
   customer?: Customer;
-  onSuccess: () => void;
-  onClose: () => void;
+  onSuccess?: () => void;
+  onClose?: () => void;
+  
+  // For Ledger page
+  onSubmit?: (values: Record<string, any>) => Promise<boolean>;
 }
 
-const CustomerForm = ({ customer, onSuccess, onClose }: CustomerFormProps) => {
+const CustomerForm = ({ customer, onSuccess, onClose, onSubmit }: CustomerFormProps) => {
   const [formData, setFormData] = useState({
     name: customer?.name || '',
     phone: customer?.phone || '',
@@ -36,12 +40,23 @@ const CustomerForm = ({ customer, onSuccess, onClose }: CustomerFormProps) => {
     description: customer?.description || '',
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
+      // Handle Ledger page submission
+      if (onSubmit) {
+        const success = await onSubmit(formData);
+        if (success) {
+          setIsOpen(false);
+        }
+        return;
+      }
+
+      // Handle Customers page submission
       if (customer) {
         // Update existing customer
         const { error } = await supabase
@@ -61,7 +76,7 @@ const CustomerForm = ({ customer, onSuccess, onClose }: CustomerFormProps) => {
         toast.success('Customer added successfully');
       }
 
-      onSuccess();
+      if (onSuccess) onSuccess();
     } catch (error) {
       console.error('Error saving customer:', error);
       toast.error('Failed to save customer');
@@ -70,8 +85,13 @@ const CustomerForm = ({ customer, onSuccess, onClose }: CustomerFormProps) => {
     }
   };
 
+  const handleClose = () => {
+    setIsOpen(false);
+    if (onClose) onClose();
+  };
+
   return (
-    <Dialog open={true} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{customer ? 'Edit Customer' : 'Add New Customer'}</DialogTitle>
@@ -113,7 +133,7 @@ const CustomerForm = ({ customer, onSuccess, onClose }: CustomerFormProps) => {
             />
           </div>
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={handleClose}>
               Cancel
             </Button>
             <Button type="submit" disabled={isLoading}>

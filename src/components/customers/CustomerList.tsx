@@ -10,10 +10,13 @@ interface Transaction {
   customer_id: string;
   created_at?: string;
 }
+
 interface Customer {
   id: string;
   name: string;
   phone: string;
+  address?: string;
+  created_at?: string;
   transactions: Transaction[];
 }
 
@@ -59,17 +62,28 @@ const CustomerList = ({
 
   return (
     <>
-      {customers.map((customer) => (
-        <CustomerCard
-          key={customer.id}
-          customer={customer}
-          onView={onView}
-          onDelete={onDelete}
-        />
-      ))}
+      {customers.map((customer) => {
+        // Convert customer to match CustomerCard expected interface
+        const customerForCard = {
+          id: customer.id,
+          name: customer.name,
+          phone: customer.phone,
+          address: customer.address || '',
+          created_at: customer.created_at || new Date().toISOString(),
+          description: '',
+        };
+
+        return (
+          <CustomerCard
+            key={customer.id}
+            customer={customerForCard}
+            onView={onView}
+            onDelete={onDelete}
+          />
+        );
+      })}
     </>
   );
 };
 
 export default CustomerList;
-
