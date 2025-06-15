@@ -164,17 +164,37 @@ const ODRecords = () => {
     const calculatedCashInHand = lastBalance + receivedAmount - givenAmount;
 
     try {
-      const { error } = await supabase.from('od_records').insert({
+      const { data, error } = await supabase.from('od_records').insert({
         last_balance: lastBalance,
         amount_received: receivedAmount,
         amount_given: givenAmount,
         cash_in_hand: calculatedCashInHand,
         date: formData.date
-      });
+      }).select();
 
       if (error) throw error;
 
       toast.success('Over draft record added successfully');
+      
+      // Add the new record to the current view immediately if it matches the filter
+      if (data && data.length > 0) {
+        const newRecord = data[0];
+        const recordDate = new Date(newRecord.date);
+        const shouldShowInCurrentView = 
+          (filterMode === 'day' && format(recordDate, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')) ||
+          (filterMode === 'month' && recordDate.getMonth() === selectedDate.getMonth() && recordDate.getFullYear() === selectedDate.getFullYear()) ||
+          (filterMode === 'year' && recordDate.getFullYear() === selectedDate.getFullYear());
+
+        if (shouldShowInCurrentView) {
+          setRecords(prev => [newRecord, ...prev]);
+        }
+
+        // Update the filter date to match the new record's date
+        if (formData.date !== format(selectedDate, 'yyyy-MM-dd')) {
+          setSelectedDate(new Date(formData.date));
+        }
+      }
+
       setFormData({
         last_balance: 0,
         amount_received: '',

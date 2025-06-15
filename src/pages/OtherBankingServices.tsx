@@ -1,8 +1,9 @@
+
 import { useState, useEffect } from 'react';
 import { CreditCard, Plus, Edit, Trash2, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { formatCurrency, formatDate, filterByDate, filterByMonth, calculateBankingServicesMargin } from '@/utils/calculateUtils';
+import { formatCurrency, formatDate, filterByDate, filterByMonth } from '@/utils/calculateUtils';
 import PageWrapper from '@/components/layout/PageWrapper';
 import { Button } from '@/components/ui/button';
 import ServiceCard from '@/components/ui/ServiceCard';
@@ -26,48 +27,66 @@ import {
 } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 
-interface OtherBankingService {
+interface BankingAccount {
   id: string;
   date: Date;
-  amount: number;
-  margin: number;
-  transaction_count: number;
-  account_type?: string;
+  customer_name: string;
+  account_type: string;
+  account_number?: string;
   insurance_type?: string;
+  amount: number;
   created_at?: string;
 }
 
+const accountTypes = [
+  'Savings Account',
+  'Current Account',
+  'Fixed Deposit',
+  'Recurring Deposit',
+  'PPF Account',
+  'NPS Account',
+  'Sukanya Samriddhi',
+  'Other'
+];
+
+const insuranceTypes = [
+  'Life Insurance',
+  'Health Insurance',
+  'Vehicle Insurance',
+  'Home Insurance',
+  'Term Insurance',
+  'ULIP',
+  'Other'
+];
+
 const OtherBankingServices = () => {
-  const [otherBankingServices, setOtherBankingServices] = useState<OtherBankingService[]>([]);
-  const [filteredServices, setFilteredServices] = useState<OtherBankingService[]>([]);
+  const [bankingAccounts, setBankingAccounts] = useState<BankingAccount[]>([]);
+  const [filteredAccounts, setFilteredAccounts] = useState<BankingAccount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [editingEntry, setEditingEntry] = useState<OtherBankingService | null>(null);
+  const [editingEntry, setEditingEntry] = useState<BankingAccount | null>(null);
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
 
   // Form state for inline entry
   const [newEntry, setNewEntry] = useState({
     date: new Date().toISOString().split('T')[0],
-    amount: 0,
-    transaction_count: 1,
+    customer_name: '',
     account_type: '',
+    account_number: '',
     insurance_type: '',
+    amount: 0,
   });
 
   const [editForm, setEditForm] = useState({
     date: '',
-    amount: 0,
-    transaction_count: 1,
+    customer_name: '',
     account_type: '',
+    account_number: '',
     insurance_type: '',
+    amount: 0,
   });
 
-  const accountTypes = ['Saving A/C', 'FD/RD'];
-  const insuranceTypes = ['PMJJY', 'PMSBY'];
-  const showInsuranceField = newEntry.account_type === 'Saving A/C' || newEntry.account_type === 'FD/RD';
-  const showEditInsuranceField = editForm.account_type === 'Saving A/C' || editForm.account_type === 'FD/RD';
-
-  const fetchOtherBankingServices = async () => {
+  const fetchBankingAccounts = async () => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase
@@ -80,43 +99,38 @@ const OtherBankingServices = () => {
       const formattedData = data.map(entry => ({
         id: entry.id,
         date: new Date(entry.date),
-        amount: Number(entry.amount),
-        margin: calculateBankingServicesMargin(Number(entry.amount)),
-        transaction_count: 1,
+        customer_name: entry.customer_name,
         account_type: entry.account_type,
-        insurance_type: entry.insurance_type,
+        account_number: entry.account_number || '',
+        insurance_type: entry.insurance_type || '',
+        amount: Number(entry.amount),
         created_at: entry.created_at
       }));
 
-      setOtherBankingServices(formattedData);
+      setBankingAccounts(formattedData);
     } catch (error) {
-      console.error('Error fetching other banking services:', error);
-      toast.error('Failed to load other banking services');
+      console.error('Error fetching banking accounts:', error);
+      toast.error('Failed to load banking accounts');
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchOtherBankingServices();
+    fetchBankingAccounts();
   }, []);
 
   useEffect(() => {
     if (viewMode === 'day') {
-      setFilteredServices(filterByDate(otherBankingServices, date));
+      setFilteredAccounts(filterByDate(bankingAccounts, date));
     } else {
-      setFilteredServices(filterByMonth(otherBankingServices, date));
+      setFilteredAccounts(filterByMonth(bankingAccounts, date));
     }
-  }, [date, viewMode, otherBankingServices]);
+  }, [date, viewMode, bankingAccounts]);
 
   const handleAddEntry = async () => {
-    if (!newEntry.amount || !newEntry.transaction_count || !newEntry.account_type) {
+    if (!newEntry.customer_name || !newEntry.account_type || !newEntry.amount) {
       toast.error('Please fill in all required fields');
-      return;
-    }
-
-    if (showInsuranceField && !newEntry.insurance_type) {
-      toast.error('Please select an insurance type');
       return;
     }
 
@@ -125,88 +139,82 @@ const OtherBankingServices = () => {
         .from('banking_accounts')
         .insert({
           date: new Date(newEntry.date).toISOString(),
-          amount: newEntry.amount,
+          customer_name: newEntry.customer_name,
           account_type: newEntry.account_type,
-          insurance_type: showInsuranceField ? newEntry.insurance_type : null,
-          customer_name: 'N/A',
+          account_number: newEntry.account_number || null,
+          insurance_type: newEntry.insurance_type || null,
+          amount: newEntry.amount,
         })
         .select();
 
       if (error) throw error;
 
       if (data && data.length > 0) {
-        const newService: OtherBankingService = {
+        const newAccount: BankingAccount = {
           id: data[0].id,
           date: new Date(data[0].date),
-          amount: Number(data[0].amount),
-          margin: calculateBankingServicesMargin(Number(data[0].amount)),
-          transaction_count: newEntry.transaction_count,
+          customer_name: data[0].customer_name,
           account_type: data[0].account_type,
-          insurance_type: data[0].insurance_type,
+          account_number: data[0].account_number || '',
+          insurance_type: data[0].insurance_type || '',
+          amount: Number(data[0].amount),
           created_at: data[0].created_at
         };
 
-        setOtherBankingServices(prev => [newService, ...prev]);
+        setBankingAccounts(prev => [newAccount, ...prev]);
         setNewEntry({
           date: new Date().toISOString().split('T')[0],
-          amount: 0,
-          transaction_count: 1,
+          customer_name: '',
           account_type: '',
+          account_number: '',
           insurance_type: '',
+          amount: 0,
         });
-        toast.success('Other banking service added successfully');
+        toast.success('Banking account added successfully');
       }
     } catch (error) {
-      console.error('Error adding other banking service:', error);
-      toast.error('Failed to add other banking service');
+      console.error('Error adding banking account:', error);
+      toast.error('Failed to add banking account');
     }
   };
 
   const handleEditEntry = async () => {
     if (!editingEntry) return;
 
-    if (!editForm.account_type) {
-      toast.error('Please select an account type');
-      return;
-    }
-
-    if (showEditInsuranceField && !editForm.insurance_type) {
-      toast.error('Please select an insurance type');
-      return;
-    }
-
     try {
       const { error } = await supabase
         .from('banking_accounts')
         .update({
           date: new Date(editForm.date).toISOString(),
-          amount: editForm.amount,
+          customer_name: editForm.customer_name,
           account_type: editForm.account_type,
-          insurance_type: showEditInsuranceField ? editForm.insurance_type : null,
+          account_number: editForm.account_number || null,
+          insurance_type: editForm.insurance_type || null,
+          amount: editForm.amount,
         })
         .eq('id', editingEntry.id);
 
       if (error) throw error;
 
-      const updatedEntry: OtherBankingService = {
+      const updatedEntry: BankingAccount = {
         ...editingEntry,
         date: new Date(editForm.date),
-        amount: editForm.amount,
-        margin: calculateBankingServicesMargin(editForm.amount),
-        transaction_count: editForm.transaction_count,
+        customer_name: editForm.customer_name,
         account_type: editForm.account_type,
-        insurance_type: showEditInsuranceField ? editForm.insurance_type : undefined,
+        account_number: editForm.account_number,
+        insurance_type: editForm.insurance_type,
+        amount: editForm.amount,
       };
 
-      setOtherBankingServices(prev =>
+      setBankingAccounts(prev =>
         prev.map(entry => entry.id === editingEntry.id ? updatedEntry : entry)
       );
 
       setEditingEntry(null);
-      toast.success('Other banking service updated successfully');
+      toast.success('Banking account updated successfully');
     } catch (error) {
-      console.error('Error updating other banking service:', error);
-      toast.error('Failed to update other banking service');
+      console.error('Error updating banking account:', error);
+      toast.error('Failed to update banking account');
     }
   };
 
@@ -219,22 +227,23 @@ const OtherBankingServices = () => {
 
       if (error) throw error;
 
-      setOtherBankingServices(prev => prev.filter(entry => entry.id !== id));
-      toast.success('Other banking service deleted successfully');
+      setBankingAccounts(prev => prev.filter(entry => entry.id !== id));
+      toast.success('Banking account deleted successfully');
     } catch (error) {
-      console.error('Error deleting other banking service:', error);
-      toast.error('Failed to delete other banking service');
+      console.error('Error deleting banking account:', error);
+      toast.error('Failed to delete banking account');
     }
   };
 
-  const openEditEntry = (entry: OtherBankingService) => {
+  const openEditEntry = (entry: BankingAccount) => {
     setEditingEntry(entry);
     setEditForm({
       date: format(entry.date, 'yyyy-MM-dd'),
-      amount: entry.amount,
-      transaction_count: entry.transaction_count,
-      account_type: entry.account_type || '',
+      customer_name: entry.customer_name,
+      account_type: entry.account_type,
+      account_number: entry.account_number || '',
       insurance_type: entry.insurance_type || '',
+      amount: entry.amount,
     });
   };
 
@@ -246,7 +255,7 @@ const OtherBankingServices = () => {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Other Banking Services Report</title>
+          <title>Banking Accounts Report</title>
           <style>
             @page { size: A4; margin: 20mm; }
             body { font-family: Arial, sans-serif; font-size: 12px; }
@@ -258,28 +267,28 @@ const OtherBankingServices = () => {
           </style>
         </head>
         <body>
-          <h1>Other Banking Services Report</h1>
-          <div class="total">Total Services: ${totalServices} | Total Amount: ₹${totalAmount.toFixed(2)} | Total Margin: ₹${totalMargin.toFixed(2)}</div>
+          <h1>Banking Accounts Report</h1>
+          <div class="total">Total Accounts: ${totalAccounts} | Total Amount: ₹${totalAmount.toFixed(2)}</div>
           <table>
             <thead>
               <tr>
                 <th>Date</th>
+                <th>Customer</th>
                 <th>Account Type</th>
+                <th>Account Number</th>
                 <th>Insurance Type</th>
-                <th>Transaction Count</th>
                 <th>Amount</th>
-                <th>Margin</th>
               </tr>
             </thead>
             <tbody>
-              ${filteredServices.map((service) => `
+              ${filteredAccounts.map((account) => `
                 <tr>
-                  <td>${format(service.date, 'dd/MM/yyyy')}</td>
-                  <td>${service.account_type || '-'}</td>
-                  <td>${service.insurance_type || '-'}</td>
-                  <td>${service.transaction_count}</td>
-                  <td>₹${service.amount.toFixed(2)}</td>
-                  <td>₹${service.margin.toFixed(2)}</td>
+                  <td>${format(account.date, 'dd/MM/yyyy')}</td>
+                  <td>${account.customer_name}</td>
+                  <td>${account.account_type}</td>
+                  <td>${account.account_number || '-'}</td>
+                  <td>${account.insurance_type || '-'}</td>
+                  <td>₹${account.amount.toFixed(2)}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -293,15 +302,13 @@ const OtherBankingServices = () => {
     printWindow.print();
   };
 
-  const totalServices = filteredServices.length;
-  const totalAmount = filteredServices.reduce((sum, service) => sum + service.amount, 0);
-  const totalMargin = filteredServices.reduce((sum, service) => sum + service.margin, 0);
-  const totalTransactions = filteredServices.reduce((sum, service) => sum + service.transaction_count, 0);
+  const totalAccounts = filteredAccounts.length;
+  const totalAmount = filteredAccounts.reduce((sum, account) => sum + account.amount, 0);
 
   return (
     <PageWrapper
       title="Other Banking Services"
-      subtitle="Manage other banking services with account types and insurance options"
+      subtitle="Manage banking accounts and insurance services"
       action={
         <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
           <DateRangePicker 
@@ -316,17 +323,17 @@ const OtherBankingServices = () => {
               Print
             </Button>
             <DownloadButton
-              data={otherBankingServices}
-              filename="other-banking-services-data"
-              currentData={filteredServices}
+              data={bankingAccounts}
+              filename="banking-accounts-data"
+              currentData={filteredAccounts}
             />
           </div>
         </div>
       }
     >
-      {/* Add Other Banking Service Form */}
+      {/* Add Banking Account Form */}
       <div className="mb-6 p-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg shadow-lg">
-        <h3 className="text-lg font-semibold mb-4">Add Other Banking Service</h3>
+        <h3 className="text-lg font-semibold mb-4">Add Banking Account</h3>
         <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
           <div>
             <Label htmlFor="date">Date</Label>
@@ -337,63 +344,51 @@ const OtherBankingServices = () => {
               onChange={(e) => setNewEntry(prev => ({ ...prev, date: e.target.value }))}
             />
           </div>
-          
+          <div>
+            <Label htmlFor="customer_name">Customer Name</Label>
+            <Input
+              id="customer_name"
+              value={newEntry.customer_name}
+              onChange={(e) => setNewEntry(prev => ({ ...prev, customer_name: e.target.value }))}
+              placeholder="Customer name"
+            />
+          </div>
           <div>
             <Label htmlFor="account_type">Account Type</Label>
-            <Select
-              value={newEntry.account_type}
-              onValueChange={(value) => setNewEntry(prev => ({ 
-                ...prev, 
-                account_type: value,
-                insurance_type: ''
-              }))}
-            >
-              <SelectTrigger className="w-full">
+            <Select value={newEntry.account_type} onValueChange={(value) => setNewEntry(prev => ({ ...prev, account_type: value }))}>
+              <SelectTrigger>
                 <SelectValue placeholder="Select account type" />
               </SelectTrigger>
-              <SelectContent className="z-50">
-                {accountTypes.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type}
-                  </SelectItem>
+              <SelectContent>
+                {accountTypes.map(type => (
+                  <SelectItem key={type} value={type}>{type}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          
-          {showInsuranceField && (
-            <div>
-              <Label htmlFor="insurance_type">Insurance Type</Label>
-              <Select
-                value={newEntry.insurance_type}
-                onValueChange={(value) => setNewEntry(prev => ({ ...prev, insurance_type: value }))}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select insurance type" />
-                </SelectTrigger>
-                <SelectContent className="z-50">
-                  {insuranceTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-          
           <div>
-            <Label htmlFor="transaction_count">Transaction Count</Label>
+            <Label htmlFor="account_number">Account Number</Label>
             <Input
-              id="transaction_count"
-              type="number"
-              value={newEntry.transaction_count}
-              onChange={(e) => setNewEntry(prev => ({ ...prev, transaction_count: Number(e.target.value) }))}
-              placeholder="Transaction count"
-              min="1"
+              id="account_number"
+              value={newEntry.account_number}
+              onChange={(e) => setNewEntry(prev => ({ ...prev, account_number: e.target.value }))}
+              placeholder="Account number (optional)"
             />
           </div>
-          
+          <div>
+            <Label htmlFor="insurance_type">Insurance Type</Label>
+            <Select value={newEntry.insurance_type} onValueChange={(value) => setNewEntry(prev => ({ ...prev, insurance_type: value }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select insurance type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">None</SelectItem>
+                {insuranceTypes.map(type => (
+                  <SelectItem key={type} value={type}>{type}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div>
             <Label htmlFor="amount">Amount</Label>
             <Input
@@ -404,22 +399,18 @@ const OtherBankingServices = () => {
               placeholder="Amount"
             />
           </div>
-          
+        </div>
+        <div className="mt-4">
           <Button onClick={handleAddEntry}>
             Save
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <StatCard 
-          title="Total Services"
-          value={totalServices.toString()}
-          icon={<CreditCard size={20} />}
-        />
-        <StatCard 
-          title="Total Transactions"
-          value={totalTransactions.toString()}
+          title="Total Accounts"
+          value={totalAccounts.toString()}
           icon={<CreditCard size={20} />}
         />
         <StatCard 
@@ -427,38 +418,31 @@ const OtherBankingServices = () => {
           value={formatCurrency(totalAmount)}
           icon={<CreditCard size={20} />}
         />
-        <StatCard 
-          title="Total Margin"
-          value={formatCurrency(totalMargin)}
-          icon={<CreditCard size={20} />}
-        />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredServices.length === 0 ? (
+        {filteredAccounts.length === 0 ? (
           <div className="col-span-full text-center py-8 bg-muted/30 rounded-lg">
-            <p className="text-muted-foreground">No other banking services found for this {viewMode === 'day' ? 'day' : 'month'}.</p>
+            <p className="text-muted-foreground">No banking accounts found for this {viewMode === 'day' ? 'day' : 'month'}.</p>
           </div>
         ) : (
-          filteredServices.map(entry => (
+          filteredAccounts.map(entry => (
             <ServiceCard
               key={entry.id}
               id={entry.id}
-              title="Other Banking Service"
+              title={entry.customer_name}
               date={entry.date}
               data={{
-                account_type: entry.account_type || 'N/A',
+                account_type: entry.account_type,
+                account_number: entry.account_number || 'N/A',
                 insurance_type: entry.insurance_type || 'N/A',
-                transactions: entry.transaction_count,
-                amount: formatCurrency(entry.amount),
-                margin: formatCurrency(entry.margin)
+                amount: formatCurrency(entry.amount)
               }}
               labels={{
                 account_type: 'Account Type',
+                account_number: 'Account Number',
                 insurance_type: 'Insurance Type',
-                transactions: 'Transactions',
-                amount: 'Amount',
-                margin: 'Margin'
+                amount: 'Amount'
               }}
               onEdit={() => openEditEntry(entry)}
               onDelete={() => handleDeleteEntry(entry.id)}
@@ -469,89 +453,82 @@ const OtherBankingServices = () => {
 
       {/* Edit Entry Dialog */}
       <Dialog open={!!editingEntry} onOpenChange={() => setEditingEntry(null)}>
-        <DialogContent className="bg-white dark:bg-slate-800">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Edit Other Banking Service</DialogTitle>
+            <DialogTitle>Edit Banking Account</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="edit_date">Date</Label>
-              <Input
-                id="edit_date"
-                type="date"
-                value={editForm.date}
-                onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))}
-              />
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="edit_account_type">Account Type</Label>
-              <Select
-                value={editForm.account_type}
-                onValueChange={(value) => setEditForm(prev => ({ 
-                  ...prev, 
-                  account_type: value,
-                  insurance_type: ''
-                }))}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select account type" />
-                </SelectTrigger>
-                <SelectContent className="z-50">
-                  {accountTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {showEditInsuranceField && (
+            <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="edit_insurance_type">Insurance Type</Label>
-                <Select
-                  value={editForm.insurance_type}
-                  onValueChange={(value) => setEditForm(prev => ({ ...prev, insurance_type: value }))}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select insurance type" />
+                <Label htmlFor="edit_date">Date</Label>
+                <Input
+                  id="edit_date"
+                  type="date"
+                  value={editForm.date}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit_customer_name">Customer Name</Label>
+                <Input
+                  id="edit_customer_name"
+                  value={editForm.customer_name}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, customer_name: e.target.value }))}
+                  placeholder="Customer name"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit_account_type">Account Type</Label>
+                <Select value={editForm.account_type} onValueChange={(value) => setEditForm(prev => ({ ...prev, account_type: value }))}>
+                  <SelectTrigger>
+                    <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="z-50">
-                    {insuranceTypes.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
+                  <SelectContent>
+                    {accountTypes.map(type => (
+                      <SelectItem key={type} value={type}>{type}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-            )}
-            
-            <div className="grid gap-2">
-              <Label htmlFor="edit_transaction_count">Transaction Count</Label>
-              <Input
-                id="edit_transaction_count"
-                type="number"
-                value={editForm.transaction_count}
-                onChange={(e) => setEditForm(prev => ({ ...prev, transaction_count: Number(e.target.value) }))}
-                placeholder="Transaction count"
-                min="1"
-              />
+              <div className="grid gap-2">
+                <Label htmlFor="edit_account_number">Account Number</Label>
+                <Input
+                  id="edit_account_number"
+                  value={editForm.account_number}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, account_number: e.target.value }))}
+                  placeholder="Account number (optional)"
+                />
+              </div>
             </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="edit_amount">Amount</Label>
-              <Input
-                id="edit_amount"
-                type="number"
-                value={editForm.amount}
-                onChange={(e) => setEditForm(prev => ({ ...prev, amount: Number(e.target.value) }))}
-                placeholder="Amount"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit_insurance_type">Insurance Type</Label>
+                <Select value={editForm.insurance_type} onValueChange={(value) => setEditForm(prev => ({ ...prev, insurance_type: value }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None</SelectItem>
+                    {insuranceTypes.map(type => (
+                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit_amount">Amount</Label>
+                <Input
+                  id="edit_amount"
+                  type="number"
+                  value={editForm.amount}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, amount: Number(e.target.value) }))}
+                  placeholder="Amount"
+                />
+              </div>
             </div>
-            
-            <Button onClick={handleEditEntry}>Update Other Banking Service</Button>
+            <Button onClick={handleEditEntry}>Update Banking Account</Button>
           </div>
         </DialogContent>
       </Dialog>
