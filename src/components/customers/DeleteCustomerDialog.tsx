@@ -11,22 +11,24 @@ interface Customer {
 }
 
 interface DeleteCustomerDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
+  onConfirm?: () => void;
+  onCancel?: () => void;
   customer?: Customer;
 }
 
 const DeleteCustomerDialog = ({
-  isOpen,
+  isOpen = false,
   onClose,
   onConfirm,
+  onCancel,
   customer,
 }: DeleteCustomerDialogProps) => (
   <DeleteConfirmation
     isOpen={isOpen}
-    onClose={onClose}
-    onConfirm={onConfirm}
+    onClose={onClose || onCancel || (() => {})}
+    onConfirm={onConfirm || (() => {})}
     title="Delete Customer"
     description={`Are you sure you want to delete ${customer?.name || 'this customer'}? This action cannot be undone and will remove all associated transactions.`}
   />

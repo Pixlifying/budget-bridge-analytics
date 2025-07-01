@@ -15,11 +15,12 @@ export interface Customer {
   phone: string;
   address?: string;
   description?: string;
+  created_at: string;
 }
 
 interface CustomerCardProps {
   customer: Customer;
-  onClick: (id: string, e: React.MouseEvent) => void;
+  onClick?: (id: string, e: React.MouseEvent) => void;
   onEdit: (customer: Customer) => void;
   onDelete: (customer: Customer) => void;
 }
@@ -27,7 +28,9 @@ interface CustomerCardProps {
 const CustomerCard = ({ customer, onClick, onEdit, onDelete }: CustomerCardProps) => {
   const handleCardClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    onClick(customer.id, e);
+    if (onClick) {
+      onClick(customer.id, e);
+    }
   };
 
   const handleEdit = (e: React.MouseEvent) => {

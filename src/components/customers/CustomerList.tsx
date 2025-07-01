@@ -1,4 +1,4 @@
-import { useState } from 'react';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -15,12 +15,24 @@ export interface Customer {
 
 interface CustomerListProps {
   customers: Customer[];
-  onEdit: (customer: Customer) => void;
-  onDelete: (customer: Customer) => void;
+  loading?: boolean;
+  searchTerm?: string;
+  onEdit?: (customer: Customer) => void;
+  onDelete?: (customer: Customer) => void;
+  onView?: (customerId: string) => void;
 }
 
-const CustomerList = ({ customers, onEdit, onDelete }: CustomerListProps) => {
-  
+const CustomerList = ({ customers, loading, onEdit, onDelete, onView }: CustomerListProps) => {
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="text-center py-8">
+          <p>Loading customers...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -40,27 +52,41 @@ const CustomerList = ({ customers, onEdit, onDelete }: CustomerListProps) => {
             </TableHeader>
             <TableBody>
               {customers.map((customer) => (
-                <TableRow key={customer.id}>
+                <TableRow 
+                  key={customer.id}
+                  className={onView ? "cursor-pointer hover:bg-muted/50" : ""}
+                  onClick={() => onView && onView(customer.id)}
+                >
                   <TableCell className="font-medium">{customer.name}</TableCell>
                   <TableCell>{customer.phone}</TableCell>
                   <TableCell>{customer.address}</TableCell>
                   <TableCell>{customer.description || '-'}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => onEdit(customer)}
-                      >
-                        <Edit size={14} />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => onDelete(customer)}
-                      >
-                        <Trash2 size={14} />
-                      </Button>
+                      {onEdit && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEdit(customer);
+                          }}
+                        >
+                          <Edit size={14} />
+                        </Button>
+                      )}
+                      {onDelete && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete(customer);
+                          }}
+                        >
+                          <Trash2 size={14} />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
