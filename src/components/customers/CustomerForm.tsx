@@ -1,4 +1,5 @@
 
+import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import ServiceForm from '@/components/ui/ServiceForm';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ export interface Customer {
   phone: string;
   address: string;
   description?: string;
+  created_at?: string;
 }
 
 interface CustomerFormProps {

@@ -16,9 +16,10 @@ import PageWrapper from '@/components/layout/PageWrapper';
 interface ODRecord {
   id: string;
   date: string;
-  amount_received: number;
-  amount_given: number;
+  od_from_bank: number;
   last_balance: number;
+  amount_received: number;
+  amount_distributed: number;
   cash_in_hand: number;
   created_at?: string;
   updated_at?: string;
@@ -28,9 +29,10 @@ const OD = () => {
   const [records, setRecords] = useState<ODRecord[]>([]);
   const [formData, setFormData] = useState({
     date: format(new Date(), 'yyyy-MM-dd'),
-    amount_received: 0,
-    amount_given: 0,
+    od_from_bank: 0,
     last_balance: 0,
+    amount_received: 0,
+    amount_distributed: 0,
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; id: string | null }>({
@@ -40,8 +42,8 @@ const OD = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  // Calculate cash in hand automatically
-  const cashInHand = formData.last_balance + formData.amount_received - formData.amount_given;
+  // Calculate cash in hand using the formula: Last Balance + OD from Bank + Amount Received - Amount Distributed
+  const cashInHand = formData.last_balance + formData.od_from_bank + formData.amount_received - formData.amount_distributed;
 
   useEffect(() => {
     fetchRecords();
@@ -79,9 +81,10 @@ const OD = () => {
     try {
       const recordData = {
         date: formData.date,
-        amount_received: formData.amount_received,
-        amount_given: formData.amount_given,
+        od_from_bank: formData.od_from_bank,
         last_balance: formData.last_balance,
+        amount_received: formData.amount_received,
+        amount_distributed: formData.amount_distributed,
         cash_in_hand: cashInHand,
       };
 
@@ -125,9 +128,10 @@ const OD = () => {
   const handleEdit = (record: ODRecord) => {
     setFormData({
       date: record.date,
-      amount_received: record.amount_received,
-      amount_given: record.amount_given,
+      od_from_bank: record.od_from_bank,
       last_balance: record.last_balance,
+      amount_received: record.amount_received,
+      amount_distributed: record.amount_distributed,
     });
     setEditingId(record.id);
   };
@@ -162,9 +166,10 @@ const OD = () => {
     const latestCashInHand = records.length > 0 ? records[0].cash_in_hand : 0;
     setFormData({
       date: format(new Date(), 'yyyy-MM-dd'),
-      amount_received: 0,
-      amount_given: 0,
+      od_from_bank: 0,
       last_balance: latestCashInHand,
+      amount_received: 0,
+      amount_distributed: 0,
     });
     setEditingId(null);
   };
@@ -176,9 +181,10 @@ const OD = () => {
   const handleDownload = () => {
     const exportData = records.map(record => ({
       Date: format(new Date(record.date), 'dd/MM/yyyy'),
-      'Amount Received': record.amount_received,
-      'Amount Given': record.amount_given,
+      'OD from Bank': record.od_from_bank,
       'Last Balance': record.last_balance,
+      'Amount Received': record.amount_received,
+      'Amount Distributed': record.amount_distributed,
       'Cash in Hand': record.cash_in_hand,
     }));
     
@@ -186,7 +192,7 @@ const OD = () => {
   };
 
   return (
-    <PageWrapper title="Over Draft Management" description="Manage your overdraft transactions">
+    <PageWrapper title="Over Draft Management">
       <div className="space-y-6">
         {/* Action Buttons */}
         <div className="flex gap-2 no-print">
@@ -207,7 +213,7 @@ const OD = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="date">Date</Label>
                   <Input
@@ -215,6 +221,30 @@ const OD = () => {
                     type="date"
                     value={formData.date}
                     onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="od_from_bank">OD from Bank</Label>
+                  <Input
+                    id="od_from_bank"
+                    type="number"
+                    step="0.01"
+                    value={formData.od_from_bank}
+                    onChange={(e) => setFormData({ ...formData, od_from_bank: parseFloat(e.target.value) || 0 })}
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="last_balance">Last Balance</Label>
+                  <Input
+                    id="last_balance"
+                    type="number"
+                    step="0.01"
+                    value={formData.last_balance}
+                    onChange={(e) => setFormData({ ...formData, last_balance: parseFloat(e.target.value) || 0 })}
                     required
                   />
                 </div>
@@ -232,37 +262,23 @@ const OD = () => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="amount_given">Amount Given</Label>
+                  <Label htmlFor="amount_distributed">Amount Distributed</Label>
                   <Input
-                    id="amount_given"
+                    id="amount_distributed"
                     type="number"
                     step="0.01"
-                    value={formData.amount_given}
-                    onChange={(e) => setFormData({ ...formData, amount_given: parseFloat(e.target.value) || 0 })}
+                    value={formData.amount_distributed}
+                    onChange={(e) => setFormData({ ...formData, amount_distributed: parseFloat(e.target.value) || 0 })}
                     required
                   />
                 </div>
                 
                 <div>
-                  <Label htmlFor="last_balance">Last Balance</Label>
-                  <Input
-                    id="last_balance"
-                    type="number"
-                    step="0.01"
-                    value={formData.last_balance}
-                    onChange={(e) => setFormData({ ...formData, last_balance: parseFloat(e.target.value) || 0 })}
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
                   <Label>Cash in Hand (Auto-calculated)</Label>
                   <Input
                     type="number"
                     step="0.01"
-                    value={cashInHand}
+                    value={cashInHand.toFixed(2)}
                     readOnly
                     className="bg-muted"
                   />
@@ -295,9 +311,10 @@ const OD = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date</TableHead>
-                    <TableHead>Amount Received</TableHead>
-                    <TableHead>Amount Given</TableHead>
+                    <TableHead>OD from Bank</TableHead>
                     <TableHead>Last Balance</TableHead>
+                    <TableHead>Amount Received</TableHead>
+                    <TableHead>Amount Distributed</TableHead>
                     <TableHead>Cash in Hand</TableHead>
                     <TableHead className="no-print">Actions</TableHead>
                   </TableRow>
@@ -306,9 +323,10 @@ const OD = () => {
                   {records.map((record) => (
                     <TableRow key={record.id}>
                       <TableCell>{format(new Date(record.date), 'dd/MM/yyyy')}</TableCell>
-                      <TableCell>₹{record.amount_received.toFixed(2)}</TableCell>
-                      <TableCell>₹{record.amount_given.toFixed(2)}</TableCell>
+                      <TableCell>₹{record.od_from_bank.toFixed(2)}</TableCell>
                       <TableCell>₹{record.last_balance.toFixed(2)}</TableCell>
+                      <TableCell>₹{record.amount_received.toFixed(2)}</TableCell>
+                      <TableCell>₹{record.amount_distributed.toFixed(2)}</TableCell>
                       <TableCell>₹{record.cash_in_hand.toFixed(2)}</TableCell>
                       <TableCell className="no-print">
                         <div className="flex gap-2">
@@ -332,7 +350,7 @@ const OD = () => {
                   ))}
                   {records.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                         No OD records found. Add your first record above.
                       </TableCell>
                     </TableRow>

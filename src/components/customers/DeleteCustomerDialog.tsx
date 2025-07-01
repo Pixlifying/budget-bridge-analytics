@@ -7,6 +7,7 @@ interface Customer {
   phone: string;
   address?: string;
   description?: string;
+  created_at?: string;
 }
 
 interface DeleteCustomerDialogProps {
