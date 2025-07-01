@@ -16,11 +16,10 @@ import PageWrapper from '@/components/layout/PageWrapper';
 interface ODRecord {
   id: string;
   date: string;
-  od_from_bank?: number;
+  od_from_bank: number;
   last_balance: number;
   amount_received: number;
-  amount_distributed?: number;
-  amount_given?: number;
+  amount_distributed: number;
   cash_in_hand: number;
   created_at?: string;
   updated_at?: string;
@@ -60,11 +59,17 @@ const OD = () => {
 
       if (error) throw error;
       
-      // Map the database fields to our interface
-      const mappedRecords = (data || []).map(record => ({
-        ...record,
+      // Map the database fields to our interface, ensuring all required fields exist
+      const mappedRecords: ODRecord[] = (data || []).map(record => ({
+        id: record.id,
+        date: record.date,
         od_from_bank: record.od_from_bank || 0,
+        last_balance: record.last_balance,
+        amount_received: record.amount_received,
         amount_distributed: record.amount_given || 0,
+        cash_in_hand: record.cash_in_hand,
+        created_at: record.created_at,
+        updated_at: record.updated_at,
       }));
       
       setRecords(mappedRecords);
@@ -137,10 +142,10 @@ const OD = () => {
   const handleEdit = (record: ODRecord) => {
     setFormData({
       date: record.date,
-      od_from_bank: record.od_from_bank || 0,
+      od_from_bank: record.od_from_bank,
       last_balance: record.last_balance,
       amount_received: record.amount_received,
-      amount_distributed: record.amount_distributed || record.amount_given || 0,
+      amount_distributed: record.amount_distributed,
     });
     setEditingId(record.id);
   };
@@ -190,10 +195,10 @@ const OD = () => {
   const handleDownload = () => {
     const exportData = records.map(record => ({
       Date: format(new Date(record.date), 'dd/MM/yyyy'),
-      'OD from Bank': record.od_from_bank || 0,
+      'OD from Bank': record.od_from_bank,
       'Last Balance': record.last_balance,
       'Amount Received': record.amount_received,
-      'Amount Distributed': record.amount_distributed || record.amount_given || 0,
+      'Amount Distributed': record.amount_distributed,
       'Cash in Hand': record.cash_in_hand,
     }));
     
@@ -332,10 +337,10 @@ const OD = () => {
                   {records.map((record) => (
                     <TableRow key={record.id}>
                       <TableCell>{format(new Date(record.date), 'dd/MM/yyyy')}</TableCell>
-                      <TableCell>₹{(record.od_from_bank || 0).toFixed(2)}</TableCell>
+                      <TableCell>₹{record.od_from_bank.toFixed(2)}</TableCell>
                       <TableCell>₹{record.last_balance.toFixed(2)}</TableCell>
                       <TableCell>₹{record.amount_received.toFixed(2)}</TableCell>
-                      <TableCell>₹{(record.amount_distributed || record.amount_given || 0).toFixed(2)}</TableCell>
+                      <TableCell>₹{record.amount_distributed.toFixed(2)}</TableCell>
                       <TableCell>₹{record.cash_in_hand.toFixed(2)}</TableCell>
                       <TableCell className="no-print">
                         <div className="flex gap-2">

@@ -399,6 +399,7 @@ export type Database = {
           date: string
           id: string
           last_balance: number
+          od_from_bank: number
           updated_at: string
         }
         Insert: {
@@ -409,6 +410,7 @@ export type Database = {
           date?: string
           id?: string
           last_balance?: number
+          od_from_bank?: number
           updated_at?: string
         }
         Update: {
@@ -419,6 +421,7 @@ export type Database = {
           date?: string
           id?: string
           last_balance?: number
+          od_from_bank?: number
           updated_at?: string
         }
         Relationships: []

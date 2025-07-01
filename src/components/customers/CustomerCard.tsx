@@ -13,7 +13,7 @@ export interface Customer {
   id: string;
   name: string;
   phone: string;
-  address?: string;
+  address: string;
   description?: string;
   created_at: string;
 }

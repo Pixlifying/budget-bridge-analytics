@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -19,7 +20,8 @@ import {
   Landmark,
   BookOpen,
   Printer,
-  HeadphonesIcon
+  HeadphonesIcon,
+  Download
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -212,7 +214,7 @@ const Sidebar = () => {
     },
   ];
 
-  // Ledger submenu items (removed Customers, added Expenses)
+  // Ledger submenu items
   const ledgerItems = [
     {
       icon: <BookOpen size={isCollapsed ? 20 : 16} />,
@@ -280,6 +282,12 @@ const Sidebar = () => {
       hasChildren: true,
       menuKey: 'apps',
       children: appsItems,
+    },
+    {
+      icon: <Download size={isCollapsed ? 20 : 18} />,
+      label: 'Downloads',
+      to: '/downloads',
+      hasChildren: false,
     },
     {
       icon: <BarChart3 size={isCollapsed ? 20 : 18} />,
