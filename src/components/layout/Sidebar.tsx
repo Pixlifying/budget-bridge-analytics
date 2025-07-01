@@ -19,7 +19,8 @@ import {
   ChevronsDown,
   Landmark,
   BookOpen,
-  Printer
+  Printer,
+  HeadphonesIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -137,10 +138,10 @@ const Sidebar = () => {
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
-    services: false,
-    expenses: false,
-    apps: false,
-    ledger: false
+    financialServices: false,
+    customerServices: false,
+    ledger: false,
+    apps: false
   });
 
   const toggleMenu = (menuKey: string) => {
@@ -150,8 +151,8 @@ const Sidebar = () => {
     }));
   };
 
-  // Service submenu items
-  const serviceItems = [
+  // Financial Services submenu items
+  const financialServiceItems = [
     {
       icon: <CreditCard size={isCollapsed ? 20 : 16} />,
       label: 'Banking Services',
@@ -168,6 +169,15 @@ const Sidebar = () => {
       to: '/od-records',
     },
     {
+      icon: <Users size={isCollapsed ? 20 : 16} />,
+      label: 'Account Details',
+      to: '/account-details',
+    },
+  ];
+
+  // Customer Services submenu items
+  const customerServiceItems = [
+    {
       icon: <Globe size={isCollapsed ? 20 : 16} />,
       label: 'Digital Services',
       to: '/online-services',
@@ -177,24 +187,10 @@ const Sidebar = () => {
       label: 'Offline Services',
       to: '/applications',
     },
-  ];
-
-  // Expense submenu items
-  const expenseItems = [
-    {
-      icon: <PiggyBank size={isCollapsed ? 20 : 16} />,
-      label: 'Expenses',
-      to: '/expenses',
-    },
     {
       icon: <Copy size={isCollapsed ? 20 : 16} />,
-      label: 'Fee Expenses',
-      to: '/fee-expenses',
-    },
-    {
-      icon: <FileText size={isCollapsed ? 20 : 16} />,
-      label: 'Misc Expenses',
-      to: '/misc-expenses',
+      label: 'Photostat',
+      to: '/photostat',
     },
   ];
 
@@ -217,18 +213,8 @@ const Sidebar = () => {
     },
   ];
 
-  // Ledger submenu items (removed Queries, added Account Details)
+  // Ledger submenu items (removed Customers, added Expenses)
   const ledgerItems = [
-    {
-      icon: <Users size={isCollapsed ? 20 : 16} />,
-      label: 'Customers',
-      to: '/ledger',
-    },
-    {
-      icon: <Users size={isCollapsed ? 20 : 16} />,
-      label: 'Account Details',
-      to: '/account-details',
-    },
     {
       icon: <BookOpen size={isCollapsed ? 20 : 16} />,
       label: 'Khata',
@@ -244,6 +230,21 @@ const Sidebar = () => {
       label: 'Pending Balance',
       to: '/pending-balance',
     },
+    {
+      icon: <PiggyBank size={isCollapsed ? 20 : 16} />,
+      label: 'Expenses',
+      to: '/expenses',
+    },
+    {
+      icon: <Copy size={isCollapsed ? 20 : 16} />,
+      label: 'Fee Expenses',
+      to: '/fee-expenses',
+    },
+    {
+      icon: <FileText size={isCollapsed ? 20 : 16} />,
+      label: 'Misc Expenses',
+      to: '/misc-expenses',
+    },
   ];
 
   // Main sidebar items
@@ -256,17 +257,19 @@ const Sidebar = () => {
     },
     {
       icon: <CreditCard size={isCollapsed ? 20 : 18} />,
-      label: 'Services',
+      label: 'Financial Services',
       to: '#',
       hasChildren: true,
-      menuKey: 'services',
-      children: serviceItems,
+      menuKey: 'financialServices',
+      children: financialServiceItems,
     },
     {
-      icon: <Copy size={isCollapsed ? 20 : 18} />,
-      label: 'Photostat',
-      to: '/photostat',
-      hasChildren: false,
+      icon: <HeadphonesIcon size={isCollapsed ? 20 : 18} />,
+      label: 'Customer Services',
+      to: '#',
+      hasChildren: true,
+      menuKey: 'customerServices',
+      children: customerServiceItems,
     },
     {
       icon: <BookOpen size={isCollapsed ? 20 : 18} />,
@@ -289,14 +292,6 @@ const Sidebar = () => {
       label: 'Analytics',
       to: '/analytics',
       hasChildren: false,
-    },
-    {
-      icon: <PiggyBank size={isCollapsed ? 20 : 18} />,
-      label: 'Expenses',
-      to: '#',
-      hasChildren: true,
-      menuKey: 'expenses',
-      children: expenseItems,
     },
   ];
 
