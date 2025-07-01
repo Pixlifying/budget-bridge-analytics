@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -166,7 +165,7 @@ const Sidebar = () => {
     {
       icon: <PiggyBank size={isCollapsed ? 20 : 16} />,
       label: 'Over Drafts',
-      to: '/od-records',
+      to: '/od',
     },
     {
       icon: <Users size={isCollapsed ? 20 : 16} />,
@@ -234,11 +233,6 @@ const Sidebar = () => {
       icon: <PiggyBank size={isCollapsed ? 20 : 16} />,
       label: 'Expenses',
       to: '/expenses',
-    },
-    {
-      icon: <Copy size={isCollapsed ? 20 : 16} />,
-      label: 'Fee Expenses',
-      to: '/fee-expenses',
     },
     {
       icon: <FileText size={isCollapsed ? 20 : 16} />,

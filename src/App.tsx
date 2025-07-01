@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -20,7 +21,6 @@ import Papers from "@/pages/Papers";
 import CustomerDetails from "@/pages/CustomerDetails";
 import AgeCalculator from "@/pages/AgeCalculator";
 import Calculator from "@/pages/Calculator";
-import FeeExpenses from "@/pages/FeeExpenses";
 import MiscExpenses from "@/pages/MiscExpenses";
 import Query from "@/pages/Query";
 import PrintTemplates from "@/pages/PrintTemplates";
@@ -28,7 +28,7 @@ import NotFound from "@/pages/NotFound";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
-import ODRecords from "@/pages/ODRecords";
+import OD from "@/pages/OD";
 
 const queryClient = new QueryClient();
 
@@ -45,13 +45,12 @@ const App = () => (
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/banking-services" element={<BankingServices />} />
                   <Route path="/banking-accounts" element={<BankingAccounts />} />
-                  <Route path="/od-records" element={<ODRecords />} />
+                  <Route path="/od" element={<OD />} />
                   <Route path="/online-services" element={<OnlineServices />} />
                   <Route path="/applications" element={<Applications />} />
                   <Route path="/photostat" element={<Photostat />} />
                   <Route path="/analytics" element={<Analytics />} />
                   <Route path="/expenses" element={<Expenses />} />
-                  <Route path="/fee-expenses" element={<FeeExpenses />} />
                   <Route path="/misc-expenses" element={<MiscExpenses />} />
                   <Route path="/pending-balance" element={<PendingBalance />} />
                   <Route path="/ledger" element={<Ledger />} />
