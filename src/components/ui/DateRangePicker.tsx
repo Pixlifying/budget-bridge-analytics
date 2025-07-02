@@ -1,81 +1,103 @@
 
 import { useState } from 'react';
-import { Calendar as CalendarIcon } from 'lucide-react';
-import { format } from 'date-fns';
-import { Calendar } from '@/components/ui/calendar';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { Calendar, CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+export type ViewModeType = 'day' | 'month' | 'year';
 
 interface DateRangePickerProps {
   date: Date;
   onDateChange: (date: Date) => void;
-  mode: 'day' | 'month';
-  onModeChange: (mode: 'day' | 'month') => void;
+  mode: ViewModeType;
+  onModeChange: (mode: ViewModeType) => void;
 }
 
 const DateRangePicker = ({ date, onDateChange, mode, onModeChange }: DateRangePickerProps) => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  const handleDateSelect = (newDate: Date | undefined) => {
-    if (newDate) {
-      onDateChange(newDate);
-      setIsOpen(false);
-    }
+  const handleDateChange = (value: string) => {
+    const newDate = new Date(value);
+    onDateChange(newDate);
   };
 
-  const dateFormat = mode === 'day' ? 'd MMM yyyy' : 'MMMM yyyy';
+  const handleModeChange = (newMode: ViewModeType) => {
+    onModeChange(newMode);
+  };
 
   return (
-    <div className="flex items-center space-x-2">
-      <Select
-        value={mode}
-        onValueChange={(value) => onModeChange(value as 'day' | 'month')}
-      >
-        <SelectTrigger className="w-[120px] h-9">
-          <SelectValue placeholder="Select view" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="day">Daily</SelectItem>
-          <SelectItem value="month">Monthly</SelectItem>
-        </SelectContent>
-      </Select>
+    <Card className="w-full max-w-md">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Calendar size={20} />
+          Date Filter
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div>
+          <Label htmlFor="viewMode">View Mode</Label>
+          <Select value={mode} onValueChange={handleModeChange}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="day">Daily</SelectItem>
+              <SelectItem value="month">Monthly</SelectItem>
+              <SelectItem value="year">Yearly</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-      <Popover open={isOpen} onOpenChange={setIsOpen}>
-        <PopoverTrigger asChild>
+        <div>
+          <Label htmlFor="date">Select Date</Label>
+          <Input
+            id="date"
+            type={mode === 'year' ? 'number' : mode === 'month' ? 'month' : 'date'}
+            value={
+              mode === 'year' 
+                ? date.getFullYear().toString()
+                : mode === 'month'
+                ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+                : date.toISOString().split('T')[0]
+            }
+            onChange={(e) => {
+              if (mode === 'year') {
+                const year = parseInt(e.target.value);
+                handleDateChange(new Date(year, 0, 1).toISOString());
+              } else if (mode === 'month') {
+                handleDateChange(new Date(e.target.value + '-01').toISOString());
+              } else {
+                handleDateChange(e.target.value);
+              }
+            }}
+            min={mode === 'year' ? '2020' : undefined}
+            max={mode === 'year' ? '2030' : undefined}
+          />
+        </div>
+
+        <div className="flex gap-2">
           <Button
             variant="outline"
-            className={cn(
-              "justify-start text-left font-normal h-9 border-border",
-              !date && "text-muted-foreground"
-            )}
+            size="sm"
+            onClick={() => handleDateChange(new Date().toISOString())}
           >
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {date ? format(date, dateFormat) : <span>Pick a date</span>}
+            Today
           </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0 border-border" align="start">
-          <Calendar
-            mode="single"
-            selected={date}
-            onSelect={handleDateSelect}
-            initialFocus
-            className="p-3 pointer-events-auto"
-          />
-        </PopoverContent>
-      </Popover>
-    </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const yesterday = new Date();
+              yesterday.setDate(yesterday.getDate() - 1);
+              handleDateChange(yesterday.toISOString());
+            }}
+          >
+            Yesterday
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

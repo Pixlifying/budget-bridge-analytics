@@ -65,7 +65,6 @@ const Khata = () => {
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [editingTransaction, setEditingTransaction] = useState<KhataTransaction | null>(null);
   const [transactionFilter, setTransactionFilter] = useState<'all' | 'credit' | 'debit'>('all');
-  const [transactions, setTransactions] = useState<KhataTransaction[]>([]);
 
   const [customerForm, setCustomerForm] = useState({
     name: '',
@@ -123,31 +122,6 @@ const Khata = () => {
     } catch (error) {
       console.error('Error fetching khata data:', error);
       toast.error('Failed to load khata data');
-    }
-  };
-
-  const fetchTransactions = async (customerId: string) => {
-    try {
-      const { data: transactions, error } = await supabase
-        .from('khata_transactions')
-        .select('*')
-        .eq('customer_id', customerId)
-        .order('date', { ascending: false })
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      const formattedTransactions = transactions.map(transaction => ({
-        ...transaction,
-        date: new Date(transaction.date),
-        created_at: new Date(transaction.created_at)
-      }));
-
-      setTransactions(formattedTransactions);
-      calculateBalance(formattedTransactions);
-    } catch (error) {
-      console.error('Error fetching transactions:', error);
-      toast.error('Failed to load transactions');
     }
   };
 
