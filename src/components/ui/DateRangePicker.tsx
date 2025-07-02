@@ -14,9 +14,18 @@ interface DateRangePickerProps {
   onDateChange: (date: Date) => void;
   mode: ViewModeType;
   onModeChange: (mode: ViewModeType) => void;
+  showYearOption?: boolean;
+  className?: string;
 }
 
-const DateRangePicker = ({ date, onDateChange, mode, onModeChange }: DateRangePickerProps) => {
+const DateRangePicker = ({ 
+  date, 
+  onDateChange, 
+  mode, 
+  onModeChange, 
+  showYearOption = true,
+  className = ""
+}: DateRangePickerProps) => {
   const handleDateChange = (value: string) => {
     const newDate = new Date(value);
     onDateChange(newDate);
@@ -27,30 +36,30 @@ const DateRangePicker = ({ date, onDateChange, mode, onModeChange }: DateRangePi
   };
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Calendar size={20} />
+    <Card className={`w-full max-w-md ${className}`}>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <Calendar size={18} />
           Date Filter
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div>
-          <Label htmlFor="viewMode">View Mode</Label>
+        <div className="space-y-2">
+          <Label htmlFor="viewMode" className="text-sm font-medium">View Mode</Label>
           <Select value={mode} onValueChange={handleModeChange}>
-            <SelectTrigger>
+            <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="day">Daily</SelectItem>
               <SelectItem value="month">Monthly</SelectItem>
-              <SelectItem value="year">Yearly</SelectItem>
+              {showYearOption && <SelectItem value="year">Yearly</SelectItem>}
             </SelectContent>
           </Select>
         </div>
 
-        <div>
-          <Label htmlFor="date">Select Date</Label>
+        <div className="space-y-2">
+          <Label htmlFor="date" className="text-sm font-medium">Select Date</Label>
           <Input
             id="date"
             type={mode === 'year' ? 'number' : mode === 'month' ? 'month' : 'date'}
@@ -73,6 +82,7 @@ const DateRangePicker = ({ date, onDateChange, mode, onModeChange }: DateRangePi
             }}
             min={mode === 'year' ? '2020' : undefined}
             max={mode === 'year' ? '2030' : undefined}
+            className="w-full"
           />
         </div>
 
@@ -81,6 +91,7 @@ const DateRangePicker = ({ date, onDateChange, mode, onModeChange }: DateRangePi
             variant="outline"
             size="sm"
             onClick={() => handleDateChange(new Date().toISOString())}
+            className="flex-1"
           >
             Today
           </Button>
@@ -92,6 +103,7 @@ const DateRangePicker = ({ date, onDateChange, mode, onModeChange }: DateRangePi
               yesterday.setDate(yesterday.getDate() - 1);
               handleDateChange(yesterday.toISOString());
             }}
+            className="flex-1"
           >
             Yesterday
           </Button>
