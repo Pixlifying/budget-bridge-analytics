@@ -1,331 +1,475 @@
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import DoughnutChart from '@/components/ui/DoughnutChart';
-import { format, startOfDay, endOfDay, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
-import { supabase } from '@/integrations/supabase/client';
-import DateRangePicker, { ViewModeType } from '@/components/ui/DateRangePicker';
-import { CalendarDays, TrendingDown, TrendingUp, DollarSign, FileText, Users, Calculator, CreditCard } from 'lucide-react';
-import PageWrapper from '@/components/layout/PageWrapper';
+import { useEffect, useState } from 'react';
+import {
+  CreditCard,
+  FileText,
+  Globe, 
+  BarChart3,
+  FilePenLine,
+  AlertCircle,
+  DollarSign,
+  Wallet,
+  X,
+  Printer,
+  Receipt,
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { useQuery } from '@tanstack/react-query';
+import { format, startOfMonth, endOfMonth, startOfDay, endOfDay } from 'date-fns';
 
-interface DashboardStats {
-  totalRevenue: number;
-  totalExpenses: number;
-  totalApplications: number;
-  totalCustomers: number;
-  netProfit: number;
-  photostats: number;
-  bankingServices: number;
-  onlineServices: number;
-  panCards: number;
-  passports: number;
-  miscExpenses: number;
-  feeExpenses: number;
-}
+import { supabase } from '@/integrations/supabase/client';
+import PageHeader from '@/components/layout/PageHeader';
+import StatCard from '@/components/ui/StatCard';
+import DoughnutChart from '@/components/ui/DoughnutChart';
+import DateRangePicker from '@/components/ui/DateRangePicker';
+import {
+  formatCurrency,
+  getTotalMargin,
+} from '@/utils/calculateUtils';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const Dashboard = () => {
-  const [stats, setStats] = useState<DashboardStats>({
-    totalRevenue: 0,
-    totalExpenses: 0,
-    totalApplications: 0,
-    totalCustomers: 0,
-    netProfit: 0,
-    photostats: 0,
-    bankingServices: 0,
-    onlineServices: 0,
-    panCards: 0,
-    passports: 0,
-    miscExpenses: 0,
-    feeExpenses: 0,
-  });
-  
-  const [filterDate, setFilterDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<ViewModeType>('month');
+  const [date, setDate] = useState<Date>(new Date());
+  const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
   const [isLoading, setIsLoading] = useState(true);
+  const [marginDialogOpen, setMarginDialogOpen] = useState(false);
 
-  const getDateRange = () => {
-    switch (viewMode) {
-      case 'day':
-        return {
-          start: startOfDay(filterDate),
-          end: endOfDay(filterDate)
-        };
-      case 'month':
-        return {
-          start: startOfMonth(filterDate),
-          end: endOfMonth(filterDate)
-        };
-      case 'year':
-        return {
-          start: startOfYear(filterDate),
-          end: endOfYear(filterDate)
-        };
-      default:
-        return {
-          start: startOfMonth(filterDate),
-          end: endOfMonth(filterDate)
-        };
-    }
-  };
-
-  const fetchStats = async () => {
-    setIsLoading(true);
-    const { start, end } = getDateRange();
-    
-    try {
-      // Fetch total revenue
-      const { data: revenueData, error: revenueError } = await supabase
-        .from('banking_services')
-        .select('amount')
-        .gte('created_at', start.toISOString())
-        .lte('created_at', end.toISOString());
-
-      if (revenueError) throw revenueError;
-      const totalRevenue = revenueData?.reduce((sum, item) => sum + item.amount, 0) || 0;
-
-      // Fetch total expenses
-      const { data: expensesData, error: expensesError } = await supabase
-        .from('expenses')
-        .select('amount')
-        .gte('date', start.toISOString())
-        .lte('date', end.toISOString());
-
-      if (expensesError) throw expensesError;
-      const totalExpenses = expensesData?.reduce((sum, item) => sum + item.amount, 0) || 0;
-
-      // Fetch total applications
-      const { data: applicationsData, error: applicationsError } = await supabase
-        .from('applications')
-        .select('*')
-        .gte('created_at', start.toISOString())
-        .lte('created_at', end.toISOString());
-
-      if (applicationsError) throw applicationsError;
-
-      // Fetch total customers
-      const { data: customersData, error: customersError } = await supabase
-        .from('account_details')
-        .select('*')
-         .gte('created_at', start.toISOString())
-        .lte('created_at', end.toISOString());
-
-      if (customersError) throw customersError;
-
-      // Fetch photostat revenue
-      const { data: photostatsData, error: photostatsError } = await supabase
-        .from('photostats')
-        .select('total_amount')
-        .gte('created_at', start.toISOString())
-        .lte('created_at', end.toISOString());
-
-      if (photostatsError) throw photostatsError;
-
-      // Fetch banking services revenue
-      const { data: bankingServicesData, error: bankingServicesError } = await supabase
-        .from('banking_services')
-        .select('amount')
-        .gte('created_at', start.toISOString())
-        .lte('created_at', end.toISOString());
-
-      if (bankingServicesError) throw bankingServicesError;
-
-      // Fetch online services revenue
-      const { data: onlineServicesData, error: onlineServicesError } = await supabase
-        .from('online_services')
-        .select('total')
-        .gte('created_at', start.toISOString())
-        .lte('created_at', end.toISOString());
-
-      if (onlineServicesError) throw onlineServicesError;
-
-      // Fetch pan cards revenue
-       const { data: panCardsData, error: panCardsError } = await supabase
-        .from('pan_cards')
-        .select('total')
-        .gte('created_at', start.toISOString())
-        .lte('created_at', end.toISOString());
-
-      if (panCardsError) throw panCardsError;
-
-      // Fetch passports revenue
-      const { data: passportsData, error: passportsError } = await supabase
-        .from('passports')
-        .select('total')
-        .gte('created_at', start.toISOString())
-        .lte('created_at', end.toISOString());
-
-      if (passportsError) throw passportsError;
-
-      // Fetch misc expenses
-      const { data: miscExpensesData, error: miscExpensesError } = await supabase
-        .from('misc_expenses')
-        .select('fee')
-        .gte('date', start.toISOString())
-        .lte('date', end.toISOString());
-
-      if (miscExpensesError) throw miscExpensesError;
-
-      // Fetch fee expenses
-      const { data: feeExpensesData, error: feeExpensesError } = await supabase
-        .from('fee_expenses')
-        .select('fee')
-        .gte('date', start.toISOString())
-        .lte('date', end.toISOString());
-
-      if (feeExpensesError) throw feeExpensesError;
+  const { data: bankingData, error: bankingError } = useQuery({
+    queryKey: ['bankingServices', viewMode, date],
+    queryFn: async () => {
+      let query = supabase.from('banking_services').select('*');
       
-      // Calculate net profit
-      const netProfit = totalRevenue - totalExpenses;
-
-      setStats({
-        totalRevenue,
-        totalExpenses,
-        totalApplications: applicationsData?.length || 0,
-        totalCustomers: customersData?.length || 0,
-        netProfit,
-        photostats: photostatsData?.reduce((sum, item) => sum + item.total_amount, 0) || 0,
-        bankingServices: bankingServicesData?.reduce((sum, item) => sum + item.amount, 0) || 0,
-        onlineServices: onlineServicesData?.reduce((sum, item) => sum + item.total, 0) || 0,
-        panCards: panCardsData?.reduce((sum, item) => sum + item.total, 0) || 0,
-        passports: passportsData?.reduce((sum, item) => sum + item.total, 0) || 0,
-        miscExpenses: miscExpensesData?.reduce((sum, item) => sum + item.fee, 0) || 0,
-        feeExpenses: feeExpensesData?.reduce((sum, item) => sum + item.fee, 0) || 0,
-      });
-    } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
-    } finally {
-      setIsLoading(false);
+      if (viewMode === 'day') {
+        const dateStr = format(date, 'yyyy-MM-dd');
+        query = query.eq('date', dateStr);
+      } else if (viewMode === 'month') {
+        const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
+        const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
+        query = query.gte('date', startDate).lte('date', endDate);
+      }
+      
+      const { data, error } = await query.order('date', { ascending: false });
+      if (error) {
+        throw error;
+      }
+      return data;
     }
-  };
+  });
+
+  const { data: onlineData, error: onlineError } = useQuery({
+    queryKey: ['onlineServices', viewMode, date],
+    queryFn: async () => {
+      let query = supabase.from('online_services').select('*');
+      
+      if (viewMode === 'day') {
+        const startDateStr = format(startOfDay(date), 'yyyy-MM-dd');
+        const endDateStr = format(endOfDay(date), 'yyyy-MM-dd');
+        
+        query = query.gte('date', startDateStr).lt('date', endDateStr + 'T23:59:59');
+      } else if (viewMode === 'month') {
+        const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
+        const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
+        query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59');
+      }
+      
+      const { data, error } = await query.order('date', { ascending: false });
+      if (error) {
+        throw error;
+      }
+      
+      console.log('Online services data fetched:', data, 'for date:', date, 'mode:', viewMode);
+      return data;
+    }
+  });
+
+  const { data: applicationsData, error: applicationsError } = useQuery({
+    queryKey: ['applications', viewMode, date],
+    queryFn: async () => {
+      let query = supabase.from('applications').select('*');
+      
+      if (viewMode === 'day') {
+        const startDateStr = format(startOfDay(date), 'yyyy-MM-dd');
+        const endDateStr = format(endOfDay(date), 'yyyy-MM-dd');
+        
+        query = query.gte('date', startDateStr).lt('date', endDateStr + 'T23:59:59');
+      } else if (viewMode === 'month') {
+        const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
+        const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
+        query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59');
+      }
+      
+      const { data, error } = await query.order('date', { ascending: false });
+      if (error) {
+        throw error;
+      }
+      console.log('Applications data fetched:', data, 'for date:', date, 'mode:', viewMode);
+      return data;
+    }
+  });
+
+  const { data: photostatData, error: photostatError } = useQuery({
+    queryKey: ['photostat', viewMode, date],
+    queryFn: async () => {
+      let query = supabase.from('photostats').select('*');
+      
+      if (viewMode === 'day') {
+        const startDateStr = format(startOfDay(date), 'yyyy-MM-dd');
+        const endDateStr = format(endOfDay(date), 'yyyy-MM-dd');
+        
+        query = query.gte('date', startDateStr).lt('date', endDateStr + 'T23:59:59');
+      } else if (viewMode === 'month') {
+        const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
+        const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
+        query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59');
+      }
+      
+      const { data, error } = await query.order('date', { ascending: false });
+      if (error) {
+        throw error;
+      }
+      console.log('Photostat data fetched:', data, 'for date:', date, 'mode:', viewMode);
+      return data;
+    }
+  });
+
+  const { data: pendingBalanceData, error: pendingBalanceError } = useQuery({
+    queryKey: ['pendingBalances', viewMode, date],
+    queryFn: async () => {
+      let query = supabase.from('pending_balances').select('*');
+      
+      if (viewMode === 'day') {
+        const startDateStr = format(startOfDay(date), 'yyyy-MM-dd');
+        const endDateStr = format(endOfDay(date), 'yyyy-MM-dd');
+        
+        query = query.gte('date', startDateStr).lt('date', endDateStr + 'T23:59:59');
+      } else if (viewMode === 'month') {
+        const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
+        const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
+        query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59');
+      }
+      
+      const { data, error } = await query.order('date', { ascending: false });
+      if (error) {
+        throw error;
+      }
+      console.log('Pending balances data fetched:', data, 'for date:', date, 'mode:', viewMode);
+      return data;
+    }
+  });
+
+  const { data: expensesData, error: expensesError } = useQuery({
+    queryKey: ['expenses', viewMode, date],
+    queryFn: async () => {
+      let query = supabase.from('expenses').select('*');
+      
+      if (viewMode === 'day') {
+        const startDateStr = format(startOfDay(date), 'yyyy-MM-dd');
+        const endDateStr = format(endOfDay(date), 'yyyy-MM-dd');
+        
+        query = query.gte('date', startDateStr).lt('date', endDateStr + 'T23:59:59');
+      } else if (viewMode === 'month') {
+        const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
+        const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
+        query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59');
+      }
+      
+      const { data, error } = await query.order('date', { ascending: false });
+      if (error) {
+        throw error;
+      }
+      console.log('Expenses data fetched:', data, 'for date:', date, 'mode:', viewMode);
+      return data;
+    }
+  });
 
   useEffect(() => {
-    fetchStats();
-  }, [filterDate, viewMode]);
+    if (
+      bankingError ||
+      onlineError ||
+      applicationsError ||
+      photostatError ||
+      pendingBalanceError ||
+      expensesError
+    ) {
+      toast.error('Failed to load data');
+    }
+  }, [
+    bankingError,
+    onlineError,
+    applicationsError,
+    photostatError,
+    pendingBalanceError,
+    expensesError,
+  ]);
 
-  const getColor = (name: string) => {
-    const colorMap: { [key: string]: string } = {
-      'Revenue': '#10b981',
-      'Expenses': '#ef4444',
-      'Photostats': '#3b82f6',
-      'Banking Services': '#8b5cf6',
-      'Online Services': '#f59e0b',
-      'PAN Cards': '#ef4444',
-      'Passports': '#10b981',
-      'Misc Expenses': '#f59e0b',
-      'Fee Expenses': '#ef4444',
-    };
-    return colorMap[name] || '#6b7280';
+  // Calculate metrics from fetched data
+  const bankingServicesTotal = bankingData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
+  const bankingServicesCount = bankingData?.reduce((sum, entry) => sum + (entry.transaction_count || 1), 0) || 0;
+  const bankingMargin = bankingData?.reduce((sum, entry) => sum + entry.margin, 0) || 0;
+
+  const onlineServicesTotal = onlineData?.reduce((sum, entry) => sum + Number(entry.total || 0), 0) || 0;
+  const onlineServicesCount = onlineData?.length || 0;
+  const onlineMargin = onlineData?.reduce((sum, entry) => sum + (entry.amount * entry.count), 0) || 0;
+
+  const applicationsTotal = applicationsData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
+  const applicationsCount = applicationsData?.length || 0;
+  const applicationsMargin = applicationsData?.reduce((sum, entry) => sum + entry.amount, 0) || 0;
+
+  // 1. Calculate Printout/Photostat Totals and Margins
+  const photostatTotal = photostatData?.reduce((sum, entry) => sum + Number(entry.total_amount), 0) || 0;
+  const photostatCount = photostatData?.length || 0;
+  const photostatMarginTotal = photostatData?.reduce((sum, entry) => sum + Number(entry.margin), 0) || 0;
+
+  const pendingBalanceTotal = pendingBalanceData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
+
+  const expensesTotal = expensesData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
+  const expensesCount = expensesData?.length || 0;
+
+  // Calculate total margin including Photostat
+  const totalMargin = bankingMargin + onlineMargin + applicationsMargin + photostatMarginTotal;
+
+  // 2. Update marginProportions and marginDetails to include Printout and Photostat
+  const marginProportions = [
+    { name: 'Banking', value: bankingMargin },
+    { name: 'Online', value: onlineMargin },
+    { name: 'Applications', value: applicationsMargin },
+    { name: 'Printout and Photostat', value: photostatMarginTotal },
+    { name: 'Pending Balance', value: pendingBalanceTotal },
+    { name: 'Expenses', value: expensesTotal },
+  ];
+
+  const getServiceColor = (serviceName: string): string => {
+    switch (serviceName) {
+      case 'Banking': return '#A5D6A7';
+      case 'Online': return '#FFAB91';
+      case 'Applications': return '#B39DDB';
+      case 'Printout and Photostat': return '#F48FB1';
+      case 'Photostat': return '#F48FB1'; // compatibility
+      case 'Pending Balance': return '#FFB74D';
+      case 'Expenses': return '#4FC3F7';
+      default: return '#BDBDBD';
+    }
   };
 
-  const chartData = [
-    { name: 'Revenue', value: stats.totalRevenue },
-    { name: 'Expenses', value: stats.totalExpenses },
-  ];
+  const handleDateChange = (newDate: Date) => {
+    setDate(newDate);
+  };
 
-  const serviceData = [
-    { name: 'Photostats', value: stats.photostats },
-    { name: 'Banking Services', value: stats.bankingServices },
-    { name: 'Online Services', value: stats.onlineServices },
-    { name: 'PAN Cards', value: stats.panCards },
-    { name: 'Passports', value: stats.passports },
-  ];
+  const handleViewModeChange = (mode: 'day' | 'month') => {
+    setViewMode(mode);
+  };
 
-  const expenseData = [
-    { name: 'Misc Expenses', value: stats.miscExpenses },
-    { name: 'Fee Expenses', value: stats.feeExpenses },
+  const marginDetails = [
+    { name: 'Banking Services', value: bankingMargin, color: '#A5D6A7' },
+    { name: 'Online Services', value: onlineMargin, color: '#FFAB91' },
+    { name: 'Applications', value: applicationsMargin, color: '#B39DDB' },
+    { name: 'Printout and Photostat', value: photostatMarginTotal, color: '#F48FB1' },
+    { name: 'Pending Balance', value: pendingBalanceTotal, color: '#FFB74D' },
+    { name: 'Expenses', value: expensesTotal, color: '#4FC3F7' },
   ];
 
   return (
-    <PageWrapper title="Dashboard" subtitle="Overview of your business metrics">
-      <div className="space-y-6">
-        {/* Date Filter */}
-        <div className="flex justify-center">
-          <DateRangePicker
-            date={filterDate}
-            onDateChange={setFilterDate}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-700">
+      <PageHeader
+        title="Dashboard"
+        showThemeToggle={true}
+      >
+        <div className="flex items-center">
+          <DateRangePicker 
+            date={date}
+            onDateChange={handleDateChange}
             mode={viewMode}
-            onModeChange={setViewMode}
-            className="w-full max-w-sm"
+            onModeChange={handleViewModeChange}
+          />
+        </div>
+      </PageHeader>
+
+      <div className="p-6">
+        <div className="grid gap-6 mb-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          <StatCard
+            title="Total Margin"
+            value={formatCurrency(totalMargin)}
+            icon={<Wallet className="h-5 w-5" />}
+            onClick={() => setMarginDialogOpen(true)}
+            className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-200/50 dark:border-emerald-800/50 hover:scale-105 transition-all duration-300"
+          />
+          <StatCard
+            title="Banking Services"
+            value={bankingServicesCount}
+            icon={<CreditCard className="h-5 w-5" />}
+            className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-200/50 dark:border-blue-800/50 hover:scale-105 transition-all duration-300"
+          />
+          <StatCard
+            title="Printout and Photostat"
+            value={photostatCount}
+            icon={<Printer className="h-5 w-5" />}
+            className="bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-orange-200/50 dark:border-orange-800/50 hover:scale-105 transition-all duration-300"
           />
         </div>
 
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-              <TrendingUp className="h-4 w-4" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">₹{stats.totalRevenue.toLocaleString()}</div>
-              <p className="text-xs opacity-90">
-                {format(filterDate, viewMode === 'day' ? 'dd MMM yyyy' : viewMode === 'month' ? 'MMM yyyy' : 'yyyy')}
-              </p>
-            </CardContent>
-          </Card>
+        <Dialog open={marginDialogOpen} onOpenChange={setMarginDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Margin Breakdown</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <div className="space-y-4">
+                {marginDetails.map((item) => (
+                  <div key={item.name} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
+                      <span>{item.name}</span>
+                    </div>
+                    <span className="font-semibold">{formatCurrency(item.value)}</span>
+                  </div>
+                ))}
+                <div className="border-t pt-2 mt-2">
+                  <div className="flex items-center justify-between font-bold">
+                    <span>Total Margin</span>
+                    <span>{formatCurrency(totalMargin)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
-          <Card className="bg-gradient-to-r from-red-500 to-red-600 text-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
-              <TrendingDown className="h-4 w-4" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">₹{stats.totalExpenses.toLocaleString()}</div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Net Profit</CardTitle>
-              <DollarSign className="h-4 w-4" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">₹{stats.netProfit.toLocaleString()}</div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Applications</CardTitle>
-              <FileText className="h-4 w-4" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalApplications}</div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-md rounded-xl p-5 border border-white/20 dark:border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] animate-scale-in">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-lg bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Banking Services</h3>
+              <BarChart3 className="h-5 w-5 text-primary opacity-70" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Amount</p>
+                <p className="text-xl font-bold">{formatCurrency(bankingServicesTotal)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Margin</p>
+                <p className="text-xl font-bold">{formatCurrency(bankingMargin)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Transactions</p>
+                <p className="text-xl font-bold">{bankingServicesCount}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-md rounded-xl p-5 border border-white/20 dark:border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] animate-scale-in">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-lg bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">Online Services</h3>
+              <Globe className="h-5 w-5 text-primary opacity-70" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Amount</p>
+                <p className="text-xl font-bold">{formatCurrency(onlineServicesTotal)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Margin</p>
+                <p className="text-xl font-bold">{formatCurrency(onlineMargin)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Transactions</p>
+                <p className="text-xl font-bold">{onlineServicesCount}</p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Revenue vs Expenses</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <DoughnutChart data={chartData} getColor={getColor} />
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-md rounded-xl p-5 border border-white/20 dark:border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] animate-scale-in">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-lg bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Applications</h3>
+              <FilePenLine className="h-5 w-5 text-primary opacity-70" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Amount</p>
+                <p className="text-xl font-bold">{formatCurrency(applicationsTotal)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Count</p>
+                <p className="text-xl font-bold">{applicationsCount}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-md rounded-xl p-5 border border-white/20 dark:border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] animate-scale-in">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-lg bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">Pending Balance</h3>
+              <AlertCircle className="h-5 w-5 text-primary opacity-70" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Amount</p>
+                <p className="text-xl font-bold">{formatCurrency(pendingBalanceTotal)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Count</p>
+                <p className="text-xl font-bold">{pendingBalanceData?.length || 0}</p>
+              </div>
+            </div>
+          </div>
+        </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Services Revenue</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <DoughnutChart data={serviceData} getColor={getColor} />
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-md rounded-xl p-5 border border-white/20 dark:border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] animate-scale-in">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-lg bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">Printout and Photostat</h3>
+              <Printer className="h-5 w-5 text-primary opacity-70" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Amount</p>
+                <p className="text-xl font-bold">{formatCurrency(photostatTotal)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Count</p>
+                <p className="text-xl font-bold">{photostatCount}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Margin</p>
+                <p className="text-xl font-bold">{formatCurrency(photostatMarginTotal)}</p>
+              </div>
+            </div>
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Expense Breakdown</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <DoughnutChart data={expenseData} getColor={getColor} />
-            </CardContent>
-          </Card>
+          <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-md rounded-xl p-5 border border-white/20 dark:border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] animate-scale-in">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-lg bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">Expenses</h3>
+              <Receipt className="h-5 w-5 text-primary opacity-70" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Amount</p>
+                <p className="text-xl font-bold">{formatCurrency(expensesTotal)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Count</p>
+                <p className="text-xl font-bold">{expensesCount}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-md rounded-xl p-5 border border-white/20 dark:border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] animate-scale-in">
+            <h3 className="font-semibold text-lg mb-4 bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">Margin Distribution</h3>
+            <DoughnutChart
+              data={marginProportions}
+              getColor={getServiceColor}
+            />
+          </div>
         </div>
       </div>
-    </PageWrapper>
+    </div>
   );
 };
 

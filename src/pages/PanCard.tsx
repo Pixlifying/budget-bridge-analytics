@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { FileText, Plus } from 'lucide-react';
 import { toast } from 'sonner';
@@ -5,7 +6,7 @@ import { v4 as uuidv4 } from '@/lib/utils';
 import PageWrapper from '@/components/layout/PageWrapper';
 import ServiceForm from '@/components/ui/ServiceForm';
 import ServiceCard from '@/components/ui/ServiceCard';
-import DateRangePicker, { ViewModeType } from '@/components/ui/DateRangePicker';
+import DateRangePicker from '@/components/ui/DateRangePicker';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -27,16 +28,12 @@ interface PanCardEntry {
 
 const PanCard = () => {
   const [date, setDate] = useState<Date>(new Date());
-  const [viewMode, setViewMode] = useState<ViewModeType>('day');
+  const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
   const [panCards, setPanCards] = useState<PanCardEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filteredPanCards, setFilteredPanCards] = useState<PanCardEntry[]>([]);
   const [editingEntry, setEditingEntry] = useState<PanCardEntry | null>(null);
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
-
-  const handleViewModeChange = (mode: ViewModeType) => {
-    setViewMode(mode);
-  };
   
   // Fetch data from Supabase
   const fetchPanCards = async () => {
@@ -247,7 +244,7 @@ const PanCard = () => {
             date={date} 
             onDateChange={setDate} 
             mode={viewMode} 
-            onModeChange={handleViewModeChange} 
+            onModeChange={setViewMode} 
           />
           <ServiceForm
             title="Add Pan Card Entry"

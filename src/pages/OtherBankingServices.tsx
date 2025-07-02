@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { CreditCard, Plus, Edit, Trash2, Printer } from 'lucide-react';
 import { toast } from 'sonner';
@@ -7,7 +8,7 @@ import PageWrapper from '@/components/layout/PageWrapper';
 import { Button } from '@/components/ui/button';
 import ServiceCard from '@/components/ui/ServiceCard';
 import StatCard from '@/components/ui/StatCard';
-import DateRangePicker, { ViewModeType } from '@/components/ui/DateRangePicker';
+import DateRangePicker from '@/components/ui/DateRangePicker';
 import DownloadButton from '@/components/ui/DownloadButton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -64,11 +65,7 @@ const OtherBankingServices = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [editingEntry, setEditingEntry] = useState<BankingAccount | null>(null);
   const [date, setDate] = useState<Date>(new Date());
-  const [viewMode, setViewMode] = useState<ViewModeType>('day');
-
-  const handleViewModeChange = (mode: ViewModeType) => {
-    setViewMode(mode);
-  };
+  const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
 
   // Form state for inline entry
   const [newEntry, setNewEntry] = useState({
@@ -318,7 +315,7 @@ const OtherBankingServices = () => {
             date={date} 
             onDateChange={setDate} 
             mode={viewMode} 
-            onModeChange={handleViewModeChange} 
+            onModeChange={setViewMode} 
           />
           <div className="flex gap-2">
             <Button onClick={handlePrint} variant="outline">
