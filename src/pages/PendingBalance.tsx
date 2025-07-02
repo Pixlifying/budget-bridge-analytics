@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Edit, Trash2, Printer } from 'lucide-react';
 import { toast } from 'sonner';
@@ -31,7 +30,7 @@ interface PendingBalanceEntry {
 
 const PendingBalance = () => {
   const [date, setDate] = useState<Date>(new Date());
-  const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
+  const [viewMode, setViewMode] = useState<'day' | 'month' | 'year'>('day'); // Added year option
   const [pendingBalances, setPendingBalances] = useState<PendingBalanceEntry[]>([]);
   const [filteredBalances, setFilteredBalances] = useState<PendingBalanceEntry[]>([]);
   const [editingEntry, setEditingEntry] = useState<PendingBalanceEntry | null>(null);
@@ -97,8 +96,14 @@ const PendingBalance = () => {
   useEffect(() => {
     if (viewMode === 'day') {
       setFilteredBalances(filterByDate(pendingBalances, date));
-    } else {
+    } else if (viewMode === 'month') {
       setFilteredBalances(filterByMonth(pendingBalances, date));
+    } else if (viewMode === 'year') {
+      // Filter by year
+      const filteredByYear = pendingBalances.filter(balance => 
+        balance.date.getFullYear() === date.getFullYear()
+      );
+      setFilteredBalances(filteredByYear);
     }
   }, [date, viewMode, pendingBalances]);
 
@@ -297,7 +302,7 @@ const PendingBalance = () => {
   return (
     <PageWrapper
       title="Pending Balances"
-      subtitle={`Manage pending balances for ${viewMode === 'day' ? 'today' : 'this month'}`}
+      subtitle={`Manage pending balances for ${viewMode === 'day' ? 'today' : viewMode === 'month' ? 'this month' : 'this year'}`}
       action={
         <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
           <DateRangePicker 
