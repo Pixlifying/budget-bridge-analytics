@@ -1,6 +1,7 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DoughnutChart } from '@/components/ui/DoughnutChart';
+import DoughnutChart from '@/components/ui/DoughnutChart';
 import { format, startOfDay, endOfDay, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import DateRangePicker, { ViewModeType } from '@/components/ui/DateRangePicker';
@@ -112,7 +113,7 @@ const Dashboard = () => {
 
       // Fetch photostat revenue
       const { data: photostatsData, error: photostatsError } = await supabase
-        .from('photostat')
+        .from('photostats')
         .select('total_amount')
         .gte('created_at', start.toISOString())
         .lte('created_at', end.toISOString());
@@ -166,7 +167,7 @@ const Dashboard = () => {
 
       // Fetch fee expenses
       const { data: feeExpensesData, error: feeExpensesError } = await supabase
-        .from('expenses')
+        .from('fee_expenses')
         .select('fee')
         .gte('date', start.toISOString())
         .lte('date', end.toISOString());
@@ -201,22 +202,37 @@ const Dashboard = () => {
     fetchStats();
   }, [filterDate, viewMode]);
 
+  const getColor = (name: string) => {
+    const colorMap: { [key: string]: string } = {
+      'Revenue': '#10b981',
+      'Expenses': '#ef4444',
+      'Photostats': '#3b82f6',
+      'Banking Services': '#8b5cf6',
+      'Online Services': '#f59e0b',
+      'PAN Cards': '#ef4444',
+      'Passports': '#10b981',
+      'Misc Expenses': '#f59e0b',
+      'Fee Expenses': '#ef4444',
+    };
+    return colorMap[name] || '#6b7280';
+  };
+
   const chartData = [
-    { name: 'Revenue', value: stats.totalRevenue, color: '#10b981' },
-    { name: 'Expenses', value: stats.totalExpenses, color: '#ef4444' },
+    { name: 'Revenue', value: stats.totalRevenue },
+    { name: 'Expenses', value: stats.totalExpenses },
   ];
 
   const serviceData = [
-    { name: 'Photostats', value: stats.photostats, color: '#3b82f6' },
-    { name: 'Banking Services', value: stats.bankingServices, color: '#8b5cf6' },
-    { name: 'Online Services', value: stats.onlineServices, color: '#f59e0b' },
-    { name: 'PAN Cards', value: stats.panCards, color: '#ef4444' },
-    { name: 'Passports', value: stats.passports, color: '#10b981' },
+    { name: 'Photostats', value: stats.photostats },
+    { name: 'Banking Services', value: stats.bankingServices },
+    { name: 'Online Services', value: stats.onlineServices },
+    { name: 'PAN Cards', value: stats.panCards },
+    { name: 'Passports', value: stats.passports },
   ];
 
   const expenseData = [
-    { name: 'Misc Expenses', value: stats.miscExpenses, color: '#f59e0b' },
-    { name: 'Fee Expenses', value: stats.feeExpenses, color: '#ef4444' },
+    { name: 'Misc Expenses', value: stats.miscExpenses },
+    { name: 'Fee Expenses', value: stats.feeExpenses },
   ];
 
   return (
@@ -286,7 +302,7 @@ const Dashboard = () => {
               <CardTitle>Revenue vs Expenses</CardTitle>
             </CardHeader>
             <CardContent>
-              <DoughnutChart data={chartData} />
+              <DoughnutChart data={chartData} getColor={getColor} />
             </CardContent>
           </Card>
 
@@ -295,7 +311,7 @@ const Dashboard = () => {
               <CardTitle>Services Revenue</CardTitle>
             </CardHeader>
             <CardContent>
-              <DoughnutChart data={serviceData} />
+              <DoughnutChart data={serviceData} getColor={getColor} />
             </CardContent>
           </Card>
 
@@ -304,7 +320,7 @@ const Dashboard = () => {
               <CardTitle>Expense Breakdown</CardTitle>
             </CardHeader>
             <CardContent>
-              <DoughnutChart data={expenseData} />
+              <DoughnutChart data={expenseData} getColor={getColor} />
             </CardContent>
           </Card>
         </div>
