@@ -206,197 +206,280 @@ const OD = () => {
   };
 
   return (
-    <PageWrapper title="Over Draft Management">
-      <div className="space-y-6">
-        {/* Action Buttons */}
-        <div className="flex gap-2 no-print">
-          <Button onClick={handlePrint} variant="outline">
-            <Printer size={16} className="mr-2" />
-            Print
-          </Button>
-          <Button onClick={handleDownload} variant="outline">
-            <Download size={16} className="mr-2" />
-            Download CSV
-          </Button>
-        </div>
+    <>
+      <style>
+        {`
+          @media print {
+            .no-print {
+              display: none !important;
+            }
+            
+            .print-only {
+              display: block !important;
+            }
+            
+            body {
+              background: white !important;
+              color: black !important;
+            }
+            
+            .print-title {
+              text-align: center;
+              font-size: 24px;
+              font-weight: bold;
+              margin-bottom: 20px;
+              color: black !important;
+            }
+            
+            table {
+              width: 100% !important;
+              border-collapse: collapse !important;
+              margin-top: 20px;
+            }
+            
+            th, td {
+              border: 1px solid black !important;
+              padding: 8px !important;
+              text-align: left !important;
+              color: black !important;
+            }
+            
+            th {
+              background-color: #f5f5f5 !important;
+              font-weight: bold !important;
+            }
+            
+            tr:nth-child(even) {
+              background-color: #f9f9f9 !important;
+            }
+            
+            .print-summary {
+              margin-top: 20px;
+              padding: 10px;
+              border: 1px solid black;
+              background-color: #f0f0f0;
+            }
+          }
+          
+          .print-only {
+            display: none;
+          }
+        `}
+      </style>
+      
+      <PageWrapper title="Over Draft Management">
+        <div className="space-y-6">
+          {/* Print Header - Only visible when printing */}
+          <div className="print-only">
+            <h1 className="print-title">Over Draft Records</h1>
+            <p style={{ textAlign: 'center', marginBottom: '20px' }}>
+              Generated on: {format(new Date(), 'dd/MM/yyyy HH:mm')}
+            </p>
+          </div>
 
-        {/* Form */}
-        <Card className="no-print">
-          <CardHeader>
-            <CardTitle>{editingId ? 'Edit OD Record' : 'Add New OD Record'}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="date">Date</Label>
-                  <Input
-                    id="date"
-                    type="date"
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    required
-                  />
+          {/* Action Buttons */}
+          <div className="flex gap-2 no-print">
+            <Button onClick={handlePrint} variant="outline">
+              <Printer size={16} className="mr-2" />
+              Print
+            </Button>
+            <Button onClick={handleDownload} variant="outline">
+              <Download size={16} className="mr-2" />
+              Download CSV
+            </Button>
+          </div>
+
+          {/* Form */}
+          <Card className="no-print">
+            <CardHeader>
+              <CardTitle>{editingId ? 'Edit OD Record' : 'Add New OD Record'}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="date">Date</Label>
+                    <Input
+                      id="date"
+                      type="date"
+                      value={formData.date}
+                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="od_from_bank">OD from Bank</Label>
+                    <Input
+                      id="od_from_bank"
+                      type="number"
+                      step="0.01"
+                      value={formData.od_from_bank}
+                      onChange={(e) => setFormData({ ...formData, od_from_bank: parseFloat(e.target.value) || 0 })}
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="last_balance">Last Balance</Label>
+                    <Input
+                      id="last_balance"
+                      type="number"
+                      step="0.01"
+                      value={formData.last_balance}
+                      onChange={(e) => setFormData({ ...formData, last_balance: parseFloat(e.target.value) || 0 })}
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="amount_received">Amount Received</Label>
+                    <Input
+                      id="amount_received"
+                      type="number"
+                      step="0.01"
+                      value={formData.amount_received}
+                      onChange={(e) => setFormData({ ...formData, amount_received: parseFloat(e.target.value) || 0 })}
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="amount_distributed">Amount Distributed</Label>
+                    <Input
+                      id="amount_distributed"
+                      type="number"
+                      step="0.01"
+                      value={formData.amount_distributed}
+                      onChange={(e) => setFormData({ ...formData, amount_distributed: parseFloat(e.target.value) || 0 })}
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label>Cash in Hand (Auto-calculated)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={cashInHand.toFixed(2)}
+                      readOnly
+                      className="bg-muted"
+                    />
+                  </div>
                 </div>
                 
-                <div>
-                  <Label htmlFor="od_from_bank">OD from Bank</Label>
-                  <Input
-                    id="od_from_bank"
-                    type="number"
-                    step="0.01"
-                    value={formData.od_from_bank}
-                    onChange={(e) => setFormData({ ...formData, od_from_bank: parseFloat(e.target.value) || 0 })}
-                    required
-                  />
+                <div className="flex gap-2">
+                  <Button type="submit" disabled={isLoading}>
+                    <Plus size={16} className="mr-2" />
+                    {editingId ? 'Update Record' : 'Add Record'}
+                  </Button>
+                  {editingId && (
+                    <Button type="button" variant="outline" onClick={resetForm}>
+                      Cancel
+                    </Button>
+                  )}
                 </div>
-                
-                <div>
-                  <Label htmlFor="last_balance">Last Balance</Label>
-                  <Input
-                    id="last_balance"
-                    type="number"
-                    step="0.01"
-                    value={formData.last_balance}
-                    onChange={(e) => setFormData({ ...formData, last_balance: parseFloat(e.target.value) || 0 })}
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="amount_received">Amount Received</Label>
-                  <Input
-                    id="amount_received"
-                    type="number"
-                    step="0.01"
-                    value={formData.amount_received}
-                    onChange={(e) => setFormData({ ...formData, amount_received: parseFloat(e.target.value) || 0 })}
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="amount_distributed">Amount Distributed</Label>
-                  <Input
-                    id="amount_distributed"
-                    type="number"
-                    step="0.01"
-                    value={formData.amount_distributed}
-                    onChange={(e) => setFormData({ ...formData, amount_distributed: parseFloat(e.target.value) || 0 })}
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <Label>Cash in Hand (Auto-calculated)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={cashInHand.toFixed(2)}
-                    readOnly
-                    className="bg-muted"
-                  />
-                </div>
+              </form>
+            </CardContent>
+          </Card>
+
+          {/* Records Table */}
+          <Card>
+            <CardHeader className="no-print">
+              <CardTitle>OD Records</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>OD from Bank</TableHead>
+                      <TableHead>Last Balance</TableHead>
+                      <TableHead>Amount Received</TableHead>
+                      <TableHead>Amount Distributed</TableHead>
+                      <TableHead>Cash in Hand</TableHead>
+                      <TableHead className="no-print">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {records.map((record) => (
+                      <TableRow key={record.id}>
+                        <TableCell>{format(new Date(record.date), 'dd/MM/yyyy')}</TableCell>
+                        <TableCell>₹{record.od_from_bank.toFixed(2)}</TableCell>
+                        <TableCell>₹{record.last_balance.toFixed(2)}</TableCell>
+                        <TableCell>₹{record.amount_received.toFixed(2)}</TableCell>
+                        <TableCell>₹{record.amount_distributed.toFixed(2)}</TableCell>
+                        <TableCell>₹{record.cash_in_hand.toFixed(2)}</TableCell>
+                        <TableCell className="no-print">
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEdit(record)}
+                            >
+                              <Edit size={14} />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setDeleteConfirm({ isOpen: true, id: record.id })}
+                            >
+                              <Trash2 size={14} />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {records.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                          No OD records found. Add your first record above.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
               </div>
               
-              <div className="flex gap-2">
-                <Button type="submit" disabled={isLoading}>
-                  <Plus size={16} className="mr-2" />
-                  {editingId ? 'Update Record' : 'Add Record'}
-                </Button>
-                {editingId && (
-                  <Button type="button" variant="outline" onClick={resetForm}>
-                    Cancel
-                  </Button>
+              {/* Print Summary */}
+              <div className="print-only print-summary">
+                <h3 style={{ marginBottom: '10px', fontSize: '18px', fontWeight: 'bold' }}>Summary</h3>
+                <p>Total Records: {records.length}</p>
+                {records.length > 0 && (
+                  <>
+                    <p>Latest Cash in Hand: ₹{records[0]?.cash_in_hand.toFixed(2)}</p>
+                    <p>Total Amount Received: ₹{records.reduce((sum, record) => sum + record.amount_received, 0).toFixed(2)}</p>
+                    <p>Total Amount Distributed: ₹{records.reduce((sum, record) => sum + record.amount_distributed, 0).toFixed(2)}</p>
+                  </>
                 )}
               </div>
-            </form>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
 
-        {/* Records Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>OD Records</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>OD from Bank</TableHead>
-                    <TableHead>Last Balance</TableHead>
-                    <TableHead>Amount Received</TableHead>
-                    <TableHead>Amount Distributed</TableHead>
-                    <TableHead>Cash in Hand</TableHead>
-                    <TableHead className="no-print">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {records.map((record) => (
-                    <TableRow key={record.id}>
-                      <TableCell>{format(new Date(record.date), 'dd/MM/yyyy')}</TableCell>
-                      <TableCell>₹{record.od_from_bank.toFixed(2)}</TableCell>
-                      <TableCell>₹{record.last_balance.toFixed(2)}</TableCell>
-                      <TableCell>₹{record.amount_received.toFixed(2)}</TableCell>
-                      <TableCell>₹{record.amount_distributed.toFixed(2)}</TableCell>
-                      <TableCell>₹{record.cash_in_hand.toFixed(2)}</TableCell>
-                      <TableCell className="no-print">
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEdit(record)}
-                          >
-                            <Edit size={14} />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setDeleteConfirm({ isOpen: true, id: record.id })}
-                          >
-                            <Trash2 size={14} />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {records.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                        No OD records found. Add your first record above.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteConfirm.isOpen} onOpenChange={(open) => setDeleteConfirm({ isOpen: open, id: null })}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete OD Record</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this OD record? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteConfirm.id && handleDelete(deleteConfirm.id)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </PageWrapper>
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteConfirm.isOpen} onOpenChange={(open) => setDeleteConfirm({ isOpen: open, id: null })}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete OD Record</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this OD record? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => deleteConfirm.id && handleDelete(deleteConfirm.id)}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </PageWrapper>
+    </>
   );
 };
 
