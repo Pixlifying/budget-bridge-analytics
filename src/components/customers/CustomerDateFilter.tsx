@@ -1,121 +1,119 @@
 
 import { useState } from 'react';
-import { Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
-export type ViewMode = 'day' | 'month' | 'year';
-
-export interface CustomerDateFilterProps {
-  selectedDate?: Date;
-  onDateChange?: (date: Date) => void;
-  viewMode?: ViewMode;
-  onViewModeChange?: (mode: ViewMode) => void;
-  dateFilter?: Date;
-  onChange?: (date: Date) => void;
+// For Ledger page usage
+interface LedgerDateFilterProps {
+  selectedDate: Date;
+  onChange: (date: Date) => void;
 }
 
-const CustomerDateFilter = ({ 
-  selectedDate, 
-  onDateChange, 
-  viewMode = 'day', 
-  onViewModeChange,
-  dateFilter,
-  onChange
-}: CustomerDateFilterProps) => {
-  const [localDate, setLocalDate] = useState<Date>(selectedDate || dateFilter || new Date());
-  const [localViewMode, setLocalViewMode] = useState<ViewMode>(viewMode);
+// For Customers page usage
+interface CustomersDateFilterProps {
+  viewMode: 'day' | 'month' | 'year';
+  selectedDate: Date;
+  onViewModeChange: (mode: 'day' | 'month' | 'year') => void;
+  onDateChange: (date: Date) => void;
+}
 
-  const handleDateChange = (value: string) => {
-    const newDate = new Date(value);
-    setLocalDate(newDate);
-    if (onDateChange) onDateChange(newDate);
-    if (onChange) onChange(newDate);
-  };
+type CustomerDateFilterProps = LedgerDateFilterProps | CustomersDateFilterProps;
 
-  const handleViewModeChange = (mode: ViewMode) => {
-    setLocalViewMode(mode);
-    if (onViewModeChange) onViewModeChange(mode);
-  };
+const CustomerDateFilter = (props: CustomerDateFilterProps) => {
+  const [isOpen, setIsOpen] = useState(false);
 
-  const currentDate = selectedDate || dateFilter || localDate;
-  const currentViewMode = viewMode || localViewMode;
+  // Check if this is the Customers page version (has viewMode)
+  const isCustomersVersion = 'viewMode' in props;
 
+  if (isCustomersVersion) {
+    const { viewMode, selectedDate, onViewModeChange, onDateChange } = props as CustomersDateFilterProps;
+    
+    return (
+      <div className="flex gap-2 items-center">
+        <Select value={viewMode} onValueChange={onViewModeChange}>
+          <SelectTrigger className="w-[120px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="day">Day</SelectItem>
+            <SelectItem value="month">Month</SelectItem>
+            <SelectItem value="year">Year</SelectItem>
+          </SelectContent>
+        </Select>
+        
+        <Popover open={isOpen} onOpenChange={setIsOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                "w-[240px] justify-start text-left font-normal",
+                !selectedDate && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {selectedDate ? format(selectedDate, 'PPP') : <span>Pick a date</span>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={(date) => {
+                if (date) {
+                  onDateChange(date);
+                  setIsOpen(false);
+                }
+              }}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+    );
+  }
+
+  // Ledger page version
+  const { selectedDate, onChange } = props as LedgerDateFilterProps;
+  
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Calendar size={20} />
-          Date Filter
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div>
-          <Label htmlFor="viewMode">View Mode</Label>
-          <Select value={currentViewMode} onValueChange={handleViewModeChange}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="day">Daily</SelectItem>
-              <SelectItem value="month">Monthly</SelectItem>
-              <SelectItem value="year">Yearly</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div>
-          <Label htmlFor="date">Select Date</Label>
-          <Input
-            id="date"
-            type={currentViewMode === 'year' ? 'number' : currentViewMode === 'month' ? 'month' : 'date'}
-            value={
-              currentViewMode === 'year' 
-                ? currentDate.getFullYear().toString()
-                : currentViewMode === 'month'
-                ? `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`
-                : currentDate.toISOString().split('T')[0]
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className={cn(
+            "w-[240px] justify-start text-left font-normal",
+            !selectedDate && "text-muted-foreground"
+          )}
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {selectedDate ? format(selectedDate, 'PPP') : <span>Pick a date</span>}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={selectedDate}
+          onSelect={(date) => {
+            if (date) {
+              onChange(date);
+              setIsOpen(false);
             }
-            onChange={(e) => {
-              if (currentViewMode === 'year') {
-                const year = parseInt(e.target.value);
-                handleDateChange(new Date(year, 0, 1).toISOString());
-              } else if (currentViewMode === 'month') {
-                handleDateChange(new Date(e.target.value + '-01').toISOString());
-              } else {
-                handleDateChange(e.target.value);
-              }
-            }}
-            min={currentViewMode === 'year' ? '2020' : undefined}
-            max={currentViewMode === 'year' ? '2030' : undefined}
-          />
-        </div>
-
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleDateChange(new Date().toISOString())}
-          >
-            Today
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              const yesterday = new Date();
-              yesterday.setDate(yesterday.getDate() - 1);
-              handleDateChange(yesterday.toISOString());
-            }}
-          >
-            Yesterday
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+          }}
+          initialFocus
+        />
+      </PopoverContent>
+    </Popover>
   );
 };
 

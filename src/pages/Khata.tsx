@@ -95,8 +95,7 @@ const Khata = () => {
             .from('khata_transactions')
             .select('*')
             .eq('customer_id', customer.id)
-            .order('date', { ascending: false })
-            .order('created_at', { ascending: false });
+            .order('date', { ascending: false });
 
           if (transactionsError) throw transactionsError;
 

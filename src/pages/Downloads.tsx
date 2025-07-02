@@ -1,5 +1,6 @@
+
 import { useState } from 'react';
-import { Download, Calendar, Database, Printer } from 'lucide-react';
+import { Download, Calendar, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -49,7 +50,7 @@ const Downloads = () => {
     setIsLoading(true);
 
     try {
-      let query = supabase.from(selectedTable as any).select('*');
+      let query = supabase.from(selectedTable).select('*');
 
       // Apply date filters based on download type
       if (downloadType === 'specific' && specificDate) {
@@ -119,118 +120,6 @@ const Downloads = () => {
     }
   };
 
-  const handlePrint = async () => {
-    if (!selectedTable) {
-      toast({
-        title: "Error",
-        description: "Please select a table to print",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      let query = supabase.from(selectedTable as any).select('*');
-
-      if (downloadType === 'specific' && specificDate) {
-        query = query.eq('date', specificDate);
-      } else if (downloadType === 'range' && fromDate && toDate) {
-        query = query.gte('date', fromDate).lte('date', toDate);
-      }
-
-      const { data, error } = await query.order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      if (!data || data.length === 0) {
-        toast({
-          title: "No Data",
-          description: "No data found for the selected criteria",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Create print window
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) return;
-
-      const tableLabel = tables.find(t => t.value === selectedTable)?.label || selectedTable;
-      
-      // Generate table headers
-      const headers = data.length > 0 ? Object.keys(data[0]) : [];
-      
-      const printContent = `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>${tableLabel} Report</title>
-            <style>
-              @page { size: A4 landscape; margin: 20mm; }
-              body { font-family: Arial, sans-serif; font-size: 10px; }
-              h1 { text-align: center; margin-bottom: 20px; font-size: 16px; }
-              table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-              th, td { border: 1px solid #000; padding: 4px; text-align: left; font-size: 8px; word-wrap: break-word; }
-              th { background-color: #f5f5f5; font-weight: bold; }
-              .total { font-weight: bold; text-align: right; margin-top: 10px; }
-            </style>
-          </head>
-          <body>
-            <h1>${tableLabel} Report</h1>
-            <div class="total">Total Records: ${data.length}</div>
-            <table>
-              <thead>
-                <tr>
-                  <th>S.No.</th>
-                  ${headers.map(header => `<th>${header.replace(/_/g, ' ').toUpperCase()}</th>`).join('')}
-                </tr>
-              </thead>
-              <tbody>
-                ${data.map((record, index) => `
-                  <tr>
-                    <td>${index + 1}</td>
-                    ${headers.map(header => {
-                      let value = record[header];
-                      if (header.includes('date') || header.includes('_at')) {
-                        try {
-                          value = format(new Date(value), 'dd/MM/yyyy');
-                        } catch {
-                          // Keep original value if date parsing fails
-                        }
-                      }
-                      return `<td>${value || ''}</td>`;
-                    }).join('')}
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </body>
-        </html>
-      `;
-
-      printWindow.document.write(printContent);
-      printWindow.document.close();
-      printWindow.print();
-
-      toast({
-        title: "Success",
-        description: "Print preview opened successfully",
-      });
-
-    } catch (error) {
-      console.error('Error printing data:', error);
-      toast({
-        title: "Error",
-        description: "Failed to print data",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleDownloadAllPages = async () => {
     setIsLoading(true);
 
@@ -242,7 +131,7 @@ const Downloads = () => {
       for (const table of tables) {
         try {
           const { data, error } = await supabase
-            .from(table.value as any)
+            .from(table.value)
             .select('*')
             .order('created_at', { ascending: false });
 
@@ -397,25 +286,14 @@ const Downloads = () => {
                 </div>
               )}
 
-              <div className="flex gap-2">
-                <Button 
-                  onClick={handleDownload} 
-                  disabled={isLoading || !selectedTable}
-                  className="flex-1"
-                >
-                  <Download size={16} className="mr-2" />
-                  {isLoading ? 'Downloading...' : 'Download'}
-                </Button>
-                <Button 
-                  onClick={handlePrint} 
-                  disabled={isLoading || !selectedTable}
-                  variant="outline"
-                  className="flex-1"
-                >
-                  <Printer size={16} className="mr-2" />
-                  Print
-                </Button>
-              </div>
+              <Button 
+                onClick={handleDownload} 
+                disabled={isLoading || !selectedTable}
+                className="w-full"
+              >
+                <Download size={16} className="mr-2" />
+                {isLoading ? 'Downloading...' : 'Download Table Data'}
+              </Button>
             </CardContent>
           </Card>
 

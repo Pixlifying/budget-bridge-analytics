@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Printer, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -188,67 +189,7 @@ const OD = () => {
   };
 
   const handlePrint = () => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-
-    const printContent = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>OD Records Report</title>
-          <style>
-            @page { size: A4; margin: 20mm; }
-            body { font-family: Arial, sans-serif; font-size: 12px; }
-            h1 { text-align: center; margin-bottom: 20px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-            th, td { border: 1px solid #000; padding: 8px; text-align: left; font-size: 10px; }
-            th { background-color: #f5f5f5; font-weight: bold; }
-            .summary { margin-bottom: 20px; }
-            .summary-item { display: inline-block; margin-right: 20px; }
-            .text-right { text-align: right; }
-          </style>
-        </head>
-        <body>
-          <h1>OD Records Report</h1>
-          <div class="summary">
-            <div class="summary-item"><strong>Total Records:</strong> ${records.length}</div>
-            <div class="summary-item"><strong>Total Cash in Hand:</strong> ₹${records.reduce((sum, record) => sum + record.cash_in_hand, 0).toFixed(2)}</div>
-            <div class="summary-item"><strong>Total Given:</strong> ₹${records.reduce((sum, record) => sum + record.amount_distributed, 0).toFixed(2)}</div>
-            <div class="summary-item"><strong>Total Received:</strong> ₹${records.reduce((sum, record) => sum + record.amount_received, 0).toFixed(2)}</div>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>S.No.</th>
-                <th>Date</th>
-                <th>OD From Bank</th>
-                <th>Amount Given</th>
-                <th>Amount Received</th>
-                <th>Cash in Hand</th>
-                <th>Last Balance</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${records.map((record, index) => `
-                <tr>
-                  <td>${index + 1}</td>
-                  <td>${format(new Date(record.date), 'dd/MM/yyyy')}</td>
-                  <td class="text-right">₹${record.od_from_bank.toFixed(2)}</td>
-                  <td class="text-right">₹${record.amount_distributed.toFixed(2)}</td>
-                  <td class="text-right">₹${record.amount_received.toFixed(2)}</td>
-                  <td class="text-right">₹${record.cash_in_hand.toFixed(2)}</td>
-                  <td class="text-right">₹${record.last_balance.toFixed(2)}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </body>
-      </html>
-    `;
-
-    printWindow.document.write(printContent);
-    printWindow.document.close();
-    printWindow.print();
+    window.print();
   };
 
   const handleDownload = () => {
