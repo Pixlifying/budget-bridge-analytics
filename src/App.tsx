@@ -23,13 +23,14 @@ import AgeCalculator from "@/pages/AgeCalculator";
 import Calculator from "@/pages/Calculator";
 import MiscExpenses from "@/pages/MiscExpenses";
 import Query from "@/pages/Query";
-import PrintTemplates from "@/pages/PrintTemplates";
+
 import Downloads from "@/pages/Downloads";
 import NotFound from "@/pages/NotFound";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import OD from "@/pages/OD";
+import Forms from "@/pages/Forms";
 
 const queryClient = new QueryClient();
 
@@ -61,7 +62,7 @@ const App = () => (
                   <Route path="/papers" element={<Papers />} />
                   <Route path="/calculator" element={<Calculator />} />
                   <Route path="/age-calculator" element={<AgeCalculator />} />
-                  <Route path="/print-templates" element={<PrintTemplates />} />
+                  <Route path="/forms" element={<Forms />} />
                   <Route path="/downloads" element={<Downloads />} />
                   <Route path="/query" element={<Query />} />
                   <Route path="*" element={<NotFound />} />

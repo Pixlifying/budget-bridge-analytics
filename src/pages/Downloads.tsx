@@ -27,7 +27,8 @@ const Downloads = () => {
     { value: 'od_records', label: 'OD Records' },
     { value: 'online_services', label: 'Online Services' },
     { value: 'applications', label: 'Applications' },
-    { value: 'photostat', label: 'Photostat' },
+    { value: 'photostats', label: 'Photostat' },
+    { value: 'forms', label: 'Forms' },
     { value: 'expenses', label: 'Expenses' },
     { value: 'misc_expenses', label: 'Misc Expenses' },
     { value: 'pending_balances', label: 'Pending Balances' },
@@ -50,7 +51,7 @@ const Downloads = () => {
     setIsLoading(true);
 
     try {
-      let query = supabase.from(selectedTable).select('*');
+      let query = supabase.from(selectedTable as any).select('*');
 
       // Apply date filters based on download type
       if (downloadType === 'specific' && specificDate) {
@@ -131,7 +132,7 @@ const Downloads = () => {
       for (const table of tables) {
         try {
           const { data, error } = await supabase
-            .from(table.value)
+            .from(table.value as any)
             .select('*')
             .order('created_at', { ascending: false });
 

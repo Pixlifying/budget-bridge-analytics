@@ -6,7 +6,7 @@ export interface Transaction {
   date: string;
   description?: string;
   customer_id: string;  
-  created_at?: string;
+  created_at: string;
 }
 
 export interface Customer {
@@ -16,5 +16,5 @@ export interface Customer {
   phone: string;
   address: string;
   transactions: Transaction[];
-  created_at?: string;
+  created_at: string;
 }

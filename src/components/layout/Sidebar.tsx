@@ -208,9 +208,9 @@ const Sidebar = () => {
       to: '/age-calculator',
     },
     {
-      icon: <Printer size={isCollapsed ? 20 : 16} />,
-      label: 'Print & Templates',
-      to: '/print-templates',
+      icon: <FileText size={isCollapsed ? 20 : 16} />,
+      label: 'Forms',
+      to: '/forms',
     },
   ];
 

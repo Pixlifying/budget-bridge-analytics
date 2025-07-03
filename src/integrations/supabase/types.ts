@@ -268,6 +268,45 @@ export type Database = {
         }
         Relationships: []
       }
+      forms: {
+        Row: {
+          address: string
+          created_at: string
+          date: string
+          id: string
+          mobile: string
+          name: string
+          parentage: string
+          remarks: string | null
+          s_no: number
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          date?: string
+          id?: string
+          mobile: string
+          name: string
+          parentage: string
+          remarks?: string | null
+          s_no?: number
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          date?: string
+          id?: string
+          mobile?: string
+          name?: string
+          parentage?: string
+          remarks?: string | null
+          s_no?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       khata_customers: {
         Row: {
           created_at: string

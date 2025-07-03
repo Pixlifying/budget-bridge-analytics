@@ -162,7 +162,7 @@ const Ledger = () => {
         onSearchChange={setSearchTerm}
         searchPlaceholder="Search by name or phone..."
       >
-        <CustomerDateFilter dateFilter={dateFilter} onChange={handleDateFilterChange} />
+        <CustomerDateFilter selectedDate={dateFilter || new Date()} onChange={handleDateFilterChange} />
         <CustomerForm onSubmit={handleAddCustomer} />
         <DownloadButton
           data={customers}
@@ -174,16 +174,20 @@ const Ledger = () => {
 
       <div className="flex-1 p-6">
         <div className="grid gap-4">
-          <CustomerList
-            customers={filteredCustomers}
-            loading={loading}
-            searchTerm={searchTerm}
-            onView={handleViewCustomer}
-            onDelete={(id, e) => {
-              e.stopPropagation();
-              initiateDelete(id);
-            }}
-          />
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="text-gray-500">Loading customers...</div>
+            </div>
+          ) : (
+            <CustomerList
+              customers={filteredCustomers}
+              onEdit={() => {}} // Not used in Ledger
+              onDelete={(customer) => {
+                initiateDelete(customer.id);
+              }}
+              onCustomerClick={(id) => handleViewCustomer(id)}
+            />
+          )}
         </div>
       </div>
 
