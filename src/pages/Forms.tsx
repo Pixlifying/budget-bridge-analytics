@@ -1,5 +1,6 @@
+
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Plus, Edit, Trash2, FileText, Printer } from 'lucide-react';
+import { Plus, Edit, Trash2, FileText, Printer, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,6 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
 import { exportToPDF } from '@/utils/calculateUtils';
 import { format } from 'date-fns';
@@ -35,14 +37,27 @@ interface FormEntry {
   address: string;
   mobile: string;
   remarks?: string;
+  department: string;
   created_at: string;
   updated_at: string;
 }
+
+const DEPARTMENTS = [
+  'General',
+  'Education',
+  'Health',
+  'Legal',
+  'Finance',
+  'Government',
+  'Transport',
+  'Others'
+];
 
 const Forms = () => {
   const [forms, setForms] = useState<FormEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedDepartment, setSelectedDepartment] = useState<string>('all');
 
   // Dialog states
   const [showFormDialog, setShowFormDialog] = useState(false);
@@ -57,7 +72,8 @@ const Forms = () => {
     parentage: '',
     address: '',
     mobile: '',
-    remarks: ''
+    remarks: '',
+    department: 'General'
   });
 
   const fetchForms = useCallback(async () => {
@@ -99,6 +115,7 @@ const Forms = () => {
           address: formData.address,
           mobile: formData.mobile,
           remarks: formData.remarks || null,
+          department: formData.department,
         })
         .select();
 
@@ -112,7 +129,8 @@ const Forms = () => {
         parentage: '',
         address: '',
         mobile: '',
-        remarks: ''
+        remarks: '',
+        department: 'General'
       });
       await fetchForms();
     } catch (error) {
@@ -140,6 +158,7 @@ const Forms = () => {
           address: formData.address,
           mobile: formData.mobile,
           remarks: formData.remarks || null,
+          department: formData.department,
         })
         .eq('id', editingForm.id);
 
@@ -154,7 +173,8 @@ const Forms = () => {
         parentage: '',
         address: '',
         mobile: '',
-        remarks: ''
+        remarks: '',
+        department: 'General'
       });
       await fetchForms();
     } catch (error) {
@@ -192,7 +212,8 @@ const Forms = () => {
       parentage: form.parentage,
       address: form.address,
       mobile: form.mobile,
-      remarks: form.remarks || ''
+      remarks: form.remarks || '',
+      department: form.department
     });
     setShowFormDialog(true);
   };
@@ -210,7 +231,7 @@ const Forms = () => {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Forms Report</title>
+          <title>Forms Report - ${selectedDepartment === 'all' ? 'All Departments' : selectedDepartment}</title>
           <style>
             @page { 
               size: A4; 
@@ -228,6 +249,7 @@ const Forms = () => {
               padding: 0;
             }
             h1 { text-align: center; margin-bottom: 20px; font-size: 18px; }
+            .department { text-align: center; margin-bottom: 10px; font-weight: bold; }
             table { width: 100%; border-collapse: collapse; margin-top: 10px; }
             th, td { border: 1px solid #000; padding: 4px; text-align: left; font-size: 10px; }
             th { background-color: #f5f5f5; font-weight: bold; }
@@ -236,6 +258,7 @@ const Forms = () => {
         </head>
         <body>
           <h1>Forms Report</h1>
+          <div class="department">Department: ${selectedDepartment === 'all' ? 'All Departments' : selectedDepartment}</div>
           <div class="total">Total Entries: ${filteredForms.length}</div>
           <table>
             <thead>
@@ -246,6 +269,7 @@ const Forms = () => {
                 <th>Parentage</th>
                 <th>Address</th>
                 <th>Mobile</th>
+                <th>Department</th>
                 <th>Remarks</th>
               </tr>
             </thead>
@@ -258,6 +282,7 @@ const Forms = () => {
                   <td>${form.parentage}</td>
                   <td>${form.address}</td>
                   <td>${form.mobile}</td>
+                  <td>${form.department}</td>
                   <td>${form.remarks || '-'}</td>
                 </tr>
               `).join('')}
@@ -280,20 +305,38 @@ const Forms = () => {
       'Parentage': form.parentage,
       'Address': form.address,
       'Mobile': form.mobile,
+      'Department': form.department,
       'Remarks': form.remarks || '-'
     }));
     
-    exportToPDF(pdfData, 'forms-report');
+    const fileName = selectedDepartment === 'all' 
+      ? 'forms-report-all-departments' 
+      : `forms-report-${selectedDepartment.toLowerCase()}`;
+    
+    exportToPDF(pdfData, fileName);
     toast.success("Forms report downloaded successfully");
   };
 
   const filteredForms = useMemo(() => {
-    return forms.filter(form =>
-      form.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      form.parentage.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      form.mobile.includes(searchTerm)
-    );
-  }, [forms, searchTerm]);
+    return forms.filter(form => {
+      const matchesSearch = form.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        form.parentage.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        form.mobile.includes(searchTerm) ||
+        form.department.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesDepartment = selectedDepartment === 'all' || form.department === selectedDepartment;
+      
+      return matchesSearch && matchesDepartment;
+    });
+  }, [forms, searchTerm, selectedDepartment]);
+
+  const departmentCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    forms.forEach(form => {
+      counts[form.department] = (counts[form.department] || 0) + 1;
+    });
+    return counts;
+  }, [forms]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-700">
@@ -301,8 +344,25 @@ const Forms = () => {
         title="Forms Management"
         searchValue={searchTerm}
         onSearchChange={setSearchTerm}
-        searchPlaceholder="Search by name, parentage, or mobile..."
+        searchPlaceholder="Search by name, parentage, mobile, or department..."
       >
+        <div className="flex items-center gap-2">
+          <Filter size={16} />
+          <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Filter by department" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Departments</SelectItem>
+              {DEPARTMENTS.map(dept => (
+                <SelectItem key={dept} value={dept}>
+                  {dept} {departmentCounts[dept] ? `(${departmentCounts[dept]})` : ''}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         <Button onClick={handlePrint} variant="outline">
           <Printer size={16} className="mr-2" />
           Print
@@ -323,7 +383,8 @@ const Forms = () => {
                 parentage: '',
                 address: '',
                 mobile: '',
-                remarks: ''
+                remarks: '',
+                department: 'General'
               }); 
             }}>
               <Plus size={16} className="mr-2" />
@@ -386,6 +447,19 @@ const Forms = () => {
                 />
               </div>
               <div className="grid gap-2">
+                <Label htmlFor="department">Department *</Label>
+                <Select value={formData.department} onValueChange={(value) => setFormData(prev => ({ ...prev, department: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DEPARTMENTS.map(dept => (
+                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
                 <Label htmlFor="remarks">Remarks</Label>
                 <Textarea
                   id="remarks"
@@ -401,7 +475,7 @@ const Forms = () => {
                 </Button>
                 <Button 
                   onClick={editingForm ? handleEditForm : handleAddForm}
-                  disabled={!formData.name || !formData.parentage || !formData.address || !formData.mobile}
+                  disabled={!formData.name || !formData.parentage || !formData.address || !formData.mobile || !formData.department}
                 >
                   {editingForm ? 'Update' : 'Save'}
                 </Button>
@@ -416,6 +490,11 @@ const Forms = () => {
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
               Form Entries ({filteredForms.length})
+              {selectedDepartment !== 'all' && (
+                <span className="text-sm font-normal text-muted-foreground ml-2">
+                  - {selectedDepartment} Department
+                </span>
+              )}
             </h2>
           </div>
           
@@ -425,7 +504,9 @@ const Forms = () => {
             </div>
           ) : filteredForms.length === 0 ? (
             <div className="p-8 text-center">
-              <div className="text-gray-500">No form entries found</div>
+              <div className="text-gray-500">
+                {selectedDepartment === 'all' ? 'No form entries found' : `No form entries found for ${selectedDepartment} department`}
+              </div>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -438,6 +519,7 @@ const Forms = () => {
                     <TableHead>Parentage</TableHead>
                     <TableHead>Address</TableHead>
                     <TableHead>Mobile</TableHead>
+                    <TableHead>Department</TableHead>
                     <TableHead>Remarks</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
@@ -451,6 +533,11 @@ const Forms = () => {
                       <TableCell>{form.parentage}</TableCell>
                       <TableCell className="max-w-[200px] truncate">{form.address}</TableCell>
                       <TableCell>{form.mobile}</TableCell>
+                      <TableCell>
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+                          {form.department}
+                        </span>
+                      </TableCell>
                       <TableCell className="max-w-[150px] truncate">{form.remarks || '-'}</TableCell>
                       <TableCell>
                         <div className="flex gap-2">

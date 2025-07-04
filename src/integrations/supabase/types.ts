@@ -273,6 +273,7 @@ export type Database = {
           address: string
           created_at: string
           date: string
+          department: string
           id: string
           mobile: string
           name: string
@@ -285,6 +286,7 @@ export type Database = {
           address: string
           created_at?: string
           date?: string
+          department?: string
           id?: string
           mobile: string
           name: string
@@ -297,6 +299,7 @@ export type Database = {
           address?: string
           created_at?: string
           date?: string
+          department?: string
           id?: string
           mobile?: string
           name?: string
