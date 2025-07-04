@@ -308,6 +308,14 @@ const ODRecords = () => {
       ? format(selectedDate, 'MMMM yyyy')
       : format(selectedDate, 'yyyy');
 
+    // Sort records in chronological order (oldest first) for printing
+    const sortedRecords = [...records].sort((a, b) => {
+      const dateCompare = new Date(a.date).getTime() - new Date(b.date).getTime();
+      if (dateCompare !== 0) return dateCompare;
+      // If dates are same, sort by creation time
+      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    });
+
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
@@ -337,6 +345,7 @@ const ODRecords = () => {
           <table>
             <thead>
               <tr>
+                <th>S.No</th>
                 <th>Date</th>
                 <th>OD from Bank</th>
                 <th>Amount Received</th>
@@ -345,8 +354,9 @@ const ODRecords = () => {
               </tr>
             </thead>
             <tbody>
-              ${records.map(record => `
+              ${sortedRecords.map((record, index) => `
                 <tr>
+                  <td>${index + 1}</td>
                   <td>${format(new Date(record.date), 'dd MMM yyyy')}</td>
                   <td class="text-right">₹${(record.last_balance || 0).toFixed(2)}</td>
                   <td class="text-right">₹${record.amount_received.toFixed(2)}</td>
@@ -366,10 +376,17 @@ const ODRecords = () => {
   };
 
   const handleDownload = () => {
+    // Sort records in chronological order for download as well
+    const sortedRecords = [...records].sort((a, b) => {
+      const dateCompare = new Date(a.date).getTime() - new Date(b.date).getTime();
+      if (dateCompare !== 0) return dateCompare;
+      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    });
+
     const csvContent = [
-      'Date,OD from Bank,Amount Received,Amount Given,Cash in Hand',
-      ...records.map(record => 
-        `${format(new Date(record.date), 'yyyy-MM-dd')},${record.last_balance || 0},${record.amount_received},${record.amount_given},${record.cash_in_hand}`
+      'S.No,Date,OD from Bank,Amount Received,Amount Given,Cash in Hand',
+      ...sortedRecords.map((record, index) => 
+        `${index + 1},${format(new Date(record.date), 'yyyy-MM-dd')},${record.last_balance || 0},${record.amount_received},${record.amount_given},${record.cash_in_hand}`
       )
     ].join('\n');
 
