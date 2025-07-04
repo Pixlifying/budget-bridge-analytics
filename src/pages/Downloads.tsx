@@ -1,6 +1,5 @@
-
 import { useState } from 'react';
-import { Download, Calendar, Database } from 'lucide-react';
+import { Download, Calendar, Database, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
-import { exportToExcel } from '@/utils/calculateUtils';
+import { exportToExcel, exportToPDF } from '@/utils/calculateUtils';
 import PageWrapper from '@/components/layout/PageWrapper';
 
 const Downloads = () => {
@@ -37,6 +36,244 @@ const Downloads = () => {
     { value: 'khata_transactions', label: 'Khata Transactions' },
     { value: 'account_details', label: 'Account Details' },
   ];
+
+  const handlePrint = async (isAllPages = false) => {
+    if (!isAllPages && !selectedTable) {
+      toast({
+        title: "Error",
+        description: "Please select a table to print",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      let dataToProcess: any = {};
+      
+      if (isAllPages) {
+        // Get data from all tables for printing
+        for (const table of tables) {
+          try {
+            const { data, error } = await supabase
+              .from(table.value as any)
+              .select('*')
+              .order('created_at', { ascending: false });
+
+            if (!error && data && data.length > 0) {
+              dataToProcess[table.label] = data;
+            }
+          } catch (tableError) {
+            console.error(`Error fetching ${table.label}:`, tableError);
+          }
+        }
+      } else {
+        // Get data from selected table for printing
+        let query = supabase.from(selectedTable as any).select('*');
+
+        // Apply date filters based on download type
+        if (downloadType === 'specific' && specificDate) {
+          query = query.eq('date', specificDate);
+        } else if (downloadType === 'range' && fromDate && toDate) {
+          query = query.gte('date', fromDate).lte('date', toDate);
+        }
+
+        const { data, error } = await query.order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+          toast({
+            title: "No Data",
+            description: "No data found for the selected criteria",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const tableLabel = tables.find(t => t.value === selectedTable)?.label || selectedTable;
+        dataToProcess[tableLabel] = data;
+      }
+
+      // Generate print content
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) return;
+
+      let printContent = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>${isAllPages ? 'All Pages Data Report' : `${Object.keys(dataToProcess)[0]} Report`}</title>
+            <style>
+              @page { 
+                size: A4; 
+                margin: 15mm;
+              }
+              @media print {
+                * { -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }
+                html, body { margin: 0 !important; padding: 0 !important; }
+                .no-print { display: none !important; }
+                .page-break { page-break-before: always; }
+              }
+              body { 
+                font-family: Arial, sans-serif; 
+                font-size: 12px; 
+                margin: 0;
+                padding: 0;
+              }
+              h1 { 
+                text-align: center; 
+                margin-bottom: 20px; 
+                font-size: 18px; 
+                color: #333;
+              }
+              h2 { 
+                font-size: 16px; 
+                margin: 20px 0 10px 0; 
+                color: #555;
+                border-bottom: 2px solid #ddd;
+                padding-bottom: 5px;
+              }
+              .report-header { 
+                text-align: center; 
+                margin-bottom: 20px; 
+                padding-bottom: 10px;
+                border-bottom: 1px solid #ddd;
+              }
+              .total { 
+                font-weight: bold; 
+                text-align: right; 
+                margin: 10px 0; 
+              }
+              table { 
+                width: 100%; 
+                border-collapse: collapse; 
+                margin: 10px 0 20px 0; 
+              }
+              th, td { 
+                border: 1px solid #000; 
+                padding: 4px; 
+                text-align: left; 
+                font-size: 10px; 
+              }
+              th { 
+                background-color: #f5f5f5; 
+                font-weight: bold; 
+              }
+              .summary { 
+                margin-top: 20px; 
+                padding: 10px; 
+                background-color: #f9f9f9; 
+                border: 1px solid #ddd;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="report-header">
+              <h1>${isAllPages ? 'Complete Data Report' : `${Object.keys(dataToProcess)[0]} Report`}</h1>
+              <p>Generated on: ${format(new Date(), 'dd/MM/yyyy HH:mm:ss')}</p>
+            </div>
+      `;
+
+      let totalRecords = 0;
+      let tableCount = 0;
+
+      Object.entries(dataToProcess).forEach(([tableName, records], index) => {
+        const recordsArray = records as any[];
+        totalRecords += recordsArray.length;
+        tableCount++;
+
+        if (index > 0) {
+          printContent += '<div class="page-break"></div>';
+        }
+
+        printContent += `
+          <h2>${tableName}</h2>
+          <div class="total">Total Records: ${recordsArray.length}</div>
+        `;
+
+        if (recordsArray.length > 0) {
+          const headers = Object.keys(recordsArray[0]).filter(key => 
+            !key.includes('id') && !key.includes('created_at') && !key.includes('updated_at')
+          );
+
+          printContent += `
+            <table>
+              <thead>
+                <tr>
+                  <th>S.No</th>
+                  ${headers.map(header => `<th>${header.replace(/_/g, ' ').toUpperCase()}</th>`).join('')}
+                </tr>
+              </thead>
+              <tbody>
+          `;
+
+          recordsArray.forEach((record, index) => {
+            printContent += `
+              <tr>
+                <td>${index + 1}</td>
+                ${headers.map(header => {
+                  let value = record[header];
+                  if (header.includes('date') && value) {
+                    try {
+                      value = format(new Date(value), 'dd/MM/yyyy');
+                    } catch {
+                      // Keep original value if date parsing fails
+                    }
+                  }
+                  return `<td>${value || '-'}</td>`;
+                }).join('')}
+              </tr>
+            `;
+          });
+
+          printContent += `
+              </tbody>
+            </table>
+          `;
+        } else {
+          printContent += '<p>No records found.</p>';
+        }
+      });
+
+      // Add summary for all pages report
+      if (isAllPages && tableCount > 1) {
+        printContent += `
+          <div class="summary">
+            <h2>Summary</h2>
+            <p><strong>Total Tables:</strong> ${tableCount}</p>
+            <p><strong>Total Records:</strong> ${totalRecords}</p>
+            <p><strong>Report Generated:</strong> ${format(new Date(), 'dd/MM/yyyy HH:mm:ss')}</p>
+          </div>
+        `;
+      }
+
+      printContent += `
+          </body>
+        </html>
+      `;
+
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.print();
+
+      toast({
+        title: "Success",
+        description: `Print dialog opened for ${isAllPages ? 'all pages data' : Object.keys(dataToProcess)[0]}`,
+      });
+
+    } catch (error) {
+      console.error('Error preparing print data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to prepare data for printing",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleDownload = async () => {
     if (!selectedTable) {
@@ -287,14 +524,25 @@ const Downloads = () => {
                 </div>
               )}
 
-              <Button 
-                onClick={handleDownload} 
-                disabled={isLoading || !selectedTable}
-                className="w-full"
-              >
-                <Download size={16} className="mr-2" />
-                {isLoading ? 'Downloading...' : 'Download Table Data'}
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleDownload} 
+                  disabled={isLoading || !selectedTable}
+                  className="flex-1"
+                >
+                  <Download size={16} className="mr-2" />
+                  {isLoading ? 'Downloading...' : 'Download Excel'}
+                </Button>
+                <Button 
+                  onClick={() => handlePrint(false)} 
+                  disabled={isLoading || !selectedTable}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  <Printer size={16} className="mr-2" />
+                  {isLoading ? 'Processing...' : 'Print'}
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
@@ -321,15 +569,26 @@ const Downloads = () => {
                 </div>
               </div>
 
-              <Button 
-                onClick={handleDownloadAllPages} 
-                disabled={isLoading}
-                className="w-full"
-                variant="secondary"
-              >
-                <Database size={16} className="mr-2" />
-                {isLoading ? 'Downloading...' : 'Download All Pages Data'}
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleDownloadAllPages} 
+                  disabled={isLoading}
+                  className="flex-1"
+                  variant="secondary"
+                >
+                  <Database size={16} className="mr-2" />
+                  {isLoading ? 'Downloading...' : 'Download All Excel'}
+                </Button>
+                <Button 
+                  onClick={() => handlePrint(true)} 
+                  disabled={isLoading}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  <Printer size={16} className="mr-2" />
+                  {isLoading ? 'Processing...' : 'Print All'}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
