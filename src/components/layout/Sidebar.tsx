@@ -21,7 +21,9 @@ import {
   BookOpen,
   Printer,
   HeadphonesIcon,
-  Download
+  Download,
+  Settings,
+  UserCog
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -139,6 +141,7 @@ const Sidebar = () => {
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
+    settings: false,
     financialServices: false,
     customerServices: false,
     ledger: false,
@@ -151,6 +154,20 @@ const Sidebar = () => {
       [menuKey]: !prev[menuKey]
     }));
   };
+
+  // Settings submenu items
+  const settingsItems = [
+    {
+      icon: <UserCog size={isCollapsed ? 20 : 16} />,
+      label: 'User Admin',
+      to: '/user-admin',
+    },
+    {
+      icon: <Download size={isCollapsed ? 20 : 16} />,
+      label: 'Downloads',
+      to: '/downloads',
+    },
+  ];
 
   // Financial Services submenu items
   const financialServiceItems = [
@@ -246,6 +263,14 @@ const Sidebar = () => {
   // Main sidebar items
   const sidebarItems = [
     {
+      icon: <Settings size={isCollapsed ? 20 : 18} />,
+      label: 'Settings',
+      to: '#',
+      hasChildren: true,
+      menuKey: 'settings',
+      children: settingsItems,
+    },
+    {
       icon: <LayoutDashboard size={isCollapsed ? 20 : 18} />,
       label: 'Dashboard',
       to: '/',
@@ -282,12 +307,6 @@ const Sidebar = () => {
       hasChildren: true,
       menuKey: 'apps',
       children: appsItems,
-    },
-    {
-      icon: <Download size={isCollapsed ? 20 : 18} />,
-      label: 'Downloads',
-      to: '/downloads',
-      hasChildren: false,
     },
     {
       icon: <BarChart3 size={isCollapsed ? 20 : 18} />,

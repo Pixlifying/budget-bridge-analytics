@@ -24,6 +24,7 @@ import Calculator from "@/pages/Calculator";
 import MiscExpenses from "@/pages/MiscExpenses";
 import Query from "@/pages/Query";
 import Downloads from "@/pages/Downloads";
+import UserAdmin from "@/pages/UserAdmin";
 import NotFound from "@/pages/NotFound";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 import { NotificationProvider } from "@/contexts/NotificationContext";
@@ -65,6 +66,7 @@ const App = () => (
                     <Route path="/age-calculator" element={<AgeCalculator />} />
                     <Route path="/forms" element={<Forms />} />
                     <Route path="/downloads" element={<Downloads />} />
+                    <Route path="/user-admin" element={<UserAdmin />} />
                     <Route path="/query" element={<Query />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
