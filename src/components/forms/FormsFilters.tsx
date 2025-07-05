@@ -24,6 +24,7 @@ const FormsFilters = ({ selectedDepartment, onDepartmentChange, departments, dep
               {dept} {departmentCounts[dept] ? `(${departmentCounts[dept]})` : ''}
             </SelectItem>
           ))}
+          <SelectItem value="others">Others (Search Specific)</SelectItem>
         </SelectContent>
       </Select>
     </div>

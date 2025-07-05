@@ -95,7 +95,8 @@ const Khata = () => {
             .from('khata_transactions')
             .select('*')
             .eq('customer_id', customer.id)
-            .order('date', { ascending: false });
+            .order('date', { ascending: false })
+            .order('created_at', { ascending: false });
 
           if (transactionsError) throw transactionsError;
 
@@ -437,10 +438,17 @@ const Khata = () => {
     return customer.opening_balance + totalCredits - totalDebits;
   };
 
-  // Calculate running balance for transactions
+  // Calculate running balance for transactions - show latest first
   const calculateRunningBalance = (transactions: KhataTransaction[], openingBalance: number) => {
+    // Sort transactions chronologically (oldest first) for balance calculation
+    const sortedForCalculation = [...transactions].sort((a, b) => {
+      const dateCompare = new Date(a.date).getTime() - new Date(b.date).getTime();
+      if (dateCompare !== 0) return dateCompare;
+      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    });
+
     let runningBalance = openingBalance;
-    return transactions.map(transaction => {
+    const transactionsWithBalance = sortedForCalculation.map(transaction => {
       if (transaction.type === 'credit') {
         runningBalance += Number(transaction.amount);
       } else {
@@ -448,6 +456,9 @@ const Khata = () => {
       }
       return { ...transaction, runningBalance };
     });
+
+    // Return in reverse order (latest first) for display
+    return transactionsWithBalance.reverse();
   };
 
   const handlePrintCustomer = () => {
@@ -547,10 +558,7 @@ const Khata = () => {
   if (selectedCustomer) {
     const balance = calculateBalance(selectedCustomer);
     const filteredTransactions = getFilteredTransactions(selectedCustomer.transactions);
-    const transactionsWithBalance = calculateRunningBalance(
-      [...filteredTransactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
-      selectedCustomer.opening_balance
-    );
+    const transactionsWithBalance = calculateRunningBalance(filteredTransactions, selectedCustomer.opening_balance);
     
     return (
       <div className="container px-4 py-6 space-y-6 max-w-4xl mx-auto">
@@ -621,6 +629,41 @@ const Khata = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Latest Transactions Summary */}
+        {selectedCustomer.transactions.length > 0 && (
+          <Card>
+            <CardHeader>
+              <h3 className="text-lg font-semibold">Latest Transaction</h3>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground">Date</p>
+                  <p className="text-sm font-medium">{format(new Date(selectedCustomer.transactions[0].date), 'dd/MM/yyyy')}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground">Type</p>
+                  <span className={`px-2 py-1 rounded text-xs ${
+                    selectedCustomer.transactions[0].type === 'credit' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  }`}>
+                    {selectedCustomer.transactions[0].type.toUpperCase()}
+                  </span>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground">Amount</p>
+                  <p className={`text-sm font-medium ${selectedCustomer.transactions[0].type === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
+                    {selectedCustomer.transactions[0].type === 'credit' ? '+' : '-'}{formatCurrency(selectedCustomer.transactions[0].amount)}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground">Description</p>
+                  <p className="text-sm font-medium">{selectedCustomer.transactions[0].description || 'No description'}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>
@@ -967,6 +1010,7 @@ const Khata = () => {
         ) : (
           filteredCustomers.map((customer) => {
             const balance = calculateBalance(customer);
+            const latestTransaction = customer.transactions[0]; // Already sorted by date desc
             return (
               <Card key={customer.id} className="cursor-pointer hover:shadow-md transition-shadow">
                 <CardContent className="p-4">
@@ -978,6 +1022,15 @@ const Khata = () => {
                         Opening: {formatCurrency(customer.opening_balance)} | 
                         Date: {format(new Date(customer.opening_date), 'dd/MM/yyyy')}
                       </p>
+                      {latestTransaction && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Latest: {format(new Date(latestTransaction.date), 'dd/MM/yyyy')} - 
+                          <span className={latestTransaction.type === 'credit' ? 'text-green-600' : 'text-red-600'}>
+                            {latestTransaction.type === 'credit' ? '+' : '-'}{formatCurrency(latestTransaction.amount)}
+                          </span>
+                          {latestTransaction.description && ` (${latestTransaction.description})`}
+                        </p>
+                      )}
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="text-right">
