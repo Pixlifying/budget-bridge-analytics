@@ -113,7 +113,7 @@ const UserAdmin = () => {
 
   if (isLoading) {
     return (
-      <PageWrapper>
+      <PageWrapper title="User Admin">
         <div className="flex items-center justify-center min-h-64">
           <div className="text-lg">Loading...</div>
         </div>
@@ -123,7 +123,7 @@ const UserAdmin = () => {
 
   if (!userData) {
     return (
-      <PageWrapper>
+      <PageWrapper title="User Admin">
         <div className="flex items-center justify-center min-h-64">
           <div className="text-lg text-red-600">Failed to load user data</div>
         </div>
@@ -132,10 +132,9 @@ const UserAdmin = () => {
   }
 
   return (
-    <PageWrapper>
+    <PageWrapper title="User Admin" subtitle="Manage your account settings and information">
       <PageHeader
         title="User Admin"
-        description="Manage your account settings and information"
       />
 
       <div className="max-w-2xl mx-auto space-y-6">
