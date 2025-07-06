@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Printer, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -210,19 +209,44 @@ const OD = () => {
       <style>
         {`
           @media print {
-            .no-print {
+            /* Hide all non-essential elements */
+            .no-print, 
+            aside,
+            nav,
+            header:not(.print-header),
+            .sidebar,
+            [class*="sidebar"],
+            [data-sidebar],
+            button:not(.print-button),
+            .toast,
+            .dialog,
+            .modal {
               display: none !important;
             }
             
+            /* Show only print content */
             .print-only {
               display: block !important;
             }
             
-            body {
+            /* Reset page styles for print */
+            body, html {
               background: white !important;
               color: black !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              font-family: Arial, sans-serif !important;
             }
             
+            /* Ensure main content takes full width */
+            main {
+              width: 100% !important;
+              margin: 0 !important;
+              padding: 20px !important;
+              max-width: none !important;
+            }
+            
+            /* Print title styling */
             .print-title {
               text-align: center;
               font-size: 24px;
@@ -231,10 +255,12 @@ const OD = () => {
               color: black !important;
             }
             
+            /* Table styling for print */
             table {
               width: 100% !important;
               border-collapse: collapse !important;
               margin-top: 20px;
+              page-break-inside: avoid;
             }
             
             th, td {
@@ -242,6 +268,7 @@ const OD = () => {
               padding: 8px !important;
               text-align: left !important;
               color: black !important;
+              font-size: 12px !important;
             }
             
             th {
@@ -253,11 +280,18 @@ const OD = () => {
               background-color: #f9f9f9 !important;
             }
             
+            /* Print summary styling */
             .print-summary {
               margin-top: 20px;
               padding: 10px;
               border: 1px solid black;
               background-color: #f0f0f0;
+              page-break-inside: avoid;
+            }
+            
+            /* Page break handling */
+            .page-break {
+              page-break-before: always;
             }
           }
           
