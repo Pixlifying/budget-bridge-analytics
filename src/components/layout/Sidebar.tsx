@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -21,7 +20,6 @@ import {
   BookOpen,
   Printer,
   HeadphonesIcon,
-  Print,
   Settings,
   UserCog,
   Palette
@@ -169,7 +167,7 @@ const Sidebar = () => {
       to: '/theme-settings',
     },
     {
-      icon: <Print size={isCollapsed ? 20 : 16} />,
+      icon: <Printer size={isCollapsed ? 20 : 16} />,
       label: 'Print',
       to: '/downloads',
     },
