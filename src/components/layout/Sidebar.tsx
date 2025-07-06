@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -23,7 +22,8 @@ import {
   HeadphonesIcon,
   Download,
   Settings,
-  UserCog
+  UserCog,
+  Palette
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -161,6 +161,11 @@ const Sidebar = () => {
       icon: <UserCog size={isCollapsed ? 20 : 16} />,
       label: 'User Admin',
       to: '/user-admin',
+    },
+    {
+      icon: <Palette size={isCollapsed ? 20 : 16} />,
+      label: 'Theme Settings',
+      to: '/theme-settings',
     },
     {
       icon: <Download size={isCollapsed ? 20 : 16} />,

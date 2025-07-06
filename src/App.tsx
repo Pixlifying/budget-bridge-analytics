@@ -25,6 +25,7 @@ import MiscExpenses from "@/pages/MiscExpenses";
 import Query from "@/pages/Query";
 import Downloads from "@/pages/Downloads";
 import UserAdmin from "@/pages/UserAdmin";
+import ThemeSettings from "@/pages/ThemeSettings";
 import NotFound from "@/pages/NotFound";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 import { NotificationProvider } from "@/contexts/NotificationContext";
@@ -67,6 +68,7 @@ const App = () => (
                     <Route path="/forms" element={<Forms />} />
                     <Route path="/downloads" element={<Downloads />} />
                     <Route path="/user-admin" element={<UserAdmin />} />
+                    <Route path="/theme-settings" element={<ThemeSettings />} />
                     <Route path="/query" element={<Query />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
