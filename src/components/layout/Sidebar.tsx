@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -20,7 +21,7 @@ import {
   BookOpen,
   Printer,
   HeadphonesIcon,
-  Download,
+  Print,
   Settings,
   UserCog,
   Palette
@@ -141,7 +142,7 @@ const Sidebar = () => {
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
-    settings: false,
+    admin: false,
     financialServices: false,
     customerServices: false,
     ledger: false,
@@ -155,8 +156,8 @@ const Sidebar = () => {
     }));
   };
 
-  // Settings submenu items
-  const settingsItems = [
+  // Admin submenu items (renamed from settings)
+  const adminItems = [
     {
       icon: <UserCog size={isCollapsed ? 20 : 16} />,
       label: 'User Admin',
@@ -168,8 +169,8 @@ const Sidebar = () => {
       to: '/theme-settings',
     },
     {
-      icon: <Download size={isCollapsed ? 20 : 16} />,
-      label: 'Downloads',
+      icon: <Print size={isCollapsed ? 20 : 16} />,
+      label: 'Print',
       to: '/downloads',
     },
   ];
@@ -269,11 +270,11 @@ const Sidebar = () => {
   const sidebarItems = [
     {
       icon: <Settings size={isCollapsed ? 20 : 18} />,
-      label: 'Settings',
+      label: 'Admin',
       to: '#',
       hasChildren: true,
-      menuKey: 'settings',
-      children: settingsItems,
+      menuKey: 'admin',
+      children: adminItems,
     },
     {
       icon: <LayoutDashboard size={isCollapsed ? 20 : 18} />,
