@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
-import { Trash2, FileBox, Printer, Edit } from 'lucide-react';
+import { Trash2, FileBox, Printer } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,6 @@ import { Label } from '@/components/ui/label';
 import PageWrapper from '@/components/layout/PageWrapper';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { filterByDate, filterByMonth, formatCurrency } from '@/utils/calculateUtils';
 
 interface MiscExpense {
@@ -30,19 +30,10 @@ const MiscExpenses = () => {
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [expenseToDelete, setExpenseToDelete] = useState<string | null>(null);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [expenseToEdit, setExpenseToEdit] = useState<MiscExpense | null>(null);
 
   // Form state for inline entry
   const [newEntry, setNewEntry] = useState({
     date: new Date().toISOString().split('T')[0],
-    name: '',
-    fee: 0,
-  });
-
-  // Form state for editing
-  const [editEntry, setEditEntry] = useState({
-    date: '',
     name: '',
     fee: 0,
   });
@@ -132,72 +123,6 @@ const MiscExpenses = () => {
         variant: "destructive",
         title: "Error",
         description: "Failed to add miscellaneous expense. Please try again.",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleEditExpense = (expense: MiscExpense) => {
-    setExpenseToEdit(expense);
-    setEditEntry({
-      date: format(expense.date, 'yyyy-MM-dd'),
-      name: expense.name,
-      fee: expense.fee,
-    });
-    setEditDialogOpen(true);
-  };
-
-  const handleUpdateExpense = async () => {
-    if (!expenseToEdit || !editEntry.name || !editEntry.fee) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Please fill in all required fields",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const { error } = await supabase
-        .from('misc_expenses')
-        .update({
-          name: editEntry.name,
-          fee: editEntry.fee,
-          date: new Date(editEntry.date).toISOString()
-        })
-        .eq('id', expenseToEdit.id);
-
-      if (error) throw error;
-
-      setExpenses(prevExpenses =>
-        prevExpenses.map(expense =>
-          expense.id === expenseToEdit.id
-            ? {
-                ...expense,
-                name: editEntry.name,
-                fee: editEntry.fee,
-                date: new Date(editEntry.date)
-              }
-            : expense
-        )
-      );
-
-      setEditDialogOpen(false);
-      setExpenseToEdit(null);
-
-      toast({
-        title: "Success",
-        description: "Miscellaneous expense updated successfully",
-      });
-    } catch (error) {
-      console.error('Error updating misc expense:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to update miscellaneous expense",
       });
     } finally {
       setIsLoading(false);
@@ -391,26 +316,15 @@ const MiscExpenses = () => {
               <CardHeader className="bg-green-50 pb-2">
                 <div className="flex justify-between items-start">
                   <CardTitle className="text-lg">{expense.name}</CardTitle>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-blue-600 hover:bg-blue-50"
-                      onClick={() => handleEditExpense(expense)}
-                    >
-                      <Edit size={16} />
-                      <span className="sr-only">Edit expense</span>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                      onClick={() => handleDeleteExpense(expense.id)}
-                    >
-                      <Trash2 size={16} />
-                      <span className="sr-only">Delete expense</span>
-                    </Button>
-                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                    onClick={() => handleDeleteExpense(expense.id)}
+                  >
+                    <Trash2 size={16} />
+                    <span className="sr-only">Delete expense</span>
+                  </Button>
                 </div>
                 <CardDescription>
                   {format(expense.date, 'MMMM d, yyyy')}
@@ -426,53 +340,6 @@ const MiscExpenses = () => {
           ))}
         </div>
       )}
-
-      {/* Edit Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Miscellaneous Expense</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div>
-              <Label htmlFor="edit-date">Date</Label>
-              <Input
-                id="edit-date"
-                type="date"
-                value={editEntry.date}
-                onChange={(e) => setEditEntry(prev => ({ ...prev, date: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-name">Expense Name</Label>
-              <Input
-                id="edit-name"
-                value={editEntry.name}
-                onChange={(e) => setEditEntry(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Expense name"
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-fee">Fee Amount</Label>
-              <Input
-                id="edit-fee"
-                type="number"
-                value={editEntry.fee}
-                onChange={(e) => setEditEntry(prev => ({ ...prev, fee: Number(e.target.value) }))}
-                placeholder="Fee amount"
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleUpdateExpense} disabled={isLoading}>
-                {isLoading ? "Updating..." : "Update"}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       <DeleteConfirmation
         isOpen={deleteConfirmOpen}

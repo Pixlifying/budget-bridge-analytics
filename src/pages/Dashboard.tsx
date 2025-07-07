@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import {
   CreditCard,
@@ -419,6 +420,27 @@ const Dashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-md rounded-xl p-5 border border-white/20 dark:border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] animate-scale-in">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-lg bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">Printout and Photostat</h3>
+              <Printer className="h-5 w-5 text-primary opacity-70" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Amount</p>
+                <p className="text-xl font-bold">{formatCurrency(photostatTotal)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Count</p>
+                <p className="text-xl font-bold">{photostatCount}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Margin</p>
+                <p className="text-xl font-bold">{formatCurrency(photostatMarginTotal)}</p>
+              </div>
+            </div>
+          </div>
+
           <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-md rounded-xl p-5 border border-white/20 dark:border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] animate-scale-in">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-semibold text-lg bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">Expenses</h3>
