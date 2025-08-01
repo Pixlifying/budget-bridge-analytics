@@ -267,14 +267,6 @@ const Sidebar = () => {
   // Main sidebar items
   const sidebarItems = [
     {
-      icon: <Settings size={isCollapsed ? 20 : 18} />,
-      label: 'Admin',
-      to: '#',
-      hasChildren: true,
-      menuKey: 'admin',
-      children: adminItems,
-    },
-    {
       icon: <LayoutDashboard size={isCollapsed ? 20 : 18} />,
       label: 'Dashboard',
       to: '/',
@@ -317,6 +309,14 @@ const Sidebar = () => {
       label: 'Analytics',
       to: '/analytics',
       hasChildren: false,
+    },
+    {
+      icon: <Settings size={isCollapsed ? 20 : 18} />,
+      label: 'Admin',
+      to: '#',
+      hasChildren: true,
+      menuKey: 'admin',
+      children: adminItems,
     },
   ];
 

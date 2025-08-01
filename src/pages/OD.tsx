@@ -260,6 +260,20 @@ const OD = () => {
               width: 100% !important;
               border-collapse: collapse !important;
               margin-top: 20px;
+            }
+            
+            /* Force page breaks for large tables */
+            tbody tr:nth-child(20n) {
+              page-break-after: always;
+            }
+            
+            /* Ensure table headers repeat on each page */
+            thead {
+              display: table-header-group;
+            }
+            
+            /* Avoid breaking rows across pages */
+            tr {
               page-break-inside: avoid;
             }
             

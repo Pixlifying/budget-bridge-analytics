@@ -31,6 +31,7 @@ interface AccountDetail {
   account_number: string;
   aadhar_number: string;
   mobile_number?: string;
+  address?: string;
   created_at: string;
   updated_at: string;
 }
@@ -49,7 +50,8 @@ const AccountDetails = () => {
     name: '',
     account_number: '',
     aadhar_number: '',
-    mobile_number: ''
+    mobile_number: '',
+    address: ''
   });
 
   const fetchAccountDetails = async () => {
@@ -122,6 +124,7 @@ const AccountDetails = () => {
           account_number: form.account_number,
           aadhar_number: cleanAadhar,
           mobile_number: form.mobile_number || null,
+          address: form.address || null,
         })
         .select();
 
@@ -188,6 +191,7 @@ const AccountDetails = () => {
           account_number: form.account_number,
           aadhar_number: cleanAadhar,
           mobile_number: form.mobile_number || null,
+          address: form.address || null,
         })
         .eq('id', editingAccount.id);
 
@@ -243,7 +247,8 @@ const AccountDetails = () => {
       name: '',
       account_number: '',
       aadhar_number: '',
-      mobile_number: ''
+      mobile_number: '',
+      address: ''
     });
   };
 
@@ -253,7 +258,8 @@ const AccountDetails = () => {
       name: account.name,
       account_number: account.account_number,
       aadhar_number: formatAadhar(account.aadhar_number),
-      mobile_number: account.mobile_number || ''
+      mobile_number: account.mobile_number || '',
+      address: account.address || ''
     });
     setShowDialog(true);
   };
@@ -270,6 +276,7 @@ const AccountDetails = () => {
       'Account Number': account.account_number,
       'Aadhar Number': formatAadhar(account.aadhar_number),
       'Mobile Number': account.mobile_number || '',
+      'Address': account.address || '',
     }));
     
     exportToExcel(csvData, 'account-details');
@@ -305,6 +312,7 @@ const AccountDetails = () => {
                 <th>Account Number</th>
                 <th>Aadhar Number</th>
                 <th>Mobile Number</th>
+                <th>Address</th>
               </tr>
             </thead>
             <tbody>
@@ -315,6 +323,7 @@ const AccountDetails = () => {
                   <td>${account.account_number}</td>
                   <td>${formatAadhar(account.aadhar_number)}</td>
                   <td>${account.mobile_number || '-'}</td>
+                  <td>${account.address || '-'}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -397,6 +406,15 @@ const AccountDetails = () => {
                   placeholder="Mobile number (optional)"
                 />
               </div>
+              <div className="grid gap-2">
+                <Label htmlFor="address">Address</Label>
+                <Input
+                  id="address"
+                  value={form.address}
+                  onChange={(e) => setForm(prev => ({ ...prev, address: e.target.value }))}
+                  placeholder="Address (optional)"
+                />
+              </div>
               <Button 
                 onClick={editingAccount ? handleEditAccount : handleAddAccount}
                 disabled={!form.name || !form.account_number || !form.aadhar_number}
@@ -428,19 +446,20 @@ const AccountDetails = () => {
                 <TableHead>Account Number</TableHead>
                 <TableHead>Aadhar Number</TableHead>
                 <TableHead>Mobile Number</TableHead>
+                <TableHead>Address</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8">
+                  <TableCell colSpan={7} className="text-center py-8">
                     Loading account details...
                   </TableCell>
                 </TableRow>
               ) : filteredAccountDetails.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     No account details found
                   </TableCell>
                 </TableRow>
@@ -452,6 +471,7 @@ const AccountDetails = () => {
                     <TableCell>{account.account_number}</TableCell>
                     <TableCell>{formatAadhar(account.aadhar_number)}</TableCell>
                     <TableCell>{account.mobile_number || '-'}</TableCell>
+                    <TableCell>{account.address || '-'}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         <Button
