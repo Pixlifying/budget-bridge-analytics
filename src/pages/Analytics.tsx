@@ -321,7 +321,10 @@ const Analytics = () => {
   // Calculate totals
   const totalOdReceived = filteredOdRecords.reduce((sum, entry) => sum + entry.amount_received, 0);
   const totalOdGiven = filteredOdRecords.reduce((sum, entry) => sum + entry.amount_given, 0);
-  const totalOdCashInHand = totalOdReceived - totalOdGiven;
+  
+  // Get latest cash in hand from OD records (most recent actual value)
+  const latestOdRecord = odRecords.length > 0 ? odRecords[0] : null;
+  const latestCashInHand = latestOdRecord ? latestOdRecord.cash_in_hand : 0;
   const totalExpenses = filteredExpenses.reduce((sum, entry) => sum + entry.amount, 0);
   const totalOnlineServices = filteredOnlineServices.reduce((sum, entry) => sum + entry.amount, 0);
   const totalApplications = filteredApplications.reduce((sum, entry) => sum + entry.amount, 0);
@@ -450,8 +453,8 @@ const Analytics = () => {
           className="animate-fade-in"
         />
         <StatCard 
-          title="OD Cash in Hand"
-          value={formatCurrency(totalOdCashInHand)}
+          title="Latest Cash in Hand"
+          value={formatCurrency(latestCashInHand)}
           icon={<CreditCard size={20} />}
           className="animate-fade-in"
         />
