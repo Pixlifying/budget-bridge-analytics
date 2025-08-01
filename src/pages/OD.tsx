@@ -209,6 +209,12 @@ const OD = () => {
       <style>
         {`
           @media print {
+            /* Set up page margins and size */
+            @page {
+              size: A4;
+              margin: 1cm;
+            }
+            
             /* Hide all non-essential elements */
             .no-print, 
             aside,
@@ -236,76 +242,134 @@ const OD = () => {
               margin: 0 !important;
               padding: 0 !important;
               font-family: Arial, sans-serif !important;
+              line-height: 1.4 !important;
             }
             
             /* Ensure main content takes full width */
             main {
               width: 100% !important;
               margin: 0 !important;
-              padding: 20px !important;
+              padding: 10px !important;
               max-width: none !important;
             }
             
             /* Print title styling */
             .print-title {
               text-align: center;
-              font-size: 24px;
+              font-size: 20px;
               font-weight: bold;
+              margin-bottom: 15px;
+              color: black !important;
+              page-break-after: avoid;
+            }
+            
+            /* Print date styling */
+            .print-date {
+              text-align: center;
+              font-size: 12px;
               margin-bottom: 20px;
               color: black !important;
+              page-break-after: avoid;
+            }
+            
+            /* Table container for better page breaks */
+            .print-table-container {
+              width: 100% !important;
             }
             
             /* Table styling for print */
             table {
               width: 100% !important;
               border-collapse: collapse !important;
-              margin-top: 20px;
-            }
-            
-            /* Force page breaks for large tables */
-            tbody tr:nth-child(20n) {
-              page-break-after: always;
+              margin: 0 !important;
+              font-size: 10px !important;
             }
             
             /* Ensure table headers repeat on each page */
             thead {
-              display: table-header-group;
+              display: table-header-group !important;
+            }
+            
+            /* Table header styling */
+            th {
+              border: 1px solid black !important;
+              padding: 6px 4px !important;
+              text-align: center !important;
+              color: black !important;
+              font-size: 10px !important;
+              font-weight: bold !important;
+              background-color: #f0f0f0 !important;
+              page-break-inside: avoid !important;
+            }
+            
+            /* Table cell styling */
+            td {
+              border: 1px solid black !important;
+              padding: 6px 4px !important;
+              text-align: right !important;
+              color: black !important;
+              font-size: 10px !important;
+              page-break-inside: avoid !important;
+            }
+            
+            /* First column (date) align left */
+            td:first-child {
+              text-align: left !important;
             }
             
             /* Avoid breaking rows across pages */
             tr {
-              page-break-inside: avoid;
+              page-break-inside: avoid !important;
             }
             
-            th, td {
-              border: 1px solid black !important;
-              padding: 8px !important;
-              text-align: left !important;
-              color: black !important;
-              font-size: 12px !important;
+            /* Table body styling */
+            tbody {
+              display: table-row-group !important;
             }
             
-            th {
-              background-color: #f5f5f5 !important;
-              font-weight: bold !important;
-            }
-            
-            tr:nth-child(even) {
+            /* Zebra striping for better readability */
+            tbody tr:nth-child(even) {
               background-color: #f9f9f9 !important;
+            }
+            
+            /* Force page break every 25 rows to ensure content fits */
+            tbody tr:nth-child(25n) {
+              page-break-after: always !important;
             }
             
             /* Print summary styling */
             .print-summary {
-              margin-top: 20px;
-              padding: 10px;
+              margin-top: 15px;
+              padding: 8px;
               border: 1px solid black;
               background-color: #f0f0f0;
-              page-break-inside: avoid;
+              page-break-inside: avoid !important;
+              font-size: 11px !important;
             }
             
-            /* Page break handling */
-            .page-break {
-              page-break-before: always;
+            .print-summary h3 {
+              margin: 0 0 8px 0 !important;
+              font-size: 14px !important;
+              font-weight: bold !important;
+            }
+            
+            .print-summary p {
+              margin: 3px 0 !important;
+              font-size: 11px !important;
+            }
+            
+            /* Ensure proper page breaks */
+            .page-break-before {
+              page-break-before: always !important;
+            }
+            
+            .page-break-after {
+              page-break-after: always !important;
+            }
+            
+            /* Avoid orphaned headers */
+            .print-header-section {
+              page-break-after: avoid !important;
             }
           }
           
@@ -318,9 +382,9 @@ const OD = () => {
       <PageWrapper title="Over Draft Management">
         <div className="space-y-6">
           {/* Print Header - Only visible when printing */}
-          <div className="print-only">
+          <div className="print-only print-header-section">
             <h1 className="print-title">Over Draft Records</h1>
-            <p style={{ textAlign: 'center', marginBottom: '20px' }}>
+            <p className="print-date">
               Generated on: {format(new Date(), 'dd/MM/yyyy HH:mm')}
             </p>
           </div>
@@ -437,7 +501,7 @@ const OD = () => {
               <CardTitle>OD Records</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto print-table-container">
                 <Table>
                   <TableHeader>
                     <TableRow>
