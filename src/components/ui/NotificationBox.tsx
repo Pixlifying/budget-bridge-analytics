@@ -68,20 +68,18 @@ const NotificationBox = () => {
   useEffect(() => {
     const newNotifications: Notification[] = [];
 
-    // Check cash in hand (overdraft notifications)
+    // Show all cash in hand (overdraft notifications)
     if (odData && odData.length > 0) {
       const latestOD = odData[0];
-      if (latestOD.cash_in_hand < 10000) {
-        newNotifications.push({
-          id: `od-${latestOD.id}`,
-          type: 'overdraft',
-          title: 'Low Cash Alert',
-          message: `Cash in hand is ${formatCurrency(latestOD.cash_in_hand)}`,
-          amount: latestOD.cash_in_hand,
-          icon: <Wallet className="h-4 w-4" />,
-          priority: latestOD.cash_in_hand < 5000 ? 'high' : 'medium',
-        });
-      }
+      newNotifications.push({
+        id: `od-${latestOD.id}`,
+        type: 'overdraft',
+        title: 'Cash in Hand',
+        message: `Current cash in hand: ${formatCurrency(latestOD.cash_in_hand)}`,
+        amount: latestOD.cash_in_hand,
+        icon: <Wallet className="h-4 w-4" />,
+        priority: latestOD.cash_in_hand < 5000 ? 'high' : latestOD.cash_in_hand < 10000 ? 'medium' : 'low',
+      });
     }
 
     // Check pending balances
@@ -100,20 +98,18 @@ const NotificationBox = () => {
       }
     }
 
-    // Check khata customers
+    // Show all khata customers
     if (khataData && khataData.length > 0) {
       khataData.forEach((customer) => {
-        if (customer.opening_balance > 10000) {
-          newNotifications.push({
-            id: `khata-${customer.id}`,
-            type: 'khata',
-            title: 'High Khata Balance',
-            message: `${customer.name}: ${formatCurrency(customer.opening_balance)}`,
-            amount: customer.opening_balance,
-            icon: <Users className="h-4 w-4" />,
-            priority: customer.opening_balance > 50000 ? 'high' : 'medium',
-          });
-        }
+        newNotifications.push({
+          id: `khata-${customer.id}`,
+          type: 'khata',
+          title: 'Khata Balance',
+          message: `${customer.name}: ${formatCurrency(customer.opening_balance)}`,
+          amount: customer.opening_balance,
+          icon: <Users className="h-4 w-4" />,
+          priority: customer.opening_balance > 50000 ? 'high' : customer.opening_balance > 10000 ? 'medium' : 'low',
+        });
       });
     }
 

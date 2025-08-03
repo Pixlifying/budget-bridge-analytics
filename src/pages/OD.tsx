@@ -39,6 +39,10 @@ const OD = () => {
     id: null,
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [printDateRange, setPrintDateRange] = useState({
+    startDate: format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), 'yyyy-MM-dd'),
+    endDate: format(new Date(), 'yyyy-MM-dd'),
+  });
   const { toast } = useToast();
 
   // Calculate cash in hand using the formula: Last Balance + OD from Bank + Amount Received - Amount Distributed
@@ -190,6 +194,15 @@ const OD = () => {
   const handlePrint = () => {
     window.print();
   };
+
+  // Filter records for print based on date range
+  const filteredRecordsForPrint = records.filter(record => {
+    const recordDate = new Date(record.date);
+    const startDate = new Date(printDateRange.startDate);
+    const endDate = new Date(printDateRange.endDate);
+    endDate.setHours(23, 59, 59, 999); // Include the end date fully
+    return recordDate >= startDate && recordDate <= endDate;
+  });
 
   const handleDownload = () => {
     const exportData = records.map(record => ({
@@ -385,20 +398,46 @@ const OD = () => {
           <div className="print-only print-header-section">
             <h1 className="print-title">Over Draft Records</h1>
             <p className="print-date">
-              Generated on: {format(new Date(), 'dd/MM/yyyy HH:mm')}
+              Period: {format(new Date(printDateRange.startDate), 'dd/MM/yyyy')} to {format(new Date(printDateRange.endDate), 'dd/MM/yyyy')} | Generated on: {format(new Date(), 'dd/MM/yyyy HH:mm')}
             </p>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-2 no-print">
-            <Button onClick={handlePrint} variant="outline">
-              <Printer size={16} className="mr-2" />
-              Print
-            </Button>
-            <Button onClick={handleDownload} variant="outline">
-              <Download size={16} className="mr-2" />
-              Download CSV
-            </Button>
+          {/* Print Date Range and Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 no-print">
+            <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-end">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label htmlFor="print-start-date" className="text-sm">From Date</Label>
+                  <Input
+                    id="print-start-date"
+                    type="date"
+                    value={printDateRange.startDate}
+                    onChange={(e) => setPrintDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+                    className="w-36"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="print-end-date" className="text-sm">To Date</Label>
+                  <Input
+                    id="print-end-date"
+                    type="date"
+                    value={printDateRange.endDate}
+                    onChange={(e) => setPrintDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+                    className="w-36"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={handlePrint} variant="outline">
+                  <Printer size={16} className="mr-2" />
+                  Print ({filteredRecordsForPrint.length} records)
+                </Button>
+                <Button onClick={handleDownload} variant="outline">
+                  <Download size={16} className="mr-2" />
+                  Download CSV
+                </Button>
+              </div>
+            </div>
           </div>
 
           {/* Form */}
@@ -515,7 +554,8 @@ const OD = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {records.map((record) => (
+                    {/* Show filtered records for print, all records for screen */}
+                    {(typeof window !== 'undefined' && window.matchMedia && window.matchMedia('print').matches ? filteredRecordsForPrint : records).map((record) => (
                       <TableRow key={record.id}>
                         <TableCell>{format(new Date(record.date), 'dd/MM/yyyy')}</TableCell>
                         <TableCell>₹{record.od_from_bank.toFixed(2)}</TableCell>
@@ -557,12 +597,12 @@ const OD = () => {
               {/* Print Summary */}
               <div className="print-only print-summary">
                 <h3 style={{ marginBottom: '10px', fontSize: '18px', fontWeight: 'bold' }}>Summary</h3>
-                <p>Total Records: {records.length}</p>
-                {records.length > 0 && (
+                <p>Total Records: {filteredRecordsForPrint.length}</p>
+                {filteredRecordsForPrint.length > 0 && (
                   <>
-                    <p>Latest Cash in Hand: ₹{records[0]?.cash_in_hand.toFixed(2)}</p>
-                    <p>Total Amount Received: ₹{records.reduce((sum, record) => sum + record.amount_received, 0).toFixed(2)}</p>
-                    <p>Total Amount Distributed: ₹{records.reduce((sum, record) => sum + record.amount_distributed, 0).toFixed(2)}</p>
+                    <p>Latest Cash in Hand: ₹{filteredRecordsForPrint[0]?.cash_in_hand.toFixed(2)}</p>
+                    <p>Total Amount Received: ₹{filteredRecordsForPrint.reduce((sum, record) => sum + record.amount_received, 0).toFixed(2)}</p>
+                    <p>Total Amount Distributed: ₹{filteredRecordsForPrint.reduce((sum, record) => sum + record.amount_distributed, 0).toFixed(2)}</p>
                   </>
                 )}
               </div>
