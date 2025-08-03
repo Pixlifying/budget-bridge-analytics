@@ -180,3 +180,17 @@
 .data-table td {
   @apply py-3 px-4 text-sm border-t border-border;
 }
+
+/* Notification scroll animation */
+@keyframes scroll-up {
+  0% {
+    transform: translateY(100%);
+  }
+  100% {
+    transform: translateY(-100%);
+  }
+}
+
+.animate-scroll-up {
+  animation: scroll-up 20s linear infinite;
+}

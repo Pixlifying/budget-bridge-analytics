@@ -275,8 +275,8 @@ const AccountDetails = () => {
       'Name': account.name,
       'Account Number': account.account_number,
       'Aadhar Number': formatAadhar(account.aadhar_number),
-      'Mobile Number': account.mobile_number || '',
       'Address': account.address || '',
+      'Mobile Number': account.mobile_number || '',
     }));
     
     exportToExcel(csvData, 'account-details');
@@ -311,8 +311,8 @@ const AccountDetails = () => {
                 <th>Name</th>
                 <th>Account Number</th>
                 <th>Aadhar Number</th>
-                <th>Mobile Number</th>
                 <th>Address</th>
+                <th>Mobile Number</th>
               </tr>
             </thead>
             <tbody>
@@ -322,8 +322,8 @@ const AccountDetails = () => {
                   <td>${account.name}</td>
                   <td>${account.account_number}</td>
                   <td>${formatAadhar(account.aadhar_number)}</td>
-                  <td>${account.mobile_number || '-'}</td>
                   <td>${account.address || '-'}</td>
+                  <td>${account.mobile_number || '-'}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -398,21 +398,21 @@ const AccountDetails = () => {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="mobile_number">Mobile Number</Label>
-                <Input
-                  id="mobile_number"
-                  value={form.mobile_number}
-                  onChange={(e) => setForm(prev => ({ ...prev, mobile_number: e.target.value }))}
-                  placeholder="Mobile number (optional)"
-                />
-              </div>
-              <div className="grid gap-2">
                 <Label htmlFor="address">Address</Label>
                 <Input
                   id="address"
                   value={form.address}
                   onChange={(e) => setForm(prev => ({ ...prev, address: e.target.value }))}
                   placeholder="Address (optional)"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="mobile_number">Mobile Number</Label>
+                <Input
+                  id="mobile_number"
+                  value={form.mobile_number}
+                  onChange={(e) => setForm(prev => ({ ...prev, mobile_number: e.target.value }))}
+                  placeholder="Mobile number (optional)"
                 />
               </div>
               <Button 
@@ -445,8 +445,8 @@ const AccountDetails = () => {
                 <TableHead>Name</TableHead>
                 <TableHead>Account Number</TableHead>
                 <TableHead>Aadhar Number</TableHead>
-                <TableHead>Mobile Number</TableHead>
                 <TableHead>Address</TableHead>
+                <TableHead>Mobile Number</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -470,8 +470,8 @@ const AccountDetails = () => {
                     <TableCell className="font-medium">{account.name}</TableCell>
                     <TableCell>{account.account_number}</TableCell>
                     <TableCell>{formatAadhar(account.aadhar_number)}</TableCell>
-                    <TableCell>{account.mobile_number || '-'}</TableCell>
                     <TableCell>{account.address || '-'}</TableCell>
+                    <TableCell>{account.mobile_number || '-'}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         <Button

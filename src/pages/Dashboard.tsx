@@ -22,6 +22,7 @@ import PageHeader from '@/components/layout/PageHeader';
 import StatCard from '@/components/ui/StatCard';
 import DoughnutChart from '@/components/ui/DoughnutChart';
 import DateRangePicker from '@/components/ui/DateRangePicker';
+import NotificationBox from '@/components/ui/NotificationBox';
 import {
   formatCurrency,
   getTotalMargin,
@@ -290,7 +291,10 @@ const Dashboard = () => {
       </PageHeader>
 
       <div className="p-6">
-        <div className="grid gap-6 mb-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+        <div className="flex gap-6 mb-8">
+          {/* Main content */}
+          <div className="flex-1">
+            <div className="grid gap-6 mb-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           <StatCard
             title="Total Margin"
             value={formatCurrency(totalMargin)}
@@ -459,13 +463,20 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-md rounded-xl p-5 border border-white/20 dark:border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] animate-scale-in">
-            <h3 className="font-semibold text-lg mb-4 bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">Margin Distribution</h3>
-            <DoughnutChart
-              data={marginProportions}
-              getColor={getServiceColor}
-            />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-md rounded-xl p-5 border border-white/20 dark:border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] animate-scale-in">
+                <h3 className="font-semibold text-lg mb-4 bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">Margin Distribution</h3>
+                <DoughnutChart
+                  data={marginProportions}
+                  getColor={getServiceColor}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Notification Box */}
+          <div className="flex-shrink-0">
+            <NotificationBox />
           </div>
         </div>
       </div>
