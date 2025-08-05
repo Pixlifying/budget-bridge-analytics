@@ -17,7 +17,7 @@ interface Notification {
 const NotificationBox = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  // Fetch OD records to check cash in hand
+  // Fetch all data in parallel for faster loading
   const { data: odData } = useQuery({
     queryKey: ['od_notifications'],
     queryFn: async () => {
@@ -30,39 +30,55 @@ const NotificationBox = () => {
       if (error) throw error;
       return data;
     },
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: 60000, // Reduced frequency
   });
 
-  // Fetch pending balances
+  // Fetch all pending balances
   const { data: pendingData } = useQuery({
     queryKey: ['pending_notifications'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('pending_balances')
         .select('*')
-        .order('date', { ascending: false })
-        .limit(5);
+        .order('date', { ascending: false });
       
       if (error) throw error;
       return data;
     },
-    refetchInterval: 30000,
+    refetchInterval: 60000,
   });
 
-  // Fetch khata customers with high balances
+  // Fetch khata customers with transactions to calculate current balance
   const { data: khataData } = useQuery({
     queryKey: ['khata_notifications'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('khata_customers')
-        .select('*')
-        .order('opening_balance', { ascending: false })
-        .limit(3);
+      const [customersResult, transactionsResult] = await Promise.all([
+        supabase.from('khata_customers').select('*'),
+        supabase.from('khata_transactions').select('*')
+      ]);
       
-      if (error) throw error;
-      return data;
+      if (customersResult.error) throw customersResult.error;
+      if (transactionsResult.error) throw transactionsResult.error;
+      
+      const customers = customersResult.data || [];
+      const transactions = transactionsResult.data || [];
+      
+      // Calculate current balance for each customer
+      const customersWithBalance = customers.map(customer => {
+        const customerTransactions = transactions.filter(t => t.customer_id === customer.id);
+        const transactionTotal = customerTransactions.reduce((sum, t) => {
+          return sum + (t.type === 'credit' ? Number(t.amount) : -Number(t.amount));
+        }, 0);
+        
+        return {
+          ...customer,
+          current_balance: Number(customer.opening_balance) + transactionTotal
+        };
+      });
+      
+      return customersWithBalance;
     },
-    refetchInterval: 60000, // Refetch every minute
+    refetchInterval: 60000,
   });
 
   useEffect(() => {
@@ -82,59 +98,33 @@ const NotificationBox = () => {
       });
     }
 
-    // Check pending balances - group by date
+    // Show individual pending balance customers
     if (pendingData && pendingData.length > 0) {
-      const currentMonth = new Date().getMonth();
-      const currentYear = new Date().getFullYear();
-      
-      const monthlyPending = pendingData.filter(item => {
-        const itemDate = new Date(item.date);
-        return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear;
-      });
-      
-      const otherPending = pendingData.filter(item => {
-        const itemDate = new Date(item.date);
-        return !(itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear);
-      });
-
-      if (monthlyPending.length > 0) {
-        const monthlyTotal = monthlyPending.reduce((sum, item) => sum + Number(item.amount), 0);
+      pendingData.forEach((pending) => {
         newNotifications.push({
-          id: 'pending-monthly',
+          id: `pending-${pending.id}`,
           type: 'pending_balance',
-          title: 'Monthly Pending',
-          message: `${monthlyPending.length} monthly pending payments: ${formatCurrency(monthlyTotal)}`,
-          amount: monthlyTotal,
+          title: 'Pending Payment',
+          message: `${pending.name} - ${pending.service}${pending.custom_service ? ` (${pending.custom_service})` : ''}`,
+          amount: pending.amount,
           icon: <AlertCircle className="h-4 w-4" />,
-          priority: monthlyTotal > 50000 ? 'high' : 'medium',
+          priority: pending.amount > 1000 ? 'high' : pending.amount > 500 ? 'medium' : 'low',
         });
-      }
-
-      if (otherPending.length > 0) {
-        const otherTotal = otherPending.reduce((sum, item) => sum + Number(item.amount), 0);
-        newNotifications.push({
-          id: 'pending-other',
-          type: 'pending_balance',
-          title: 'Other Pending',
-          message: `${otherPending.length} other pending payments: ${formatCurrency(otherTotal)}`,
-          amount: otherTotal,
-          icon: <AlertCircle className="h-4 w-4" />,
-          priority: otherTotal > 50000 ? 'high' : 'medium',
-        });
-      }
+      });
     }
 
-    // Show all khata customers with current balance
+    // Show all khata customers with current balance (including negative amounts)
     if (khataData && khataData.length > 0) {
       khataData.forEach((customer) => {
+        const isNegative = customer.current_balance < 0;
         newNotifications.push({
           id: `khata-${customer.id}`,
           type: 'khata',
           title: 'Khata Customer',
-          message: `${customer.name}: ${formatCurrency(customer.opening_balance)}`,
-          amount: customer.opening_balance,
+          message: `${customer.name}: ${isNegative ? 'Owes ' : 'Balance '} ${formatCurrency(Math.abs(customer.current_balance))}`,
+          amount: customer.current_balance,
           icon: <Users className="h-4 w-4" />,
-          priority: customer.opening_balance > 50000 ? 'high' : customer.opening_balance > 10000 ? 'medium' : 'low',
+          priority: Math.abs(customer.current_balance) > 50000 ? 'high' : Math.abs(customer.current_balance) > 10000 ? 'medium' : 'low',
         });
       });
     }
