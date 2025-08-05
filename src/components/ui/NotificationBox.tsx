@@ -171,24 +171,24 @@ const NotificationBox = () => {
         <div className="h-full overflow-hidden">
           <div className="animate-scroll-up">
             {/* Single loop of notifications */}
-            {notifications.concat(notifications).map((notification, index) => (
+            {notifications.map((notification, index) => (
               <div
                 key={`${notification.id}-${index}`}
                 className={`p-3 m-2 rounded-xl border transition-all duration-300 hover:scale-105 ${
-                  notification.priority === 'high'
-                    ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
-                    : notification.priority === 'medium'
-                    ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'
-                    : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+                  notification.type === 'overdraft'
+                    ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800'
+                    : notification.type === 'pending_balance'
+                    ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'
+                    : 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800'
                 }`}
               >
                 <div className="flex items-start gap-3">
                   <div className={`p-2 rounded-lg ${
-                    notification.priority === 'high'
-                      ? 'bg-red-100 dark:bg-red-800/40 text-red-600 dark:text-red-400'
-                      : notification.priority === 'medium'
-                      ? 'bg-yellow-100 dark:bg-yellow-800/40 text-yellow-600 dark:text-yellow-400'
-                      : 'bg-blue-100 dark:bg-blue-800/40 text-blue-600 dark:text-blue-400'
+                    notification.type === 'overdraft'
+                      ? 'bg-emerald-100 dark:bg-emerald-800/40 text-emerald-600 dark:text-emerald-400'
+                      : notification.type === 'pending_balance'
+                      ? 'bg-orange-100 dark:bg-orange-800/40 text-orange-600 dark:text-orange-400'
+                      : 'bg-purple-100 dark:bg-purple-800/40 text-purple-600 dark:text-purple-400'
                   }`}>
                     {notification.icon}
                   </div>
@@ -201,11 +201,11 @@ const NotificationBox = () => {
                     </p>
                     {notification.amount && (
                       <div className={`text-xs font-medium mt-1 ${
-                        notification.priority === 'high'
-                          ? 'text-red-600 dark:text-red-400'
-                          : notification.priority === 'medium'
-                          ? 'text-yellow-600 dark:text-yellow-400'
-                          : 'text-blue-600 dark:text-blue-400'
+                        notification.type === 'overdraft'
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : notification.type === 'pending_balance'
+                          ? 'text-orange-600 dark:text-orange-400'
+                          : 'text-purple-600 dark:text-purple-400'
                       }`}>
                         {formatCurrency(notification.amount)}
                       </div>
