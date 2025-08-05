@@ -303,6 +303,16 @@ const OD = () => {
               display: table-header-group !important;
             }
             
+            /* Force table to break across pages properly */
+            table {
+              page-break-inside: auto !important;
+            }
+            
+            tbody {
+              display: table-row-group !important;
+              page-break-inside: auto !important;
+            }
+            
             /* Table header styling */
             th {
               border: 1px solid black !important;
@@ -345,8 +355,8 @@ const OD = () => {
               background-color: #f9f9f9 !important;
             }
             
-            /* Force page break every 25 rows to ensure content fits */
-            tbody tr:nth-child(25n) {
+            /* Force page break every 20 rows to ensure content fits */
+            tbody tr:nth-child(20n) {
               page-break-after: always !important;
             }
             

@@ -82,29 +82,55 @@ const NotificationBox = () => {
       });
     }
 
-    // Check pending balances
+    // Check pending balances - group by date
     if (pendingData && pendingData.length > 0) {
-      const totalPending = pendingData.reduce((sum, item) => sum + Number(item.amount), 0);
-      if (totalPending > 0) {
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+      
+      const monthlyPending = pendingData.filter(item => {
+        const itemDate = new Date(item.date);
+        return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear;
+      });
+      
+      const otherPending = pendingData.filter(item => {
+        const itemDate = new Date(item.date);
+        return !(itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear);
+      });
+
+      if (monthlyPending.length > 0) {
+        const monthlyTotal = monthlyPending.reduce((sum, item) => sum + Number(item.amount), 0);
         newNotifications.push({
-          id: 'pending-total',
+          id: 'pending-monthly',
           type: 'pending_balance',
-          title: 'Pending Balances',
-          message: `${pendingData.length} pending payments worth ${formatCurrency(totalPending)}`,
-          amount: totalPending,
+          title: 'Monthly Pending',
+          message: `${monthlyPending.length} monthly pending payments: ${formatCurrency(monthlyTotal)}`,
+          amount: monthlyTotal,
           icon: <AlertCircle className="h-4 w-4" />,
-          priority: totalPending > 50000 ? 'high' : 'medium',
+          priority: monthlyTotal > 50000 ? 'high' : 'medium',
+        });
+      }
+
+      if (otherPending.length > 0) {
+        const otherTotal = otherPending.reduce((sum, item) => sum + Number(item.amount), 0);
+        newNotifications.push({
+          id: 'pending-other',
+          type: 'pending_balance',
+          title: 'Other Pending',
+          message: `${otherPending.length} other pending payments: ${formatCurrency(otherTotal)}`,
+          amount: otherTotal,
+          icon: <AlertCircle className="h-4 w-4" />,
+          priority: otherTotal > 50000 ? 'high' : 'medium',
         });
       }
     }
 
-    // Show all khata customers
+    // Show all khata customers with current balance
     if (khataData && khataData.length > 0) {
       khataData.forEach((customer) => {
         newNotifications.push({
           id: `khata-${customer.id}`,
           type: 'khata',
-          title: 'Khata Balance',
+          title: 'Khata Customer',
           message: `${customer.name}: ${formatCurrency(customer.opening_balance)}`,
           amount: customer.opening_balance,
           icon: <Users className="h-4 w-4" />,
@@ -118,7 +144,7 @@ const NotificationBox = () => {
 
   if (notifications.length === 0) {
     return (
-      <div className="w-80 h-96 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl border border-white/20 dark:border-white/10 shadow-xl p-4">
+      <div className="w-80 max-w-[90vw] h-96 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl border border-white/20 dark:border-white/10 shadow-xl p-4 md:w-80">
         <div className="flex items-center gap-2 mb-4">
           <CreditCard className="h-5 w-5 text-primary" />
           <h3 className="font-semibold text-lg">Live Notifications</h3>
@@ -134,7 +160,7 @@ const NotificationBox = () => {
   }
 
   return (
-    <div className="w-80 h-96 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl border border-white/20 dark:border-white/10 shadow-xl overflow-hidden relative">
+    <div className="w-80 max-w-[90vw] h-96 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl border border-white/20 dark:border-white/10 shadow-xl overflow-hidden relative md:w-80">
       {/* Header */}
       <div className="p-4 border-b border-white/20 dark:border-white/10">
         <div className="flex items-center gap-2">
@@ -154,8 +180,8 @@ const NotificationBox = () => {
         {/* Animated notifications */}
         <div className="h-full overflow-hidden">
           <div className="animate-scroll-up">
-            {/* Duplicate notifications for continuous scroll */}
-            {[...notifications, ...notifications, ...notifications].map((notification, index) => (
+            {/* Single loop of notifications */}
+            {notifications.concat(notifications).map((notification, index) => (
               <div
                 key={`${notification.id}-${index}`}
                 className={`p-3 m-2 rounded-xl border transition-all duration-300 hover:scale-105 ${
