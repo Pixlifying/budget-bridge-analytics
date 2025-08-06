@@ -48,6 +48,7 @@ interface ODRecord {
   amount_given: number;
   cash_in_hand: number;
   last_balance: number;
+  od_from_bank: number;
   date: string;
   created_at: string;
 }
@@ -407,12 +408,13 @@ const ODRecords = () => {
           <table>
             <thead>
               <tr>
-                <th style="width: 8%;">S.No</th>
-                <th style="width: 18%;">Date</th>
-                <th style="width: 18%;">OD from Bank</th>
-                <th style="width: 18%;">Amount Received</th>
-                <th style="width: 18%;">Amount Given</th>
-                <th style="width: 20%;">Cash in Hand</th>
+                <th style="width: 6%;">S.No</th>
+                <th style="width: 15%;">Date</th>
+                <th style="width: 15%;">Last Balance</th>
+                <th style="width: 15%;">OD Received</th>
+                <th style="width: 15%;">Amount Received</th>
+                <th style="width: 15%;">Amount Given</th>
+                <th style="width: 19%;">Cash in Hand</th>
               </tr>
             </thead>
             <tbody>
@@ -421,6 +423,7 @@ const ODRecords = () => {
                   <td>${index + 1}</td>
                   <td>${format(new Date(record.date), 'dd MMM yyyy')}</td>
                   <td class="text-right">₹${(record.last_balance || 0).toFixed(2)}</td>
+                  <td class="text-right">₹${(record.od_from_bank || 0).toFixed(2)}</td>
                   <td class="text-right">₹${record.amount_received.toFixed(2)}</td>
                   <td class="text-right">₹${record.amount_given.toFixed(2)}</td>
                   <td class="text-right">₹${record.cash_in_hand.toFixed(2)}</td>
@@ -455,9 +458,9 @@ const ODRecords = () => {
     });
 
     const csvContent = [
-      'S.No,Date,OD from Bank,Amount Received,Amount Given,Cash in Hand',
+      'S.No,Date,Last Balance,OD Received,Amount Received,Amount Given,Cash in Hand',
       ...sortedRecords.map((record, index) => 
-        `${index + 1},${format(new Date(record.date), 'yyyy-MM-dd')},${record.last_balance || 0},${record.amount_received},${record.amount_given},${record.cash_in_hand}`
+        `${index + 1},${format(new Date(record.date), 'yyyy-MM-dd')},${record.last_balance || 0},${record.od_from_bank || 0},${record.amount_received},${record.amount_given},${record.cash_in_hand}`
       )
     ].join('\n');
 
