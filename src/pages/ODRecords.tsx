@@ -322,19 +322,81 @@ const ODRecords = () => {
         <head>
           <title>Over Draft Records Report - ${periodText}</title>
           <style>
-            @page { size: A4; margin: 20mm; }
-            body { font-family: Arial, sans-serif; font-size: 12px; }
-            h1 { text-align: center; margin-bottom: 20px; }
-            .summary { margin-bottom: 20px; padding: 10px; border: 1px solid #ddd; }
-            table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #000; padding: 8px; text-align: left; }
-            th { background-color: #f0f0f0; }
-            .text-right { text-align: right; }
-            .print-date { text-align: right; margin-bottom: 10px; font-size: 10px; }
+            @page { 
+              size: A4; 
+              margin: 15mm; 
+            }
+            body { 
+              font-family: Arial, sans-serif; 
+              font-size: 11px; 
+              line-height: 1.4;
+              margin: 0;
+              padding: 0;
+            }
+            h1 { 
+              text-align: center; 
+              margin-bottom: 15px; 
+              font-size: 18px;
+              page-break-after: avoid;
+            }
+            .summary { 
+              margin-bottom: 15px; 
+              padding: 8px; 
+              border: 1px solid #ddd; 
+              background: #f9f9f9;
+              page-break-after: avoid;
+            }
+            .summary p {
+              margin: 4px 0;
+            }
+            table { 
+              width: 100%; 
+              border-collapse: collapse; 
+              page-break-inside: auto;
+            }
+            th, td { 
+              border: 1px solid #000; 
+              padding: 6px 4px; 
+              text-align: left; 
+              font-size: 10px;
+            }
+            th { 
+              background-color: #f0f0f0; 
+              font-weight: bold;
+              page-break-after: avoid;
+            }
+            tr {
+              page-break-inside: avoid;
+            }
+            tbody tr:nth-child(20n) {
+              page-break-after: auto;
+            }
+            .text-right { 
+              text-align: right; 
+            }
+            .print-date { 
+              text-align: right; 
+              margin-bottom: 8px; 
+              font-size: 9px; 
+              color: #666;
+            }
+            .page-header {
+              display: table-header-group;
+            }
+            .page-footer {
+              display: table-footer-group;
+            }
+            @media print {
+              body { -webkit-print-color-adjust: exact; }
+              .no-print { display: none !important; }
+              thead { display: table-header-group; }
+              tfoot { display: table-footer-group; }
+              tbody tr { page-break-inside: avoid; }
+            }
           </style>
         </head>
         <body>
-          <div class="print-date">Printed on: ${format(new Date(), 'dd MMM yyyy, HH:mm')}</div>
+          <div class="print-date">Printed on: ${format(new Date(), 'dd MMM yyyy, HH:mm')} | Total Records: ${sortedRecords.length}</div>
           <h1>Over Draft Records Report - ${periodText}</h1>
           <div class="summary">
             <p><strong>Total OD from Bank:</strong> ₹${totalLastBalance.toFixed(2)}</p>
@@ -345,12 +407,12 @@ const ODRecords = () => {
           <table>
             <thead>
               <tr>
-                <th>S.No</th>
-                <th>Date</th>
-                <th>OD from Bank</th>
-                <th>Amount Received</th>
-                <th>Amount Given</th>
-                <th>Cash in Hand</th>
+                <th style="width: 8%;">S.No</th>
+                <th style="width: 18%;">Date</th>
+                <th style="width: 18%;">OD from Bank</th>
+                <th style="width: 18%;">Amount Received</th>
+                <th style="width: 18%;">Amount Given</th>
+                <th style="width: 20%;">Cash in Hand</th>
               </tr>
             </thead>
             <tbody>
@@ -366,13 +428,22 @@ const ODRecords = () => {
               `).join('')}
             </tbody>
           </table>
+          
+          <script>
+            window.onload = function() {
+              setTimeout(function() {
+                window.print();
+                window.onafterprint = function() {
+                  window.close();
+                };
+              }, 500);
+            };
+          </script>
         </body>
       </html>
     `);
 
     printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
   };
 
   const handleDownload = () => {
