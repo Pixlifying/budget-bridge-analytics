@@ -168,8 +168,8 @@ const NotificationBox = () => {
         <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white/60 to-transparent dark:from-slate-800/60 z-10 pointer-events-none" />
 
         {/* Animated notifications */}
-        <div className="h-full overflow-hidden">
-          <div className="animate-scroll-up">
+        <div className="h-full overflow-hidden group">
+          <div className="animate-scroll-up group-hover:pause">
             {/* Single loop of notifications */}
             {notifications.map((notification, index) => (
               <div

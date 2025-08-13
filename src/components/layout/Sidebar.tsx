@@ -233,6 +233,11 @@ const Sidebar = () => {
       label: 'Forms',
       to: '/forms',
     },
+    {
+      icon: <FileText size={isCollapsed ? 20 : 16} />,
+      label: 'Daily Needs',
+      to: '/daily-needs',
+    },
   ];
 
   // Ledger submenu items

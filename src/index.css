@@ -194,3 +194,11 @@
 .animate-scroll-up {
   animation: scroll-up 25s linear infinite;
 }
+
+.animate-scroll-up.pause {
+  animation-play-state: paused;
+}
+
+.group:hover .animate-scroll-up {
+  animation-play-state: paused;
+}
