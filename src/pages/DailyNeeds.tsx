@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import DownloadButton from '@/components/ui/DownloadButton';
 import StatCard from '@/components/ui/StatCard';
-import { Calendar, Plus, Trash2, Calculator, TrendingUp } from 'lucide-react';
+import { Calendar, Plus, Trash2, Calculator, TrendingUp, Edit, Save, X } from 'lucide-react';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { formatCurrency } from '@/utils/calculateUtils';
 import { useToast } from '@/hooks/use-toast';
@@ -40,6 +40,8 @@ const DailyNeeds = () => {
   const queryClient = useQueryClient();
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editItem, setEditItem] = useState<DailyNeedItem | null>(null);
   const [newItem, setNewItem] = useState<NewItem>({
     item_name: '',
     quantity: 0,
@@ -104,6 +106,42 @@ const DailyNeeds = () => {
     },
   });
 
+  // Update item mutation
+  const updateItemMutation = useMutation({
+    mutationFn: async (item: DailyNeedItem) => {
+      const { data, error } = await supabase
+        .from('daily_needs')
+        .update({
+          item_name: item.item_name,
+          quantity: item.quantity,
+          unit: item.unit,
+          price_per_unit: item.price_per_unit,
+          total_price: item.quantity * item.price_per_unit,
+        })
+        .eq('id', item.id)
+        .select();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['daily_needs'] });
+      setEditingId(null);
+      setEditItem(null);
+      toast({
+        title: "Success",
+        description: "Item updated successfully!",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update item. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Delete item mutation
   const deleteItemMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -152,6 +190,29 @@ const DailyNeeds = () => {
       averageItemName,
     };
   }, [dailyNeeds]);
+
+  const handleEditStart = (item: DailyNeedItem) => {
+    setEditingId(item.id);
+    setEditItem({ ...item });
+  };
+
+  const handleEditCancel = () => {
+    setEditingId(null);
+    setEditItem(null);
+  };
+
+  const handleEditSave = () => {
+    if (!editItem || !editItem.item_name || editItem.quantity <= 0 || editItem.price_per_unit <= 0) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all fields with valid values.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    updateItemMutation.mutate(editItem);
+  };
 
   const handleAddItem = () => {
     if (!newItem.item_name || newItem.quantity <= 0 || newItem.price_per_unit <= 0) {
@@ -405,21 +466,113 @@ const DailyNeeds = () => {
                   {dailyNeeds.map((item, index) => (
                     <tr key={item.id} className="border-b">
                       <td className="p-3">{index + 1}</td>
-                      <td className="p-3 font-medium">{item.item_name}</td>
-                      <td className="p-3">{item.quantity}</td>
-                      <td className="p-3 capitalize">{item.unit}</td>
-                      <td className="p-3">{formatCurrency(item.price_per_unit)}</td>
-                      <td className="p-3 font-medium">{formatCurrency(item.total_price)}</td>
+                      <td className="p-3 font-medium">
+                        {editingId === item.id ? (
+                          <Input
+                            value={editItem?.item_name || ''}
+                            onChange={(e) => setEditItem(prev => prev ? { ...prev, item_name: e.target.value } : null)}
+                            className="h-8"
+                          />
+                        ) : (
+                          item.item_name
+                        )}
+                      </td>
+                      <td className="p-3">
+                        {editingId === item.id ? (
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={editItem?.quantity || ''}
+                            onChange={(e) => setEditItem(prev => prev ? { ...prev, quantity: parseFloat(e.target.value) || 0 } : null)}
+                            className="h-8 w-20"
+                          />
+                        ) : (
+                          item.quantity
+                        )}
+                      </td>
+                      <td className="p-3 capitalize">
+                        {editingId === item.id ? (
+                          <Select
+                            value={editItem?.unit}
+                            onValueChange={(value: 'kg' | 'pieces' | 'litres') => 
+                              setEditItem(prev => prev ? { ...prev, unit: value } : null)
+                            }
+                          >
+                            <SelectTrigger className="h-8 w-20">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="kg">Kg</SelectItem>
+                              <SelectItem value="pieces">Pieces</SelectItem>
+                              <SelectItem value="litres">Litres</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          item.unit
+                        )}
+                      </td>
+                      <td className="p-3">
+                        {editingId === item.id ? (
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={editItem?.price_per_unit || ''}
+                            onChange={(e) => setEditItem(prev => prev ? { ...prev, price_per_unit: parseFloat(e.target.value) || 0 } : null)}
+                            className="h-8 w-24"
+                          />
+                        ) : (
+                          formatCurrency(item.price_per_unit)
+                        )}
+                      </td>
+                      <td className="p-3 font-medium">
+                        {editingId === item.id ? 
+                          formatCurrency((editItem?.quantity || 0) * (editItem?.price_per_unit || 0)) : 
+                          formatCurrency(item.total_price)
+                        }
+                      </td>
                       <td className="p-3">{format(new Date(item.date), 'dd MMM yyyy')}</td>
                       <td className="p-3">
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => deleteItemMutation.mutate(item.id)}
-                          disabled={deleteItemMutation.isPending}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex gap-1">
+                          {editingId === item.id ? (
+                            <>
+                              <Button
+                                variant="default"
+                                size="sm"
+                                onClick={handleEditSave}
+                                disabled={updateItemMutation.isPending}
+                              >
+                                <Save className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleEditCancel}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEditStart(item)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => deleteItemMutation.mutate(item.id)}
+                                disabled={deleteItemMutation.isPending}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
