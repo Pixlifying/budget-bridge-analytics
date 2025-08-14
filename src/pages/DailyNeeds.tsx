@@ -15,6 +15,7 @@ import { Calendar, Plus, Trash2, Calculator, TrendingUp, Edit, Save, X } from 'l
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { formatCurrency } from '@/utils/calculateUtils';
 import { useToast } from '@/hooks/use-toast';
+import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
 
 interface DailyNeedItem {
   id: string;
@@ -42,6 +43,8 @@ const DailyNeeds = () => {
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editItem, setEditItem] = useState<DailyNeedItem | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [newItem, setNewItem] = useState<NewItem>({
     item_name: '',
     quantity: 0,
@@ -212,6 +215,24 @@ const DailyNeeds = () => {
     }
 
     updateItemMutation.mutate(editItem);
+  };
+
+  const handleDeleteClick = (id: string) => {
+    setItemToDelete(id);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (itemToDelete) {
+      deleteItemMutation.mutate(itemToDelete);
+      setDeleteConfirmOpen(false);
+      setItemToDelete(null);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirmOpen(false);
+    setItemToDelete(null);
   };
 
   const handleAddItem = () => {
@@ -565,7 +586,7 @@ const DailyNeeds = () => {
                               <Button
                                 variant="destructive"
                                 size="sm"
-                                onClick={() => deleteItemMutation.mutate(item.id)}
+                                onClick={() => handleDeleteClick(item.id)}
                                 disabled={deleteItemMutation.isPending}
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -582,6 +603,14 @@ const DailyNeeds = () => {
           )}
         </CardContent>
       </Card>
+
+      <DeleteConfirmation
+        isOpen={deleteConfirmOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Daily Need Item"
+        description="Are you sure you want to delete this item? This action cannot be undone."
+      />
     </PageWrapper>
   );
 };
