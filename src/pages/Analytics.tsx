@@ -502,34 +502,38 @@ const Analytics = () => {
           </Card>
         )}
 
-        {/* Expense Breakdown */}
-        {expenseBreakdownData.length > 0 && (
+        {/* Expense Breakdown - Date-wise */}
+        {filteredExpenses.length > 0 && (
           <Card className="animate-scale-in">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Activity size={20} />
-                Expense Breakdown
+                Expense Breakdown - Date-wise
               </CardTitle>
             </CardHeader>
             <CardContent>
               <ChartContainer config={chartConfig} className="h-80 w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <RechartsPieChart>
+                  <BarChart data={filteredExpenses.map(expense => ({
+                    date: format(new Date(expense.date), 'MMM dd'),
+                    amount: expense.amount,
+                    name: expense.name
+                  }))}>
+                    <XAxis 
+                      dataKey="date" 
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                    />
+                    <YAxis 
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                    />
                     <ChartTooltip content={<ChartTooltipContent />} />
-                    <Pie
-                      data={expenseBreakdownData}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={100}
-                      fill="#8884d8"
-                      dataKey="value"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    >
-                      {expenseBreakdownData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                  </RechartsPieChart>
+                    <Bar dataKey="amount" fill="#ef4444" name="Expense Amount" radius={[4, 4, 0, 0]} />
+                  </BarChart>
                 </ResponsiveContainer>
               </ChartContainer>
             </CardContent>
@@ -576,51 +580,31 @@ const Analytics = () => {
           <Card className="animate-scale-in">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <TrendingUp size={20} />
+                <BarChart3 size={20} />
                 OD Flow Analytics
               </CardTitle>
             </CardHeader>
             <CardContent>
               <ChartContainer config={chartConfig} className="h-80 w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={odTrendData}>
+                  <BarChart data={odTrendData}>
                     <XAxis 
                       dataKey="date" 
                       stroke="hsl(var(--muted-foreground))"
                       fontSize={12}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
                     />
                     <YAxis 
                       stroke="hsl(var(--muted-foreground))"
                       fontSize={12}
                     />
                     <ChartTooltip content={<ChartTooltipContent />} />
-                    <defs>
-                      <linearGradient id="receivedGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0.2}/>
-                      </linearGradient>
-                      <linearGradient id="givenGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0.2}/>
-                      </linearGradient>
-                    </defs>
-                    <Area
-                      type="monotone"
-                      dataKey="received"
-                      stroke="#10b981"
-                      fillOpacity={1}
-                      fill="url(#receivedGradient)"
-                      strokeWidth={3}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="given"
-                      stroke="#ef4444"
-                      fillOpacity={1}
-                      fill="url(#givenGradient)"
-                      strokeWidth={3}
-                    />
-                  </AreaChart>
+                    <Bar dataKey="received" fill="#10b981" name="Amount Received" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="given" fill="#ef4444" name="Amount Given" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="cash_in_hand" fill="#3b82f6" name="Cash in Hand" radius={[4, 4, 0, 0]} />
+                  </BarChart>
                 </ResponsiveContainer>
               </ChartContainer>
             </CardContent>
