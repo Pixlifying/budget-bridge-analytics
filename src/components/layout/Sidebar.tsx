@@ -238,11 +238,6 @@ const Sidebar = () => {
       label: 'Daily Needs',
       to: '/daily-needs',
     },
-    {
-      icon: <FileText size={isCollapsed ? 20 : 16} />,
-      label: 'Bill',
-      to: '/bill',
-    },
   ];
 
   // Ledger submenu items
