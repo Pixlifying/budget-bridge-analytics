@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Download } from 'lucide-react';
+import { Plus, Edit, Trash2, Printer, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -39,6 +39,10 @@ const OD = () => {
     id: null,
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [printDateRange, setPrintDateRange] = useState({
+    startDate: format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), 'yyyy-MM-dd'),
+    endDate: format(new Date(), 'yyyy-MM-dd'),
+  });
   const { toast } = useToast();
 
   // Calculate cash in hand using the formula: Last Balance + OD from Bank + Amount Received - Amount Distributed
@@ -187,6 +191,19 @@ const OD = () => {
     setEditingId(null);
   };
 
+  const handlePrint = () => {
+    window.print();
+  };
+
+  // Filter records for print based on date range
+  const filteredRecordsForPrint = records.filter(record => {
+    const recordDate = new Date(record.date);
+    const startDate = new Date(printDateRange.startDate);
+    const endDate = new Date(printDateRange.endDate);
+    endDate.setHours(23, 59, 59, 999); // Include the end date fully
+    return recordDate >= startDate && recordDate <= endDate;
+  });
+
   const handleDownload = () => {
     const exportData = records.map(record => ({
       Date: format(new Date(record.date), 'dd/MM/yyyy'),
@@ -201,19 +218,237 @@ const OD = () => {
   };
 
   return (
-    <PageWrapper title="Over Draft Management">
-      <div className="space-y-6">
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 no-print">
-          <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-end">
-            <div className="flex gap-2">
-              <Button onClick={handleDownload} variant="outline">
-                <Download size={16} className="mr-2" />
-                Download CSV
-              </Button>
+    <>
+      <style>
+        {`
+          @media print {
+            /* Set up page margins and size */
+            @page {
+              size: A4;
+              margin: 1cm;
+            }
+            
+            /* Hide all non-essential elements */
+            .no-print, 
+            aside,
+            nav,
+            header:not(.print-header),
+            .sidebar,
+            [class*="sidebar"],
+            [data-sidebar],
+            button:not(.print-button),
+            .toast,
+            .dialog,
+            .modal {
+              display: none !important;
+            }
+            
+            /* Show only print content */
+            .print-only {
+              display: block !important;
+            }
+            
+            /* Reset page styles for print */
+            body, html {
+              background: white !important;
+              color: black !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              font-family: Arial, sans-serif !important;
+              line-height: 1.4 !important;
+            }
+            
+            /* Ensure main content takes full width */
+            main {
+              width: 100% !important;
+              margin: 0 !important;
+              padding: 10px !important;
+              max-width: none !important;
+            }
+            
+            /* Print title styling */
+            .print-title {
+              text-align: center;
+              font-size: 20px;
+              font-weight: bold;
+              margin-bottom: 15px;
+              color: black !important;
+              page-break-after: avoid;
+            }
+            
+            /* Print date styling */
+            .print-date {
+              text-align: center;
+              font-size: 12px;
+              margin-bottom: 20px;
+              color: black !important;
+              page-break-after: avoid;
+            }
+            
+            /* Table container for better page breaks */
+            .print-table-container {
+              width: 100% !important;
+            }
+            
+            /* Table styling for print */
+            table {
+              width: 100% !important;
+              border-collapse: collapse !important;
+              margin: 0 !important;
+              font-size: 10px !important;
+            }
+            
+            /* Ensure table headers repeat on each page */
+            thead {
+              display: table-header-group !important;
+            }
+            
+            /* Force table to break across pages properly */
+            table {
+              page-break-inside: auto !important;
+            }
+            
+            tbody {
+              display: table-row-group !important;
+              page-break-inside: auto !important;
+            }
+            
+            /* Table header styling */
+            th {
+              border: 1px solid black !important;
+              padding: 6px 4px !important;
+              text-align: center !important;
+              color: black !important;
+              font-size: 10px !important;
+              font-weight: bold !important;
+              background-color: #f0f0f0 !important;
+              page-break-inside: avoid !important;
+            }
+            
+            /* Table cell styling */
+            td {
+              border: 1px solid black !important;
+              padding: 6px 4px !important;
+              text-align: right !important;
+              color: black !important;
+              font-size: 10px !important;
+              page-break-inside: avoid !important;
+            }
+            
+            /* First column (date) align left */
+            td:first-child {
+              text-align: left !important;
+            }
+            
+            /* Avoid breaking rows across pages */
+            tr {
+              page-break-inside: avoid !important;
+            }
+            
+            /* Table body styling */
+            tbody {
+              display: table-row-group !important;
+            }
+            
+            /* Zebra striping for better readability */
+            tbody tr:nth-child(even) {
+              background-color: #f9f9f9 !important;
+            }
+            
+            /* Force page break every 20 rows to ensure content fits */
+            tbody tr:nth-child(20n) {
+              page-break-after: always !important;
+            }
+            
+            /* Print summary styling */
+            .print-summary {
+              margin-top: 15px;
+              padding: 8px;
+              border: 1px solid black;
+              background-color: #f0f0f0;
+              page-break-inside: avoid !important;
+              font-size: 11px !important;
+            }
+            
+            .print-summary h3 {
+              margin: 0 0 8px 0 !important;
+              font-size: 14px !important;
+              font-weight: bold !important;
+            }
+            
+            .print-summary p {
+              margin: 3px 0 !important;
+              font-size: 11px !important;
+            }
+            
+            /* Ensure proper page breaks */
+            .page-break-before {
+              page-break-before: always !important;
+            }
+            
+            .page-break-after {
+              page-break-after: always !important;
+            }
+            
+            /* Avoid orphaned headers */
+            .print-header-section {
+              page-break-after: avoid !important;
+            }
+          }
+          
+          .print-only {
+            display: none;
+          }
+        `}
+      </style>
+      
+      <PageWrapper title="Over Draft Management">
+        <div className="space-y-6">
+          {/* Print Header - Only visible when printing */}
+          <div className="print-only print-header-section">
+            <h1 className="print-title">Over Draft Records</h1>
+            <p className="print-date">
+              Period: {format(new Date(printDateRange.startDate), 'dd/MM/yyyy')} to {format(new Date(printDateRange.endDate), 'dd/MM/yyyy')} | Generated on: {format(new Date(), 'dd/MM/yyyy HH:mm')}
+            </p>
+          </div>
+
+          {/* Print Date Range and Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 no-print">
+            <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-end">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label htmlFor="print-start-date" className="text-sm">From Date</Label>
+                  <Input
+                    id="print-start-date"
+                    type="date"
+                    value={printDateRange.startDate}
+                    onChange={(e) => setPrintDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+                    className="w-36"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="print-end-date" className="text-sm">To Date</Label>
+                  <Input
+                    id="print-end-date"
+                    type="date"
+                    value={printDateRange.endDate}
+                    onChange={(e) => setPrintDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+                    className="w-36"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={handlePrint} variant="outline">
+                  <Printer size={16} className="mr-2" />
+                  Print ({filteredRecordsForPrint.length} records)
+                </Button>
+                <Button onClick={handleDownload} variant="outline">
+                  <Download size={16} className="mr-2" />
+                  Download CSV
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
 
         {/* Form */}
         <Card className="no-print">
@@ -329,7 +564,8 @@ const OD = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {records.map((record) => (
+                    {/* Show filtered records for print, all records for screen */}
+                    {(typeof window !== 'undefined' && window.matchMedia && window.matchMedia('print').matches ? filteredRecordsForPrint : records).map((record) => (
                       <TableRow key={record.id}>
                         <TableCell>{format(new Date(record.date), 'dd/MM/yyyy')}</TableCell>
                         <TableCell>₹{record.od_from_bank.toFixed(2)}</TableCell>
@@ -367,8 +603,21 @@ const OD = () => {
                   </TableBody>
                 </Table>
               </div>
+              
+              {/* Print Summary */}
+              <div className="print-only print-summary">
+                <h3 style={{ marginBottom: '10px', fontSize: '18px', fontWeight: 'bold' }}>Summary</h3>
+                <p>Total Records: {filteredRecordsForPrint.length}</p>
+                {filteredRecordsForPrint.length > 0 && (
+                  <>
+                    <p>Latest Cash in Hand: ₹{filteredRecordsForPrint[0]?.cash_in_hand.toFixed(2)}</p>
+                    <p>Total Amount Received: ₹{filteredRecordsForPrint.reduce((sum, record) => sum + record.amount_received, 0).toFixed(2)}</p>
+                    <p>Total Amount Distributed: ₹{filteredRecordsForPrint.reduce((sum, record) => sum + record.amount_distributed, 0).toFixed(2)}</p>
+                  </>
+                )}
+              </div>
             </CardContent>
-        </Card>
+          </Card>
       </div>
 
       {/* Delete Confirmation Dialog */}
@@ -392,6 +641,7 @@ const OD = () => {
         </AlertDialogContent>
       </AlertDialog>
     </PageWrapper>
+  </>
   );
 };
 
