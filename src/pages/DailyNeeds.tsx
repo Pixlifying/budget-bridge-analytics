@@ -20,19 +20,19 @@ import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
 interface DailyNeedItem {
   id: string;
   item_name: string;
-  quantity: number;
+  quantity?: number | null;
   unit: 'kg' | 'pieces' | 'litres';
-  price_per_unit: number;
-  total_price: number;
+  price_per_unit?: number | null;
+  total_price?: number | null;
   date: string;
   created_at: string;
 }
 
 interface NewItem {
   item_name: string;
-  quantity: number;
+  quantity?: number | null;
   unit: 'kg' | 'pieces' | 'litres';
-  price_per_unit: number;
+  price_per_unit?: number | null;
   date: Date;
 }
 
@@ -47,9 +47,9 @@ const DailyNeeds = () => {
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [newItem, setNewItem] = useState<NewItem>({
     item_name: '',
-    quantity: 0,
+    quantity: null,
     unit: 'kg',
-    price_per_unit: 0,
+    price_per_unit: null,
     date: new Date(),
   });
 
@@ -90,9 +90,9 @@ const DailyNeeds = () => {
       queryClient.invalidateQueries({ queryKey: ['daily_needs'] });
       setNewItem({
         item_name: '',
-        quantity: 0,
+        quantity: null,
         unit: 'kg',
-        price_per_unit: 0,
+        price_per_unit: null,
         date: new Date(),
       });
       toast({
@@ -112,6 +112,10 @@ const DailyNeeds = () => {
   // Update item mutation
   const updateItemMutation = useMutation({
     mutationFn: async (item: DailyNeedItem) => {
+      const quantity = item.quantity || 0;
+      const pricePerUnit = item.price_per_unit || 0;
+      const totalPrice = quantity * pricePerUnit;
+      
       const { data, error } = await supabase
         .from('daily_needs')
         .update({
@@ -119,7 +123,7 @@ const DailyNeeds = () => {
           quantity: item.quantity,
           unit: item.unit,
           price_per_unit: item.price_per_unit,
-          total_price: item.quantity * item.price_per_unit,
+          total_price: totalPrice,
         })
         .eq('id', item.id)
         .select();
@@ -173,7 +177,7 @@ const DailyNeeds = () => {
 
   // Calculate summary statistics
   const summary = useMemo(() => {
-    const totalPrice = dailyNeeds.reduce((sum, item) => sum + item.total_price, 0);
+    const totalPrice = dailyNeeds.reduce((sum, item) => sum + (item.total_price || 0), 0);
     const itemCount = dailyNeeds.length;
     const averagePrice = itemCount > 0 ? totalPrice / itemCount : 0;
     
@@ -205,10 +209,10 @@ const DailyNeeds = () => {
   };
 
   const handleEditSave = () => {
-    if (!editItem || !editItem.item_name || editItem.quantity <= 0 || editItem.price_per_unit <= 0) {
+    if (!editItem || !editItem.item_name.trim()) {
       toast({
         title: "Validation Error",
-        description: "Please fill in all fields with valid values.",
+        description: "Please enter an item name.",
         variant: "destructive",
       });
       return;
@@ -236,10 +240,10 @@ const DailyNeeds = () => {
   };
 
   const handleAddItem = () => {
-    if (!newItem.item_name || newItem.quantity <= 0 || newItem.price_per_unit <= 0) {
+    if (!newItem.item_name.trim()) {
       toast({
         title: "Validation Error",
-        description: "Please fill in all fields with valid values.",
+        description: "Please enter an item name.",
         variant: "destructive",
       });
       return;
@@ -255,10 +259,10 @@ const DailyNeeds = () => {
     const exportData = dailyNeeds.map((item, index) => ({
       'S.No': index + 1,
       'Item Name': item.item_name,
-      'Quantity': item.quantity,
+      'Quantity': item.quantity || '-',
       'Unit': item.unit,
-      'Price per Unit': item.price_per_unit,
-      'Total Price': item.total_price,
+      'Price per Unit': item.price_per_unit || '-',
+      'Total Price': item.total_price || '-',
       'Date': format(new Date(item.date), 'dd MMM yyyy'),
     }));
 
@@ -303,8 +307,8 @@ const DailyNeeds = () => {
                   <td>${item['Item Name']}</td>
                   <td>${item.Quantity}</td>
                   <td>${item.Unit}</td>
-                  <td>₹${item['Price per Unit']}</td>
-                  <td>₹${item['Total Price']}</td>
+                  <td>${typeof item['Price per Unit'] === 'number' ? `₹${item['Price per Unit']}` : item['Price per Unit']}</td>
+                  <td>${typeof item['Total Price'] === 'number' ? `₹${item['Total Price']}` : item['Total Price']}</td>
                   <td>${item.Date}</td>
                 </tr>
               `).join('')}
@@ -401,8 +405,11 @@ const DailyNeeds = () => {
                 min="0"
                 step="0.01"
                 value={newItem.quantity || ''}
-                onChange={(e) => setNewItem(prev => ({ ...prev, quantity: parseFloat(e.target.value) || 0 }))}
-                placeholder="0"
+                onChange={(e) => setNewItem(prev => ({ 
+                  ...prev, 
+                  quantity: e.target.value === '' ? null : parseFloat(e.target.value) || null 
+                }))}
+                placeholder="Optional"
               />
             </div>
             <div>
@@ -431,15 +438,18 @@ const DailyNeeds = () => {
                 min="0"
                 step="0.01"
                 value={newItem.price_per_unit || ''}
-                onChange={(e) => setNewItem(prev => ({ ...prev, price_per_unit: parseFloat(e.target.value) || 0 }))}
-                placeholder="0"
+                onChange={(e) => setNewItem(prev => ({ 
+                  ...prev, 
+                  price_per_unit: e.target.value === '' ? null : parseFloat(e.target.value) || null 
+                }))}
+                placeholder="Optional"
               />
             </div>
             <div>
               <Label htmlFor="total">Total (₹)</Label>
               <Input
                 id="total"
-                value={formatCurrency(newItem.quantity * newItem.price_per_unit)}
+                value={formatCurrency((newItem.quantity || 0) * (newItem.price_per_unit || 0))}
                 readOnly
                 className="bg-muted"
               />
@@ -500,17 +510,20 @@ const DailyNeeds = () => {
                       </td>
                       <td className="p-3">
                         {editingId === item.id ? (
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={editItem?.quantity || ''}
-                            onChange={(e) => setEditItem(prev => prev ? { ...prev, quantity: parseFloat(e.target.value) || 0 } : null)}
-                            className="h-8 w-20"
-                          />
-                        ) : (
-                          item.quantity
-                        )}
+                           <Input
+                             type="number"
+                             min="0"
+                             step="0.01"
+                             value={editItem?.quantity || ''}
+                             onChange={(e) => setEditItem(prev => prev ? { 
+                               ...prev, 
+                               quantity: e.target.value === '' ? null : parseFloat(e.target.value) || null 
+                             } : null)}
+                             className="h-8 w-20"
+                           />
+                         ) : (
+                           item.quantity || '-'
+                         )}
                       </td>
                       <td className="p-3 capitalize">
                         {editingId === item.id ? (
@@ -535,24 +548,27 @@ const DailyNeeds = () => {
                       </td>
                       <td className="p-3">
                         {editingId === item.id ? (
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={editItem?.price_per_unit || ''}
-                            onChange={(e) => setEditItem(prev => prev ? { ...prev, price_per_unit: parseFloat(e.target.value) || 0 } : null)}
-                            className="h-8 w-24"
-                          />
-                        ) : (
-                          formatCurrency(item.price_per_unit)
-                        )}
+                           <Input
+                             type="number"
+                             min="0"
+                             step="0.01"
+                             value={editItem?.price_per_unit || ''}
+                             onChange={(e) => setEditItem(prev => prev ? { 
+                               ...prev, 
+                               price_per_unit: e.target.value === '' ? null : parseFloat(e.target.value) || null 
+                             } : null)}
+                             className="h-8 w-24"
+                           />
+                         ) : (
+                           item.price_per_unit ? formatCurrency(item.price_per_unit) : '-'
+                         )}
                       </td>
-                      <td className="p-3 font-medium">
-                        {editingId === item.id ? 
-                          formatCurrency((editItem?.quantity || 0) * (editItem?.price_per_unit || 0)) : 
-                          formatCurrency(item.total_price)
-                        }
-                      </td>
+                       <td className="p-3 font-medium">
+                         {editingId === item.id ? 
+                           formatCurrency((editItem?.quantity || 0) * (editItem?.price_per_unit || 0)) : 
+                           item.total_price ? formatCurrency(item.total_price) : '-'
+                         }
+                       </td>
                       <td className="p-3">{format(new Date(item.date), 'dd MMM yyyy')}</td>
                       <td className="p-3">
                         <div className="flex gap-1">
