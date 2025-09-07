@@ -4,6 +4,7 @@ import { Building, Plus, Edit, Trash2, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency, formatDate, filterByDate, filterByMonth } from '@/utils/calculateUtils';
+import { escapeHtml } from '@/lib/sanitize';
 import PageWrapper from '@/components/layout/PageWrapper';
 import { Button } from '@/components/ui/button';
 import ServiceCard from '@/components/ui/ServiceCard';
@@ -255,12 +256,12 @@ const BankingAccounts = () => {
             <tbody>
               ${filteredAccounts.map((account) => `
                 <tr>
-                  <td>${format(account.date, 'dd/MM/yyyy')}</td>
-                  <td>${account.customer_name}</td>
-                  <td>${account.account_type}</td>
-                  <td>₹${account.amount.toFixed(2)}</td>
-                  <td>${account.account_number || '-'}</td>
-                  <td>${account.insurance_type || '-'}</td>
+                  <td>${escapeHtml(format(account.date, 'dd/MM/yyyy'))}</td>
+                  <td>${escapeHtml(account.customer_name)}</td>
+                  <td>${escapeHtml(account.account_type)}</td>
+                  <td>₹${escapeHtml(account.amount.toFixed(2))}</td>
+                  <td>${escapeHtml(account.account_number || '-')}</td>
+                  <td>${escapeHtml(account.insurance_type || '-')}</td>
                 </tr>
               `).join('')}
             </tbody>

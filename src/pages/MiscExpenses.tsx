@@ -12,6 +12,7 @@ import PageWrapper from '@/components/layout/PageWrapper';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
 import { filterByDate, filterByMonth, formatCurrency } from '@/utils/calculateUtils';
+import { escapeHtml } from '@/lib/sanitize';
 
 interface MiscExpense {
   id: string;
@@ -201,9 +202,9 @@ const MiscExpenses = () => {
               ${filteredExpenses.map((expense, index) => `
                 <tr>
                   <td>${index + 1}</td>
-                  <td>${format(expense.date, 'dd/MM/yyyy')}</td>
-                  <td>${expense.name}</td>
-                  <td>₹${expense.fee.toFixed(2)}</td>
+                  <td>${escapeHtml(format(expense.date, 'dd/MM/yyyy'))}</td>
+                  <td>${escapeHtml(expense.name)}</td>
+                  <td>₹${escapeHtml(expense.fee.toFixed(2))}</td>
                 </tr>
               `).join('')}
             </tbody>

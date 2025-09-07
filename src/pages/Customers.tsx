@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { escapeHtml } from '@/lib/sanitize';
 import PageWrapper from '@/components/layout/PageWrapper';
 import CustomerCard from '@/components/customers/CustomerCard';
 import CustomerForm from '@/components/customers/CustomerForm';
@@ -164,11 +165,11 @@ const Customers = () => {
           </div>
           ${customersToPrint.map(customer => `
             <div class="customer">
-              <div class="customer-name">${customer.name}</div>
-              <div class="customer-detail"><strong>Phone:</strong> ${customer.phone}</div>
-              <div class="customer-detail"><strong>Address:</strong> ${customer.address}</div>
-              ${customer.description ? `<div class="customer-detail"><strong>Description:</strong> ${customer.description}</div>` : ''}
-              <div class="customer-detail"><strong>Added on:</strong> ${format(new Date(customer.created_at), 'dd MMM yyyy')}</div>
+              <div class="customer-name">${escapeHtml(customer.name)}</div>
+              <div class="customer-detail"><strong>Phone:</strong> ${escapeHtml(customer.phone)}</div>
+              <div class="customer-detail"><strong>Address:</strong> ${escapeHtml(customer.address)}</div>
+              ${customer.description ? `<div class="customer-detail"><strong>Description:</strong> ${escapeHtml(customer.description)}</div>` : ''}
+              <div class="customer-detail"><strong>Added on:</strong> ${escapeHtml(format(new Date(customer.created_at), 'dd MMM yyyy'))}</div>
             </div>
           `).join('')}
         </body>

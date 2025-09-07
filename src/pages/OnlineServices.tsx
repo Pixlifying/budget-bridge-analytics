@@ -23,6 +23,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { formatCurrency, filterByDate, filterByMonth } from '@/utils/calculateUtils';
+import { escapeHtml } from '@/lib/sanitize';
 import { format, startOfDay, endOfDay } from 'date-fns';
 
 interface OnlineServiceEntry {
@@ -305,12 +306,12 @@ const OnlineServices = () => {
             <tbody>
               ${filteredServices.map((service) => `
                 <tr>
-                  <td>${format(service.date, 'dd/MM/yyyy')}</td>
-                  <td>${service.customer_name}</td>
-                  <td>${service.service === 'Other' && service.custom_service ? service.custom_service : service.service}</td>
-                  <td>₹${service.amount.toFixed(2)}</td>
-                  <td>${service.count}</td>
-                  <td>₹${service.total.toFixed(2)}</td>
+                  <td>${escapeHtml(format(service.date, 'dd/MM/yyyy'))}</td>
+                  <td>${escapeHtml(service.customer_name)}</td>
+                  <td>${escapeHtml(service.service === 'Other' && service.custom_service ? service.custom_service : service.service)}</td>
+                  <td>₹${escapeHtml(service.amount.toFixed(2))}</td>
+                  <td>${escapeHtml(service.count.toString())}</td>
+                  <td>₹${escapeHtml(service.total.toFixed(2))}</td>
                 </tr>
               `).join('')}
             </tbody>

@@ -1,6 +1,7 @@
 
 import React, { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { escapeHtml } from "@/lib/sanitize";
 import { Upload, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +31,13 @@ const TemplateUploader = ({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
+      // Validate file size (max 10MB)
+      if (selectedFile.size > 10 * 1024 * 1024) {
+        setFile(null);
+        setError("File size must be less than 10MB");
+        return;
+      }
+
       // Check if file is a word document or text file
       if (
         selectedFile.type === "application/msword" || 
@@ -42,7 +50,7 @@ const TemplateUploader = ({
         
         // Set default template name from filename
         if (!templateName) {
-          const fileName = selectedFile.name.split('.')[0];
+          const fileName = escapeHtml(selectedFile.name.split('.')[0]);
           setTemplateName(fileName);
         }
 
@@ -74,10 +82,10 @@ const TemplateUploader = ({
     
     try {
       // 1. Upload file to storage
-      const fileName = `${Date.now()}-${file.name}`;
+      const sanitizedFileName = `${Date.now()}-${escapeHtml(file.name)}`;
       const { data: fileData, error: fileError } = await supabase.storage
         .from("templates")
-        .upload(fileName, file);
+        .upload(sanitizedFileName, file);
         
       if (fileError) throw fileError;
       
@@ -98,7 +106,7 @@ const TemplateUploader = ({
           name: templateName,
           content: content,
           placeholders: [],
-          file_path: fileName
+          file_path: sanitizedFileName
         }])
         .select();
         

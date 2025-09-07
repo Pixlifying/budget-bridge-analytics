@@ -15,6 +15,7 @@ import {
   filterByMonth,
   formatCurrency
 } from '@/utils/calculateUtils';
+import { escapeHtml } from '@/lib/sanitize';
 import { format } from 'date-fns';
 
 interface ExpenseEntry {
@@ -250,10 +251,10 @@ const Expenses = () => {
               ${filteredExpenses.map((expense, index) => `
                 <tr>
                   <td>${index + 1}</td>
-                  <td>${format(expense.date, 'dd/MM/yyyy')}</td>
-                  <td>${expense.name}</td>
-                  <td>₹${expense.amount.toFixed(2)}</td>
-                  <td>${expense.type}</td>
+                  <td>${escapeHtml(format(expense.date, 'dd/MM/yyyy'))}</td>
+                  <td>${escapeHtml(expense.name)}</td>
+                  <td>₹${escapeHtml(expense.amount.toFixed(2))}</td>
+                  <td>${escapeHtml(expense.type)}</td>
                 </tr>
               `).join('')}
             </tbody>

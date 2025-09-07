@@ -24,6 +24,7 @@ import {
 import { Label } from '@/components/ui/label';
 import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
 import { exportToExcel } from '@/utils/calculateUtils';
+import { escapeHtml } from '@/lib/sanitize';
 
 interface AccountDetail {
   id: string;
@@ -319,11 +320,11 @@ const AccountDetails = () => {
               ${filteredAccountDetails.map((account, index) => `
                 <tr>
                   <td>${index + 1}</td>
-                  <td>${account.name}</td>
-                  <td>${account.account_number}</td>
-                  <td>${formatAadhar(account.aadhar_number)}</td>
-                  <td>${account.address || '-'}</td>
-                  <td>${account.mobile_number || '-'}</td>
+                  <td>${escapeHtml(account.name)}</td>
+                  <td>${escapeHtml(account.account_number)}</td>
+                  <td>${escapeHtml(formatAadhar(account.aadhar_number))}</td>
+                  <td>${escapeHtml(account.address || '-')}</td>
+                  <td>${escapeHtml(account.mobile_number || '-')}</td>
                 </tr>
               `).join('')}
             </tbody>

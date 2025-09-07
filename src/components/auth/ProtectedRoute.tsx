@@ -15,7 +15,15 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
+    // Listen for auth changes first to avoid race conditions
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setIsLoading(false);
+      }
+    );
+
+    // Get initial session after setting up listener
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
@@ -23,14 +31,6 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     };
 
     getSession();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setIsLoading(false);
-      }
-    );
 
     return () => subscription.unsubscribe();
   }, []);

@@ -17,6 +17,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { formatCurrency, filterByDate, filterByMonth } from '@/utils/calculateUtils';
+import { escapeHtml } from '@/lib/sanitize';
 import { format } from 'date-fns';
 
 interface ApplicationEntry {
@@ -250,10 +251,10 @@ const Applications = () => {
             <tbody>
               ${filteredApplications.map((application) => `
                 <tr>
-                  <td>${format(application.date, 'dd/MM/yyyy')}</td>
-                  <td>${application.customer_name}</td>
-                  <td>${application.pages_count}</td>
-                  <td>₹${application.amount.toFixed(2)}</td>
+                  <td>${escapeHtml(format(application.date, 'dd/MM/yyyy'))}</td>
+                  <td>${escapeHtml(application.customer_name)}</td>
+                  <td>${escapeHtml(application.pages_count.toString())}</td>
+                  <td>₹${escapeHtml(application.amount.toFixed(2))}</td>
                 </tr>
               `).join('')}
             </tbody>

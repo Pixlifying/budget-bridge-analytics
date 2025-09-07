@@ -4,6 +4,7 @@ import { CreditCard, Plus, Edit, Trash2, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency, formatDate, filterByDate, filterByMonth, calculateBankingServicesMargin } from '@/utils/calculateUtils';
+import { escapeHtml } from '@/lib/sanitize';
 import PageWrapper from '@/components/layout/PageWrapper';
 import { Button } from '@/components/ui/button';
 import ServiceCard from '@/components/ui/ServiceCard';
@@ -233,10 +234,10 @@ const BankingServices = () => {
             <tbody>
               ${filteredServices.map((service) => `
                 <tr>
-                  <td>${format(service.date, 'dd/MM/yyyy')}</td>
-                  <td>${service.transaction_count}</td>
-                  <td>₹${service.amount.toFixed(2)}</td>
-                  <td>₹${service.margin.toFixed(2)}</td>
+                  <td>${escapeHtml(format(service.date, 'dd/MM/yyyy'))}</td>
+                  <td>${escapeHtml(service.transaction_count.toString())}</td>
+                  <td>₹${escapeHtml(service.amount.toFixed(2))}</td>
+                  <td>₹${escapeHtml(service.margin.toFixed(2))}</td>
                 </tr>
               `).join('')}
             </tbody>
