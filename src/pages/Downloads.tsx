@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { exportToExcel, exportToPDF } from '@/utils/calculateUtils';
+import { escapeHtml } from '@/lib/sanitize';
 import PageWrapper from '@/components/layout/PageWrapper';
 
 const Downloads = () => {
@@ -104,7 +105,7 @@ const Downloads = () => {
         <!DOCTYPE html>
         <html>
           <head>
-            <title>${isAllPages ? 'All Pages Data Report' : `${Object.keys(dataToProcess)[0]} Report`}</title>
+            <title>${escapeHtml(isAllPages ? 'All Pages Data Report' : `${Object.keys(dataToProcess)[0]} Report`)}</title>
             <style>
               @page { 
                 size: A4; 
@@ -171,8 +172,8 @@ const Downloads = () => {
           </head>
           <body>
             <div class="report-header">
-              <h1>${isAllPages ? 'Complete Data Report' : `${Object.keys(dataToProcess)[0]} Report`}</h1>
-              <p>Generated on: ${format(new Date(), 'dd/MM/yyyy HH:mm:ss')}</p>
+              <h1>${escapeHtml(isAllPages ? 'Complete Data Report' : `${Object.keys(dataToProcess)[0]} Report`)}</h1>
+              <p>Generated on: ${escapeHtml(format(new Date(), 'dd/MM/yyyy HH:mm:ss'))}</p>
             </div>
       `;
 
@@ -189,7 +190,7 @@ const Downloads = () => {
         }
 
         printContent += `
-          <h2>${tableName}</h2>
+          <h2>${escapeHtml(tableName)}</h2>
           <div class="total">Total Records: ${recordsArray.length}</div>
         `;
 
@@ -203,7 +204,7 @@ const Downloads = () => {
               <thead>
                 <tr>
                   <th>S.No</th>
-                  ${headers.map(header => `<th>${header.replace(/_/g, ' ').toUpperCase()}</th>`).join('')}
+                  ${headers.map(header => `<th>${escapeHtml(header.replace(/_/g, ' ').toUpperCase())}</th>`).join('')}
                 </tr>
               </thead>
               <tbody>
@@ -222,7 +223,7 @@ const Downloads = () => {
                       // Keep original value if date parsing fails
                     }
                   }
-                  return `<td>${value || '-'}</td>`;
+                  return `<td>${escapeHtml(value || '-')}</td>`;
                 }).join('')}
               </tr>
             `;
@@ -244,7 +245,7 @@ const Downloads = () => {
             <h2>Summary</h2>
             <p><strong>Total Tables:</strong> ${tableCount}</p>
             <p><strong>Total Records:</strong> ${totalRecords}</p>
-            <p><strong>Report Generated:</strong> ${format(new Date(), 'dd/MM/yyyy HH:mm:ss')}</p>
+            <p><strong>Report Generated:</strong> ${escapeHtml(format(new Date(), 'dd/MM/yyyy HH:mm:ss'))}</p>
           </div>
         `;
       }

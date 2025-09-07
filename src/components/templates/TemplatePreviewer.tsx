@@ -15,6 +15,7 @@ import {
   Undo2,
   Redo2
 } from "lucide-react";
+import { sanitizeHtml, sanitizeTemplateContent, escapeHtml } from "@/lib/sanitize";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -108,22 +109,13 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
   
   // Function to replace placeholders with actual values
   const replaceContent = (content: string) => {
-    let result = content;
-    
-    template.placeholders.forEach(placeholder => {
-      const value = placeholderValues[placeholder.key] || `{{${placeholder.key}}}`;
-      // Replace placeholders with values while preserving styles
-      result = result.replace(
-        new RegExp(`\\{\\{${placeholder.key}\\}\\}`, 'g'), 
-        value
-      );
-    });
-    
-    return result;
+    return sanitizeTemplateContent(content, placeholderValues);
   };
 
-  // Extract final content
-  const previewContent = mode === "print" ? replaceContent(pages[currentPage] || '') : pages[currentPage] || '';
+  // Extract final content - sanitize for both modes
+  const previewContent = mode === "print" 
+    ? replaceContent(pages[currentPage] || '') 
+    : sanitizeHtml(pages[currentPage] || '');
 
   // Save cursor position before any updates
   const saveEditorSelection = () => {
@@ -407,7 +399,7 @@ const TemplatePreviewer: React.FC<TemplatePreviewerProps> = ({
       if (pageContent.trim()) {
         printContent += '<div class="page-container">';
         printContent += '<div class="page-content">';
-        // Replace placeholders with actual values
+        // Replace placeholders with actual values and sanitize
         printContent += replaceContent(pageContent);
         printContent += '</div></div>';
       }

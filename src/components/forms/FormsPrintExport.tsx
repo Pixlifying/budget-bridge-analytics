@@ -3,6 +3,7 @@ import { Printer, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { exportToPDF } from '@/utils/calculateUtils';
 import { format } from 'date-fns';
+import { escapeHtml } from '@/lib/sanitize';
 import { toast } from "sonner";
 
 interface FormEntry {
@@ -33,7 +34,7 @@ const FormsPrintExport = ({ filteredForms, selectedDepartment }: FormsPrintExpor
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Forms Report - ${selectedDepartment === 'all' ? 'All Departments' : selectedDepartment}</title>
+          <title>${escapeHtml(`Forms Report - ${selectedDepartment === 'all' ? 'All Departments' : selectedDepartment}`)}</title>
           <style>
             @page { 
               size: A4; 
@@ -60,7 +61,7 @@ const FormsPrintExport = ({ filteredForms, selectedDepartment }: FormsPrintExpor
         </head>
         <body>
           <h1>Forms Report</h1>
-          <div class="department">Department: ${selectedDepartment === 'all' ? 'All Departments' : selectedDepartment}</div>
+          <div class="department">Department: ${escapeHtml(selectedDepartment === 'all' ? 'All Departments' : selectedDepartment)}</div>
           <div class="total">Total Entries: ${filteredForms.length}</div>
           <table>
             <thead>
@@ -79,13 +80,13 @@ const FormsPrintExport = ({ filteredForms, selectedDepartment }: FormsPrintExpor
               ${filteredForms.map((form, index) => `
                 <tr>
                   <td>${index + 1}</td>
-                  <td>${format(new Date(form.date), 'dd/MM/yyyy')}</td>
-                  <td>${form.name}</td>
-                  <td>${form.parentage}</td>
-                  <td>${form.address}</td>
-                  <td>${form.mobile}</td>
-                  <td>${form.department}</td>
-                  <td>${form.remarks || '-'}</td>
+                  <td>${escapeHtml(format(new Date(form.date), 'dd/MM/yyyy'))}</td>
+                  <td>${escapeHtml(form.name)}</td>
+                  <td>${escapeHtml(form.parentage)}</td>
+                  <td>${escapeHtml(form.address)}</td>
+                  <td>${escapeHtml(form.mobile)}</td>
+                  <td>${escapeHtml(form.department)}</td>
+                  <td>${escapeHtml(form.remarks || '-')}</td>
                 </tr>
               `).join('')}
             </tbody>
