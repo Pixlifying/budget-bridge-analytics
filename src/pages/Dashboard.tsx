@@ -23,6 +23,7 @@ import StatCard from '@/components/ui/StatCard';
 import DoughnutChart from '@/components/ui/DoughnutChart';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import NotificationBox from '@/components/ui/NotificationBox';
+import ReminderCalendar from '@/components/ui/ReminderCalendar';
 import {
   formatCurrency,
   getTotalMargin,
@@ -474,9 +475,10 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Notification Box */}
-          <div className="flex-shrink-0">
+          {/* Notification Box and Calendar */}
+          <div className="flex-shrink-0 space-y-6">
             <NotificationBox />
+            <ReminderCalendar />
           </div>
         </div>
       </div>
