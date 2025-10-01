@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { BarChart3, TrendingUp, PieChart, Activity, DollarSign, CreditCard } from 'lucide-react';
 import PageWrapper from '@/components/layout/PageWrapper';
 import DateRangePicker from '@/components/ui/DateRangePicker';
@@ -9,7 +9,7 @@ import {
   filterByMonth,
   formatCurrency
 } from '@/utils/calculateUtils';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   ChartContainer,
   ChartTooltip,
@@ -21,14 +21,16 @@ import {
   XAxis, 
   YAxis, 
   ResponsiveContainer, 
-  AreaChart, 
-  Area, 
   BarChart, 
   Bar, 
   PieChart as RechartsPieChart, 
   Pie,
   Cell,
-  ComposedChart
+  ComposedChart,
+  RadialBarChart,
+  RadialBar,
+  PolarGrid,
+  Label
 } from 'recharts';
 import { format } from 'date-fns';
 
@@ -470,35 +472,69 @@ const Analytics = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Revenue Breakdown Pie Chart */}
         {revenueBreakdownData.length > 0 && (
-          <Card className="animate-scale-in">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <PieChart size={20} />
-                Revenue Breakdown
-              </CardTitle>
+          <Card className="flex flex-col animate-scale-in">
+            <CardHeader className="items-center pb-0">
+              <CardTitle>Revenue Breakdown</CardTitle>
+              <CardDescription>{format(date, 'MMMM yyyy')}</CardDescription>
             </CardHeader>
-            <CardContent>
-              <ChartContainer config={chartConfig} className="h-80 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RechartsPieChart>
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Pie
-                      data={revenueBreakdownData}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={100}
-                      fill="#8884d8"
-                      dataKey="value"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    >
-                      {revenueBreakdownData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                  </RechartsPieChart>
-                </ResponsiveContainer>
+            <CardContent className="flex-1 pb-0">
+              <ChartContainer
+                config={chartConfig}
+                className="mx-auto aspect-square max-h-[300px]"
+              >
+                <RechartsPieChart>
+                  <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent hideLabel />}
+                  />
+                  <Pie
+                    data={revenueBreakdownData.map(item => ({ ...item, visitors: item.value }))}
+                    dataKey="visitors"
+                    nameKey="name"
+                    innerRadius={60}
+                    strokeWidth={5}
+                  >
+                    {revenueBreakdownData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                    <Label
+                      content={({ viewBox }) => {
+                        if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                          return (
+                            <text
+                              x={viewBox.cx}
+                              y={viewBox.cy}
+                              textAnchor="middle"
+                              dominantBaseline="middle"
+                            >
+                              <tspan
+                                x={viewBox.cx}
+                                y={viewBox.cy}
+                                className="fill-foreground text-3xl font-bold"
+                              >
+                                {formatCurrency(totalRevenue)}
+                              </tspan>
+                              <tspan
+                                x={viewBox.cx}
+                                y={(viewBox.cy || 0) + 24}
+                                className="fill-muted-foreground"
+                              >
+                                Total Revenue
+                              </tspan>
+                            </text>
+                          )
+                        }
+                      }}
+                    />
+                  </Pie>
+                </RechartsPieChart>
               </ChartContainer>
             </CardContent>
+            <CardFooter className="flex-col gap-2 text-sm">
+              <div className="flex items-center gap-2 leading-none font-medium">
+                Total revenue across all services <TrendingUp className="h-4 w-4" />
+              </div>
+            </CardFooter>
           </Card>
         )}
 
@@ -539,89 +575,86 @@ const Analytics = () => {
 
       {/* Service Performance Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Service Revenue Comparison */}
-        <Card className="animate-fade-in">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 size={20} />
-              Service Revenue Comparison
-            </CardTitle>
+        {/* Service Revenue Comparison - Radial Chart */}
+        <Card className="flex flex-col animate-fade-in">
+          <CardHeader className="items-center pb-0">
+            <CardTitle>Service Revenue Comparison</CardTitle>
+            <CardDescription>{format(date, 'MMMM yyyy')}</CardDescription>
           </CardHeader>
-          <CardContent>
-            <ChartContainer config={chartConfig} className="h-80 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={serviceBreakdownData}>
-                  <XAxis 
-                    dataKey="service" 
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                    angle={-45}
-                    textAnchor="end"
-                    height={60}
-                  />
-                  <YAxis 
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                  />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="revenue" fill="#8b5cf6" name="Revenue" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+          <CardContent className="flex-1 pb-0">
+            <ChartContainer
+              config={chartConfig}
+              className="mx-auto aspect-square max-h-[300px]"
+            >
+              <RadialBarChart 
+                data={serviceBreakdownData.map((item, index) => ({ 
+                  ...item, 
+                  visitors: item.revenue,
+                  fill: COLORS[index % COLORS.length]
+                }))} 
+                innerRadius={30} 
+                outerRadius={110}
+              >
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent hideLabel nameKey="service" />}
+                />
+                <PolarGrid gridType="circle" />
+                <RadialBar dataKey="visitors" />
+              </RadialBarChart>
             </ChartContainer>
           </CardContent>
+          <CardFooter className="flex-col gap-2 text-sm">
+            <div className="flex items-center gap-2 leading-none font-medium">
+              Service performance comparison <Activity className="h-4 w-4" />
+            </div>
+          </CardFooter>
         </Card>
 
-        {/* OD Flow Analytics */}
+        {/* OD Flow Analytics - Stacked Bar Chart */}
         {odTrendData.length > 0 && (
           <Card className="animate-scale-in">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp size={20} />
-                OD Flow Analytics
-              </CardTitle>
+              <CardTitle>OD Flow Analytics</CardTitle>
+              <CardDescription>Amount received vs given over time</CardDescription>
             </CardHeader>
             <CardContent>
-              <ChartContainer config={chartConfig} className="h-80 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={odTrendData}>
-                    <XAxis 
-                      dataKey="date" 
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={12}
-                    />
-                    <YAxis 
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={12}
-                    />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <defs>
-                      <linearGradient id="receivedGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0.2}/>
-                      </linearGradient>
-                      <linearGradient id="givenGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0.2}/>
-                      </linearGradient>
-                    </defs>
-                    <Area
-                      type="monotone"
-                      dataKey="received"
-                      stroke="#10b981"
-                      fillOpacity={1}
-                      fill="url(#receivedGradient)"
-                      strokeWidth={3}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="given"
-                      stroke="#ef4444"
-                      fillOpacity={1}
-                      fill="url(#givenGradient)"
-                      strokeWidth={3}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
+              <ChartContainer config={chartConfig} className="h-[300px] w-full">
+                <BarChart accessibilityLayer data={odTrendData}>
+                  <XAxis
+                    dataKey="date"
+                    tickLine={false}
+                    tickMargin={10}
+                    axisLine={false}
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                  />
+                  <Bar
+                    dataKey="received"
+                    stackId="a"
+                    fill="#10b981"
+                    radius={[0, 0, 4, 4]}
+                    name="Amount Received"
+                  />
+                  <Bar
+                    dataKey="given"
+                    stackId="a"
+                    fill="#ef4444"
+                    radius={[4, 4, 0, 0]}
+                    name="Amount Given"
+                  />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        labelFormatter={(value) => {
+                          return format(new Date(value), 'dd MMMM yyyy');
+                        }}
+                      />
+                    }
+                    cursor={false}
+                    defaultIndex={1}
+                  />
+                </BarChart>
               </ChartContainer>
             </CardContent>
           </Card>

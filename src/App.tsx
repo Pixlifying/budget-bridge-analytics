@@ -32,7 +32,6 @@ import { NotificationProvider } from "@/contexts/NotificationContext";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import OD from "@/pages/OD";
 import Forms from "@/pages/Forms";
-import DailyNeeds from "@/pages/DailyNeeds";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -67,7 +66,6 @@ const App = () => (
                     <Route path="/calculator" element={<Calculator />} />
                     <Route path="/age-calculator" element={<AgeCalculator />} />
                     <Route path="/forms" element={<Forms />} />
-                    <Route path="/daily-needs" element={<DailyNeeds />} />
                     <Route path="/downloads" element={<Downloads />} />
                     <Route path="/user-admin" element={<UserAdmin />} />
                     <Route path="/theme-settings" element={<ThemeSettings />} />
