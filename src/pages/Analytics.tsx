@@ -358,14 +358,14 @@ const Analytics = () => {
     { name: 'Applications', value: totalApplications, color: COLORS[4] }
   ].filter(item => item.value > 0);
 
-  // Service-wise breakdown data
+  // Service-wise margin breakdown data
   const serviceBreakdownData = [
-    { service: 'PAN Cards', revenue: totalPanMargin, count: filteredPanCards.length },
-    { service: 'Passports', revenue: totalPassportMargin, count: filteredPassports.length },
-    { service: 'Banking Services', revenue: totalBankingMargin, count: filteredBankingServices.length },
-    { service: 'Online Services', revenue: totalOnlineServices, count: filteredOnlineServices.length },
-    { service: 'Applications', revenue: totalApplications, count: filteredApplications.length }
-  ].filter(item => item.revenue > 0);
+    { service: 'PAN Cards', margin: totalPanMargin, count: filteredPanCards.length },
+    { service: 'Passports', margin: totalPassportMargin, count: filteredPassports.length },
+    { service: 'Banking Services', margin: totalBankingMargin, count: filteredBankingServices.length },
+    { service: 'Online Services', margin: totalOnlineServices, count: filteredOnlineServices.length },
+    { service: 'Applications', margin: totalApplications, count: filteredApplications.length }
+  ].filter(item => item.margin > 0);
 
   // Monthly comparison data
   const monthlyTrendData = [];
@@ -575,10 +575,10 @@ const Analytics = () => {
 
       {/* Service Performance Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Service Revenue Comparison - Radial Chart */}
+        {/* Service Margin Breakdown - Radial Chart */}
         <Card className="flex flex-col animate-fade-in">
           <CardHeader className="items-center pb-0">
-            <CardTitle>Service Revenue Comparison</CardTitle>
+            <CardTitle>Service Margin Breakdown</CardTitle>
             <CardDescription>{format(date, 'MMMM yyyy')}</CardDescription>
           </CardHeader>
           <CardContent className="flex-1 pb-0">
@@ -589,7 +589,7 @@ const Analytics = () => {
               <RadialBarChart 
                 data={serviceBreakdownData.map((item, index) => ({ 
                   ...item, 
-                  visitors: item.revenue,
+                  visitors: item.margin,
                   fill: COLORS[index % COLORS.length]
                 }))} 
                 innerRadius={30} 
@@ -606,7 +606,7 @@ const Analytics = () => {
           </CardContent>
           <CardFooter className="flex-col gap-2 text-sm">
             <div className="flex items-center gap-2 leading-none font-medium">
-              Service performance comparison <Activity className="h-4 w-4" />
+              Margin comparison by service type <Activity className="h-4 w-4" />
             </div>
           </CardFooter>
         </Card>

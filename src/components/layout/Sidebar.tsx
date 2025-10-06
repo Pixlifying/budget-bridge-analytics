@@ -235,8 +235,8 @@ const Sidebar = () => {
     },
     {
       icon: <FileText size={isCollapsed ? 20 : 16} />,
-      label: 'Daily Needs',
-      to: '/daily-needs',
+      label: 'Milk',
+      to: '/milk',
     },
   ];
 

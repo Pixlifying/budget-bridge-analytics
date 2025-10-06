@@ -452,6 +452,39 @@ export type Database = {
         }
         Relationships: []
       }
+      milk_records: {
+        Row: {
+          amount_per_litre: number
+          created_at: string | null
+          date: string
+          id: string
+          milk_amount: number
+          received: boolean
+          total: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount_per_litre: number
+          created_at?: string | null
+          date?: string
+          id?: string
+          milk_amount: number
+          received?: boolean
+          total?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount_per_litre?: number
+          created_at?: string | null
+          date?: string
+          id?: string
+          milk_amount?: number
+          received?: boolean
+          total?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       misc_expenses: {
         Row: {
           created_at: string | null
