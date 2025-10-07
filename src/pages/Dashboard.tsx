@@ -24,6 +24,7 @@ import DoughnutChart from '@/components/ui/DoughnutChart';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import NotificationBox from '@/components/ui/NotificationBox';
 import ReminderCalendar from '@/components/ui/ReminderCalendar';
+import DigitalClock from '@/components/ui/DigitalClock';
 import {
   formatCurrency,
   getTotalMargin,
@@ -477,6 +478,7 @@ const Dashboard = () => {
 
           {/* Notification Box and Calendar */}
           <div className="flex-shrink-0 space-y-6">
+            <DigitalClock />
             <NotificationBox />
             <ReminderCalendar />
           </div>
