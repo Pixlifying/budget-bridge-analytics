@@ -40,6 +40,7 @@ interface ODRecord {
   amount_received: number;
   amount_given: number;
   cash_in_hand: number;
+  od_from_bank: number;
 }
 
 interface PanCardEntry {
@@ -102,6 +103,10 @@ const chartConfig = {
   cash_in_hand: {
     label: "Cash in Hand",
     color: "#3b82f6",
+  },
+  od_from_bank: {
+    label: "OD from Bank",
+    color: "#f59e0b",
   },
   revenue: {
     label: "Revenue",
@@ -225,7 +230,8 @@ const Analytics = () => {
         date: new Date(entry.date),
         amount_received: Number(entry.amount_received),
         amount_given: Number(entry.amount_given),
-        cash_in_hand: Number(entry.cash_in_hand)
+        cash_in_hand: Number(entry.cash_in_hand),
+        od_from_bank: Number(entry.od_from_bank)
       }));
       
       // Format Pan Cards
@@ -346,6 +352,7 @@ const Analytics = () => {
       received: record.amount_received,
       given: record.amount_given,
       cash_in_hand: record.cash_in_hand,
+      od_from_bank: record.od_from_bank,
       index
     }));
 
@@ -616,7 +623,7 @@ const Analytics = () => {
           <Card className="animate-scale-in">
             <CardHeader>
               <CardTitle>OD Flow Analytics</CardTitle>
-              <CardDescription>Amount received vs given over time</CardDescription>
+              <CardDescription>Amount flow including bank OD over time</CardDescription>
             </CardHeader>
             <CardContent>
               <ChartContainer config={chartConfig} className="h-[300px] w-full">
@@ -630,10 +637,17 @@ const Analytics = () => {
                     fontSize={12}
                   />
                   <Bar
+                    dataKey="od_from_bank"
+                    stackId="a"
+                    fill="#f59e0b"
+                    radius={[0, 0, 0, 0]}
+                    name="OD from Bank"
+                  />
+                  <Bar
                     dataKey="received"
                     stackId="a"
                     fill="#10b981"
-                    radius={[0, 0, 4, 4]}
+                    radius={[0, 0, 0, 0]}
                     name="Amount Received"
                   />
                   <Bar

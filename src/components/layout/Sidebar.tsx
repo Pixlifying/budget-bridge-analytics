@@ -171,6 +171,11 @@ const Sidebar = () => {
       label: 'Print',
       to: '/downloads',
     },
+    {
+      icon: <FileText size={isCollapsed ? 20 : 16} />,
+      label: 'Milk',
+      to: '/milk',
+    },
   ];
 
   // Financial Services submenu items
@@ -232,11 +237,6 @@ const Sidebar = () => {
       icon: <FileText size={isCollapsed ? 20 : 16} />,
       label: 'Forms',
       to: '/forms',
-    },
-    {
-      icon: <FileText size={isCollapsed ? 20 : 16} />,
-      label: 'Milk',
-      to: '/milk',
     },
   ];
 
