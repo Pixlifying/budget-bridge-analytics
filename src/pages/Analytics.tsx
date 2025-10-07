@@ -94,55 +94,62 @@ interface ApplicationEntry {
 const chartConfig = {
   received: {
     label: "Amount Received",
-    color: "#10b981",
+    color: "hsl(var(--primary))",
   },
   given: {
     label: "Amount Given", 
-    color: "#ef4444",
+    color: "hsl(var(--destructive))",
   },
   cash_in_hand: {
     label: "Cash in Hand",
-    color: "#3b82f6",
+    color: "hsl(var(--accent))",
   },
   od_from_bank: {
     label: "OD from Bank",
-    color: "#f59e0b",
+    color: "hsl(var(--muted-foreground))",
   },
   revenue: {
     label: "Revenue",
-    color: "#8b5cf6",
+    color: "hsl(var(--primary))",
   },
   expenses: {
     label: "Expenses",
-    color: "#f59e0b",
+    color: "hsl(var(--destructive))",
   },
   margin: {
     label: "Margin",
-    color: "#06b6d4",
+    color: "hsl(var(--accent))",
   },
   panCards: {
     label: "PAN Cards",
-    color: "#8b5cf6",
+    color: "hsl(var(--primary))",
   },
   passports: {
     label: "Passports",
-    color: "#10b981",
+    color: "hsl(var(--sidebar-accent))",
   },
   bankingServices: {
     label: "Banking Services",
-    color: "#ef4444",
+    color: "hsl(var(--destructive))",
   },
   onlineServices: {
     label: "Online Services",
-    color: "#f59e0b",
+    color: "hsl(var(--muted-foreground))",
   },
   applications: {
     label: "Applications",
-    color: "#06b6d4",
+    color: "hsl(var(--accent))",
   },
 };
 
-const COLORS = ['#8b5cf6', '#10b981', '#ef4444', '#f59e0b', '#06b6d4', '#ec4899'];
+const COLORS = [
+  'hsl(var(--primary))',
+  'hsl(var(--sidebar-accent))',
+  'hsl(var(--destructive))',
+  'hsl(var(--muted-foreground))',
+  'hsl(var(--accent))',
+  'hsl(var(--secondary-foreground))'
+];
 
 const Analytics = () => {
   const [date, setDate] = useState<Date>(new Date());
@@ -639,21 +646,21 @@ const Analytics = () => {
                   <Bar
                     dataKey="od_from_bank"
                     stackId="a"
-                    fill="#f59e0b"
+                    fill="hsl(var(--muted-foreground))"
                     radius={[0, 0, 0, 0]}
                     name="OD from Bank"
                   />
                   <Bar
                     dataKey="received"
                     stackId="a"
-                    fill="#10b981"
+                    fill="hsl(var(--primary))"
                     radius={[0, 0, 0, 0]}
                     name="Amount Received"
                   />
                   <Bar
                     dataKey="given"
                     stackId="a"
-                    fill="#ef4444"
+                    fill="hsl(var(--destructive))"
                     radius={[4, 4, 0, 0]}
                     name="Amount Given"
                   />
@@ -698,18 +705,18 @@ const Analytics = () => {
                     fontSize={12}
                   />
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="panCards" stackId="services" fill="#8b5cf6" name="PAN Cards" />
-                  <Bar dataKey="passports" stackId="services" fill="#10b981" name="Passports" />
-                  <Bar dataKey="bankingServices" stackId="services" fill="#ef4444" name="Banking Services" />
-                  <Bar dataKey="onlineServices" stackId="services" fill="#f59e0b" name="Online Services" />
-                  <Bar dataKey="applications" stackId="services" fill="#06b6d4" name="Applications" />
+                  <Bar dataKey="panCards" stackId="services" fill="hsl(var(--primary))" name="PAN Cards" />
+                  <Bar dataKey="passports" stackId="services" fill="hsl(var(--sidebar-accent))" name="Passports" />
+                  <Bar dataKey="bankingServices" stackId="services" fill="hsl(var(--destructive))" name="Banking Services" />
+                  <Bar dataKey="onlineServices" stackId="services" fill="hsl(var(--muted-foreground))" name="Online Services" />
+                  <Bar dataKey="applications" stackId="services" fill="hsl(var(--accent))" name="Applications" />
                   <Line 
                     type="monotone" 
                     dataKey="expenses" 
-                    stroke="#ec4899" 
+                    stroke="hsl(var(--destructive))" 
                     strokeWidth={3}
                     name="Expenses"
-                    dot={{ fill: '#ec4899', strokeWidth: 2, r: 4 }}
+                    dot={{ fill: 'hsl(var(--destructive))', strokeWidth: 2, r: 4 }}
                   />
                 </ComposedChart>
               </ResponsiveContainer>
@@ -741,15 +748,15 @@ const Analytics = () => {
                     fontSize={12}
                   />
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="revenue" fill="#8b5cf6" name="Revenue" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="expenses" fill="#ef4444" name="Expenses" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="revenue" fill="hsl(var(--primary))" name="Revenue" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="expenses" fill="hsl(var(--destructive))" name="Expenses" radius={[4, 4, 0, 0]} />
                   <Line 
                     type="monotone" 
                     dataKey="revenue" 
-                    stroke="#10b981" 
+                    stroke="hsl(var(--sidebar-accent))" 
                     strokeWidth={3}
                     name="Revenue Trend"
-                    dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
+                    dot={{ fill: 'hsl(var(--sidebar-accent))', strokeWidth: 2, r: 4 }}
                   />
                 </ComposedChart>
               </ResponsiveContainer>
