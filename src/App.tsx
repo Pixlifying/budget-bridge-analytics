@@ -33,6 +33,7 @@ import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import OD from "@/pages/OD";
 import Forms from "@/pages/Forms";
 import Milk from "@/pages/Milk";
+import SocialSecurity from "@/pages/SocialSecurity";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -52,6 +53,7 @@ const App = () => (
                     <Route path="/banking-services" element={<BankingServices />} />
                     <Route path="/banking-accounts" element={<BankingAccounts />} />
                     <Route path="/od" element={<OD />} />
+                    <Route path="/social-security" element={<SocialSecurity />} />
                     <Route path="/online-services" element={<OnlineServices />} />
                     <Route path="/applications" element={<Applications />} />
                     <Route path="/photostat" element={<Photostat />} />

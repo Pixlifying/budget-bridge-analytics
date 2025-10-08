@@ -788,6 +788,42 @@ export type Database = {
         }
         Relationships: []
       }
+      social_security: {
+        Row: {
+          account_number: string
+          address: string | null
+          created_at: string | null
+          date: string
+          id: string
+          name: string
+          remarks: string | null
+          scheme_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          account_number: string
+          address?: string | null
+          created_at?: string | null
+          date?: string
+          id?: string
+          name: string
+          remarks?: string | null
+          scheme_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          account_number?: string
+          address?: string | null
+          created_at?: string | null
+          date?: string
+          id?: string
+          name?: string
+          remarks?: string | null
+          scheme_type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       subjects: {
         Row: {
           amount: number

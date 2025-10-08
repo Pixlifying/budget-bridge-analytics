@@ -37,6 +37,7 @@ const Downloads = () => {
     { value: 'khata_transactions', label: 'Khata Transactions' },
     { value: 'account_details', label: 'Account Details' },
     { value: 'milk_records', label: 'Milk Records' },
+    { value: 'social_security', label: 'Social Security' },
   ];
 
   const handlePrint = async (isAllPages = false) => {

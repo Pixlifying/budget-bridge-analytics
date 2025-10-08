@@ -22,7 +22,8 @@ import {
   HeadphonesIcon,
   Settings,
   UserCog,
-  Palette
+  Palette,
+  Shield
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -199,6 +200,11 @@ const Sidebar = () => {
       icon: <Users size={isCollapsed ? 20 : 16} />,
       label: 'Account Details',
       to: '/account-details',
+    },
+    {
+      icon: <Shield size={isCollapsed ? 20 : 16} />,
+      label: 'Social Security',
+      to: '/social-security',
     },
   ];
 
