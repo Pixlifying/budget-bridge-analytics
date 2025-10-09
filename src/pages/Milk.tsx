@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Download, Printer } from 'lucide-react';
+import { Plus, Trash2, Download, Printer, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,6 +10,15 @@ import { format } from 'date-fns';
 import { exportToExcel, exportToPDF } from '@/utils/calculateUtils';
 import PageWrapper from '@/components/layout/PageWrapper';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
 interface MilkRecord {
   id: string;
@@ -25,13 +34,16 @@ const Milk = () => {
   const [records, setRecords] = useState<MilkRecord[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const [defaultRate, setDefaultRate] = useLocalStorage('milk_default_rate', 45);
+  const [tempRate, setTempRate] = useState(defaultRate.toString());
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Form state for new record
   const [newRecord, setNewRecord] = useState({
     date: format(new Date(), 'yyyy-MM-dd'),
     milk_amount: '',
     received: false,
-    amount_per_litre: '',
+    amount_per_litre: defaultRate.toString(),
   });
 
   const fetchRecords = async () => {
@@ -84,12 +96,12 @@ const Milk = () => {
         description: 'Milk record saved successfully',
       });
 
-      // Reset form
+      // Reset form but keep default rate
       setNewRecord({
         date: format(new Date(), 'yyyy-MM-dd'),
         milk_amount: '',
         received: false,
-        amount_per_litre: '',
+        amount_per_litre: defaultRate.toString(),
       });
 
       fetchRecords();
@@ -228,6 +240,25 @@ const Milk = () => {
     return (milk * amount).toFixed(2);
   };
 
+  const handleSaveDefaultRate = () => {
+    const rate = parseFloat(tempRate);
+    if (isNaN(rate) || rate <= 0) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a valid rate',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setDefaultRate(rate);
+    setNewRecord({ ...newRecord, amount_per_litre: rate.toString() });
+    setIsDialogOpen(false);
+    toast({
+      title: 'Success',
+      description: 'Default rate updated successfully',
+    });
+  };
+
   return (
     <PageWrapper title="Milk Records">
       <div className="space-y-6">
@@ -274,7 +305,44 @@ const Milk = () => {
                 </Label>
               </div>
               <div>
-                <Label htmlFor="amount_per_litre">Amount per Litre (₹)</Label>
+                <div className="flex items-center justify-between mb-2">
+                  <Label htmlFor="amount_per_litre">Amount per Litre (₹)</Label>
+                  <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        type="button"
+                      >
+                        <Settings size={14} />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Set Default Rate</DialogTitle>
+                        <DialogDescription>
+                          Set the default amount per litre that will be pre-filled in the form.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="default_rate">Default Rate (₹)</Label>
+                          <Input
+                            id="default_rate"
+                            type="number"
+                            step="0.01"
+                            value={tempRate}
+                            onChange={(e) => setTempRate(e.target.value)}
+                          />
+                        </div>
+                        <Button onClick={handleSaveDefaultRate} className="w-full">
+                          Save Default Rate
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
                 <Input
                   id="amount_per_litre"
                   type="number"
