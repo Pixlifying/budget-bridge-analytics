@@ -210,7 +210,7 @@ const Photostat = () => {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Photostat Services Report</title>
+          <title>Print / Photostat Services Report</title>
           <style>
             @page { size: A4; margin: 20mm; }
             body { font-family: Arial, sans-serif; font-size: 12px; }
@@ -222,7 +222,7 @@ const Photostat = () => {
           </style>
         </head>
         <body>
-          <h1>Photostat Services Report</h1>
+          <h1>Print / Photostat Services Report</h1>
           <div class="total">Total Pages: ${totalPages} | Total Amount: ₹${totalAmount.toFixed(2)}</div>
           <table>
             <thead>
@@ -258,8 +258,8 @@ const Photostat = () => {
 
   return (
     <PageWrapper
-      title="Photostat Services"
-      subtitle="Manage photostat services and view analytics"
+      title="Print / Photostat Services"
+      subtitle="Manage print and photostat services and view analytics"
       action={
         <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
           <DateRangePicker 
@@ -282,9 +282,9 @@ const Photostat = () => {
         </div>
       }
     >
-      {/* Add Photostat Form */}
+      {/* Add Print / Photostat Form */}
       <div className="mb-6 p-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg shadow-lg">
-        <h3 className="text-lg font-semibold mb-4">Add Photostat Entry</h3>
+        <h3 className="text-lg font-semibold mb-4">Add Print / Photostat Entry</h3>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
           <div>
             <Label htmlFor="date">Date</Label>
@@ -339,14 +339,14 @@ const Photostat = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredPhotostats.length === 0 ? (
           <div className="col-span-full text-center py-8 bg-muted/30 rounded-lg">
-            <p className="text-muted-foreground">No photostat entries found for this {viewMode === 'day' ? 'day' : 'month'}.</p>
+            <p className="text-muted-foreground">No print / photostat entries found for this {viewMode === 'day' ? 'day' : 'month'}.</p>
           </div>
         ) : (
           filteredPhotostats.map(entry => (
             <ServiceCard
               key={entry.id}
               id={entry.id}
-              title="Photostat Entry"
+              title="Print / Photostat Entry"
               date={entry.date}
               data={{
                 'Pages': entry.pages_count,
@@ -370,7 +370,7 @@ const Photostat = () => {
         <Dialog open={!!editingEntry} onOpenChange={() => setEditingEntry(null)}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Edit Photostat Entry</DialogTitle>
+              <DialogTitle>Edit Print / Photostat Entry</DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">

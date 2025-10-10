@@ -233,7 +233,7 @@ const Sidebar = () => {
     },
     {
       icon: <Copy size={isCollapsed ? 20 : 16} />,
-      label: 'Photostat',
+      label: 'Print / Photostat',
       to: '/photostat',
     },
   ];

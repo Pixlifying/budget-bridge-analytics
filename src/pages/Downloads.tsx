@@ -27,7 +27,7 @@ const Downloads = () => {
     { value: 'od_records', label: 'OD Records' },
     { value: 'online_services', label: 'Online Services' },
     { value: 'applications', label: 'Applications' },
-    { value: 'photostats', label: 'Photostat' },
+    { value: 'photostats', label: 'Print / Photostat' },
     { value: 'forms', label: 'Forms' },
     { value: 'expenses', label: 'Expenses' },
     { value: 'misc_expenses', label: 'Misc Expenses' },
