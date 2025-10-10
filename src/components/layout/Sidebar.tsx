@@ -23,7 +23,8 @@ import {
   Settings,
   UserCog,
   Palette,
-  Shield
+  Shield,
+  Home
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -145,7 +146,8 @@ const Sidebar = () => {
     financialServices: false,
     customerServices: false,
     ledger: false,
-    apps: false
+    apps: false,
+    homeDetails: false
   });
 
   const toggleMenu = (menuKey: string) => {
@@ -172,10 +174,19 @@ const Sidebar = () => {
       label: 'Print',
       to: '/downloads',
     },
+  ];
+
+  // Home Details submenu items
+  const homeDetailsItems = [
     {
       icon: <FileText size={isCollapsed ? 20 : 16} />,
       label: 'Milk',
       to: '/milk',
+    },
+    {
+      icon: <FileText size={isCollapsed ? 20 : 16} />,
+      label: 'Misc Expenses',
+      to: '/misc-expenses',
     },
   ];
 
@@ -268,11 +279,6 @@ const Sidebar = () => {
       label: 'Expenses',
       to: '/expenses',
     },
-    {
-      icon: <FileText size={isCollapsed ? 20 : 16} />,
-      label: 'Misc Expenses',
-      to: '/misc-expenses',
-    },
   ];
 
   // Main sidebar items
@@ -282,6 +288,14 @@ const Sidebar = () => {
       label: 'Dashboard',
       to: '/',
       hasChildren: false,
+    },
+    {
+      icon: <Home size={isCollapsed ? 20 : 18} />,
+      label: 'Home Details',
+      to: '#',
+      hasChildren: true,
+      menuKey: 'homeDetails',
+      children: homeDetailsItems,
     },
     {
       icon: <CreditCard size={isCollapsed ? 20 : 18} />,
