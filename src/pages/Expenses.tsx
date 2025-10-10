@@ -44,7 +44,7 @@ const Expenses = () => {
     try {
       setIsLoading(true);
       
-      // Fetch general expenses
+      // Fetch only general expenses
       const { data: generalExpenses, error: generalError } = await supabase
         .from('expenses')
         .select('*')
@@ -54,28 +54,8 @@ const Expenses = () => {
         throw generalError;
       }
       
-      // Fetch fee expenses
-      const { data: feeExpenses, error: feeError } = await supabase
-        .from('fee_expenses')
-        .select('*')
-        .order('date', { ascending: false });
-        
-      if (feeError) {
-        throw feeError;
-      }
-      
-      // Fetch misc expenses
-      const { data: miscExpenses, error: miscError } = await supabase
-        .from('misc_expenses')
-        .select('*')
-        .order('date', { ascending: false });
-        
-      if (miscError) {
-        throw miscError;
-      }
-      
       // Format general expenses
-      const formattedGeneralExpenses = (generalExpenses || []).map(entry => ({
+      const formattedExpenses = (generalExpenses || []).map(entry => ({
         id: entry.id,
         date: new Date(entry.date),
         name: entry.name,
@@ -83,35 +63,7 @@ const Expenses = () => {
         type: 'general'
       }));
       
-      // Format fee expenses
-      const formattedFeeExpenses = (feeExpenses || []).map(entry => ({
-        id: entry.id,
-        date: new Date(entry.date),
-        name: `Fee: ${entry.customer_name}`,
-        amount: Number(entry.fee),
-        type: 'fee'
-      }));
-      
-      // Format misc expenses
-      const formattedMiscExpenses = (miscExpenses || []).map(entry => ({
-        id: entry.id,
-        date: new Date(entry.date),
-        name: `Misc: ${entry.name}`,
-        amount: Number(entry.fee),
-        type: 'misc'
-      }));
-      
-      // Combine all expenses
-      const allExpenses = [
-        ...formattedGeneralExpenses,
-        ...formattedFeeExpenses,
-        ...formattedMiscExpenses
-      ];
-      
-      // Sort by date (newest first)
-      allExpenses.sort((a, b) => b.date.getTime() - a.date.getTime());
-      
-      setExpenses(allExpenses);
+      setExpenses(formattedExpenses);
     } catch (error) {
       console.error('Error fetching expenses:', error);
       toast.error('Failed to load expense data');
@@ -177,31 +129,10 @@ const Expenses = () => {
 
   const handleDeleteEntry = async (id: string) => {
     try {
-      const expenseToDelete = expenses.find(e => e.id === id);
-      if (!expenseToDelete) return;
-      
-      let error;
-      
-      // Delete from the appropriate table based on type
-      if (expenseToDelete.type === 'fee') {
-        const result = await supabase
-          .from('fee_expenses')
-          .delete()
-          .eq('id', id);
-        error = result.error;
-      } else if (expenseToDelete.type === 'misc') {
-        const result = await supabase
-          .from('misc_expenses')
-          .delete()
-          .eq('id', id);
-        error = result.error;
-      } else {
-        const result = await supabase
-          .from('expenses')
-          .delete()
-          .eq('id', id);
-        error = result.error;
-      }
+      const { error } = await supabase
+        .from('expenses')
+        .delete()
+        .eq('id', id);
       
       if (error) {
         throw error;
@@ -385,12 +316,7 @@ const Expenses = () => {
                 type: 'Type',
               }}
               onEdit={() => {
-                if (entry.type === 'general') {
-                  // Edit functionality can be added here if needed
-                  toast.info("Edit functionality coming soon");
-                } else {
-                  toast.info("You can only edit general expenses here. Edit fee or misc expenses in their respective pages.");
-                }
+                toast.info("Edit functionality coming soon");
               }}
               onDelete={() => handleDeleteEntry(entry.id)}
             />
