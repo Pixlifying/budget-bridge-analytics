@@ -290,14 +290,6 @@ const Sidebar = () => {
       hasChildren: false,
     },
     {
-      icon: <Home size={isCollapsed ? 20 : 18} />,
-      label: 'Home Details',
-      to: '#',
-      hasChildren: true,
-      menuKey: 'homeDetails',
-      children: homeDetailsItems,
-    },
-    {
       icon: <CreditCard size={isCollapsed ? 20 : 18} />,
       label: 'Financial Services',
       to: '#',
@@ -334,6 +326,14 @@ const Sidebar = () => {
       label: 'Analytics',
       to: '/analytics',
       hasChildren: false,
+    },
+    {
+      icon: <Home size={isCollapsed ? 20 : 18} />,
+      label: 'Home Details',
+      to: '#',
+      hasChildren: true,
+      menuKey: 'homeDetails',
+      children: homeDetailsItems,
     },
     {
       icon: <Settings size={isCollapsed ? 20 : 18} />,
