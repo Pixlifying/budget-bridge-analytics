@@ -91,6 +91,29 @@ interface ApplicationEntry {
   amount: number;
 }
 
+interface MiscExpenseEntry {
+  id: string;
+  date: Date;
+  name: string;
+  fee: number;
+}
+
+interface SocialSecurityEntry {
+  id: string;
+  date: Date;
+  name: string;
+  account_number: string;
+  scheme_type: string;
+}
+
+interface AccountDetailEntry {
+  id: string;
+  name: string;
+  account_number: string;
+  aadhar_number: string;
+  created_at: Date;
+}
+
 const chartConfig = {
   received: {
     label: "Amount Received",
@@ -163,6 +186,9 @@ const Analytics = () => {
   const [onlineServices, setOnlineServices] = useState<OnlineServiceEntry[]>([]);
   const [expenses, setExpenses] = useState<ExpenseEntry[]>([]);
   const [applications, setApplications] = useState<ApplicationEntry[]>([]);
+  const [miscExpenses, setMiscExpenses] = useState<MiscExpenseEntry[]>([]);
+  const [socialSecurity, setSocialSecurity] = useState<SocialSecurityEntry[]>([]);
+  const [accountDetails, setAccountDetails] = useState<AccountDetailEntry[]>([]);
 
   const [filteredOdRecords, setFilteredOdRecords] = useState<ODRecord[]>([]);
   const [filteredPanCards, setFilteredPanCards] = useState<PanCardEntry[]>([]);
@@ -171,6 +197,9 @@ const Analytics = () => {
   const [filteredOnlineServices, setFilteredOnlineServices] = useState<OnlineServiceEntry[]>([]);
   const [filteredExpenses, setFilteredExpenses] = useState<ExpenseEntry[]>([]);
   const [filteredApplications, setFilteredApplications] = useState<ApplicationEntry[]>([]);
+  const [filteredMiscExpenses, setFilteredMiscExpenses] = useState<MiscExpenseEntry[]>([]);
+  const [filteredSocialSecurity, setFilteredSocialSecurity] = useState<SocialSecurityEntry[]>([]);
+  const [filteredAccountDetails, setFilteredAccountDetails] = useState<AccountDetailEntry[]>([]);
   
   const fetchAllData = async () => {
     setIsLoading(true);
@@ -230,6 +259,30 @@ const Analytics = () => {
         .order('date', { ascending: false });
       
       if (applicationsError) throw applicationsError;
+
+      // Fetch Misc Expenses
+      const { data: miscExpensesData, error: miscExpensesError } = await supabase
+        .from('misc_expenses')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (miscExpensesError) throw miscExpensesError;
+
+      // Fetch Social Security
+      const { data: socialSecurityData, error: socialSecurityError } = await supabase
+        .from('social_security')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (socialSecurityError) throw socialSecurityError;
+
+      // Fetch Account Details
+      const { data: accountDetailsData, error: accountDetailsError } = await supabase
+        .from('account_details')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (accountDetailsError) throw accountDetailsError;
 
       // Format OD Records
       const formattedOdRecords = odData.map(entry => ({
@@ -294,6 +347,32 @@ const Analytics = () => {
         pages_count: entry.pages_count,
         amount: Number(entry.amount)
       }));
+
+      // Format Misc Expenses
+      const formattedMiscExpenses = miscExpensesData.map(entry => ({
+        id: entry.id,
+        date: new Date(entry.date),
+        name: entry.name,
+        fee: Number(entry.fee)
+      }));
+
+      // Format Social Security
+      const formattedSocialSecurity = socialSecurityData.map(entry => ({
+        id: entry.id,
+        date: new Date(entry.date),
+        name: entry.name,
+        account_number: entry.account_number,
+        scheme_type: entry.scheme_type
+      }));
+
+      // Format Account Details
+      const formattedAccountDetails = accountDetailsData.map(entry => ({
+        id: entry.id,
+        name: entry.name,
+        account_number: entry.account_number,
+        aadhar_number: entry.aadhar_number,
+        created_at: new Date(entry.created_at)
+      }));
       
       setOdRecords(formattedOdRecords);
       setPanCards(formattedPanCards);
@@ -302,6 +381,9 @@ const Analytics = () => {
       setOnlineServices(formattedOnlineServices);
       setExpenses(formattedExpenses);
       setApplications(formattedApplications);
+      setMiscExpenses(formattedMiscExpenses);
+      setSocialSecurity(formattedSocialSecurity);
+      setAccountDetails(formattedAccountDetails);
     } catch (error) {
       console.error('Error fetching analytics data:', error);
     } finally {
@@ -322,6 +404,11 @@ const Analytics = () => {
       setFilteredOnlineServices(filterByDate(onlineServices, date));
       setFilteredExpenses(filterByDate(expenses, date));
       setFilteredApplications(filterByDate(applications, date));
+      setFilteredMiscExpenses(filterByDate(miscExpenses, date));
+      setFilteredSocialSecurity(filterByDate(socialSecurity, date));
+      setFilteredAccountDetails(accountDetails.filter(entry => 
+        entry.created_at.toDateString() === date.toDateString()
+      ));
     } else {
       setFilteredOdRecords(filterByMonth(odRecords, date));
       setFilteredPanCards(filterByMonth(panCards, date));
@@ -330,8 +417,14 @@ const Analytics = () => {
       setFilteredOnlineServices(filterByMonth(onlineServices, date));
       setFilteredExpenses(filterByMonth(expenses, date));
       setFilteredApplications(filterByMonth(applications, date));
+      setFilteredMiscExpenses(filterByMonth(miscExpenses, date));
+      setFilteredSocialSecurity(filterByMonth(socialSecurity, date));
+      setFilteredAccountDetails(accountDetails.filter(entry => 
+        entry.created_at.getMonth() === date.getMonth() && 
+        entry.created_at.getFullYear() === date.getFullYear()
+      ));
     }
-  }, [date, viewMode, odRecords, panCards, passports, bankingServices, onlineServices, expenses, applications]);
+  }, [date, viewMode, odRecords, panCards, passports, bankingServices, onlineServices, expenses, applications, miscExpenses, socialSecurity, accountDetails]);
 
   // Calculate totals
   const totalOdReceived = filteredOdRecords.reduce((sum, entry) => sum + entry.amount_received, 0);
@@ -440,6 +533,33 @@ const Analytics = () => {
     value,
     color: COLORS[index % COLORS.length]
   }));
+
+  // Bar chart data for individual expense types
+  const expensesBarData = filteredExpenses.map(expense => ({
+    name: expense.name.length > 20 ? expense.name.substring(0, 20) + '...' : expense.name,
+    amount: expense.amount,
+    date: format(expense.date, 'MMM dd')
+  }));
+
+  const miscExpensesBarData = filteredMiscExpenses.map(expense => ({
+    name: expense.name.length > 20 ? expense.name.substring(0, 20) + '...' : expense.name,
+    amount: expense.fee,
+    date: format(expense.date, 'MMM dd')
+  }));
+
+  const socialSecurityBarData = filteredSocialSecurity.reduce((acc, entry) => {
+    const existing = acc.find(item => item.scheme === entry.scheme_type);
+    if (existing) {
+      existing.count += 1;
+    } else {
+      acc.push({ scheme: entry.scheme_type, count: 1 });
+    }
+    return acc;
+  }, [] as Array<{ scheme: string; count: number }>);
+
+  const accountDetailsBarData = [
+    { category: 'Total Accounts', count: filteredAccountDetails.length }
+  ];
 
   return (
     <PageWrapper
@@ -726,7 +846,7 @@ const Analytics = () => {
       </div>
 
       {/* Revenue vs Expenses Trend */}
-      <div className="grid grid-cols-1 gap-6">
+      <div className="grid grid-cols-1 gap-6 mb-8">
         <Card className="animate-fade-in">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -763,6 +883,169 @@ const Analytics = () => {
             </ChartContainer>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Individual Category Bar Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Expenses Bar Chart */}
+        {expensesBarData.length > 0 && (
+          <Card className="animate-fade-in">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity size={20} />
+                Expenses Breakdown
+              </CardTitle>
+              <CardDescription>Individual expense entries</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer config={chartConfig} className="h-80 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={expensesBarData}>
+                    <XAxis 
+                      dataKey="name" 
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={10}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis 
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                    />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar 
+                      dataKey="amount" 
+                      fill="hsl(var(--primary))" 
+                      name="Amount" 
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Misc Expenses Bar Chart */}
+        {miscExpensesBarData.length > 0 && (
+          <Card className="animate-fade-in">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity size={20} />
+                Misc. Expenses Breakdown
+              </CardTitle>
+              <CardDescription>Miscellaneous expense entries</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer config={chartConfig} className="h-80 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={miscExpensesBarData}>
+                    <XAxis 
+                      dataKey="name" 
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={10}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis 
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                    />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar 
+                      dataKey="amount" 
+                      fill="hsl(var(--sidebar-accent))" 
+                      name="Amount" 
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Social Security and Account Details */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Social Security Bar Chart */}
+        {socialSecurityBarData.length > 0 && (
+          <Card className="animate-fade-in">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 size={20} />
+                Social Security by Scheme Type
+              </CardTitle>
+              <CardDescription>Distribution of schemes</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer config={chartConfig} className="h-80 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={socialSecurityBarData}>
+                    <XAxis 
+                      dataKey="scheme" 
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={11}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis 
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                    />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar 
+                      dataKey="count" 
+                      fill="hsl(var(--destructive))" 
+                      name="Count" 
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Account Details Bar Chart */}
+        {accountDetailsBarData.length > 0 && (
+          <Card className="animate-fade-in">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard size={20} />
+                Account Details Summary
+              </CardTitle>
+              <CardDescription>Total accounts in the period</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer config={chartConfig} className="h-80 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={accountDetailsBarData}>
+                    <XAxis 
+                      dataKey="category" 
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                    />
+                    <YAxis 
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                    />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar 
+                      dataKey="count" 
+                      fill="hsl(var(--accent))" 
+                      name="Count" 
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </PageWrapper>
   );
