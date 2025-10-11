@@ -535,16 +535,18 @@ const Analytics = () => {
   }));
 
   // Bar chart data for individual expense types
-  const expensesBarData = filteredExpenses.map(expense => ({
+  const expensesBarData = filteredExpenses.map((expense, index) => ({
     name: expense.name.length > 20 ? expense.name.substring(0, 20) + '...' : expense.name,
     amount: expense.amount,
-    date: format(expense.date, 'MMM dd')
+    date: format(expense.date, 'MMM dd'),
+    fill: COLORS[index % COLORS.length]
   }));
 
-  const miscExpensesBarData = filteredMiscExpenses.map(expense => ({
+  const miscExpensesBarData = filteredMiscExpenses.map((expense, index) => ({
     name: expense.name.length > 20 ? expense.name.substring(0, 20) + '...' : expense.name,
     amount: expense.fee,
-    date: format(expense.date, 'MMM dd')
+    date: format(expense.date, 'MMM dd'),
+    fill: COLORS[index % COLORS.length]
   }));
 
   const socialSecurityBarData = filteredSocialSecurity.reduce((acc, entry) => {
@@ -916,10 +918,13 @@ const Analytics = () => {
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Bar 
                       dataKey="amount" 
-                      fill="hsl(var(--primary))" 
                       name="Amount" 
                       radius={[4, 4, 0, 0]}
-                    />
+                    >
+                      {expensesBarData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </ChartContainer>
@@ -956,10 +961,13 @@ const Analytics = () => {
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Bar 
                       dataKey="amount" 
-                      fill="hsl(var(--sidebar-accent))" 
                       name="Amount" 
                       radius={[4, 4, 0, 0]}
-                    />
+                    >
+                      {miscExpensesBarData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </ChartContainer>
