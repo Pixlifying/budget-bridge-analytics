@@ -106,12 +106,13 @@ interface SocialSecurityEntry {
   scheme_type: string;
 }
 
-interface AccountDetailEntry {
+interface BankingAccountEntry {
   id: string;
-  name: string;
-  account_number: string;
-  aadhar_number: string;
-  created_at: Date;
+  date: Date;
+  amount: number;
+  customer_name: string;
+  account_type: string;
+  insurance_type: string | null;
 }
 
 const chartConfig = {
@@ -188,7 +189,7 @@ const Analytics = () => {
   const [applications, setApplications] = useState<ApplicationEntry[]>([]);
   const [miscExpenses, setMiscExpenses] = useState<MiscExpenseEntry[]>([]);
   const [socialSecurity, setSocialSecurity] = useState<SocialSecurityEntry[]>([]);
-  const [accountDetails, setAccountDetails] = useState<AccountDetailEntry[]>([]);
+  const [bankingAccounts, setBankingAccounts] = useState<BankingAccountEntry[]>([]);
 
   const [filteredOdRecords, setFilteredOdRecords] = useState<ODRecord[]>([]);
   const [filteredPanCards, setFilteredPanCards] = useState<PanCardEntry[]>([]);
@@ -199,7 +200,7 @@ const Analytics = () => {
   const [filteredApplications, setFilteredApplications] = useState<ApplicationEntry[]>([]);
   const [filteredMiscExpenses, setFilteredMiscExpenses] = useState<MiscExpenseEntry[]>([]);
   const [filteredSocialSecurity, setFilteredSocialSecurity] = useState<SocialSecurityEntry[]>([]);
-  const [filteredAccountDetails, setFilteredAccountDetails] = useState<AccountDetailEntry[]>([]);
+  const [filteredBankingAccounts, setFilteredBankingAccounts] = useState<BankingAccountEntry[]>([]);
   
   const fetchAllData = async () => {
     setIsLoading(true);
@@ -276,13 +277,13 @@ const Analytics = () => {
       
       if (socialSecurityError) throw socialSecurityError;
 
-      // Fetch Account Details
-      const { data: accountDetailsData, error: accountDetailsError } = await supabase
-        .from('account_details')
+      // Fetch Banking Accounts (Other Banking Services)
+      const { data: bankingAccountsData, error: bankingAccountsError } = await supabase
+        .from('banking_accounts')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('date', { ascending: false });
       
-      if (accountDetailsError) throw accountDetailsError;
+      if (bankingAccountsError) throw bankingAccountsError;
 
       // Format OD Records
       const formattedOdRecords = odData.map(entry => ({
@@ -365,13 +366,14 @@ const Analytics = () => {
         scheme_type: entry.scheme_type
       }));
 
-      // Format Account Details
-      const formattedAccountDetails = accountDetailsData.map(entry => ({
+      // Format Banking Accounts
+      const formattedBankingAccounts = bankingAccountsData.map(entry => ({
         id: entry.id,
-        name: entry.name,
-        account_number: entry.account_number,
-        aadhar_number: entry.aadhar_number,
-        created_at: new Date(entry.created_at)
+        date: new Date(entry.date),
+        amount: Number(entry.amount),
+        customer_name: entry.customer_name,
+        account_type: entry.account_type,
+        insurance_type: entry.insurance_type
       }));
       
       setOdRecords(formattedOdRecords);
@@ -383,7 +385,7 @@ const Analytics = () => {
       setApplications(formattedApplications);
       setMiscExpenses(formattedMiscExpenses);
       setSocialSecurity(formattedSocialSecurity);
-      setAccountDetails(formattedAccountDetails);
+      setBankingAccounts(formattedBankingAccounts);
     } catch (error) {
       console.error('Error fetching analytics data:', error);
     } finally {
@@ -406,9 +408,7 @@ const Analytics = () => {
       setFilteredApplications(filterByDate(applications, date));
       setFilteredMiscExpenses(filterByDate(miscExpenses, date));
       setFilteredSocialSecurity(filterByDate(socialSecurity, date));
-      setFilteredAccountDetails(accountDetails.filter(entry => 
-        entry.created_at.toDateString() === date.toDateString()
-      ));
+      setFilteredBankingAccounts(filterByDate(bankingAccounts, date));
     } else {
       setFilteredOdRecords(filterByMonth(odRecords, date));
       setFilteredPanCards(filterByMonth(panCards, date));
@@ -419,12 +419,9 @@ const Analytics = () => {
       setFilteredApplications(filterByMonth(applications, date));
       setFilteredMiscExpenses(filterByMonth(miscExpenses, date));
       setFilteredSocialSecurity(filterByMonth(socialSecurity, date));
-      setFilteredAccountDetails(accountDetails.filter(entry => 
-        entry.created_at.getMonth() === date.getMonth() && 
-        entry.created_at.getFullYear() === date.getFullYear()
-      ));
+      setFilteredBankingAccounts(filterByMonth(bankingAccounts, date));
     }
-  }, [date, viewMode, odRecords, panCards, passports, bankingServices, onlineServices, expenses, applications, miscExpenses, socialSecurity, accountDetails]);
+  }, [date, viewMode, odRecords, panCards, passports, bankingServices, onlineServices, expenses, applications, miscExpenses, socialSecurity, bankingAccounts]);
 
   // Calculate totals
   const totalOdReceived = filteredOdRecords.reduce((sum, entry) => sum + entry.amount_received, 0);
@@ -559,9 +556,22 @@ const Analytics = () => {
     return acc;
   }, [] as Array<{ scheme: string; count: number }>);
 
-  const accountDetailsBarData = [
-    { category: 'Total Accounts', count: filteredAccountDetails.length }
-  ];
+  // Other Banking Services - Pie chart data by account type
+  const bankingAccountsByType = filteredBankingAccounts.reduce((acc, entry) => {
+    const existing = acc.find(item => item.name === entry.account_type);
+    if (existing) {
+      existing.value += entry.amount;
+      existing.count += 1;
+    } else {
+      acc.push({ 
+        name: entry.account_type, 
+        value: entry.amount,
+        count: 1,
+        color: COLORS[acc.length % COLORS.length]
+      });
+    }
+    return acc;
+  }, [] as Array<{ name: string; value: number; count: number; color: string }>);
 
   return (
     <PageWrapper
@@ -1018,40 +1028,75 @@ const Analytics = () => {
           </Card>
         )}
 
-        {/* Account Details Bar Chart */}
-        {accountDetailsBarData.length > 0 && (
-          <Card className="animate-fade-in">
-            <CardHeader>
+        {/* Other Banking Services Pie Chart */}
+        {bankingAccountsByType.length > 0 && (
+          <Card className="flex flex-col animate-fade-in">
+            <CardHeader className="items-center pb-0">
               <CardTitle className="flex items-center gap-2">
-                <CreditCard size={20} />
-                Account Details Summary
+                <PieChart size={20} />
+                Other Banking Services
               </CardTitle>
-              <CardDescription>Total accounts in the period</CardDescription>
+              <CardDescription>Breakdown by account type</CardDescription>
             </CardHeader>
-            <CardContent>
-              <ChartContainer config={chartConfig} className="h-80 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={accountDetailsBarData}>
-                    <XAxis 
-                      dataKey="category" 
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={12}
+            <CardContent className="flex-1 pb-0">
+              <ChartContainer
+                config={chartConfig}
+                className="mx-auto aspect-square max-h-[300px]"
+              >
+                <RechartsPieChart>
+                  <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent hideLabel />}
+                  />
+                  <Pie
+                    data={bankingAccountsByType.map(item => ({ ...item, visitors: item.value }))}
+                    dataKey="visitors"
+                    nameKey="name"
+                    innerRadius={60}
+                    strokeWidth={5}
+                  >
+                    {bankingAccountsByType.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                    <Label
+                      content={({ viewBox }) => {
+                        if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                          const totalAmount = bankingAccountsByType.reduce((sum, item) => sum + item.value, 0);
+                          return (
+                            <text
+                              x={viewBox.cx}
+                              y={viewBox.cy}
+                              textAnchor="middle"
+                              dominantBaseline="middle"
+                            >
+                              <tspan
+                                x={viewBox.cx}
+                                y={viewBox.cy}
+                                className="fill-foreground text-3xl font-bold"
+                              >
+                                {formatCurrency(totalAmount)}
+                              </tspan>
+                              <tspan
+                                x={viewBox.cx}
+                                y={(viewBox.cy || 0) + 24}
+                                className="fill-muted-foreground"
+                              >
+                                Total
+                              </tspan>
+                            </text>
+                          )
+                        }
+                      }}
                     />
-                    <YAxis 
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={12}
-                    />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar 
-                      dataKey="count" 
-                      fill="hsl(var(--accent))" 
-                      name="Count" 
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
+                  </Pie>
+                </RechartsPieChart>
               </ChartContainer>
             </CardContent>
+            <CardFooter className="flex-col gap-2 text-sm">
+              <div className="flex items-center gap-2 leading-none font-medium">
+                Distribution by account type <TrendingUp className="h-4 w-4" />
+              </div>
+            </CardFooter>
           </Card>
         )}
       </div>
