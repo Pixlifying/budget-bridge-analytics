@@ -176,8 +176,8 @@ const Sidebar = () => {
     },
   ];
 
-  // Home Details submenu items
-  const homeDetailsItems = [
+  // Household submenu items
+  const householdItems = [
     {
       icon: <FileText size={isCollapsed ? 20 : 16} />,
       label: 'Milk',
@@ -329,11 +329,11 @@ const Sidebar = () => {
     },
     {
       icon: <Home size={isCollapsed ? 20 : 18} />,
-      label: 'Home Details',
+      label: 'Household',
       to: '#',
       hasChildren: true,
-      menuKey: 'homeDetails',
-      children: homeDetailsItems,
+      menuKey: 'household',
+      children: householdItems,
     },
     {
       icon: <Settings size={isCollapsed ? 20 : 18} />,

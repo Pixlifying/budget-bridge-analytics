@@ -19,6 +19,9 @@ interface ColorTheme {
 
 const ThemeSettings = () => {
   const { theme, setTheme } = useTheme();
+  const [currentColorTheme, setCurrentColorTheme] = React.useState<string>(
+    localStorage.getItem('color-theme') || 'default'
+  );
   
   const colorThemes: ColorTheme[] = [
     {
@@ -95,10 +98,9 @@ const ThemeSettings = () => {
     }
   ];
 
-  const currentColorTheme = localStorage.getItem('color-theme') || 'default';
-
   const handleColorThemeChange = (colorTheme: string) => {
     localStorage.setItem('color-theme', colorTheme);
+    setCurrentColorTheme(colorTheme);
     
     const root = document.documentElement;
     
