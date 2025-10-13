@@ -34,6 +34,186 @@ const ThemeSettings = () => {
       description: 'Fresh and natural theme with green accents'
     },
     {
+      name: 'Black',
+      value: 'black',
+      primary: '#1F2937',
+      secondary: '#111827',
+      accent: '#374151',
+      background: '#F9FAFB',
+      description: 'Sleek and modern black theme'
+    },
+    {
+      name: 'Gold',
+      value: 'gold',
+      primary: '#D97706',
+      secondary: '#B45309',
+      accent: '#F59E0B',
+      background: '#FFFBEB',
+      description: 'Luxurious gold theme for premium look'
+    },
+    {
+      name: 'Rose Gold',
+      value: 'rosegold',
+      primary: '#E07A5F',
+      secondary: '#C96D4F',
+      accent: '#F4A261',
+      background: '#FFF5F0',
+      description: 'Elegant rose gold metallic theme'
+    },
+    {
+      name: 'Yellow',
+      value: 'yellow',
+      primary: '#EAB308',
+      secondary: '#CA8A04',
+      accent: '#FDE047',
+      background: '#FEFCE8',
+      description: 'Bright and cheerful yellow theme'
+    },
+    {
+      name: 'Indigo',
+      value: 'indigo',
+      primary: '#6366F1',
+      secondary: '#4F46E5',
+      accent: '#818CF8',
+      background: '#EEF2FF',
+      description: 'Deep and professional indigo theme'
+    },
+    {
+      name: 'Emerald',
+      value: 'emerald',
+      primary: '#10B981',
+      secondary: '#059669',
+      accent: '#34D399',
+      background: '#ECFDF5',
+      description: 'Rich emerald green theme'
+    },
+    {
+      name: 'Cyan',
+      value: 'cyan',
+      primary: '#06B6D4',
+      secondary: '#0891B2',
+      accent: '#22D3EE',
+      background: '#ECFEFF',
+      description: 'Fresh and vibrant cyan theme'
+    },
+    {
+      name: 'Lime',
+      value: 'lime',
+      primary: '#84CC16',
+      secondary: '#65A30D',
+      accent: '#A3E635',
+      background: '#F7FEE7',
+      description: 'Energetic lime green theme'
+    },
+    {
+      name: 'Amber',
+      value: 'amber',
+      primary: '#F59E0B',
+      secondary: '#D97706',
+      accent: '#FCD34D',
+      background: '#FEF3C7',
+      description: 'Warm amber theme'
+    },
+    {
+      name: 'Fuchsia',
+      value: 'fuchsia',
+      primary: '#D946EF',
+      secondary: '#C026D3',
+      accent: '#E879F9',
+      background: '#FAE8FF',
+      description: 'Bold and vibrant fuchsia theme'
+    },
+    {
+      name: 'Crimson',
+      value: 'crimson',
+      primary: '#DC2626',
+      secondary: '#B91C1C',
+      accent: '#EF4444',
+      background: '#FEF2F2',
+      description: 'Bold crimson red theme'
+    },
+    {
+      name: 'Navy',
+      value: 'navy',
+      primary: '#1E3A8A',
+      secondary: '#1E40AF',
+      accent: '#3B82F6',
+      background: '#EFF6FF',
+      description: 'Classic navy blue theme'
+    },
+    {
+      name: 'Mint',
+      value: 'mint',
+      primary: '#14B8A6',
+      secondary: '#0D9488',
+      accent: '#5EEAD4',
+      background: '#F0FDFA',
+      description: 'Cool and refreshing mint theme'
+    },
+    {
+      name: 'Coral',
+      value: 'coral',
+      primary: '#F87171',
+      secondary: '#EF4444',
+      accent: '#FCA5A5',
+      background: '#FEE2E2',
+      description: 'Vibrant coral pink theme'
+    },
+    {
+      name: 'Lavender',
+      value: 'lavender',
+      primary: '#A78BFA',
+      secondary: '#8B5CF6',
+      accent: '#C4B5FD',
+      background: '#F5F3FF',
+      description: 'Soft and calming lavender theme'
+    },
+    {
+      name: 'Slate',
+      value: 'slate',
+      primary: '#475569',
+      secondary: '#334155',
+      accent: '#64748B',
+      background: '#F8FAFC',
+      description: 'Sophisticated slate grey theme'
+    },
+    {
+      name: 'Violet',
+      value: 'violet',
+      primary: '#7C3AED',
+      secondary: '#6D28D9',
+      accent: '#8B5CF6',
+      background: '#F5F3FF',
+      description: 'Rich violet purple theme'
+    },
+    {
+      name: 'Pink',
+      value: 'pink',
+      primary: '#EC4899',
+      secondary: '#DB2777',
+      accent: '#F472B6',
+      background: '#FDF2F8',
+      description: 'Playful pink theme'
+    },
+    {
+      name: 'Bronze',
+      value: 'bronze',
+      primary: '#92400E',
+      secondary: '#78350F',
+      accent: '#A16207',
+      background: '#FEF3C7',
+      description: 'Warm bronze metallic theme'
+    },
+    {
+      name: 'Sapphire',
+      value: 'sapphire',
+      primary: '#0C4A6E',
+      secondary: '#075985',
+      accent: '#0284C7',
+      background: '#F0F9FF',
+      description: 'Deep sapphire blue theme'
+    },
+    {
       name: 'Grey',
       value: 'grey',
       primary: '#6B7280',
@@ -112,6 +292,166 @@ const ThemeSettings = () => {
         root.style.setProperty('--accent-foreground', '0 0% 100%');
         root.style.setProperty('--sidebar-background', '142 69% 58%');
         root.style.setProperty('--sidebar-accent', '142 76% 36%');
+        break;
+      case 'black':
+        root.style.setProperty('--primary', '215 28% 17%');
+        root.style.setProperty('--primary-foreground', '0 0% 100%');
+        root.style.setProperty('--accent', '215 20% 27%');
+        root.style.setProperty('--accent-foreground', '0 0% 100%');
+        root.style.setProperty('--sidebar-background', '215 28% 17%');
+        root.style.setProperty('--sidebar-accent', '215 20% 27%');
+        break;
+      case 'gold':
+        root.style.setProperty('--primary', '32 94% 43%');
+        root.style.setProperty('--primary-foreground', '0 0% 100%');
+        root.style.setProperty('--accent', '38 92% 50%');
+        root.style.setProperty('--accent-foreground', '0 0% 100%');
+        root.style.setProperty('--sidebar-background', '32 94% 43%');
+        root.style.setProperty('--sidebar-accent', '38 92% 50%');
+        break;
+      case 'rosegold':
+        root.style.setProperty('--primary', '13 66% 62%');
+        root.style.setProperty('--primary-foreground', '0 0% 100%');
+        root.style.setProperty('--accent', '29 79% 68%');
+        root.style.setProperty('--accent-foreground', '0 0% 100%');
+        root.style.setProperty('--sidebar-background', '13 66% 62%');
+        root.style.setProperty('--sidebar-accent', '29 79% 68%');
+        break;
+      case 'yellow':
+        root.style.setProperty('--primary', '47 96% 53%');
+        root.style.setProperty('--primary-foreground', '0 0% 100%');
+        root.style.setProperty('--accent', '54 96% 64%');
+        root.style.setProperty('--accent-foreground', '24 9% 10%');
+        root.style.setProperty('--sidebar-background', '47 96% 53%');
+        root.style.setProperty('--sidebar-accent', '54 96% 64%');
+        break;
+      case 'indigo':
+        root.style.setProperty('--primary', '239 84% 67%');
+        root.style.setProperty('--primary-foreground', '0 0% 100%');
+        root.style.setProperty('--accent', '243 75% 69%');
+        root.style.setProperty('--accent-foreground', '0 0% 100%');
+        root.style.setProperty('--sidebar-background', '239 84% 67%');
+        root.style.setProperty('--sidebar-accent', '243 75% 69%');
+        break;
+      case 'emerald':
+        root.style.setProperty('--primary', '160 84% 39%');
+        root.style.setProperty('--primary-foreground', '0 0% 100%');
+        root.style.setProperty('--accent', '158 64% 52%');
+        root.style.setProperty('--accent-foreground', '0 0% 100%');
+        root.style.setProperty('--sidebar-background', '160 84% 39%');
+        root.style.setProperty('--sidebar-accent', '158 64% 52%');
+        break;
+      case 'cyan':
+        root.style.setProperty('--primary', '188 94% 43%');
+        root.style.setProperty('--primary-foreground', '0 0% 100%');
+        root.style.setProperty('--accent', '186 94% 59%');
+        root.style.setProperty('--accent-foreground', '0 0% 100%');
+        root.style.setProperty('--sidebar-background', '188 94% 43%');
+        root.style.setProperty('--sidebar-accent', '186 94% 59%');
+        break;
+      case 'lime':
+        root.style.setProperty('--primary', '84 81% 44%');
+        root.style.setProperty('--primary-foreground', '0 0% 100%');
+        root.style.setProperty('--accent', '83 78% 56%');
+        root.style.setProperty('--accent-foreground', '0 0% 100%');
+        root.style.setProperty('--sidebar-background', '84 81% 44%');
+        root.style.setProperty('--sidebar-accent', '83 78% 56%');
+        break;
+      case 'amber':
+        root.style.setProperty('--primary', '38 92% 50%');
+        root.style.setProperty('--primary-foreground', '0 0% 100%');
+        root.style.setProperty('--accent', '48 96% 58%');
+        root.style.setProperty('--accent-foreground', '0 0% 100%');
+        root.style.setProperty('--sidebar-background', '38 92% 50%');
+        root.style.setProperty('--sidebar-accent', '48 96% 58%');
+        break;
+      case 'fuchsia':
+        root.style.setProperty('--primary', '292 84% 61%');
+        root.style.setProperty('--primary-foreground', '0 0% 100%');
+        root.style.setProperty('--accent', '291 64% 72%');
+        root.style.setProperty('--accent-foreground', '0 0% 100%');
+        root.style.setProperty('--sidebar-background', '292 84% 61%');
+        root.style.setProperty('--sidebar-accent', '291 64% 72%');
+        break;
+      case 'crimson':
+        root.style.setProperty('--primary', '0 84% 60%');
+        root.style.setProperty('--primary-foreground', '0 0% 100%');
+        root.style.setProperty('--accent', '0 72% 51%');
+        root.style.setProperty('--accent-foreground', '0 0% 100%');
+        root.style.setProperty('--sidebar-background', '0 84% 60%');
+        root.style.setProperty('--sidebar-accent', '0 72% 51%');
+        break;
+      case 'navy':
+        root.style.setProperty('--primary', '219 79% 32%');
+        root.style.setProperty('--primary-foreground', '0 0% 100%');
+        root.style.setProperty('--accent', '221 83% 53%');
+        root.style.setProperty('--accent-foreground', '0 0% 100%');
+        root.style.setProperty('--sidebar-background', '219 79% 32%');
+        root.style.setProperty('--sidebar-accent', '221 83% 53%');
+        break;
+      case 'mint':
+        root.style.setProperty('--primary', '173 80% 40%');
+        root.style.setProperty('--primary-foreground', '0 0% 100%');
+        root.style.setProperty('--accent', '172 82% 57%');
+        root.style.setProperty('--accent-foreground', '0 0% 100%');
+        root.style.setProperty('--sidebar-background', '173 80% 40%');
+        root.style.setProperty('--sidebar-accent', '172 82% 57%');
+        break;
+      case 'coral':
+        root.style.setProperty('--primary', '0 77% 72%');
+        root.style.setProperty('--primary-foreground', '0 0% 100%');
+        root.style.setProperty('--accent', '0 86% 80%');
+        root.style.setProperty('--accent-foreground', '0 72% 51%');
+        root.style.setProperty('--sidebar-background', '0 77% 72%');
+        root.style.setProperty('--sidebar-accent', '0 86% 80%');
+        break;
+      case 'lavender':
+        root.style.setProperty('--primary', '256 58% 76%');
+        root.style.setProperty('--primary-foreground', '0 0% 100%');
+        root.style.setProperty('--accent', '262 68% 84%');
+        root.style.setProperty('--accent-foreground', '262 83% 58%');
+        root.style.setProperty('--sidebar-background', '256 58% 76%');
+        root.style.setProperty('--sidebar-accent', '262 68% 84%');
+        break;
+      case 'slate':
+        root.style.setProperty('--primary', '215 20% 40%');
+        root.style.setProperty('--primary-foreground', '0 0% 100%');
+        root.style.setProperty('--accent', '215 16% 47%');
+        root.style.setProperty('--accent-foreground', '0 0% 100%');
+        root.style.setProperty('--sidebar-background', '215 20% 40%');
+        root.style.setProperty('--sidebar-accent', '215 16% 47%');
+        break;
+      case 'violet':
+        root.style.setProperty('--primary', '262 83% 58%');
+        root.style.setProperty('--primary-foreground', '0 0% 100%');
+        root.style.setProperty('--accent', '258 90% 66%');
+        root.style.setProperty('--accent-foreground', '0 0% 100%');
+        root.style.setProperty('--sidebar-background', '262 83% 58%');
+        root.style.setProperty('--sidebar-accent', '258 90% 66%');
+        break;
+      case 'pink':
+        root.style.setProperty('--primary', '330 81% 60%');
+        root.style.setProperty('--primary-foreground', '0 0% 100%');
+        root.style.setProperty('--accent', '330 77% 72%');
+        root.style.setProperty('--accent-foreground', '0 0% 100%');
+        root.style.setProperty('--sidebar-background', '330 81% 60%');
+        root.style.setProperty('--sidebar-accent', '330 77% 72%');
+        break;
+      case 'bronze':
+        root.style.setProperty('--primary', '30 83% 34%');
+        root.style.setProperty('--primary-foreground', '0 0% 100%');
+        root.style.setProperty('--accent', '42 78% 32%');
+        root.style.setProperty('--accent-foreground', '0 0% 100%');
+        root.style.setProperty('--sidebar-background', '30 83% 34%');
+        root.style.setProperty('--sidebar-accent', '42 78% 32%');
+        break;
+      case 'sapphire':
+        root.style.setProperty('--primary', '202 96% 27%');
+        root.style.setProperty('--primary-foreground', '0 0% 100%');
+        root.style.setProperty('--accent', '199 89% 48%');
+        root.style.setProperty('--accent-foreground', '0 0% 100%');
+        root.style.setProperty('--sidebar-background', '202 96% 27%');
+        root.style.setProperty('--sidebar-accent', '199 89% 48%');
         break;
       case 'grey':
         root.style.setProperty('--primary', '220 9% 46%');
