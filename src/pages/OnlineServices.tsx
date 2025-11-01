@@ -596,14 +596,14 @@ const OnlineServices = () => {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="edit_count">Count</Label>
+              <Label htmlFor="edit_expense">Expense</Label>
               <Input
-                id="edit_count"
+                id="edit_expense"
                 type="number"
-                value={editForm.count}
-                onChange={(e) => setEditForm(prev => ({ ...prev, count: Number(e.target.value) }))}
-                placeholder="Count"
-                min="1"
+                value={editForm.expense}
+                onChange={(e) => setEditForm(prev => ({ ...prev, expense: Number(e.target.value) }))}
+                placeholder="Expense"
+                min="0"
               />
             </div>
             <Button onClick={handleEditEntry}>Update Service</Button>

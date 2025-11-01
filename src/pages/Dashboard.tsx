@@ -217,14 +217,14 @@ const Dashboard = () => {
 
   const onlineServicesTotal = onlineData?.reduce((sum, entry) => sum + Number(entry.total || 0), 0) || 0;
   const onlineServicesCount = onlineData?.length || 0;
-  const onlineMargin = onlineData?.reduce((sum, entry) => sum + (entry.amount * entry.count), 0) || 0;
+  const onlineMargin = onlineData?.reduce((sum, entry) => sum + Number(entry.total || 0), 0) || 0;
 
   const applicationsTotal = applicationsData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
   const applicationsCount = applicationsData?.length || 0;
-  const applicationsMargin = applicationsData?.reduce((sum, entry) => sum + entry.amount, 0) || 0;
+  const applicationsMargin = applicationsData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
 
   // 1. Calculate Printout/Photostat Totals and Margins
-  const photostatTotal = photostatData?.reduce((sum, entry) => sum + Number(entry.total_amount), 0) || 0;
+  const photostatTotal = photostatData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
   const photostatCount = photostatData?.length || 0;
   const photostatMarginTotal = photostatData?.reduce((sum, entry) => sum + Number(entry.margin), 0) || 0;
 

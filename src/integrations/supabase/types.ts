@@ -53,24 +53,24 @@ export type Database = {
           created_at: string | null
           customer_name: string
           date: string
+          expense: number | null
           id: string
-          pages_count: number
         }
         Insert: {
           amount: number
           created_at?: string | null
           customer_name: string
           date?: string
+          expense?: number | null
           id?: string
-          pages_count: number
         }
         Update: {
           amount?: number
           created_at?: string | null
           customer_name?: string
           date?: string
+          expense?: number | null
           id?: string
-          pages_count?: number
         }
         Relationships: []
       }
@@ -548,33 +548,33 @@ export type Database = {
       online_services: {
         Row: {
           amount: number
-          count: number
           created_at: string | null
           custom_service: string | null
           customer_name: string | null
           date: string
+          expense: number | null
           id: string
           service: string
           total: number
         }
         Insert: {
           amount: number
-          count: number
           created_at?: string | null
           custom_service?: string | null
           customer_name?: string | null
           date?: string
+          expense?: number | null
           id?: string
           service: string
           total: number
         }
         Update: {
           amount?: number
-          count?: number
           created_at?: string | null
           custom_service?: string | null
           customer_name?: string | null
           date?: string
+          expense?: number | null
           id?: string
           service?: string
           total?: number
@@ -679,34 +679,31 @@ export type Database = {
       }
       photostats: {
         Row: {
-          amount_per_page: number
+          amount: number
           created_at: string | null
           date: string
+          expense: number | null
           id: string
           is_double_sided: boolean
           margin: number
-          pages_count: number
-          total_amount: number
         }
         Insert: {
-          amount_per_page: number
+          amount: number
           created_at?: string | null
           date?: string
+          expense?: number | null
           id?: string
           is_double_sided?: boolean
           margin: number
-          pages_count: number
-          total_amount: number
         }
         Update: {
-          amount_per_page?: number
+          amount?: number
           created_at?: string | null
           date?: string
+          expense?: number | null
           id?: string
           is_double_sided?: boolean
           margin?: number
-          pages_count?: number
-          total_amount?: number
         }
         Relationships: []
       }
@@ -989,10 +986,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_admin_or_manager: {
-        Args: { user_uuid?: string }
-        Returns: boolean
-      }
+      is_admin_or_manager: { Args: { user_uuid?: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "manager" | "user"

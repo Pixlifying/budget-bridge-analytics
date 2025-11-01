@@ -73,7 +73,8 @@ interface OnlineServiceEntry {
   date: Date;
   service: string;
   amount: number;
-  count: number;
+  expense: number;
+  total: number;
 }
 
 interface ExpenseEntry {
@@ -87,7 +88,7 @@ interface ApplicationEntry {
   id: string;
   date: Date;
   customer_name: string;
-  pages_count: number;
+  expense: number;
   amount: number;
 }
 
@@ -329,7 +330,8 @@ const Analytics = () => {
         date: new Date(entry.date),
         service: entry.service,
         amount: Number(entry.amount),
-        count: entry.count
+        expense: Number(entry.expense || 0),
+        total: Number(entry.total)
       }));
       
       // Format Expenses
@@ -345,7 +347,7 @@ const Analytics = () => {
         id: entry.id,
         date: new Date(entry.date),
         customer_name: entry.customer_name,
-        pages_count: entry.pages_count,
+        expense: Number(entry.expense || 0),
         amount: Number(entry.amount)
       }));
 
@@ -431,7 +433,7 @@ const Analytics = () => {
   const latestOdRecord = odRecords.length > 0 ? odRecords[0] : null;
   const latestCashInHand = latestOdRecord ? latestOdRecord.cash_in_hand : 0;
   const totalExpenses = filteredExpenses.reduce((sum, entry) => sum + entry.amount, 0);
-  const totalOnlineServices = filteredOnlineServices.reduce((sum, entry) => sum + entry.amount, 0);
+  const totalOnlineServices = filteredOnlineServices.reduce((sum, entry) => sum + entry.total, 0);
   const totalApplications = filteredApplications.reduce((sum, entry) => sum + entry.amount, 0);
   const totalPanMargin = filteredPanCards.reduce((sum, entry) => sum + entry.margin, 0);
   const totalPassportMargin = filteredPassports.reduce((sum, entry) => sum + entry.margin, 0);
@@ -503,7 +505,7 @@ const Analytics = () => {
     monthData.panCards = monthlyPanCards.reduce((sum, entry) => sum + entry.margin, 0);
     monthData.passports = monthlyPassports.reduce((sum, entry) => sum + entry.margin, 0);
     monthData.bankingServices = monthlyBanking.reduce((sum, entry) => sum + entry.margin, 0);
-    monthData.onlineServices = monthlyOnline.reduce((sum, entry) => sum + entry.amount, 0);
+    monthData.onlineServices = monthlyOnline.reduce((sum, entry) => sum + entry.total, 0);
     monthData.applications = monthlyApplications.reduce((sum, entry) => sum + entry.amount, 0);
     monthData.expenses = monthlyExpenses.reduce((sum, entry) => sum + entry.amount, 0);
 

@@ -24,7 +24,7 @@ interface ApplicationEntry {
   id: string;
   date: Date;
   customer_name: string;
-  pages_count: number;
+  expense: number;
   amount: number;
   created_at?: string;
 }
@@ -41,14 +41,14 @@ const Applications = () => {
   const [newEntry, setNewEntry] = useState({
     date: new Date().toISOString().split('T')[0],
     customer_name: '',
-    pages_count: 1,
+    expense: 0,
     amount: 0,
   });
 
   const [editForm, setEditForm] = useState({
     date: '',
     customer_name: '',
-    pages_count: 1,
+    expense: 0,
     amount: 0,
   });
 
@@ -68,7 +68,7 @@ const Applications = () => {
         id: entry.id,
         date: new Date(entry.date),
         customer_name: entry.customer_name,
-        pages_count: Number(entry.pages_count),
+        expense: Number(entry.expense || 0),
         amount: Number(entry.amount),
         created_at: entry.created_at
       }));
@@ -111,30 +111,43 @@ const Applications = () => {
   };
 
   const handleAddEntry = async () => {
-    if (!newEntry.customer_name || !newEntry.pages_count || !newEntry.amount) {
+    if (!newEntry.customer_name || !newEntry.amount) {
       toast.error('Please fill in all required fields');
       return;
     }
 
     try {
+      const total = newEntry.amount - newEntry.expense;
+      
       const { data, error } = await supabase
         .from('applications')
         .insert({
           date: new Date(newEntry.date).toISOString(),
           customer_name: newEntry.customer_name,
-          pages_count: newEntry.pages_count,
-          amount: newEntry.amount,
+          expense: newEntry.expense,
+          amount: total,
         })
         .select();
 
       if (error) throw error;
+
+      // Save expense to expenses table
+      if (newEntry.expense > 0) {
+        await supabase
+          .from('expenses')
+          .insert({
+            date: new Date(newEntry.date).toISOString(),
+            name: `Application - ${newEntry.customer_name}`,
+            amount: newEntry.expense,
+          });
+      }
 
       if (data && data.length > 0) {
         const newApplicationEntry: ApplicationEntry = {
           id: data[0].id,
           date: new Date(data[0].date),
           customer_name: data[0].customer_name,
-          pages_count: Number(data[0].pages_count),
+          expense: Number(data[0].expense || 0),
           amount: Number(data[0].amount),
           created_at: data[0].created_at
         };
@@ -143,7 +156,7 @@ const Applications = () => {
         setNewEntry({
           date: new Date().toISOString().split('T')[0],
           customer_name: '',
-          pages_count: 1,
+          expense: 0,
           amount: 0,
         });
         toast.success('Application added successfully');
@@ -158,24 +171,37 @@ const Applications = () => {
     if (!editingEntry) return;
 
     try {
+      const total = editForm.amount - editForm.expense;
+      
       const { error } = await supabase
         .from('applications')
         .update({
           date: new Date(editForm.date).toISOString(),
           customer_name: editForm.customer_name,
-          pages_count: editForm.pages_count,
-          amount: editForm.amount,
+          expense: editForm.expense,
+          amount: total,
         })
         .eq('id', editingEntry.id);
 
       if (error) throw error;
 
+      // Update or insert expense
+      if (editForm.expense > 0) {
+        await supabase
+          .from('expenses')
+          .upsert({
+            date: new Date(editForm.date).toISOString(),
+            name: `Application - ${editForm.customer_name}`,
+            amount: editForm.expense,
+          });
+      }
+
       const updatedEntry: ApplicationEntry = {
         ...editingEntry,
         date: new Date(editForm.date),
         customer_name: editForm.customer_name,
-        pages_count: editForm.pages_count,
-        amount: editForm.amount,
+        expense: editForm.expense,
+        amount: total,
       };
 
       setApplications(prev =>
@@ -212,8 +238,8 @@ const Applications = () => {
     setEditForm({
       date: format(entry.date, 'yyyy-MM-dd'),
       customer_name: entry.customer_name,
-      pages_count: entry.pages_count,
-      amount: entry.amount,
+      expense: entry.expense,
+      amount: entry.amount + entry.expense, // Show original amount before expense deduction
     });
   };
 
@@ -244,8 +270,9 @@ const Applications = () => {
               <tr>
                 <th>Date</th>
                 <th>Customer Name</th>
-                <th>Pages</th>
                 <th>Amount</th>
+                <th>Expense</th>
+                <th>Margin</th>
               </tr>
             </thead>
             <tbody>
@@ -253,7 +280,8 @@ const Applications = () => {
                 <tr>
                   <td>${escapeHtml(format(application.date, 'dd/MM/yyyy'))}</td>
                   <td>${escapeHtml(application.customer_name)}</td>
-                  <td>${escapeHtml(application.pages_count.toString())}</td>
+                  <td>₹${escapeHtml((application.amount + application.expense).toFixed(2))}</td>
+                  <td>₹${escapeHtml(application.expense.toFixed(2))}</td>
                   <td>₹${escapeHtml(application.amount.toFixed(2))}</td>
                 </tr>
               `).join('')}
@@ -320,17 +348,6 @@ const Applications = () => {
             />
           </div>
           <div>
-            <Label htmlFor="pages">Number of Pages</Label>
-            <Input
-              id="pages"
-              type="number"
-              value={newEntry.pages_count}
-              onChange={(e) => setNewEntry(prev => ({ ...prev, pages_count: Number(e.target.value) }))}
-              placeholder="Pages"
-              min="1"
-            />
-          </div>
-          <div>
             <Label htmlFor="amount">Amount</Label>
             <Input
               id="amount"
@@ -338,6 +355,17 @@ const Applications = () => {
               value={newEntry.amount}
               onChange={(e) => setNewEntry(prev => ({ ...prev, amount: Number(e.target.value) }))}
               placeholder="Amount"
+            />
+          </div>
+          <div>
+            <Label htmlFor="expense">Expense</Label>
+            <Input
+              id="expense"
+              type="number"
+              value={newEntry.expense}
+              onChange={(e) => setNewEntry(prev => ({ ...prev, expense: Number(e.target.value) }))}
+              placeholder="Expense"
+              min="0"
             />
           </div>
           <Button onClick={handleAddEntry}>
@@ -364,13 +392,13 @@ const Applications = () => {
         />
         <ServiceCard 
           id="summary-amount"
-          title="Total Amount"
+          title="Total Margin"
           date={selectedDate}
           data={{ 
             value: formatCurrency(totalAmount),
           }}
           labels={{ 
-            value: "Amount",
+            value: "Margin",
           }}
           onEdit={() => {}}
           onDelete={() => {}}
@@ -403,13 +431,15 @@ const Applications = () => {
               date={entry.date}
               data={{
                 customer: entry.customer_name,
-                pages: entry.pages_count,
-                amount: formatCurrency(entry.amount),
+                amount: formatCurrency(entry.amount + entry.expense),
+                expense: formatCurrency(entry.expense),
+                margin: formatCurrency(entry.amount),
               }}
               labels={{
                 customer: 'Customer',
-                pages: 'Pages',
                 amount: 'Amount',
+                expense: 'Expense',
+                margin: 'Margin',
               }}
               onEdit={() => openEditEntry(entry)}
               onDelete={() => handleDeleteEntry(entry.id)}
@@ -444,17 +474,6 @@ const Applications = () => {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="edit_pages">Number of Pages</Label>
-              <Input
-                id="edit_pages"
-                type="number"
-                value={editForm.pages_count}
-                onChange={(e) => setEditForm(prev => ({ ...prev, pages_count: Number(e.target.value) }))}
-                placeholder="Pages"
-                min="1"
-              />
-            </div>
-            <div className="grid gap-2">
               <Label htmlFor="edit_amount">Amount</Label>
               <Input
                 id="edit_amount"
@@ -462,6 +481,17 @@ const Applications = () => {
                 value={editForm.amount}
                 onChange={(e) => setEditForm(prev => ({ ...prev, amount: Number(e.target.value) }))}
                 placeholder="Amount"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit_expense">Expense</Label>
+              <Input
+                id="edit_expense"
+                type="number"
+                value={editForm.expense}
+                onChange={(e) => setEditForm(prev => ({ ...prev, expense: Number(e.target.value) }))}
+                placeholder="Expense"
+                min="0"
               />
             </div>
             <Button onClick={handleEditEntry}>Update Application</Button>

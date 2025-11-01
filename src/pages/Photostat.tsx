@@ -23,9 +23,8 @@ import { format } from 'date-fns';
 interface PhotostatEntry {
   id: string;
   date: Date;
-  pages_count: number;
-  amount_per_page: number;
-  total_amount: number;
+  amount: number;
+  expense: number;
   margin: number;
 }
 
@@ -40,14 +39,14 @@ const Photostat = () => {
   // Form state for inline entry
   const [newEntry, setNewEntry] = useState({
     date: new Date().toISOString().split('T')[0],
-    pages_count: 1,
-    amount_per_page: 0,
+    amount: 0,
+    expense: 0,
   });
 
   const [editForm, setEditForm] = useState({
     date: '',
-    pages_count: 1,
-    amount_per_page: 0,
+    amount: 0,
+    expense: 0,
   });
 
   const fetchPhotostats = async () => {
@@ -63,9 +62,8 @@ const Photostat = () => {
       const formattedData = data.map(entry => ({
         id: entry.id,
         date: new Date(entry.date),
-        pages_count: entry.pages_count,
-        amount_per_page: Number(entry.amount_per_page),
-        total_amount: Number(entry.total_amount),
+        amount: Number(entry.amount),
+        expense: Number(entry.expense || 0),
         margin: Number(entry.margin)
       }));
 
@@ -91,41 +89,50 @@ const Photostat = () => {
   }, [date, viewMode, photostats]);
 
   const handleAddPhotostat = async () => {
-    if (!newEntry.pages_count || !newEntry.amount_per_page) {
+    if (!newEntry.amount) {
       toast.error('Please fill in all required fields');
       return;
     }
 
     try {
-      const totalAmount = newEntry.pages_count * newEntry.amount_per_page;
+      const margin = newEntry.amount - newEntry.expense;
       
       const { data, error } = await supabase
         .from('photostats')
         .insert({
           date: new Date(newEntry.date).toISOString(),
-          pages_count: newEntry.pages_count,
-          amount_per_page: newEntry.amount_per_page,
-          total_amount: totalAmount,
-          margin: totalAmount // 100% margin as specified
+          amount: newEntry.amount,
+          expense: newEntry.expense,
+          margin: margin
         })
         .select();
 
       if (error) throw error;
 
+      // Save expense to expenses table
+      if (newEntry.expense > 0) {
+        await supabase
+          .from('expenses')
+          .insert({
+            date: new Date(newEntry.date).toISOString(),
+            name: 'Photostat Service',
+            amount: newEntry.expense,
+          });
+      }
+
       const newPhotostat: PhotostatEntry = {
         id: data[0].id,
         date: new Date(data[0].date),
-        pages_count: data[0].pages_count,
-        amount_per_page: Number(data[0].amount_per_page),
-        total_amount: Number(data[0].total_amount),
+        amount: Number(data[0].amount),
+        expense: Number(data[0].expense || 0),
         margin: Number(data[0].margin)
       };
 
       setPhotostats(prev => [newPhotostat, ...prev]);
       setNewEntry({
         date: new Date().toISOString().split('T')[0],
-        pages_count: 1,
-        amount_per_page: 0,
+        amount: 0,
+        expense: 0,
       });
       toast.success('Photostat entry added successfully');
     } catch (error) {
@@ -138,20 +145,30 @@ const Photostat = () => {
     if (!editingEntry) return;
 
     try {
-      const totalAmount = editForm.pages_count * editForm.amount_per_page;
+      const margin = editForm.amount - editForm.expense;
       
       const { error } = await supabase
         .from('photostats')
         .update({
           date: new Date(editForm.date).toISOString(),
-          pages_count: editForm.pages_count,
-          amount_per_page: editForm.amount_per_page,
-          total_amount: totalAmount,
-          margin: totalAmount // 100% margin as specified
+          amount: editForm.amount,
+          expense: editForm.expense,
+          margin: margin
         })
         .eq('id', editingEntry.id);
 
       if (error) throw error;
+
+      // Update or insert expense
+      if (editForm.expense > 0) {
+        await supabase
+          .from('expenses')
+          .upsert({
+            date: new Date(editForm.date).toISOString(),
+            name: 'Photostat Service',
+            amount: editForm.expense,
+          });
+      }
 
       setPhotostats(prev => 
         prev.map(item => 
@@ -159,10 +176,9 @@ const Photostat = () => {
             ? {
                 ...item,
                 date: new Date(editForm.date),
-                pages_count: editForm.pages_count,
-                amount_per_page: editForm.amount_per_page,
-                total_amount: totalAmount,
-                margin: totalAmount
+                amount: editForm.amount,
+                expense: editForm.expense,
+                margin: margin
               }
             : item
         )
@@ -197,8 +213,8 @@ const Photostat = () => {
     setEditingEntry(entry);
     setEditForm({
       date: format(entry.date, 'yyyy-MM-dd'),
-      pages_count: entry.pages_count,
-      amount_per_page: entry.amount_per_page
+      amount: entry.amount,
+      expense: entry.expense
     });
   };
 
@@ -223,23 +239,23 @@ const Photostat = () => {
         </head>
         <body>
           <h1>Print / Photostat Services Report</h1>
-          <div class="total">Total Pages: ${totalPages} | Total Amount: ₹${totalAmount.toFixed(2)}</div>
+          <div class="total">Total Entries: ${filteredPhotostats.length} | Total Margin: ₹${totalAmount.toFixed(2)}</div>
           <table>
             <thead>
               <tr>
                 <th>Date</th>
-                <th>Pages Count</th>
-                <th>Amount per Page</th>
-                <th>Total Amount</th>
+                <th>Amount</th>
+                <th>Expense</th>
+                <th>Margin</th>
               </tr>
             </thead>
             <tbody>
               ${filteredPhotostats.map((photostat) => `
                 <tr>
                   <td>${format(photostat.date, 'dd/MM/yyyy')}</td>
-                  <td>${photostat.pages_count}</td>
-                  <td>₹${photostat.amount_per_page.toFixed(2)}</td>
-                  <td>₹${photostat.total_amount.toFixed(2)}</td>
+                  <td>₹${photostat.amount.toFixed(2)}</td>
+                  <td>₹${photostat.expense.toFixed(2)}</td>
+                  <td>₹${photostat.margin.toFixed(2)}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -253,8 +269,7 @@ const Photostat = () => {
     printWindow.print();
   };
 
-  const totalPages = filteredPhotostats.reduce((sum, entry) => sum + entry.pages_count, 0);
-  const totalAmount = filteredPhotostats.reduce((sum, entry) => sum + entry.total_amount, 0);
+  const totalAmount = filteredPhotostats.reduce((sum, entry) => sum + entry.margin, 0);
 
   return (
     <PageWrapper
@@ -296,24 +311,24 @@ const Photostat = () => {
             />
           </div>
           <div>
-            <Label htmlFor="pages_count">Number of Pages</Label>
+            <Label htmlFor="amount">Amount</Label>
             <Input
-              id="pages_count"
+              id="amount"
               type="number"
-              value={newEntry.pages_count}
-              onChange={(e) => setNewEntry(prev => ({ ...prev, pages_count: Number(e.target.value) }))}
-              placeholder="Pages"
-              min="1"
+              value={newEntry.amount}
+              onChange={(e) => setNewEntry(prev => ({ ...prev, amount: Number(e.target.value) }))}
+              placeholder="Amount"
+              min="0"
             />
           </div>
           <div>
-            <Label htmlFor="amount_per_page">Amount per Page</Label>
+            <Label htmlFor="expense">Expense</Label>
             <Input
-              id="amount_per_page"
+              id="expense"
               type="number"
-              value={newEntry.amount_per_page}
-              onChange={(e) => setNewEntry(prev => ({ ...prev, amount_per_page: Number(e.target.value) }))}
-              placeholder="Amount per page"
+              value={newEntry.expense}
+              onChange={(e) => setNewEntry(prev => ({ ...prev, expense: Number(e.target.value) }))}
+              placeholder="Expense"
               min="0"
             />
           </div>
@@ -325,12 +340,12 @@ const Photostat = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <StatCard 
-          title="Total Pages"
-          value={totalPages.toString()}
+          title="Total Entries"
+          value={filteredPhotostats.length.toString()}
           icon={<FileText size={20} />}
         />
         <StatCard 
-          title="Total Amount"
+          title="Total Margin"
           value={formatCurrency(totalAmount)}
           icon={<FileText size={20} />}
         />
@@ -349,14 +364,14 @@ const Photostat = () => {
               title="Print / Photostat Entry"
               date={entry.date}
               data={{
-                'Pages': entry.pages_count,
-                'Amount per Page': formatCurrency(entry.amount_per_page),
-                'Total Amount': formatCurrency(entry.total_amount)
+                'Amount': formatCurrency(entry.amount),
+                'Expense': formatCurrency(entry.expense),
+                'Margin': formatCurrency(entry.margin)
               }}
               labels={{
-                'Pages': 'Pages',
-                'Amount per Page': 'Amount per Page',
-                'Total Amount': 'Total Amount'
+                'Amount': 'Amount',
+                'Expense': 'Expense',
+                'Margin': 'Margin'
               }}
               onEdit={() => openEditForm(entry)}
               onDelete={() => handleDeletePhotostat(entry.id)}
@@ -383,24 +398,24 @@ const Photostat = () => {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="edit_pages_count">Number of Pages</Label>
+                <Label htmlFor="edit_amount">Amount</Label>
                 <Input
-                  id="edit_pages_count"
+                  id="edit_amount"
                   type="number"
-                  value={editForm.pages_count}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, pages_count: Number(e.target.value) }))}
-                  placeholder="Pages"
-                  min="1"
+                  value={editForm.amount}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, amount: Number(e.target.value) }))}
+                  placeholder="Amount"
+                  min="0"
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="edit_amount_per_page">Amount per Page</Label>
+                <Label htmlFor="edit_expense">Expense</Label>
                 <Input
-                  id="edit_amount_per_page"
+                  id="edit_expense"
                   type="number"
-                  value={editForm.amount_per_page}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, amount_per_page: Number(e.target.value) }))}
-                  placeholder="Amount per page"
+                  value={editForm.expense}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, expense: Number(e.target.value) }))}
+                  placeholder="Expense"
                   min="0"
                 />
               </div>
