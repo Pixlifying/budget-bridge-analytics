@@ -33,7 +33,7 @@ interface OnlineServiceEntry {
   custom_service?: string;
   customer_name?: string;
   amount: number;
-  count: number;
+  expense: number;
   total: number;
   created_at?: string;
 }
@@ -53,7 +53,7 @@ const OnlineServices = () => {
     service: '',
     custom_service: '',
     amount: 0,
-    count: 1,
+    expense: 0,
   });
 
   const [editForm, setEditForm] = useState({
@@ -62,7 +62,7 @@ const OnlineServices = () => {
     service: '',
     custom_service: '',
     amount: 0,
-    count: 1,
+    expense: 0,
   });
 
   const serviceOptions = [
@@ -97,7 +97,7 @@ const OnlineServices = () => {
         custom_service: entry.custom_service,
         customer_name: entry.customer_name || '',
         amount: Number(entry.amount),
-        count: Number(entry.count),
+        expense: Number(entry.expense || 0),
         total: Number(entry.total),
         created_at: entry.created_at
       }));
@@ -143,13 +143,17 @@ const OnlineServices = () => {
   };
 
   const handleAddEntry = async () => {
-    if (!newEntry.customer_name || !newEntry.service || !newEntry.amount || !newEntry.count) {
+    if (!newEntry.customer_name || !newEntry.service || !newEntry.amount) {
       toast.error('Please fill in all required fields');
       return;
     }
 
     try {
       console.log('Adding online service:', newEntry);
+      const total = newEntry.amount - newEntry.expense;
+      const serviceName = newEntry.service === 'Other' && newEntry.custom_service 
+        ? newEntry.custom_service 
+        : newEntry.service;
       
       const { data, error } = await supabase
         .from('online_services')
@@ -159,14 +163,25 @@ const OnlineServices = () => {
           custom_service: newEntry.service === 'Other' ? newEntry.custom_service : null,
           customer_name: newEntry.customer_name,
           amount: newEntry.amount,
-          count: newEntry.count,
-          total: newEntry.amount * newEntry.count,
+          expense: newEntry.expense,
+          total: total,
         })
         .select();
 
       if (error) {
         console.error('Error adding online service:', error);
         throw error;
+      }
+
+      // Save expense to expenses table
+      if (newEntry.expense > 0) {
+        await supabase
+          .from('expenses')
+          .insert({
+            date: new Date(newEntry.date).toISOString(),
+            name: `Online Service - ${serviceName}`,
+            amount: newEntry.expense,
+          });
       }
 
       if (data && data.length > 0) {
@@ -177,7 +192,7 @@ const OnlineServices = () => {
           custom_service: data[0].custom_service,
           customer_name: data[0].customer_name || '',
           amount: Number(data[0].amount),
-          count: Number(data[0].count),
+          expense: Number(data[0].expense || 0),
           total: Number(data[0].total),
           created_at: data[0].created_at
         };
@@ -189,7 +204,7 @@ const OnlineServices = () => {
           service: '',
           custom_service: '',
           amount: 0,
-          count: 1,
+          expense: 0,
         });
         toast.success('Online service added successfully');
       }
@@ -203,6 +218,11 @@ const OnlineServices = () => {
     if (!editingEntry) return;
 
     try {
+      const total = editForm.amount - editForm.expense;
+      const serviceName = editForm.service === 'Other' && editForm.custom_service 
+        ? editForm.custom_service 
+        : editForm.service;
+
       const { error } = await supabase
         .from('online_services')
         .update({
@@ -211,12 +231,23 @@ const OnlineServices = () => {
           custom_service: editForm.service === 'Other' ? editForm.custom_service : null,
           customer_name: editForm.customer_name,
           amount: editForm.amount,
-          count: editForm.count,
-          total: editForm.amount * editForm.count,
+          expense: editForm.expense,
+          total: total,
         })
         .eq('id', editingEntry.id);
 
       if (error) throw error;
+
+      // Update or insert expense
+      if (editForm.expense > 0) {
+        await supabase
+          .from('expenses')
+          .upsert({
+            date: new Date(editForm.date).toISOString(),
+            name: `Online Service - ${serviceName}`,
+            amount: editForm.expense,
+          });
+      }
 
       const updatedEntry: OnlineServiceEntry = {
         ...editingEntry,
@@ -225,8 +256,8 @@ const OnlineServices = () => {
         custom_service: editForm.service === 'Other' ? editForm.custom_service : null,
         customer_name: editForm.customer_name,
         amount: editForm.amount,
-        count: editForm.count,
-        total: editForm.amount * editForm.count,
+        expense: editForm.expense,
+        total: total,
       };
 
       setOnlineServices(prev =>
@@ -266,7 +297,7 @@ const OnlineServices = () => {
       service: entry.service,
       custom_service: entry.custom_service || '',
       amount: entry.amount,
-      count: entry.count,
+      expense: entry.expense,
     });
   };
 
@@ -299,8 +330,8 @@ const OnlineServices = () => {
                 <th>Customer</th>
                 <th>Service</th>
                 <th>Amount</th>
-                <th>Count</th>
-                <th>Total</th>
+                <th>Expense</th>
+                <th>Margin</th>
               </tr>
             </thead>
             <tbody>
@@ -310,7 +341,7 @@ const OnlineServices = () => {
                   <td>${escapeHtml(service.customer_name)}</td>
                   <td>${escapeHtml(service.service === 'Other' && service.custom_service ? service.custom_service : service.service)}</td>
                   <td>₹${escapeHtml(service.amount.toFixed(2))}</td>
-                  <td>${escapeHtml(service.count.toString())}</td>
+                  <td>₹${escapeHtml(service.expense.toFixed(2))}</td>
                   <td>₹${escapeHtml(service.total.toFixed(2))}</td>
                 </tr>
               `).join('')}
@@ -413,14 +444,14 @@ const OnlineServices = () => {
             />
           </div>
           <div>
-            <Label htmlFor="count">Count</Label>
+            <Label htmlFor="expense">Expense</Label>
             <Input
-              id="count"
+              id="expense"
               type="number"
-              value={newEntry.count}
-              onChange={(e) => setNewEntry(prev => ({ ...prev, count: Number(e.target.value) }))}
-              placeholder="Count"
-              min="1"
+              value={newEntry.expense}
+              onChange={(e) => setNewEntry(prev => ({ ...prev, expense: Number(e.target.value) }))}
+              placeholder="Expense"
+              min="0"
             />
           </div>
           <Button onClick={handleAddEntry}>
@@ -447,13 +478,13 @@ const OnlineServices = () => {
         />
         <ServiceCard 
           id="summary-amount"
-          title="Total Amount"
+          title="Total Margin"
           date={selectedDate}
           data={{ 
             value: formatCurrency(totalAmount),
           }}
           labels={{ 
-            value: "Amount",
+            value: "Margin",
           }}
           onEdit={() => {}}
           onDelete={() => {}}
@@ -487,12 +518,14 @@ const OnlineServices = () => {
               data={{
                 customer: entry.customer_name || 'Not specified',
                 amount: formatCurrency(entry.amount),
-                total: formatCurrency(entry.total),
+                expense: formatCurrency(entry.expense),
+                margin: formatCurrency(entry.total),
               }}
               labels={{
                 customer: 'Customer',
-                amount: 'Amount per Service',
-                total: 'Total Amount',
+                amount: 'Amount',
+                expense: 'Expense',
+                margin: 'Margin',
               }}
               onEdit={() => openEditEntry(entry)}
               onDelete={() => handleDeleteEntry(entry.id)}
