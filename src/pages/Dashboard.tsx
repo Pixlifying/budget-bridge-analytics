@@ -140,6 +140,31 @@ const Dashboard = () => {
     }
   });
 
+  const { data: bankingAccountsData, error: bankingAccountsError } = useQuery({
+    queryKey: ['bankingAccounts', viewMode, date],
+    queryFn: async () => {
+      let query = supabase.from('banking_accounts').select('*');
+      
+      if (viewMode === 'day') {
+        const startDateStr = format(startOfDay(date), 'yyyy-MM-dd');
+        const endDateStr = format(endOfDay(date), 'yyyy-MM-dd');
+        
+        query = query.gte('date', startDateStr).lt('date', endDateStr + 'T23:59:59');
+      } else if (viewMode === 'month') {
+        const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
+        const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
+        query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59');
+      }
+      
+      const { data, error } = await query.order('date', { ascending: false });
+      if (error) {
+        throw error;
+      }
+      console.log('Banking accounts data fetched:', data, 'for date:', date, 'mode:', viewMode);
+      return data;
+    }
+  });
+
   const { data: pendingBalanceData, error: pendingBalanceError } = useQuery({
     queryKey: ['pendingBalances', viewMode, date],
     queryFn: async () => {
@@ -193,6 +218,7 @@ const Dashboard = () => {
   useEffect(() => {
     if (
       bankingError ||
+      bankingAccountsError ||
       onlineError ||
       applicationsError ||
       photostatError ||
@@ -203,6 +229,7 @@ const Dashboard = () => {
     }
   }, [
     bankingError,
+    bankingAccountsError,
     onlineError,
     applicationsError,
     photostatError,
@@ -214,6 +241,8 @@ const Dashboard = () => {
   const bankingServicesTotal = bankingData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
   const bankingServicesCount = bankingData?.reduce((sum, entry) => sum + (entry.transaction_count || 1), 0) || 0;
   const bankingMargin = bankingData?.reduce((sum, entry) => sum + entry.margin, 0) || 0;
+  
+  const bankingAccountsMargin = bankingAccountsData?.reduce((sum, entry) => sum + Number(entry.margin || 0), 0) || 0;
 
   const onlineServicesTotal = onlineData?.reduce((sum, entry) => sum + Number(entry.total || 0), 0) || 0;
   const onlineServicesCount = onlineData?.length || 0;
@@ -233,12 +262,13 @@ const Dashboard = () => {
   const expensesTotal = expensesData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
   const expensesCount = expensesData?.length || 0;
 
-  // Calculate total margin including Photostat
-  const totalMargin = bankingMargin + onlineMargin + applicationsMargin + photostatMarginTotal;
+  // Calculate total margin including Photostat and Other Banking Services
+  const totalMargin = bankingMargin + bankingAccountsMargin + onlineMargin + applicationsMargin + photostatMarginTotal;
 
-  // 2. Update marginProportions and marginDetails to include Printout and Photostat
+  // 2. Update marginProportions and marginDetails to include Printout and Photostat and Other Banking Services
   const marginProportions = [
     { name: 'Banking', value: bankingMargin },
+    { name: 'Other Banking', value: bankingAccountsMargin },
     { name: 'Online', value: onlineMargin },
     { name: 'Applications', value: applicationsMargin },
     { name: 'Printout and Photostat', value: photostatMarginTotal },
@@ -249,6 +279,7 @@ const Dashboard = () => {
   const getServiceColor = (serviceName: string): string => {
     switch (serviceName) {
       case 'Banking': return '#A5D6A7';
+      case 'Other Banking': return '#81C784';
       case 'Online': return '#FFAB91';
       case 'Applications': return '#B39DDB';
       case 'Printout and Photostat': return '#F48FB1';
@@ -269,6 +300,7 @@ const Dashboard = () => {
 
   const marginDetails = [
     { name: 'Banking Services', value: bankingMargin, color: '#A5D6A7' },
+    { name: 'Other Banking Services', value: bankingAccountsMargin, color: '#81C784' },
     { name: 'Online Services', value: onlineMargin, color: '#FFAB91' },
     { name: 'Applications', value: applicationsMargin, color: '#B39DDB' },
     { name: 'Printout and Photostat', value: photostatMarginTotal, color: '#F48FB1' },

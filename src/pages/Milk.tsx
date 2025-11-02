@@ -6,11 +6,12 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
+import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { exportToExcel, exportToPDF } from '@/utils/calculateUtils';
 import PageWrapper from '@/components/layout/PageWrapper';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import DateRangePicker from '@/components/ui/DateRangePicker';
 import {
   Dialog,
   DialogContent,
@@ -32,11 +33,14 @@ interface MilkRecord {
 
 const Milk = () => {
   const [records, setRecords] = useState<MilkRecord[]>([]);
+  const [filteredRecords, setFilteredRecords] = useState<MilkRecord[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const [defaultRate, setDefaultRate] = useLocalStorage('milk_default_rate', 45);
   const [tempRate, setTempRate] = useState(defaultRate.toString());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [date, setDate] = useState<Date>(new Date());
+  const [viewMode, setViewMode] = useState<'day' | 'month' | 'year'>('day');
 
   // Form state for new record
   const [newRecord, setNewRecord] = useState({
@@ -69,6 +73,30 @@ const Milk = () => {
   useEffect(() => {
     fetchRecords();
   }, []);
+
+  useEffect(() => {
+    let filtered = records;
+    
+    if (viewMode === 'day') {
+      filtered = records.filter(record => {
+        const recordDate = new Date(record.date);
+        return recordDate.toDateString() === date.toDateString();
+      });
+    } else if (viewMode === 'month') {
+      filtered = records.filter(record => {
+        const recordDate = new Date(record.date);
+        return recordDate.getMonth() === date.getMonth() && 
+               recordDate.getFullYear() === date.getFullYear();
+      });
+    } else if (viewMode === 'year') {
+      filtered = records.filter(record => {
+        const recordDate = new Date(record.date);
+        return recordDate.getFullYear() === date.getFullYear();
+      });
+    }
+    
+    setFilteredRecords(filtered);
+  }, [date, viewMode, records]);
 
   const handleSave = async () => {
     if (!newRecord.milk_amount || !newRecord.amount_per_litre) {
@@ -140,7 +168,7 @@ const Milk = () => {
   };
 
   const handleDownload = () => {
-    if (records.length === 0) {
+    if (filteredRecords.length === 0) {
       toast({
         title: 'No Data',
         description: 'No records to download',
@@ -149,7 +177,7 @@ const Milk = () => {
       return;
     }
 
-    const formattedData = records.map((record) => ({
+    const formattedData = filteredRecords.map((record) => ({
       Date: format(new Date(record.date), 'dd/MM/yyyy'),
       'Milk Amount (Litres)': record.milk_amount,
       Received: record.received ? 'Yes' : 'No',
@@ -166,7 +194,7 @@ const Milk = () => {
   };
 
   const handlePrint = () => {
-    if (records.length === 0) {
+    if (filteredRecords.length === 0) {
       toast({
         title: 'No Data',
         description: 'No records to print',
@@ -207,7 +235,7 @@ const Milk = () => {
               </tr>
             </thead>
             <tbody>
-              ${records
+              ${filteredRecords
                 .map(
                   (record, index) => `
                 <tr>
@@ -223,8 +251,8 @@ const Milk = () => {
                 .join('')}
             </tbody>
           </table>
-          <div class="total">Total Records: ${records.length}</div>
-          <div class="total">Grand Total: ₹${records.reduce((sum, r) => sum + r.total, 0).toFixed(2)}</div>
+          <div class="total">Total Records: ${filteredRecords.length}</div>
+          <div class="total">Grand Total: ₹${filteredRecords.reduce((sum, r) => sum + r.total, 0).toFixed(2)}</div>
         </body>
       </html>
     `;
@@ -260,7 +288,18 @@ const Milk = () => {
   };
 
   return (
-    <PageWrapper title="Milk Records">
+    <PageWrapper 
+      title="Milk Records"
+      action={
+        <DateRangePicker 
+          date={date}
+          onDateChange={setDate}
+          mode={viewMode as 'day' | 'month'}
+          onModeChange={(mode) => setViewMode(mode as 'day' | 'month' | 'year')}
+          showYearMode={true}
+        />
+      }
+    >
       <div className="space-y-6">
         {/* Add New Record Form */}
         <Card>
@@ -381,7 +420,7 @@ const Milk = () => {
         {/* Records Table */}
         <Card>
           <CardHeader>
-            <CardTitle>Milk Records</CardTitle>
+            <CardTitle>Milk Records ({viewMode === 'day' ? 'Daily' : viewMode === 'month' ? 'Monthly' : 'Yearly'})</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -398,14 +437,14 @@ const Milk = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {records.length === 0 ? (
+                  {filteredRecords.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="text-center p-4 text-muted-foreground">
-                        No records found. Add your first milk record above.
+                        No records found for the selected {viewMode}.
                       </td>
                     </tr>
                   ) : (
-                    records.map((record, index) => (
+                    filteredRecords.map((record, index) => (
                       <tr key={record.id} className="border-b hover:bg-muted/50">
                         <td className="p-2">{index + 1}</td>
                         <td className="p-2">{format(new Date(record.date), 'dd/MM/yyyy')}</td>
@@ -436,14 +475,14 @@ const Milk = () => {
                     ))
                   )}
                 </tbody>
-                {records.length > 0 && (
+                {filteredRecords.length > 0 && (
                   <tfoot>
                     <tr className="border-t-2 font-bold">
                       <td colSpan={5} className="text-right p-2">
                         Grand Total:
                       </td>
                       <td className="p-2">
-                        ₹{records.reduce((sum, r) => sum + r.total, 0).toFixed(2)}
+                        ₹{filteredRecords.reduce((sum, r) => sum + r.total, 0).toFixed(2)}
                       </td>
                       <td></td>
                     </tr>

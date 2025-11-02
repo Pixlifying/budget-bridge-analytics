@@ -82,8 +82,10 @@ export type Database = {
           created_at: string | null
           customer_name: string
           date: string
+          expense: number | null
           id: string
           insurance_type: string | null
+          margin: number | null
         }
         Insert: {
           account_number?: string | null
@@ -92,8 +94,10 @@ export type Database = {
           created_at?: string | null
           customer_name: string
           date?: string
+          expense?: number | null
           id?: string
           insurance_type?: string | null
+          margin?: number | null
         }
         Update: {
           account_number?: string | null
@@ -102,8 +106,10 @@ export type Database = {
           created_at?: string | null
           customer_name?: string
           date?: string
+          expense?: number | null
           id?: string
           insurance_type?: string | null
+          margin?: number | null
         }
         Relationships: []
       }

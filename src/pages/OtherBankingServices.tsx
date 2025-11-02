@@ -35,6 +35,8 @@ interface BankingAccount {
   account_number?: string;
   insurance_type?: string;
   amount: number;
+  expense: number;
+  margin: number;
   created_at?: string;
 }
 
@@ -75,6 +77,7 @@ const OtherBankingServices = () => {
     account_number: '',
     insurance_type: '',
     amount: 0,
+    expense: 0,
   });
 
   const [editForm, setEditForm] = useState({
@@ -84,6 +87,7 @@ const OtherBankingServices = () => {
     account_number: '',
     insurance_type: '',
     amount: 0,
+    expense: 0,
   });
 
   const fetchBankingAccounts = async () => {
@@ -104,6 +108,8 @@ const OtherBankingServices = () => {
         account_number: entry.account_number || '',
         insurance_type: entry.insurance_type || '',
         amount: Number(entry.amount),
+        expense: Number(entry.expense || 0),
+        margin: Number(entry.margin || 0),
         created_at: entry.created_at
       }));
 
@@ -135,6 +141,8 @@ const OtherBankingServices = () => {
     }
 
     try {
+      const margin = newEntry.amount - newEntry.expense;
+      
       const { data, error } = await supabase
         .from('banking_accounts')
         .insert({
@@ -144,10 +152,42 @@ const OtherBankingServices = () => {
           account_number: newEntry.account_number || null,
           insurance_type: newEntry.insurance_type || null,
           amount: newEntry.amount,
+          expense: newEntry.expense,
+          margin: margin,
         })
         .select();
 
       if (error) throw error;
+
+      // Save to account_details table if account number is provided
+      if (newEntry.account_number) {
+        const { error: accountError } = await supabase
+          .from('account_details')
+          .upsert({
+            name: newEntry.customer_name,
+            account_number: newEntry.account_number,
+            aadhar_number: '', // Not available in this form
+          }, { 
+            onConflict: 'account_number',
+            ignoreDuplicates: false 
+          });
+
+        if (accountError) console.error('Error saving to account_details:', accountError);
+      }
+
+      // Save expense to expenses table
+      if (newEntry.expense > 0) {
+        const expenseName = `${newEntry.account_type}${newEntry.insurance_type ? ' - ' + newEntry.insurance_type : ''}`;
+        const { error: expenseError } = await supabase
+          .from('expenses')
+          .insert({
+            date: new Date(newEntry.date).toISOString(),
+            name: expenseName,
+            amount: newEntry.expense,
+          });
+
+        if (expenseError) console.error('Error saving expense:', expenseError);
+      }
 
       if (data && data.length > 0) {
         const newAccount: BankingAccount = {
@@ -158,6 +198,8 @@ const OtherBankingServices = () => {
           account_number: data[0].account_number || '',
           insurance_type: data[0].insurance_type || '',
           amount: Number(data[0].amount),
+          expense: Number(data[0].expense || 0),
+          margin: Number(data[0].margin || 0),
           created_at: data[0].created_at
         };
 
@@ -169,6 +211,7 @@ const OtherBankingServices = () => {
           account_number: '',
           insurance_type: '',
           amount: 0,
+          expense: 0,
         });
         toast.success('Banking account added successfully');
       }
@@ -182,6 +225,8 @@ const OtherBankingServices = () => {
     if (!editingEntry) return;
 
     try {
+      const margin = editForm.amount - editForm.expense;
+      
       const { error } = await supabase
         .from('banking_accounts')
         .update({
@@ -191,10 +236,28 @@ const OtherBankingServices = () => {
           account_number: editForm.account_number || null,
           insurance_type: editForm.insurance_type || null,
           amount: editForm.amount,
+          expense: editForm.expense,
+          margin: margin,
         })
         .eq('id', editingEntry.id);
 
       if (error) throw error;
+
+      // Update account_details if account number is provided
+      if (editForm.account_number) {
+        const { error: accountError } = await supabase
+          .from('account_details')
+          .upsert({
+            name: editForm.customer_name,
+            account_number: editForm.account_number,
+            aadhar_number: '', // Not available in this form
+          }, { 
+            onConflict: 'account_number',
+            ignoreDuplicates: false 
+          });
+
+        if (accountError) console.error('Error updating account_details:', accountError);
+      }
 
       const updatedEntry: BankingAccount = {
         ...editingEntry,
@@ -204,6 +267,8 @@ const OtherBankingServices = () => {
         account_number: editForm.account_number,
         insurance_type: editForm.insurance_type,
         amount: editForm.amount,
+        expense: editForm.expense,
+        margin: margin,
       };
 
       setBankingAccounts(prev =>
@@ -244,6 +309,7 @@ const OtherBankingServices = () => {
       account_number: entry.account_number || '',
       insurance_type: entry.insurance_type || '',
       amount: entry.amount,
+      expense: entry.expense || 0,
     });
   };
 
@@ -304,6 +370,7 @@ const OtherBankingServices = () => {
 
   const totalAccounts = filteredAccounts.length;
   const totalAmount = filteredAccounts.reduce((sum, account) => sum + account.amount, 0);
+  const totalMargin = filteredAccounts.reduce((sum, account) => sum + account.margin, 0);
 
   return (
     <PageWrapper
@@ -399,6 +466,24 @@ const OtherBankingServices = () => {
               placeholder="Amount"
             />
           </div>
+          <div>
+            <Label htmlFor="expense">Expense</Label>
+            <Input
+              id="expense"
+              type="number"
+              value={newEntry.expense}
+              onChange={(e) => setNewEntry(prev => ({ ...prev, expense: Number(e.target.value) }))}
+              placeholder="Expense"
+            />
+          </div>
+          <div>
+            <Label>Margin</Label>
+            <Input
+              value={(newEntry.amount - newEntry.expense).toFixed(2)}
+              disabled
+              className="bg-muted"
+            />
+          </div>
         </div>
         <div className="mt-4">
           <Button onClick={handleAddEntry}>
@@ -407,7 +492,7 @@ const OtherBankingServices = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <StatCard 
           title="Total Accounts"
           value={totalAccounts.toString()}
@@ -416,6 +501,11 @@ const OtherBankingServices = () => {
         <StatCard 
           title="Total Amount"
           value={formatCurrency(totalAmount)}
+          icon={<CreditCard size={20} />}
+        />
+        <StatCard 
+          title="Total Margin"
+          value={formatCurrency(totalMargin)}
           icon={<CreditCard size={20} />}
         />
       </div>
@@ -436,13 +526,17 @@ const OtherBankingServices = () => {
                 account_type: entry.account_type,
                 account_number: entry.account_number || 'N/A',
                 insurance_type: entry.insurance_type || 'N/A',
-                amount: formatCurrency(entry.amount)
+                amount: formatCurrency(entry.amount),
+                expense: formatCurrency(entry.expense),
+                margin: formatCurrency(entry.margin)
               }}
               labels={{
                 account_type: 'Account Type',
                 account_number: 'Account Number',
                 insurance_type: 'Insurance Type',
-                amount: 'Amount'
+                amount: 'Amount',
+                expense: 'Expense',
+                margin: 'Margin'
               }}
               onEdit={() => openEditEntry(entry)}
               onDelete={() => handleDeleteEntry(entry.id)}
@@ -525,6 +619,26 @@ const OtherBankingServices = () => {
                   value={editForm.amount}
                   onChange={(e) => setEditForm(prev => ({ ...prev, amount: Number(e.target.value) }))}
                   placeholder="Amount"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit_expense">Expense</Label>
+                <Input
+                  id="edit_expense"
+                  type="number"
+                  value={editForm.expense}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, expense: Number(e.target.value) }))}
+                  placeholder="Expense"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label>Margin</Label>
+                <Input
+                  value={(editForm.amount - editForm.expense).toFixed(2)}
+                  disabled
+                  className="bg-muted"
                 />
               </div>
             </div>

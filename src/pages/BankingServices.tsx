@@ -32,6 +32,7 @@ interface BankingService {
 
 const BankingServices = () => {
   const [bankingServices, setBankingServices] = useState<BankingService[]>([]);
+  const [bankingAccounts, setBankingAccounts] = useState<any[]>([]);
   const [filteredServices, setFilteredServices] = useState<BankingService[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editingEntry, setEditingEntry] = useState<BankingService | null>(null);
@@ -71,6 +72,16 @@ const BankingServices = () => {
       }));
 
       setBankingServices(formattedData);
+
+      // Fetch banking accounts (Other Banking Services)
+      const { data: accountsData, error: accountsError } = await supabase
+        .from('banking_accounts')
+        .select('*')
+        .order('date', { ascending: false });
+
+      if (accountsError) throw accountsError;
+
+      setBankingAccounts(accountsData || []);
     } catch (error) {
       console.error('Error fetching banking services:', error);
       toast.error('Failed to load banking services');
@@ -253,8 +264,24 @@ const BankingServices = () => {
 
   const totalServices = filteredServices.length;
   const totalAmount = filteredServices.reduce((sum, service) => sum + service.amount, 0);
-  const totalMargin = filteredServices.reduce((sum, service) => sum + service.margin, 0);
   const totalTransactions = filteredServices.reduce((sum, service) => sum + service.transaction_count, 0);
+  
+  // Filter banking accounts by date/month
+  const filteredBankingAccounts = viewMode === 'day' 
+    ? bankingAccounts.filter(account => {
+        const accountDate = new Date(account.date);
+        return accountDate.toDateString() === date.toDateString();
+      })
+    : bankingAccounts.filter(account => {
+        const accountDate = new Date(account.date);
+        return accountDate.getMonth() === date.getMonth() && 
+               accountDate.getFullYear() === date.getFullYear();
+      });
+  
+  const bankingAccountsMargin = filteredBankingAccounts.reduce((sum, account) => 
+    sum + Number(account.margin || 0), 0);
+  
+  const totalMargin = filteredServices.reduce((sum, service) => sum + service.margin, 0) + bankingAccountsMargin;
 
   return (
     <PageWrapper

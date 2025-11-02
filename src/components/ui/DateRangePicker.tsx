@@ -21,11 +21,12 @@ import {
 interface DateRangePickerProps {
   date: Date;
   onDateChange: (date: Date) => void;
-  mode: 'day' | 'month';
-  onModeChange: (mode: 'day' | 'month') => void;
+  mode: string;
+  onModeChange: (mode: any) => void;
+  showYearMode?: boolean;
 }
 
-const DateRangePicker = ({ date, onDateChange, mode, onModeChange }: DateRangePickerProps) => {
+const DateRangePicker = ({ date, onDateChange, mode, onModeChange, showYearMode = false }: DateRangePickerProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleDateSelect = (newDate: Date | undefined) => {
@@ -35,13 +36,19 @@ const DateRangePicker = ({ date, onDateChange, mode, onModeChange }: DateRangePi
     }
   };
 
-  const dateFormat = mode === 'day' ? 'd MMM yyyy' : 'MMMM yyyy';
+  const handleModeChange = (value: string) => {
+    // Only allow year mode if showYearMode is true
+    if (value === 'year' && !showYearMode) return;
+    onModeChange(value as 'day' | 'month' | 'year');
+  };
+
+  const dateFormat = mode === 'day' ? 'd MMM yyyy' : mode === 'month' ? 'MMMM yyyy' : 'yyyy';
 
   return (
     <div className="flex items-center space-x-2">
       <Select
         value={mode}
-        onValueChange={(value) => onModeChange(value as 'day' | 'month')}
+        onValueChange={handleModeChange}
       >
         <SelectTrigger className="w-[120px] h-9">
           <SelectValue placeholder="Select view" />
@@ -49,6 +56,7 @@ const DateRangePicker = ({ date, onDateChange, mode, onModeChange }: DateRangePi
         <SelectContent>
           <SelectItem value="day">Daily</SelectItem>
           <SelectItem value="month">Monthly</SelectItem>
+          {showYearMode && <SelectItem value="year">Yearly</SelectItem>}
         </SelectContent>
       </Select>
 
