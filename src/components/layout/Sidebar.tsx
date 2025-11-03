@@ -188,6 +188,11 @@ const Sidebar = () => {
       label: 'Misc Expenses',
       to: '/misc-expenses',
     },
+    {
+      icon: <PiggyBank size={isCollapsed ? 20 : 16} />,
+      label: 'Money (Udhar)',
+      to: '/udhar',
+    },
   ];
 
   // Financial Services submenu items

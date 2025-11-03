@@ -35,6 +35,7 @@ import Forms from "@/pages/Forms";
 import Milk from "@/pages/Milk";
 import SocialSecurity from "@/pages/SocialSecurity";
 import DLC from "@/pages/DLC";
+import Udhar from '@/pages/Udhar';
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -290,6 +291,7 @@ const App = () => {
                     <Route path="/od" element={<OD />} />
                     <Route path="/social-security" element={<SocialSecurity />} />
                     <Route path="/dlc" element={<DLC />} />
+                    <Route path="/udhar" element={<Udhar />} />
                     <Route path="/online-services" element={<OnlineServices />} />
                     <Route path="/applications" element={<Applications />} />
                     <Route path="/photostat" element={<Photostat />} />

@@ -925,6 +925,36 @@ export type Database = {
         }
         Relationships: []
       }
+      udhar_records: {
+        Row: {
+          amount: number
+          created_at: string
+          date: string
+          id: string
+          name: string
+          remarks: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          date?: string
+          id?: string
+          name: string
+          remarks?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          date?: string
+          id?: string
+          name?: string
+          remarks?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       uploaded_documents: {
         Row: {
           created_at: string
