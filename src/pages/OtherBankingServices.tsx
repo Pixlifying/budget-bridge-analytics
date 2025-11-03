@@ -160,19 +160,24 @@ const OtherBankingServices = () => {
       if (error) throw error;
 
       // Save to account_details table if account number is provided
-      if (newEntry.account_number) {
+      if (newEntry.account_number && newEntry.account_number.trim()) {
         const { error: accountError } = await supabase
           .from('account_details')
           .upsert({
             name: newEntry.customer_name,
-            account_number: newEntry.account_number,
+            account_number: newEntry.account_number.trim(),
             aadhar_number: '', // Not available in this form
           }, { 
             onConflict: 'account_number',
             ignoreDuplicates: false 
           });
 
-        if (accountError) console.error('Error saving to account_details:', accountError);
+        if (accountError) {
+          console.error('Error saving to account_details:', accountError);
+          toast.error('Failed to save account details');
+        } else {
+          toast.success('Account details saved successfully');
+        }
       }
 
       // Save expense to expenses table
@@ -244,19 +249,22 @@ const OtherBankingServices = () => {
       if (error) throw error;
 
       // Update account_details if account number is provided
-      if (editForm.account_number) {
+      if (editForm.account_number && editForm.account_number.trim()) {
         const { error: accountError } = await supabase
           .from('account_details')
           .upsert({
             name: editForm.customer_name,
-            account_number: editForm.account_number,
+            account_number: editForm.account_number.trim(),
             aadhar_number: '', // Not available in this form
           }, { 
             onConflict: 'account_number',
             ignoreDuplicates: false 
           });
 
-        if (accountError) console.error('Error updating account_details:', accountError);
+        if (accountError) {
+          console.error('Error updating account_details:', accountError);
+          toast.error('Failed to update account details');
+        }
       }
 
       const updatedEntry: BankingAccount = {
