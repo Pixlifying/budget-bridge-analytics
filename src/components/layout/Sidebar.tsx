@@ -217,6 +217,11 @@ const Sidebar = () => {
       label: 'Social Security',
       to: '/social-security',
     },
+    {
+      icon: <Shield size={isCollapsed ? 20 : 16} />,
+      label: 'Life Certificate (DLC)',
+      to: '/dlc',
+    },
   ];
 
   // Customer Services submenu items

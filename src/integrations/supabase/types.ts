@@ -270,6 +270,39 @@ export type Database = {
         }
         Relationships: []
       }
+      dlc_records: {
+        Row: {
+          account_number: string
+          created_at: string
+          date: string
+          id: string
+          pensioner_name: string
+          ppo_number: string
+          remarks: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_number: string
+          created_at?: string
+          date?: string
+          id?: string
+          pensioner_name: string
+          ppo_number: string
+          remarks?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_number?: string
+          created_at?: string
+          date?: string
+          id?: string
+          pensioner_name?: string
+          ppo_number?: string
+          remarks?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       expenses: {
         Row: {
           amount: number
