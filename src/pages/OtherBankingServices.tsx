@@ -75,6 +75,7 @@ const OtherBankingServices = () => {
     customer_name: '',
     account_type: '',
     account_number: '',
+    aadhar_number: '',
     insurance_type: '',
     amount: 0,
     expense: 0,
@@ -85,6 +86,7 @@ const OtherBankingServices = () => {
     customer_name: '',
     account_type: '',
     account_number: '',
+    aadhar_number: '',
     insurance_type: '',
     amount: 0,
     expense: 0,
@@ -159,14 +161,17 @@ const OtherBankingServices = () => {
 
       if (error) throw error;
 
-      // Save to account_details table if account number is provided
-      if (newEntry.account_number && newEntry.account_number.trim()) {
+      // Save to account_details table if account number and aadhar number are provided
+      if (newEntry.account_number && newEntry.account_number.trim() && 
+          newEntry.aadhar_number && newEntry.aadhar_number.trim()) {
+        const cleanAadhar = newEntry.aadhar_number.replace(/\s/g, '');
+        
         const { error: accountError } = await supabase
           .from('account_details')
           .upsert({
             name: newEntry.customer_name,
             account_number: newEntry.account_number.trim(),
-            aadhar_number: '', // Not available in this form
+            aadhar_number: cleanAadhar,
           }, { 
             onConflict: 'account_number',
             ignoreDuplicates: false 
@@ -174,9 +179,10 @@ const OtherBankingServices = () => {
 
         if (accountError) {
           console.error('Error saving to account_details:', accountError);
-          toast.error('Failed to save account details');
-        } else {
-          toast.success('Account details saved successfully');
+          // Don't show error toast for duplicate records, just log it
+          if (!accountError.message.includes('duplicate') && accountError.code !== '23505') {
+            toast.error('Failed to save account details');
+          }
         }
       }
 
@@ -214,6 +220,7 @@ const OtherBankingServices = () => {
           customer_name: '',
           account_type: '',
           account_number: '',
+          aadhar_number: '',
           insurance_type: '',
           amount: 0,
           expense: 0,
@@ -248,14 +255,17 @@ const OtherBankingServices = () => {
 
       if (error) throw error;
 
-      // Update account_details if account number is provided
-      if (editForm.account_number && editForm.account_number.trim()) {
+      // Update account_details if account number and aadhar number are provided
+      if (editForm.account_number && editForm.account_number.trim() && 
+          editForm.aadhar_number && editForm.aadhar_number.trim()) {
+        const cleanAadhar = editForm.aadhar_number.replace(/\s/g, '');
+        
         const { error: accountError } = await supabase
           .from('account_details')
           .upsert({
             name: editForm.customer_name,
             account_number: editForm.account_number.trim(),
-            aadhar_number: '', // Not available in this form
+            aadhar_number: cleanAadhar,
           }, { 
             onConflict: 'account_number',
             ignoreDuplicates: false 
@@ -263,7 +273,9 @@ const OtherBankingServices = () => {
 
         if (accountError) {
           console.error('Error updating account_details:', accountError);
-          toast.error('Failed to update account details');
+          if (!accountError.message.includes('duplicate') && accountError.code !== '23505') {
+            toast.error('Failed to update account details');
+          }
         }
       }
 
@@ -315,6 +327,7 @@ const OtherBankingServices = () => {
       customer_name: entry.customer_name,
       account_type: entry.account_type,
       account_number: entry.account_number || '',
+      aadhar_number: '',
       insurance_type: entry.insurance_type || '',
       amount: entry.amount,
       expense: entry.expense || 0,
@@ -448,6 +461,21 @@ const OtherBankingServices = () => {
               value={newEntry.account_number}
               onChange={(e) => setNewEntry(prev => ({ ...prev, account_number: e.target.value }))}
               placeholder="Account number (optional)"
+            />
+          </div>
+          <div>
+            <Label htmlFor="aadhar_number">Aadhar Number</Label>
+            <Input
+              id="aadhar_number"
+              value={newEntry.aadhar_number}
+              onChange={(e) => {
+                const formatted = e.target.value.replace(/\D/g, '').replace(/(\d{4})(?=\d)/g, '$1 ');
+                if (formatted.replace(/\s/g, '').length <= 12) {
+                  setNewEntry(prev => ({ ...prev, aadhar_number: formatted }));
+                }
+              }}
+              placeholder="1234 5678 9012 (optional)"
+              maxLength={14}
             />
           </div>
           <div>
@@ -605,6 +633,21 @@ const OtherBankingServices = () => {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit_aadhar_number">Aadhar Number</Label>
+                <Input
+                  id="edit_aadhar_number"
+                  value={editForm.aadhar_number}
+                  onChange={(e) => {
+                    const formatted = e.target.value.replace(/\D/g, '').replace(/(\d{4})(?=\d)/g, '$1 ');
+                    if (formatted.replace(/\s/g, '').length <= 12) {
+                      setEditForm(prev => ({ ...prev, aadhar_number: formatted }));
+                    }
+                  }}
+                  placeholder="1234 5678 9012 (optional)"
+                  maxLength={14}
+                />
+              </div>
               <div className="grid gap-2">
                 <Label htmlFor="edit_insurance_type">Insurance Type</Label>
                 <Select value={editForm.insurance_type} onValueChange={(value) => setEditForm(prev => ({ ...prev, insurance_type: value }))}>
