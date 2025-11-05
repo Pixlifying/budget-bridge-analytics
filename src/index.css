@@ -202,3 +202,17 @@
 .group:hover .animate-scroll-up {
   animation-play-state: paused;
 }
+
+/* Cash in hand slide animation */
+@keyframes slide-left-right {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(20px);
+  }
+}
+
+.animate-slide-left-right {
+  animation: slide-left-right 3s ease-in-out infinite;
+}

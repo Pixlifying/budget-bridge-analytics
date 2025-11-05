@@ -735,11 +735,18 @@ const Analytics = () => {
               className="mx-auto aspect-square max-h-[300px]"
             >
               <RadialBarChart 
-                data={serviceBreakdownData.map((item, index) => ({ 
-                  ...item, 
-                  visitors: item.margin,
-                  fill: COLORS[index % COLORS.length]
-                }))} 
+                data={serviceBreakdownData.map((item, index) => {
+                  let serviceName = item.service;
+                  if (serviceName === 'Banking Services') serviceName = 'bankingServices';
+                  else if (serviceName === 'Online Services') serviceName = 'onlineServices';
+                  else if (serviceName === 'Applications') serviceName = 'applications';
+                  
+                  return {
+                    ...item, 
+                    [serviceName]: item.margin,
+                    fill: COLORS[index % COLORS.length]
+                  };
+                })} 
                 innerRadius={30} 
                 outerRadius={110}
               >
@@ -748,7 +755,9 @@ const Analytics = () => {
                   content={<ChartTooltipContent hideLabel nameKey="service" />}
                 />
                 <PolarGrid gridType="circle" />
-                <RadialBar dataKey="visitors" />
+                <RadialBar dataKey="bankingServices" />
+                <RadialBar dataKey="onlineServices" />
+                <RadialBar dataKey="applications" />
               </RadialBarChart>
             </ChartContainer>
           </CardContent>

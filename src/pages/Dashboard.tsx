@@ -215,6 +215,21 @@ const Dashboard = () => {
     }
   });
 
+  // Fetch latest cash in hand from OD records
+  const { data: odRecordsData } = useQuery({
+    queryKey: ['odRecords'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('od_records')
+        .select('cash_in_hand')
+        .order('date', { ascending: false })
+        .limit(1);
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
   useEffect(() => {
     if (
       bankingError ||
@@ -261,6 +276,9 @@ const Dashboard = () => {
 
   const expensesTotal = expensesData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
   const expensesCount = expensesData?.length || 0;
+
+  // Get latest cash in hand
+  const latestCashInHand = odRecordsData?.[0]?.cash_in_hand || 0;
 
   // Calculate total margin including Photostat and Other Banking Services
   const totalMargin = bankingMargin + bankingAccountsMargin + onlineMargin + applicationsMargin + photostatMarginTotal;
@@ -510,6 +528,21 @@ const Dashboard = () => {
 
           {/* Notification Box and Calendar */}
           <div className="flex-shrink-0 space-y-6">
+            {/* Cash in Hand with Animation */}
+            <div className="bg-gradient-to-br from-primary/10 to-primary/5 backdrop-blur-md rounded-xl p-4 border border-primary/20 shadow-lg overflow-hidden">
+              <div className="flex items-center gap-2 mb-2">
+                <Wallet className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold text-sm text-foreground">Cash in Hand</h3>
+              </div>
+              <div className="relative h-12 overflow-hidden">
+                <div className="absolute animate-slide-left-right whitespace-nowrap">
+                  <span className="text-3xl font-bold font-mono text-primary tracking-wider">
+                    {formatCurrency(latestCashInHand)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
             <DigitalClock />
             <NotificationBox />
             <ReminderCalendar />
