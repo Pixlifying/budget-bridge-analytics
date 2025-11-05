@@ -256,6 +256,10 @@ const Dashboard = () => {
   const bankingServicesTotal = bankingData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
   const bankingServicesCount = bankingData?.reduce((sum, entry) => sum + (entry.transaction_count || 1), 0) || 0;
   const bankingMargin = bankingData?.reduce((sum, entry) => sum + entry.margin, 0) || 0;
+  const bankingServicesDays = bankingData?.reduce((uniqueDays, entry) => {
+    const dateStr = format(new Date(entry.date), 'yyyy-MM-dd');
+    return uniqueDays.includes(dateStr) ? uniqueDays : [...uniqueDays, dateStr];
+  }, [] as string[])?.length || 0;
   
   const bankingAccountsMargin = bankingAccountsData?.reduce((sum, entry) => sum + Number(entry.margin || 0), 0) || 0;
 
@@ -411,8 +415,8 @@ const Dashboard = () => {
                 <p className="text-xl font-bold">{formatCurrency(bankingMargin)}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Transactions</p>
-                <p className="text-xl font-bold">{bankingServicesCount}</p>
+                <p className="text-sm text-muted-foreground">Transactions / No. of Days</p>
+                <p className="text-xl font-bold">{bankingServicesCount} / {bankingServicesDays}</p>
               </div>
             </div>
           </div>
