@@ -276,6 +276,7 @@ export type Database = {
           created_at: string
           date: string
           id: string
+          parman_id: string | null
           pensioner_name: string
           ppo_number: string
           remarks: string | null
@@ -286,6 +287,7 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          parman_id?: string | null
           pensioner_name: string
           ppo_number: string
           remarks?: string | null
@@ -296,6 +298,7 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          parman_id?: string | null
           pensioner_name?: string
           ppo_number?: string
           remarks?: string | null

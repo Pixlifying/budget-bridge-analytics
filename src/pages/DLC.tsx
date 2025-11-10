@@ -18,6 +18,7 @@ interface DLCRecord {
   pensioner_name: string;
   ppo_number: string;
   account_number: string;
+  parman_id: string | null;
   remarks: string | null;
 }
 
@@ -30,6 +31,7 @@ const DLC = () => {
     pensioner_name: '',
     ppo_number: '',
     account_number: '',
+    parman_id: '',
     remarks: '',
   });
   const [editForm, setEditForm] = useState({
@@ -37,6 +39,7 @@ const DLC = () => {
     pensioner_name: '',
     ppo_number: '',
     account_number: '',
+    parman_id: '',
     remarks: '',
   });
 
@@ -85,6 +88,7 @@ const DLC = () => {
           pensioner_name: newEntry.pensioner_name,
           ppo_number: newEntry.ppo_number,
           account_number: newEntry.account_number,
+          parman_id: newEntry.parman_id || null,
           remarks: newEntry.remarks || null,
         },
       ]);
@@ -101,6 +105,7 @@ const DLC = () => {
         pensioner_name: '',
         ppo_number: '',
         account_number: '',
+        parman_id: '',
         remarks: '',
       });
       setIsAddingNew(false);
@@ -133,6 +138,7 @@ const DLC = () => {
           pensioner_name: editForm.pensioner_name,
           ppo_number: editForm.ppo_number,
           account_number: editForm.account_number,
+          parman_id: editForm.parman_id || null,
           remarks: editForm.remarks || null,
         })
         .eq('id', editingId);
@@ -185,6 +191,7 @@ const DLC = () => {
       pensioner_name: record.pensioner_name,
       ppo_number: record.ppo_number,
       account_number: record.account_number,
+      parman_id: record.parman_id || '',
       remarks: record.remarks || '',
     });
   };
@@ -250,6 +257,7 @@ const DLC = () => {
                 <th>Pensioner Name</th>
                 <th>PPO Number</th>
                 <th>Account Number</th>
+                <th>Parman ID</th>
                 <th>Remarks</th>
               </tr>
             </thead>
@@ -262,6 +270,7 @@ const DLC = () => {
                   <td>${record.pensioner_name}</td>
                   <td>${record.ppo_number}</td>
                   <td>${record.account_number}</td>
+                  <td>${record.parman_id || '-'}</td>
                   <td>${record.remarks || '-'}</td>
                 </tr>
               `
@@ -287,6 +296,7 @@ const DLC = () => {
       'Pensioner Name': record.pensioner_name,
       'PPO Number': record.ppo_number,
       'Account Number': record.account_number,
+      'Parman ID': record.parman_id || '-',
       Remarks: record.remarks || '-',
     }));
 
@@ -384,6 +394,17 @@ const DLC = () => {
                     placeholder="Enter account number"
                   />
                 </div>
+                <div>
+                  <Label htmlFor="new-parman-id">Parman ID</Label>
+                  <Input
+                    id="new-parman-id"
+                    value={newEntry.parman_id}
+                    onChange={(e) =>
+                      setNewEntry({ ...newEntry, parman_id: e.target.value })
+                    }
+                    placeholder="Enter Parman ID"
+                  />
+                </div>
                 <div className="md:col-span-2">
                   <Label htmlFor="new-remarks">Remarks</Label>
                   <Textarea
@@ -453,6 +474,16 @@ const DLC = () => {
                         />
                       </div>
                       <div>
+                        <Label htmlFor="edit-parman-id">Parman ID</Label>
+                        <Input
+                          id="edit-parman-id"
+                          value={editForm.parman_id}
+                          onChange={(e) =>
+                            setEditForm({ ...editForm, parman_id: e.target.value })
+                          }
+                        />
+                      </div>
+                      <div>
                         <Label htmlFor="edit-remarks">Remarks</Label>
                         <Textarea
                           id="edit-remarks"
@@ -486,11 +517,13 @@ const DLC = () => {
                   data={{
                     ppo_number: record.ppo_number,
                     account_number: record.account_number,
+                    parman_id: record.parman_id || '-',
                     remarks: record.remarks || '-',
                   }}
                   labels={{
                     ppo_number: 'PPO Number',
                     account_number: 'Account Number',
+                    parman_id: 'Parman ID',
                     remarks: 'Remarks',
                   }}
                   onEdit={() => openEditEntry(record)}
