@@ -1,13 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { BarChart3, TrendingUp, PieChart, Activity, DollarSign, CreditCard } from 'lucide-react';
+import PageWrapper from '@/components/layout/PageWrapper';
 import DateRangePicker from '@/components/ui/DateRangePicker';
+import StatCard from '@/components/ui/StatCard';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   filterByDate, 
   filterByMonth,
   formatCurrency
 } from '@/utils/calculateUtils';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   ChartContainer,
   ChartTooltip,
@@ -25,6 +27,9 @@ import {
   Pie,
   Cell,
   ComposedChart,
+  RadialBarChart,
+  RadialBar,
+  PolarGrid,
   Label
 } from 'recharts';
 import { format } from 'date-fns';
@@ -94,10 +99,39 @@ interface MiscExpenseEntry {
   fee: number;
 }
 
+interface SocialSecurityEntry {
+  id: string;
+  date: Date;
+  name: string;
+  account_number: string;
+  scheme_type: string;
+}
+
+interface BankingAccountEntry {
+  id: string;
+  date: Date;
+  amount: number;
+  customer_name: string;
+  account_type: string;
+  insurance_type: string | null;
+}
+
 const chartConfig = {
   received: {
     label: "Amount Received",
     color: "hsl(var(--primary))",
+  },
+  given: {
+    label: "Amount Given", 
+    color: "hsl(var(--destructive))",
+  },
+  cash_in_hand: {
+    label: "Cash in Hand",
+    color: "hsl(var(--accent))",
+  },
+  od_from_bank: {
+    label: "OD from Bank",
+    color: "hsl(var(--muted-foreground))",
   },
   revenue: {
     label: "Revenue",
@@ -107,15 +141,39 @@ const chartConfig = {
     label: "Expenses",
     color: "hsl(var(--destructive))",
   },
+  margin: {
+    label: "Margin",
+    color: "hsl(var(--accent))",
+  },
+  panCards: {
+    label: "PAN Cards",
+    color: "hsl(var(--primary))",
+  },
+  passports: {
+    label: "Passports",
+    color: "hsl(var(--sidebar-accent))",
+  },
+  bankingServices: {
+    label: "Banking Services",
+    color: "hsl(var(--destructive))",
+  },
+  onlineServices: {
+    label: "Online Services",
+    color: "hsl(var(--muted-foreground))",
+  },
+  applications: {
+    label: "Applications",
+    color: "hsl(var(--accent))",
+  },
 };
 
 const COLORS = [
   'hsl(var(--primary))',
-  'hsl(220, 90%, 56%)',
-  'hsl(340, 82%, 52%)',
-  'hsl(180, 90%, 45%)',
-  'hsl(280, 85%, 60%)',
-  'hsl(25, 95%, 53%)'
+  'hsl(var(--sidebar-accent))',
+  'hsl(var(--destructive))',
+  'hsl(var(--muted-foreground))',
+  'hsl(var(--accent))',
+  'hsl(var(--secondary-foreground))'
 ];
 
 const Analytics = () => {
@@ -131,6 +189,8 @@ const Analytics = () => {
   const [expenses, setExpenses] = useState<ExpenseEntry[]>([]);
   const [applications, setApplications] = useState<ApplicationEntry[]>([]);
   const [miscExpenses, setMiscExpenses] = useState<MiscExpenseEntry[]>([]);
+  const [socialSecurity, setSocialSecurity] = useState<SocialSecurityEntry[]>([]);
+  const [bankingAccounts, setBankingAccounts] = useState<BankingAccountEntry[]>([]);
 
   const [filteredOdRecords, setFilteredOdRecords] = useState<ODRecord[]>([]);
   const [filteredPanCards, setFilteredPanCards] = useState<PanCardEntry[]>([]);
@@ -140,27 +200,194 @@ const Analytics = () => {
   const [filteredExpenses, setFilteredExpenses] = useState<ExpenseEntry[]>([]);
   const [filteredApplications, setFilteredApplications] = useState<ApplicationEntry[]>([]);
   const [filteredMiscExpenses, setFilteredMiscExpenses] = useState<MiscExpenseEntry[]>([]);
+  const [filteredSocialSecurity, setFilteredSocialSecurity] = useState<SocialSecurityEntry[]>([]);
+  const [filteredBankingAccounts, setFilteredBankingAccounts] = useState<BankingAccountEntry[]>([]);
   
   const fetchAllData = async () => {
     setIsLoading(true);
     try {
-      const { data: odData } = await supabase.from('od_records').select('*').order('date', { ascending: false });
-      const { data: panCardData } = await supabase.from('pan_cards').select('*').order('date', { ascending: false });
-      const { data: passportData } = await supabase.from('passports').select('*').order('date', { ascending: false });
-      const { data: bankingData } = await supabase.from('banking_services').select('*').order('date', { ascending: false });
-      const { data: onlineData } = await supabase.from('online_services').select('*').order('date', { ascending: false });
-      const { data: expenseData } = await supabase.from('expenses').select('*').order('date', { ascending: false });
-      const { data: applicationsData } = await supabase.from('applications').select('*').order('date', { ascending: false });
-      const { data: miscExpensesData } = await supabase.from('misc_expenses').select('*').order('date', { ascending: false });
+      // Fetch OD Records
+      const { data: odData, error: odError } = await supabase
+        .from('od_records')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (odError) throw odError;
 
-      setOdRecords(odData?.map(e => ({ ...e, date: new Date(e.date), amount_received: Number(e.amount_received), amount_given: Number(e.amount_given), cash_in_hand: Number(e.cash_in_hand), od_from_bank: Number(e.od_from_bank) })) || []);
-      setPanCards(panCardData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount), total: Number(e.total), margin: Number(e.margin) })) || []);
-      setPassports(passportData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount), total: Number(e.total), margin: Number(e.margin) })) || []);
-      setBankingServices(bankingData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount), margin: Number(e.margin) })) || []);
-      setOnlineServices(onlineData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount), expense: Number(e.expense || 0), total: Number(e.total) })) || []);
-      setExpenses(expenseData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount) })) || []);
-      setApplications(applicationsData?.map(e => ({ ...e, date: new Date(e.date), expense: Number(e.expense || 0), amount: Number(e.amount) })) || []);
-      setMiscExpenses(miscExpensesData?.map(e => ({ ...e, date: new Date(e.date), fee: Number(e.fee) })) || []);
+      // Fetch Pan Cards
+      const { data: panCardData, error: panCardError } = await supabase
+        .from('pan_cards')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (panCardError) throw panCardError;
+      
+      // Fetch Passports
+      const { data: passportData, error: passportError } = await supabase
+        .from('passports')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (passportError) throw passportError;
+      
+      // Fetch Banking Services
+      const { data: bankingData, error: bankingError } = await supabase
+        .from('banking_services')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (bankingError) throw bankingError;
+      
+      // Fetch Online Services
+      const { data: onlineData, error: onlineError } = await supabase
+        .from('online_services')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (onlineError) throw onlineError;
+      
+      // Fetch Expenses
+      const { data: expenseData, error: expenseError } = await supabase
+        .from('expenses')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (expenseError) throw expenseError;
+      
+      // Fetch Applications
+      const { data: applicationsData, error: applicationsError } = await supabase
+        .from('applications')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (applicationsError) throw applicationsError;
+
+      // Fetch Misc Expenses
+      const { data: miscExpensesData, error: miscExpensesError } = await supabase
+        .from('misc_expenses')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (miscExpensesError) throw miscExpensesError;
+
+      // Fetch Social Security
+      const { data: socialSecurityData, error: socialSecurityError } = await supabase
+        .from('social_security')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (socialSecurityError) throw socialSecurityError;
+
+      // Fetch Banking Accounts (Other Banking Services)
+      const { data: bankingAccountsData, error: bankingAccountsError } = await supabase
+        .from('banking_accounts')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (bankingAccountsError) throw bankingAccountsError;
+
+      // Format OD Records
+      const formattedOdRecords = odData.map(entry => ({
+        id: entry.id,
+        date: new Date(entry.date),
+        amount_received: Number(entry.amount_received),
+        amount_given: Number(entry.amount_given),
+        cash_in_hand: Number(entry.cash_in_hand),
+        od_from_bank: Number(entry.od_from_bank)
+      }));
+      
+      // Format Pan Cards
+      const formattedPanCards = panCardData.map(entry => ({
+        id: entry.id,
+        date: new Date(entry.date),
+        count: entry.count,
+        amount: Number(entry.amount),
+        total: Number(entry.total),
+        margin: Number(entry.margin)
+      }));
+      
+      // Format Passports
+      const formattedPassports = passportData.map(entry => ({
+        id: entry.id,
+        date: new Date(entry.date),
+        count: entry.count,
+        amount: Number(entry.amount),
+        total: Number(entry.total),
+        margin: Number(entry.margin)
+      }));
+      
+      // Format Banking Services
+      const formattedBankingServices = bankingData.map(entry => ({
+        id: entry.id,
+        date: new Date(entry.date),
+        amount: Number(entry.amount),
+        margin: Number(entry.margin)
+      }));
+      
+      // Format Online Services
+      const formattedOnlineServices = onlineData.map(entry => ({
+        id: entry.id,
+        date: new Date(entry.date),
+        service: entry.service,
+        amount: Number(entry.amount),
+        expense: Number(entry.expense || 0),
+        total: Number(entry.total)
+      }));
+      
+      // Format Expenses
+      const formattedExpenses = expenseData.map(entry => ({
+        id: entry.id,
+        date: new Date(entry.date),
+        name: entry.name,
+        amount: Number(entry.amount)
+      }));
+      
+      // Format Applications
+      const formattedApplications = applicationsData.map(entry => ({
+        id: entry.id,
+        date: new Date(entry.date),
+        customer_name: entry.customer_name,
+        expense: Number(entry.expense || 0),
+        amount: Number(entry.amount)
+      }));
+
+      // Format Misc Expenses
+      const formattedMiscExpenses = miscExpensesData.map(entry => ({
+        id: entry.id,
+        date: new Date(entry.date),
+        name: entry.name,
+        fee: Number(entry.fee)
+      }));
+
+      // Format Social Security
+      const formattedSocialSecurity = socialSecurityData.map(entry => ({
+        id: entry.id,
+        date: new Date(entry.date),
+        name: entry.name,
+        account_number: entry.account_number,
+        scheme_type: entry.scheme_type
+      }));
+
+      // Format Banking Accounts
+      const formattedBankingAccounts = bankingAccountsData.map(entry => ({
+        id: entry.id,
+        date: new Date(entry.date),
+        amount: Number(entry.amount),
+        customer_name: entry.customer_name,
+        account_type: entry.account_type,
+        insurance_type: entry.insurance_type
+      }));
+      
+      setOdRecords(formattedOdRecords);
+      setPanCards(formattedPanCards);
+      setPassports(formattedPassports);
+      setBankingServices(formattedBankingServices);
+      setOnlineServices(formattedOnlineServices);
+      setExpenses(formattedExpenses);
+      setApplications(formattedApplications);
+      setMiscExpenses(formattedMiscExpenses);
+      setSocialSecurity(formattedSocialSecurity);
+      setBankingAccounts(formattedBankingAccounts);
     } catch (error) {
       console.error('Error fetching analytics data:', error);
     } finally {
@@ -182,6 +409,8 @@ const Analytics = () => {
       setFilteredExpenses(filterByDate(expenses, date));
       setFilteredApplications(filterByDate(applications, date));
       setFilteredMiscExpenses(filterByDate(miscExpenses, date));
+      setFilteredSocialSecurity(filterByDate(socialSecurity, date));
+      setFilteredBankingAccounts(filterByDate(bankingAccounts, date));
     } else {
       setFilteredOdRecords(filterByMonth(odRecords, date));
       setFilteredPanCards(filterByMonth(panCards, date));
@@ -191,9 +420,16 @@ const Analytics = () => {
       setFilteredExpenses(filterByMonth(expenses, date));
       setFilteredApplications(filterByMonth(applications, date));
       setFilteredMiscExpenses(filterByMonth(miscExpenses, date));
+      setFilteredSocialSecurity(filterByMonth(socialSecurity, date));
+      setFilteredBankingAccounts(filterByMonth(bankingAccounts, date));
     }
-  }, [date, viewMode, odRecords, panCards, passports, bankingServices, onlineServices, expenses, applications, miscExpenses]);
+  }, [date, viewMode, odRecords, panCards, passports, bankingServices, onlineServices, expenses, applications, miscExpenses, socialSecurity, bankingAccounts]);
 
+  // Calculate totals
+  const totalOdReceived = filteredOdRecords.reduce((sum, entry) => sum + entry.amount_received, 0);
+  const totalOdGiven = filteredOdRecords.reduce((sum, entry) => sum + entry.amount_given, 0);
+  
+  // Get latest cash in hand from OD records (most recent actual value)
   const latestOdRecord = odRecords.length > 0 ? odRecords[0] : null;
   const latestCashInHand = latestOdRecord ? latestOdRecord.cash_in_hand : 0;
   const totalExpenses = filteredExpenses.reduce((sum, entry) => sum + entry.amount, 0);
@@ -206,29 +442,38 @@ const Analytics = () => {
   const totalRevenue = totalOnlineServices + totalApplications + totalPanMargin + totalPassportMargin + totalBankingMargin;
   const netProfit = totalRevenue - totalExpenses;
 
-  const odTrendData = filteredOdRecords.slice().reverse().map((record) => ({
-    date: format(new Date(record.date), 'MMM dd'),
-    received: record.amount_received,
-    given: record.amount_given,
-    cash_in_hand: record.cash_in_hand,
-  }));
+  // Prepare chart data
+  const odTrendData = filteredOdRecords
+    .slice()
+    .reverse()
+    .map((record, index) => ({
+      date: format(new Date(record.date), 'MMM dd'),
+      received: record.amount_received,
+      given: record.amount_given,
+      cash_in_hand: record.cash_in_hand,
+      od_from_bank: record.od_from_bank,
+      index
+    }));
 
+  // Revenue Breakdown Pie Chart
   const revenueBreakdownData = [
     { name: 'PAN Cards', value: totalPanMargin, color: COLORS[0] },
     { name: 'Passports', value: totalPassportMargin, color: COLORS[1] },
-    { name: 'Banking', value: totalBankingMargin, color: COLORS[2] },
-    { name: 'Online', value: totalOnlineServices, color: COLORS[3] },
+    { name: 'Banking Services', value: totalBankingMargin, color: COLORS[2] },
+    { name: 'Online Services', value: totalOnlineServices, color: COLORS[3] },
     { name: 'Applications', value: totalApplications, color: COLORS[4] }
   ].filter(item => item.value > 0);
 
+  // Service-wise margin breakdown data
   const serviceBreakdownData = [
-    { service: 'PAN Cards', margin: totalPanMargin },
-    { service: 'Passports', margin: totalPassportMargin },
-    { service: 'Banking', margin: totalBankingMargin },
-    { service: 'Online', margin: totalOnlineServices },
-    { service: 'Applications', margin: totalApplications }
+    { service: 'PAN Cards', margin: totalPanMargin, count: filteredPanCards.length },
+    { service: 'Passports', margin: totalPassportMargin, count: filteredPassports.length },
+    { service: 'Banking Services', margin: totalBankingMargin, count: filteredBankingServices.length },
+    { service: 'Online Services', margin: totalOnlineServices, count: filteredOnlineServices.length },
+    { service: 'Applications', margin: totalApplications, count: filteredApplications.length }
   ].filter(item => item.margin > 0);
 
+  // Monthly comparison data
   const monthlyTrendData = [];
   const last6Months = [];
   for (let i = 5; i >= 0; i--) {
@@ -242,8 +487,14 @@ const Analytics = () => {
       month: format(monthDate, 'MMM'),
       revenue: 0,
       expenses: 0,
+      panCards: 0,
+      passports: 0,
+      bankingServices: 0,
+      onlineServices: 0,
+      applications: 0
     };
 
+    // Calculate monthly data
     const monthlyPanCards = filterByMonth(panCards, monthDate);
     const monthlyPassports = filterByMonth(passports, monthDate);
     const monthlyBanking = filterByMonth(bankingServices, monthDate);
@@ -251,301 +502,380 @@ const Analytics = () => {
     const monthlyApplications = filterByMonth(applications, monthDate);
     const monthlyExpenses = filterByMonth(expenses, monthDate);
 
-    monthData.revenue = 
-      monthlyPanCards.reduce((sum, entry) => sum + entry.margin, 0) +
-      monthlyPassports.reduce((sum, entry) => sum + entry.margin, 0) +
-      monthlyBanking.reduce((sum, entry) => sum + entry.margin, 0) +
-      monthlyOnline.reduce((sum, entry) => sum + entry.total, 0) +
-      monthlyApplications.reduce((sum, entry) => sum + entry.amount, 0);
-
+    monthData.panCards = monthlyPanCards.reduce((sum, entry) => sum + entry.margin, 0);
+    monthData.passports = monthlyPassports.reduce((sum, entry) => sum + entry.margin, 0);
+    monthData.bankingServices = monthlyBanking.reduce((sum, entry) => sum + entry.margin, 0);
+    monthData.onlineServices = monthlyOnline.reduce((sum, entry) => sum + entry.total, 0);
+    monthData.applications = monthlyApplications.reduce((sum, entry) => sum + entry.amount, 0);
     monthData.expenses = monthlyExpenses.reduce((sum, entry) => sum + entry.amount, 0);
+
+    monthData.revenue = monthData.panCards + monthData.passports + monthData.bankingServices + 
+                       monthData.onlineServices + monthData.applications;
 
     monthlyTrendData.push(monthData);
   });
 
+  // Expenses breakdown
+  const expenseCategories = {};
+  filteredExpenses.forEach(expense => {
+    const category = expense.name.toLowerCase().includes('rent') ? 'Rent' :
+                    expense.name.toLowerCase().includes('electricity') ? 'Utilities' :
+                    expense.name.toLowerCase().includes('internet') ? 'Internet' :
+                    expense.name.toLowerCase().includes('salary') ? 'Salary' :
+                    'Other';
+    
+    expenseCategories[category] = (expenseCategories[category] || 0) + expense.amount;
+  });
+
+  const expenseBreakdownData = Object.entries(expenseCategories).map(([name, value], index) => ({
+    name,
+    value,
+    color: COLORS[index % COLORS.length]
+  }));
+
+  // Bar chart data for individual expense types
+  const expensesBarData = filteredExpenses.map((expense, index) => ({
+    name: expense.name.length > 20 ? expense.name.substring(0, 20) + '...' : expense.name,
+    amount: expense.amount,
+    date: format(expense.date, 'MMM dd'),
+    fill: COLORS[index % COLORS.length]
+  }));
+
+  const miscExpensesBarData = filteredMiscExpenses.map((expense, index) => ({
+    name: expense.name.length > 20 ? expense.name.substring(0, 20) + '...' : expense.name,
+    amount: expense.fee,
+    date: format(expense.date, 'MMM dd'),
+    fill: COLORS[index % COLORS.length]
+  }));
+
+  const socialSecurityBarData = filteredSocialSecurity.reduce((acc, entry) => {
+    const existing = acc.find(item => item.scheme === entry.scheme_type);
+    if (existing) {
+      existing.count += 1;
+    } else {
+      acc.push({ scheme: entry.scheme_type, count: 1 });
+    }
+    return acc;
+  }, [] as Array<{ scheme: string; count: number }>);
+
+  // Other Banking Services - Pie chart data by account type
+  const bankingAccountsByType = filteredBankingAccounts.reduce((acc, entry) => {
+    const existing = acc.find(item => item.name === entry.account_type);
+    if (existing) {
+      existing.value += entry.amount;
+      existing.count += 1;
+    } else {
+      acc.push({ 
+        name: entry.account_type, 
+        value: entry.amount,
+        count: 1,
+        color: COLORS[acc.length % COLORS.length]
+      });
+    }
+    return acc;
+  }, [] as Array<{ name: string; value: number; count: number; color: string }>);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-4 md:p-8">
-      <div className="mx-auto max-w-7xl space-y-6">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h1>
-            <p className="text-muted-foreground mt-1">
-              Advanced insights for {viewMode === 'day' ? 'today' : 'this month'}
-            </p>
-          </div>
-          <DateRangePicker 
-            date={date} 
-            onDateChange={setDate} 
-            mode={viewMode} 
-            onModeChange={setViewMode} 
-          />
-        </div>
+    <PageWrapper
+      title="Analytics Dashboard"
+      subtitle={`Advanced insights for ${viewMode === 'day' ? 'today' : 'this month'}`}
+      action={
+        <DateRangePicker 
+          date={date} 
+          onDateChange={setDate} 
+          mode={viewMode} 
+          onModeChange={setViewMode} 
+        />
+      }
+    >
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <StatCard 
+          title="Total Revenue"
+          value={formatCurrency(totalRevenue)}
+          icon={<DollarSign size={20} />}
+          className="animate-fade-in"
+        />
+        <StatCard 
+          title="Net Profit"
+          value={formatCurrency(netProfit)}
+          icon={<TrendingUp size={20} />}
+          className="animate-fade-in"
+        />
+        <StatCard 
+          title="Latest Cash in Hand"
+          value={formatCurrency(latestCashInHand)}
+          icon={<CreditCard size={20} />}
+          className="animate-fade-in"
+        />
+        <StatCard 
+          title="Total Expenses"
+          value={formatCurrency(totalExpenses)}
+          icon={<Activity size={20} />}
+          className="animate-fade-in"
+        />
+      </div>
 
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="relative overflow-hidden border-none shadow-md hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Total Revenue</p>
-                  <p className="text-2xl font-bold">{formatCurrency(totalRevenue)}</p>
-                  <div className="flex items-center gap-1 text-xs">
-                    <span className="text-green-600 flex items-center gap-0.5">
-                      <TrendingUp className="h-3 w-3" />
-                      +12%
-                    </span>
-                  </div>
-                </div>
-                <div className="rounded-xl bg-blue-500/10 p-3">
-                  <DollarSign className="h-6 w-6 text-blue-600" />
-                </div>
-              </div>
+      {/* Revenue Breakdown Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Revenue Breakdown Pie Chart */}
+        {revenueBreakdownData.length > 0 && (
+          <Card className="flex flex-col animate-scale-in">
+            <CardHeader className="items-center pb-0">
+              <CardTitle>Revenue Breakdown</CardTitle>
+              <CardDescription>{format(date, 'MMMM yyyy')}</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 pb-0">
+              <ChartContainer
+                config={chartConfig}
+                className="mx-auto aspect-square max-h-[300px]"
+              >
+                <RechartsPieChart>
+                  <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent hideLabel />}
+                  />
+                  <Pie
+                    data={revenueBreakdownData.map(item => ({ ...item, visitors: item.value }))}
+                    dataKey="visitors"
+                    nameKey="name"
+                    innerRadius={60}
+                    strokeWidth={5}
+                  >
+                    {revenueBreakdownData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                    <Label
+                      content={({ viewBox }) => {
+                        if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                          return (
+                            <text
+                              x={viewBox.cx}
+                              y={viewBox.cy}
+                              textAnchor="middle"
+                              dominantBaseline="middle"
+                            >
+                              <tspan
+                                x={viewBox.cx}
+                                y={viewBox.cy}
+                                className="fill-foreground text-3xl font-bold"
+                              >
+                                {formatCurrency(totalRevenue)}
+                              </tspan>
+                              <tspan
+                                x={viewBox.cx}
+                                y={(viewBox.cy || 0) + 24}
+                                className="fill-muted-foreground"
+                              >
+                                Total Revenue
+                              </tspan>
+                            </text>
+                          )
+                        }
+                      }}
+                    />
+                  </Pie>
+                </RechartsPieChart>
+              </ChartContainer>
             </CardContent>
-          </Card>
-
-          <Card className="relative overflow-hidden border-none shadow-md hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Net Profit</p>
-                  <p className="text-2xl font-bold">{formatCurrency(netProfit)}</p>
-                  <div className="flex items-center gap-1 text-xs">
-                    <span className="text-green-600 flex items-center gap-0.5">
-                      <TrendingUp className="h-3 w-3" />
-                      +8%
-                    </span>
-                  </div>
-                </div>
-                <div className="rounded-xl bg-indigo-500/10 p-3">
-                  <TrendingUp className="h-6 w-6 text-indigo-600" />
-                </div>
+            <CardFooter className="flex-col gap-2 text-sm">
+              <div className="flex items-center gap-2 leading-none font-medium">
+                Total revenue across all services <TrendingUp className="h-4 w-4" />
               </div>
-            </CardContent>
+            </CardFooter>
           </Card>
+        )}
 
-          <Card className="relative overflow-hidden border-none shadow-md hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Cash in Hand</p>
-                  <p className="text-2xl font-bold">{formatCurrency(latestCashInHand)}</p>
-                  <div className="flex items-center gap-1 text-xs">
-                    <span className="text-red-600 flex items-center gap-0.5">
-                      <TrendingUp className="h-3 w-3 rotate-180" />
-                      -3%
-                    </span>
-                  </div>
-                </div>
-                <div className="rounded-xl bg-orange-500/10 p-3">
-                  <CreditCard className="h-6 w-6 text-orange-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="relative overflow-hidden border-none shadow-md hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Total Expenses</p>
-                  <p className="text-2xl font-bold">{formatCurrency(totalExpenses)}</p>
-                  <div className="flex items-center gap-1 text-xs">
-                    <span className="text-green-600 flex items-center gap-0.5">
-                      <TrendingUp className="h-3 w-3" />
-                      +5%
-                    </span>
-                  </div>
-                </div>
-                <div className="rounded-xl bg-cyan-500/10 p-3">
-                  <Activity className="h-6 w-6 text-cyan-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Monthly Trend & Revenue Breakdown */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Monthly Trend Line Chart */}
-          <Card className="border-none shadow-md">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-base font-semibold">Monthly Trend</CardTitle>
-              <CardDescription className="text-xs">Revenue over the last 6 months</CardDescription>
+        {/* Expense Breakdown */}
+        {expenseBreakdownData.length > 0 && (
+          <Card className="animate-scale-in">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity size={20} />
+                Expense Breakdown
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <ChartContainer config={chartConfig} className="h-[280px] w-full">
+              <ChartContainer config={chartConfig} className="h-80 w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={monthlyTrendData}>
-                    <XAxis 
-                      dataKey="month" 
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={11}
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <YAxis 
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={11}
-                      tickLine={false}
-                      axisLine={false}
-                    />
+                  <RechartsPieChart>
                     <ChartTooltip content={<ChartTooltipContent />} />
-                    <Line 
-                      type="monotone" 
-                      dataKey="revenue" 
-                      stroke="hsl(var(--primary))" 
-                      strokeWidth={3}
-                      dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
-                      activeDot={{ r: 6 }}
-                    />
-                  </LineChart>
+                    <Pie
+                      data={expenseBreakdownData}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={100}
+                      fill="#8884d8"
+                      dataKey="value"
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {expenseBreakdownData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                  </RechartsPieChart>
                 </ResponsiveContainer>
               </ChartContainer>
             </CardContent>
           </Card>
+        )}
+      </div>
 
-          {/* Revenue Breakdown Donut Chart */}
-          {revenueBreakdownData.length > 0 && (
-            <Card className="border-none shadow-md">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-base font-semibold">Revenue by Source</CardTitle>
-                <CardDescription className="text-xs">{format(date, 'MMMM yyyy')}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[280px]">
-                  <RechartsPieChart>
-                    <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-                    <Pie
-                      data={revenueBreakdownData.map(item => ({ ...item, visitors: item.value }))}
-                      dataKey="visitors"
-                      nameKey="name"
-                      innerRadius={70}
-                      strokeWidth={5}
-                    >
-                      {revenueBreakdownData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                      <Label
-                        content={({ viewBox }) => {
-                          if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                            return (
-                              <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
-                                <tspan x={viewBox.cx} y={viewBox.cy} className="fill-foreground text-2xl font-bold">
-                                  100%
-                                </tspan>
-                              </text>
-                            )
-                          }
+      {/* Service Performance Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Service Margin Breakdown - Radial Chart */}
+        <Card className="flex flex-col animate-fade-in">
+          <CardHeader className="items-center pb-0">
+            <CardTitle>Service Margin Breakdown</CardTitle>
+            <CardDescription>{format(date, 'MMMM yyyy')}</CardDescription>
+          </CardHeader>
+          <CardContent className="flex-1 pb-0">
+            <ChartContainer
+              config={chartConfig}
+              className="mx-auto aspect-square max-h-[300px]"
+            >
+              <RadialBarChart 
+                data={serviceBreakdownData.map((item, index) => {
+                  let serviceName = item.service;
+                  if (serviceName === 'Banking Services') serviceName = 'bankingServices';
+                  else if (serviceName === 'Online Services') serviceName = 'onlineServices';
+                  else if (serviceName === 'Applications') serviceName = 'applications';
+                  
+                  return {
+                    ...item, 
+                    [serviceName]: item.margin,
+                    fill: COLORS[index % COLORS.length]
+                  };
+                })} 
+                innerRadius={30} 
+                outerRadius={110}
+              >
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent hideLabel nameKey="service" />}
+                />
+                <PolarGrid gridType="circle" />
+                <RadialBar dataKey="bankingServices" />
+                <RadialBar dataKey="onlineServices" />
+                <RadialBar dataKey="applications" />
+              </RadialBarChart>
+            </ChartContainer>
+          </CardContent>
+          <CardFooter className="flex-col gap-2 text-sm">
+            <div className="flex items-center gap-2 leading-none font-medium">
+              Margin comparison by service type <Activity className="h-4 w-4" />
+            </div>
+          </CardFooter>
+        </Card>
+
+        {/* OD Flow Analytics - Stacked Bar Chart */}
+        {odTrendData.length > 0 && (
+          <Card className="animate-scale-in">
+            <CardHeader>
+              <CardTitle>OD Flow Analytics</CardTitle>
+              <CardDescription>Amount flow including bank OD over time</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer config={chartConfig} className="h-[300px] w-full">
+                <BarChart accessibilityLayer data={odTrendData}>
+                  <XAxis
+                    dataKey="date"
+                    tickLine={false}
+                    tickMargin={10}
+                    axisLine={false}
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                  />
+                  <Bar
+                    dataKey="od_from_bank"
+                    stackId="a"
+                    fill="hsl(var(--muted-foreground))"
+                    radius={[0, 0, 0, 0]}
+                    name="OD from Bank"
+                  />
+                  <Bar
+                    dataKey="received"
+                    stackId="a"
+                    fill="hsl(var(--primary))"
+                    radius={[0, 0, 0, 0]}
+                    name="Amount Received"
+                  />
+                  <Bar
+                    dataKey="given"
+                    stackId="a"
+                    fill="hsl(var(--destructive))"
+                    radius={[4, 4, 0, 0]}
+                    name="Amount Given"
+                  />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        labelFormatter={(value) => {
+                          return format(new Date(value), 'dd MMMM yyyy');
                         }}
                       />
-                    </Pie>
-                  </RechartsPieChart>
-                </ChartContainer>
-                <div className="mt-4 flex flex-wrap justify-center gap-4">
-                  {revenueBreakdownData.map((entry, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <div className="h-3 w-3 rounded-full" style={{ backgroundColor: entry.color }} />
-                      <span className="text-xs text-muted-foreground">{entry.name}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+                    }
+                    cursor={false}
+                    defaultIndex={1}
+                  />
+                </BarChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
-        {/* Service Performance & OD Flow */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Service Performance Bar Chart */}
-          {serviceBreakdownData.length > 0 && (
-            <Card className="border-none shadow-md">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-base font-semibold">Service Performance</CardTitle>
-                <CardDescription className="text-xs">Margin by service type</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ChartContainer config={chartConfig} className="h-[280px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={serviceBreakdownData}>
-                      <XAxis 
-                        dataKey="service" 
-                        stroke="hsl(var(--muted-foreground))"
-                        fontSize={10}
-                        tickLine={false}
-                        axisLine={false}
-                        angle={-15}
-                        textAnchor="end"
-                        height={60}
-                      />
-                      <YAxis 
-                        stroke="hsl(var(--muted-foreground))"
-                        fontSize={11}
-                        tickLine={false}
-                        axisLine={false}
-                      />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar dataKey="margin" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]}>
-                        {serviceBreakdownData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </ChartContainer>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* OD Flow Area Chart */}
-          {odTrendData.length > 0 && (
-            <Card className="border-none shadow-md">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-base font-semibold">OD Flow Analytics</CardTitle>
-                <CardDescription className="text-xs">Cash flow over time</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ChartContainer config={chartConfig} className="h-[280px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={odTrendData}>
-                      <defs>
-                        <linearGradient id="colorReceived" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <XAxis 
-                        dataKey="date" 
-                        stroke="hsl(var(--muted-foreground))"
-                        fontSize={11}
-                        tickLine={false}
-                        axisLine={false}
-                      />
-                      <YAxis 
-                        stroke="hsl(var(--muted-foreground))"
-                        fontSize={11}
-                        tickLine={false}
-                        axisLine={false}
-                      />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar dataKey="received" fill="hsl(var(--primary))" fillOpacity={0.6} radius={[4, 4, 0, 0]} />
-                      <Line type="monotone" dataKey="cash_in_hand" stroke="hsl(220, 90%, 56%)" strokeWidth={2} dot={false} />
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                </ChartContainer>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* Revenue vs Expenses */}
-        <Card className="border-none shadow-md">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              Revenue vs Expenses
+      {/* Monthly Trend Analysis */}
+      <div className="grid grid-cols-1 gap-6 mb-8">
+        <Card className="animate-fade-in">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 size={20} />
+              6-Month Service Trends & Comparison
             </CardTitle>
-            <CardDescription className="text-xs">6-month comparison</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={chartConfig} className="h-96 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={monthlyTrendData}>
+                  <XAxis 
+                    dataKey="month" 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                  />
+                  <YAxis 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                  />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="panCards" stackId="services" fill="hsl(var(--primary))" name="PAN Cards" />
+                  <Bar dataKey="passports" stackId="services" fill="hsl(var(--sidebar-accent))" name="Passports" />
+                  <Bar dataKey="bankingServices" stackId="services" fill="hsl(var(--destructive))" name="Banking Services" />
+                  <Bar dataKey="onlineServices" stackId="services" fill="hsl(var(--muted-foreground))" name="Online Services" />
+                  <Bar dataKey="applications" stackId="services" fill="hsl(var(--accent))" name="Applications" />
+                  <Line 
+                    type="monotone" 
+                    dataKey="expenses" 
+                    stroke="hsl(var(--destructive))" 
+                    strokeWidth={3}
+                    name="Expenses"
+                    dot={{ fill: 'hsl(var(--destructive))', strokeWidth: 2, r: 4 }}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Revenue vs Expenses Trend */}
+      <div className="grid grid-cols-1 gap-6 mb-8">
+        <Card className="animate-fade-in">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp size={20} />
+              Revenue vs Expenses - Monthly Comparison
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <ChartContainer config={chartConfig} className="h-80 w-full">
@@ -555,14 +885,10 @@ const Analytics = () => {
                     dataKey="month" 
                     stroke="hsl(var(--muted-foreground))"
                     fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
                   />
                   <YAxis 
                     stroke="hsl(var(--muted-foreground))"
                     fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
                   />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="revenue" fill="hsl(var(--primary))" name="Revenue" radius={[4, 4, 0, 0]} />
@@ -570,9 +896,10 @@ const Analytics = () => {
                   <Line 
                     type="monotone" 
                     dataKey="revenue" 
-                    stroke="hsl(220, 90%, 56%)" 
-                    strokeWidth={2}
-                    dot={false}
+                    stroke="hsl(var(--sidebar-accent))" 
+                    strokeWidth={3}
+                    name="Revenue Trend"
+                    dot={{ fill: 'hsl(var(--sidebar-accent))', strokeWidth: 2, r: 4 }}
                   />
                 </ComposedChart>
               </ResponsiveContainer>
@@ -580,7 +907,211 @@ const Analytics = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
+
+      {/* Individual Category Bar Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Expenses Bar Chart */}
+        {expensesBarData.length > 0 && (
+          <Card className="animate-fade-in">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity size={20} />
+                Expenses Breakdown
+              </CardTitle>
+              <CardDescription>Individual expense entries</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer config={chartConfig} className="h-80 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={expensesBarData}>
+                    <XAxis 
+                      dataKey="name" 
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={10}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis 
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                    />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar 
+                      dataKey="amount" 
+                      name="Amount" 
+                      radius={[4, 4, 0, 0]}
+                    >
+                      {expensesBarData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Misc Expenses Bar Chart */}
+        {miscExpensesBarData.length > 0 && (
+          <Card className="animate-fade-in">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity size={20} />
+                Misc. Expenses Breakdown
+              </CardTitle>
+              <CardDescription>Miscellaneous expense entries</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer config={chartConfig} className="h-80 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={miscExpensesBarData}>
+                    <XAxis 
+                      dataKey="name" 
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={10}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis 
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                    />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar 
+                      dataKey="amount" 
+                      name="Amount" 
+                      radius={[4, 4, 0, 0]}
+                    >
+                      {miscExpensesBarData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Social Security and Account Details */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Social Security Bar Chart */}
+        {socialSecurityBarData.length > 0 && (
+          <Card className="animate-fade-in">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 size={20} />
+                Social Security by Scheme Type
+              </CardTitle>
+              <CardDescription>Distribution of schemes</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer config={chartConfig} className="h-80 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={socialSecurityBarData}>
+                    <XAxis 
+                      dataKey="scheme" 
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={11}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis 
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                    />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar 
+                      dataKey="count" 
+                      fill="hsl(var(--destructive))" 
+                      name="Count" 
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Other Banking Services Pie Chart */}
+        {bankingAccountsByType.length > 0 && (
+          <Card className="flex flex-col animate-fade-in">
+            <CardHeader className="items-center pb-0">
+              <CardTitle className="flex items-center gap-2">
+                <PieChart size={20} />
+                Other Banking Services
+              </CardTitle>
+              <CardDescription>Breakdown by account type</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 pb-0">
+              <ChartContainer
+                config={chartConfig}
+                className="mx-auto aspect-square max-h-[300px]"
+              >
+                <RechartsPieChart>
+                  <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent hideLabel />}
+                  />
+                  <Pie
+                    data={bankingAccountsByType.map(item => ({ ...item, visitors: item.value }))}
+                    dataKey="visitors"
+                    nameKey="name"
+                    innerRadius={60}
+                    strokeWidth={5}
+                  >
+                    {bankingAccountsByType.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                    <Label
+                      content={({ viewBox }) => {
+                        if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                          const totalAmount = bankingAccountsByType.reduce((sum, item) => sum + item.value, 0);
+                          return (
+                            <text
+                              x={viewBox.cx}
+                              y={viewBox.cy}
+                              textAnchor="middle"
+                              dominantBaseline="middle"
+                            >
+                              <tspan
+                                x={viewBox.cx}
+                                y={viewBox.cy}
+                                className="fill-foreground text-3xl font-bold"
+                              >
+                                {formatCurrency(totalAmount)}
+                              </tspan>
+                              <tspan
+                                x={viewBox.cx}
+                                y={(viewBox.cy || 0) + 24}
+                                className="fill-muted-foreground"
+                              >
+                                Total
+                              </tspan>
+                            </text>
+                          )
+                        }
+                      }}
+                    />
+                  </Pie>
+                </RechartsPieChart>
+              </ChartContainer>
+            </CardContent>
+            <CardFooter className="flex-col gap-2 text-sm">
+              <div className="flex items-center gap-2 leading-none font-medium">
+                Distribution by account type <TrendingUp className="h-4 w-4" />
+              </div>
+            </CardFooter>
+          </Card>
+        )}
+      </div>
+    </PageWrapper>
   );
 };
 
