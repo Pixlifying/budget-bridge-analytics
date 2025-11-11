@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, Users, CreditCard } from 'lucide-react';
+import { AlertCircle, Wallet, Users, CreditCard } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/utils/calculateUtils';
 
 interface Notification {
   id: string;
-  type: 'pending_balance' | 'khata';
+  type: 'overdraft' | 'pending_balance' | 'khata';
   title: string;
   message: string;
   amount?: number;
@@ -16,6 +16,22 @@ interface Notification {
 
 const NotificationBox = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
+
+  // Fetch all data in parallel for faster loading
+  const { data: odData } = useQuery({
+    queryKey: ['od_notifications'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('od_records')
+        .select('*')
+        .order('date', { ascending: false })
+        .limit(1);
+      
+      if (error) throw error;
+      return data;
+    },
+    refetchInterval: 60000, // Reduced frequency
+  });
 
   // Fetch all pending balances
   const { data: pendingData } = useQuery({
@@ -68,6 +84,20 @@ const NotificationBox = () => {
   useEffect(() => {
     const newNotifications: Notification[] = [];
 
+    // Show all cash in hand (overdraft notifications)
+    if (odData && odData.length > 0) {
+      const latestOD = odData[0];
+      newNotifications.push({
+        id: `od-${latestOD.id}`,
+        type: 'overdraft',
+        title: 'Cash in Hand',
+        message: `Current cash in hand: ${formatCurrency(latestOD.cash_in_hand)}`,
+        amount: latestOD.cash_in_hand,
+        icon: <Wallet className="h-4 w-4" />,
+        priority: latestOD.cash_in_hand < 5000 ? 'high' : latestOD.cash_in_hand < 10000 ? 'medium' : 'low',
+      });
+    }
+
     // Show individual pending balance customers
     if (pendingData && pendingData.length > 0) {
       pendingData.forEach((pending) => {
@@ -100,7 +130,7 @@ const NotificationBox = () => {
     }
 
     setNotifications(newNotifications);
-  }, [pendingData, khataData]);
+  }, [odData, pendingData, khataData]);
 
   if (notifications.length === 0) {
     return (
@@ -145,14 +175,18 @@ const NotificationBox = () => {
               <div
                 key={`${notification.id}-${index}`}
                 className={`p-3 m-2 rounded-xl border transition-all duration-300 hover:scale-105 ${
-                  notification.type === 'pending_balance'
+                  notification.type === 'overdraft'
+                    ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800'
+                    : notification.type === 'pending_balance'
                     ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'
                     : 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800'
                 }`}
               >
                 <div className="flex items-start gap-3">
                   <div className={`p-2 rounded-lg ${
-                    notification.type === 'pending_balance'
+                    notification.type === 'overdraft'
+                      ? 'bg-emerald-100 dark:bg-emerald-800/40 text-emerald-600 dark:text-emerald-400'
+                      : notification.type === 'pending_balance'
                       ? 'bg-orange-100 dark:bg-orange-800/40 text-orange-600 dark:text-orange-400'
                       : 'bg-purple-100 dark:bg-purple-800/40 text-purple-600 dark:text-purple-400'
                   }`}>
@@ -167,7 +201,9 @@ const NotificationBox = () => {
                     </p>
                     {notification.amount && (
                       <div className={`text-xs font-medium mt-1 ${
-                        notification.type === 'pending_balance'
+                        notification.type === 'overdraft'
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : notification.type === 'pending_balance'
                           ? 'text-orange-600 dark:text-orange-400'
                           : 'text-purple-600 dark:text-purple-400'
                       }`}>

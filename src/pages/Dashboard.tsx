@@ -8,6 +8,7 @@ import {
   FilePenLine,
   AlertCircle,
   DollarSign,
+  Wallet,
   X,
   Printer,
   Receipt,
@@ -214,6 +215,21 @@ const Dashboard = () => {
     }
   });
 
+  // Fetch latest cash in hand from OD records
+  const { data: odRecordsData } = useQuery({
+    queryKey: ['odRecords'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('od_records')
+        .select('cash_in_hand')
+        .order('date', { ascending: false })
+        .limit(1);
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
   useEffect(() => {
     if (
       bankingError ||
@@ -264,6 +280,9 @@ const Dashboard = () => {
 
   const expensesTotal = expensesData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
   const expensesCount = expensesData?.length || 0;
+
+  // Get latest cash in hand
+  const latestCashInHand = odRecordsData?.[0]?.cash_in_hand || 0;
 
   // Calculate total margin including Photostat and Other Banking Services
   const totalMargin = bankingMargin + bankingAccountsMargin + onlineMargin + applicationsMargin + photostatMarginTotal;
@@ -335,7 +354,7 @@ const Dashboard = () => {
           <StatCard
             title="Total Margin"
             value={formatCurrency(totalMargin)}
-            icon={<DollarSign className="h-5 w-5" />}
+            icon={<Wallet className="h-5 w-5" />}
             onClick={() => setMarginDialogOpen(true)}
             className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-200/50 dark:border-emerald-800/50 hover:scale-105 transition-all duration-300"
           />
@@ -424,79 +443,78 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Combined block for Applications, Pending Balance, and Expenses */}
-        <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-md rounded-xl p-5 border border-white/20 dark:border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] animate-scale-in mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-semibold text-lg bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Applications</h3>
-                <FilePenLine className="h-5 w-5 text-primary opacity-70" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-md rounded-xl p-5 border border-white/20 dark:border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] animate-scale-in">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-lg bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Applications</h3>
+              <FilePenLine className="h-5 w-5 text-primary opacity-70" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Amount</p>
+                <p className="text-xl font-bold">{formatCurrency(applicationsTotal)}</p>
               </div>
-              <div className="space-y-2">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Amount</p>
-                  <p className="text-xl font-bold">{formatCurrency(applicationsTotal)}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Count</p>
-                  <p className="text-xl font-bold">{applicationsCount}</p>
-                </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Count</p>
+                <p className="text-xl font-bold">{applicationsCount}</p>
               </div>
             </div>
-            
-            <div>
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-semibold text-lg bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">Pending Balance</h3>
-                <AlertCircle className="h-5 w-5 text-primary opacity-70" />
-              </div>
-              <div className="space-y-2">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Amount</p>
-                  <p className="text-xl font-bold">{formatCurrency(pendingBalanceTotal)}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Count</p>
-                  <p className="text-xl font-bold">{pendingBalanceData?.length || 0}</p>
-                </div>
-              </div>
+          </div>
+          
+          <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-md rounded-xl p-5 border border-white/20 dark:border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] animate-scale-in">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-lg bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">Pending Balance</h3>
+              <AlertCircle className="h-5 w-5 text-primary opacity-70" />
             </div>
-
-            <div>
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-semibold text-lg bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">Expenses</h3>
-                <Receipt className="h-5 w-5 text-primary opacity-70" />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Amount</p>
+                <p className="text-xl font-bold">{formatCurrency(pendingBalanceTotal)}</p>
               </div>
-              <div className="space-y-2">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Amount</p>
-                  <p className="text-xl font-bold">{formatCurrency(expensesTotal)}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Count</p>
-                  <p className="text-xl font-bold">{expensesCount}</p>
-                </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Count</p>
+                <p className="text-xl font-bold">{pendingBalanceData?.length || 0}</p>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-md rounded-xl p-5 border border-white/20 dark:border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] animate-scale-in mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold text-lg bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">Printout and Photostat</h3>
-            <Printer className="h-5 w-5 text-primary opacity-70" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-md rounded-xl p-5 border border-white/20 dark:border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] animate-scale-in">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-lg bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">Printout and Photostat</h3>
+              <Printer className="h-5 w-5 text-primary opacity-70" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Amount</p>
+                <p className="text-xl font-bold">{formatCurrency(photostatTotal)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Count</p>
+                <p className="text-xl font-bold">{photostatCount}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Margin</p>
+                <p className="text-xl font-bold">{formatCurrency(photostatMarginTotal)}</p>
+              </div>
+            </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Total Amount</p>
-              <p className="text-xl font-bold">{formatCurrency(photostatTotal)}</p>
+
+          <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-md rounded-xl p-5 border border-white/20 dark:border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] animate-scale-in">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-lg bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">Expenses</h3>
+              <Receipt className="h-5 w-5 text-primary opacity-70" />
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Count</p>
-              <p className="text-xl font-bold">{photostatCount}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Margin</p>
-              <p className="text-xl font-bold">{formatCurrency(photostatMarginTotal)}</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Amount</p>
+                <p className="text-xl font-bold">{formatCurrency(expensesTotal)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Count</p>
+                <p className="text-xl font-bold">{expensesCount}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -514,6 +532,21 @@ const Dashboard = () => {
 
           {/* Notification Box and Calendar */}
           <div className="flex-shrink-0 space-y-6">
+            {/* Cash in Hand with Animation */}
+            <div className="bg-gradient-to-br from-primary/10 to-primary/5 backdrop-blur-md rounded-xl p-4 border border-primary/20 shadow-lg overflow-hidden">
+              <div className="flex items-center gap-2 mb-2">
+                <Wallet className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold text-sm text-foreground">Cash in Hand</h3>
+              </div>
+              <div className="relative h-12 overflow-hidden">
+                <div className="absolute animate-slide-left-right whitespace-nowrap">
+                  <span className="text-3xl font-bold font-mono text-primary tracking-wider">
+                    {formatCurrency(latestCashInHand)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
             <DigitalClock />
             <NotificationBox />
             <ReminderCalendar />
