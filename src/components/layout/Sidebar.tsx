@@ -213,6 +213,11 @@ const Sidebar = () => {
       to: '/od',
     },
     {
+      icon: <PiggyBank size={isCollapsed ? 20 : 16} />,
+      label: 'OD Records',
+      to: '/od-records',
+    },
+    {
       icon: <Users size={isCollapsed ? 20 : 16} />,
       label: 'Account Details',
       to: '/account-details',
