@@ -551,6 +551,45 @@ export type Database = {
         }
         Relationships: []
       }
+      od_detail_records: {
+        Row: {
+          amount_given: number
+          amount_received: number
+          cash_in_hand: number
+          created_at: string
+          date: string
+          id: string
+          last_balance: number
+          od_from_bank: number
+          remarks: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_given?: number
+          amount_received?: number
+          cash_in_hand?: number
+          created_at?: string
+          date?: string
+          id?: string
+          last_balance?: number
+          od_from_bank?: number
+          remarks?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_given?: number
+          amount_received?: number
+          cash_in_hand?: number
+          created_at?: string
+          date?: string
+          id?: string
+          last_balance?: number
+          od_from_bank?: number
+          remarks?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       od_records: {
         Row: {
           amount_given: number
