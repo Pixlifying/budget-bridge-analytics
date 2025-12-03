@@ -211,6 +211,7 @@ const Analytics = () => {
     received: record.amount_received,
     given: record.amount_given,
     cash_in_hand: record.cash_in_hand,
+    od_from_bank: record.od_from_bank,
   }));
 
   const revenueBreakdownData = [
@@ -528,8 +529,9 @@ const Analytics = () => {
                         axisLine={false}
                       />
                       <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar dataKey="received" fill="hsl(var(--primary))" fillOpacity={0.6} radius={[4, 4, 0, 0]} />
-                      <Line type="monotone" dataKey="cash_in_hand" stroke="hsl(220, 90%, 56%)" strokeWidth={2} dot={false} />
+                      <Bar dataKey="od_from_bank" fill="hsl(25, 95%, 53%)" fillOpacity={0.7} radius={[4, 4, 0, 0]} name="OD from Bank" />
+                      <Bar dataKey="received" fill="hsl(var(--primary))" fillOpacity={0.6} radius={[4, 4, 0, 0]} name="Amount Received" />
+                      <Line type="monotone" dataKey="cash_in_hand" stroke="hsl(220, 90%, 56%)" strokeWidth={2} dot={false} name="Cash in Hand" />
                     </ComposedChart>
                   </ResponsiveContainer>
                 </ChartContainer>
