@@ -217,7 +217,12 @@ const ODDetailRecords = () => {
     return records.filter(record => {
       const recordDate = new Date(record.date);
       return recordDate >= startDate && recordDate <= endDate;
-    }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    }).sort((a, b) => {
+      const dateCompare = new Date(a.date).getTime() - new Date(b.date).getTime();
+      if (dateCompare !== 0) return dateCompare;
+      // If same date, sort by created_at to maintain insertion order
+      return new Date(a.created_at || '').getTime() - new Date(b.created_at || '').getTime();
+    });
   };
 
   const handlePrint = () => {
