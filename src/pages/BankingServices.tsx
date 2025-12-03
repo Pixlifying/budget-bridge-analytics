@@ -44,12 +44,14 @@ const BankingServices = () => {
     date: new Date().toISOString().split('T')[0],
     amount: 0,
     transaction_count: 1,
+    extra_amount: 0,
   });
 
   const [editForm, setEditForm] = useState({
     date: '',
     amount: 0,
     transaction_count: 1,
+    extra_amount: 0,
   });
 
   const fetchBankingServices = async () => {
@@ -138,6 +140,7 @@ const BankingServices = () => {
           date: new Date().toISOString().split('T')[0],
           amount: 0,
           transaction_count: 1,
+          extra_amount: 0,
         });
         toast.success('Banking service added successfully');
       }
@@ -208,6 +211,7 @@ const BankingServices = () => {
       date: format(entry.date, 'yyyy-MM-dd'),
       amount: entry.amount,
       transaction_count: entry.transaction_count,
+      extra_amount: 0,
     });
   };
 
@@ -312,7 +316,7 @@ const BankingServices = () => {
       {/* Add Banking Service Form */}
       <div className="mb-6 p-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg shadow-lg">
         <h3 className="text-lg font-semibold mb-4">Add Banking Service</h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
           <div>
             <Label htmlFor="date">Date</Label>
             <Input
@@ -341,6 +345,16 @@ const BankingServices = () => {
               value={newEntry.amount}
               onChange={(e) => setNewEntry(prev => ({ ...prev, amount: Number(e.target.value) }))}
               placeholder="Amount"
+            />
+          </div>
+          <div>
+            <Label htmlFor="extra_amount">Extra Amount</Label>
+            <Input
+              id="extra_amount"
+              type="number"
+              value={newEntry.extra_amount}
+              onChange={(e) => setNewEntry(prev => ({ ...prev, extra_amount: Number(e.target.value) }))}
+              placeholder="Extra Amount"
             />
           </div>
           <Button onClick={handleAddEntry}>

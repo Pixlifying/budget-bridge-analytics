@@ -214,15 +214,26 @@ const ODDetailRecords = () => {
       endDate.setHours(23, 59, 59, 999);
     }
     
-    return records.filter(record => {
-      const recordDate = new Date(record.date);
-      return recordDate >= startDate && recordDate <= endDate;
-    }).sort((a, b) => {
-      const dateCompare = new Date(a.date).getTime() - new Date(b.date).getTime();
-      if (dateCompare !== 0) return dateCompare;
-      // If same date, sort by created_at to maintain insertion order
-      return new Date(a.created_at || '').getTime() - new Date(b.created_at || '').getTime();
-    });
+    // Filter records by date range and sort by date ascending, then by created_at ascending
+    // This ensures records are printed in the exact order they were entered date-wise
+    return records
+      .filter(record => {
+        const recordDate = new Date(record.date);
+        return recordDate >= startDate && recordDate <= endDate;
+      })
+      .sort((a, b) => {
+        // First sort by date (ascending - oldest first)
+        const dateA = new Date(a.date);
+        const dateB = new Date(b.date);
+        dateA.setHours(0, 0, 0, 0);
+        dateB.setHours(0, 0, 0, 0);
+        const dateCompare = dateA.getTime() - dateB.getTime();
+        if (dateCompare !== 0) return dateCompare;
+        // If same date, sort by created_at to maintain exact insertion order
+        const createdA = new Date(a.created_at || 0).getTime();
+        const createdB = new Date(b.created_at || 0).getTime();
+        return createdA - createdB;
+      });
   };
 
   const handlePrint = () => {
