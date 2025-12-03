@@ -144,7 +144,7 @@ const Analytics = () => {
   const fetchAllData = async () => {
     setIsLoading(true);
     try {
-      const { data: odData } = await supabase.from('od_records').select('*').order('date', { ascending: false });
+      const { data: odData } = await supabase.from('od_detail_records').select('*').order('date', { ascending: false });
       const { data: panCardData } = await supabase.from('pan_cards').select('*').order('date', { ascending: false });
       const { data: passportData } = await supabase.from('passports').select('*').order('date', { ascending: false });
       const { data: bankingData } = await supabase.from('banking_services').select('*').order('date', { ascending: false });

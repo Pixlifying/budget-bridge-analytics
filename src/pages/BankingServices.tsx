@@ -27,6 +27,7 @@ interface BankingService {
   amount: number;
   margin: number;
   transaction_count: number;
+  extra_amount: number;
   created_at?: string;
 }
 
@@ -70,6 +71,7 @@ const BankingServices = () => {
         amount: Number(entry.amount),
         margin: Number(entry.margin),
         transaction_count: Number(entry.transaction_count),
+        extra_amount: Number(entry.extra_amount || 0),
         created_at: entry.created_at
       }));
 
@@ -120,6 +122,7 @@ const BankingServices = () => {
           amount: newEntry.amount,
           margin: margin,
           transaction_count: newEntry.transaction_count,
+          extra_amount: newEntry.extra_amount,
         })
         .select();
 
@@ -132,6 +135,7 @@ const BankingServices = () => {
           amount: Number(data[0].amount),
           margin: Number(data[0].margin),
           transaction_count: Number(data[0].transaction_count),
+          extra_amount: Number(data[0].extra_amount || 0),
           created_at: data[0].created_at
         };
 
@@ -163,6 +167,7 @@ const BankingServices = () => {
           amount: editForm.amount,
           margin: margin,
           transaction_count: editForm.transaction_count,
+          extra_amount: editForm.extra_amount,
         })
         .eq('id', editingEntry.id);
 
@@ -174,6 +179,7 @@ const BankingServices = () => {
         amount: editForm.amount,
         margin: margin,
         transaction_count: editForm.transaction_count,
+        extra_amount: editForm.extra_amount,
       };
 
       setBankingServices(prev =>
@@ -211,7 +217,7 @@ const BankingServices = () => {
       date: format(entry.date, 'yyyy-MM-dd'),
       amount: entry.amount,
       transaction_count: entry.transaction_count,
-      extra_amount: 0,
+      extra_amount: entry.extra_amount || 0,
     });
   };
 
@@ -401,11 +407,13 @@ const BankingServices = () => {
               data={{
                 transactions: entry.transaction_count,
                 amount: formatCurrency(entry.amount),
+                extra_amount: formatCurrency(entry.extra_amount),
                 margin: formatCurrency(entry.margin)
               }}
               labels={{
                 transactions: 'Transactions',
                 amount: 'Amount',
+                extra_amount: 'Extra Amount',
                 margin: 'Margin'
               }}
               onEdit={() => openEditEntry(entry)}
@@ -450,6 +458,16 @@ const BankingServices = () => {
                 value={editForm.amount}
                 onChange={(e) => setEditForm(prev => ({ ...prev, amount: Number(e.target.value) }))}
                 placeholder="Amount"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit_extra_amount">Extra Amount</Label>
+              <Input
+                id="edit_extra_amount"
+                type="number"
+                value={editForm.extra_amount}
+                onChange={(e) => setEditForm(prev => ({ ...prev, extra_amount: Number(e.target.value) }))}
+                placeholder="Extra Amount"
               />
             </div>
             <Button onClick={handleEditEntry}>Update Banking Service</Button>

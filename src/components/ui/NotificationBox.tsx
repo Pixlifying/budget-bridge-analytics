@@ -22,7 +22,7 @@ const NotificationBox = () => {
     queryKey: ['od_notifications'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('od_records')
+        .from('od_detail_records')
         .select('*')
         .order('date', { ascending: false })
         .limit(1);

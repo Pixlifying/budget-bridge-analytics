@@ -30,7 +30,7 @@ import NotFound from "@/pages/NotFound";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
-import OD from "@/pages/OD";
+
 import Forms from "@/pages/Forms";
 import Milk from "@/pages/Milk";
 import SocialSecurity from "@/pages/SocialSecurity";
@@ -289,7 +289,7 @@ const App = () => {
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/banking-services" element={<BankingServices />} />
                     <Route path="/banking-accounts" element={<BankingAccounts />} />
-                    <Route path="/od" element={<OD />} />
+                    
                     <Route path="/od-records" element={<ODDetailRecords />} />
                     <Route path="/social-security" element={<SocialSecurity />} />
                     <Route path="/dlc" element={<DLC />} />
