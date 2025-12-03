@@ -215,12 +215,12 @@ const Dashboard = () => {
     }
   });
 
-  // Fetch latest cash in hand from OD records
+  // Fetch latest cash in hand from OD detail records
   const { data: odRecordsData } = useQuery({
     queryKey: ['odRecords'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('od_records')
+        .from('od_detail_records')
         .select('cash_in_hand')
         .order('date', { ascending: false })
         .limit(1);
