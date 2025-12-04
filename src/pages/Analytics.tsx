@@ -29,6 +29,7 @@ import {
 } from 'recharts';
 import { format } from 'date-fns';
 import Bar3DChart from '@/components/ui/Bar3DChart';
+import RevenueExpenses3DChart from '@/components/ui/RevenueExpenses3DChart';
 
 interface ODRecord {
   id: string;
@@ -528,7 +529,7 @@ const Analytics = () => {
           )}
         </div>
 
-        {/* Revenue vs Expenses */}
+        {/* Revenue vs Expenses 3D Chart */}
         <Card className="border-none shadow-md">
           <CardHeader className="pb-4">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -538,35 +539,7 @@ const Analytics = () => {
             <CardDescription className="text-xs">6-month comparison</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig} className="h-80 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={monthlyTrendData}>
-                  <XAxis 
-                    dataKey="month" 
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis 
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="revenue" fill="hsl(var(--primary))" name="Revenue" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="expenses" fill="hsl(var(--destructive))" name="Expenses" radius={[4, 4, 0, 0]} />
-                  <Line 
-                    type="monotone" 
-                    dataKey="revenue" 
-                    stroke="hsl(220, 90%, 56%)" 
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </ChartContainer>
+            <RevenueExpenses3DChart data={monthlyTrendData} />
           </CardContent>
         </Card>
       </div>
