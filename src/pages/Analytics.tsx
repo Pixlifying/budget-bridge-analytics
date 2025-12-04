@@ -14,8 +14,6 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart';
 import { 
-  LineChart, 
-  Line, 
   XAxis, 
   YAxis, 
   ResponsiveContainer, 
@@ -24,10 +22,13 @@ import {
   PieChart as RechartsPieChart, 
   Pie,
   Cell,
+  Legend,
   ComposedChart,
+  Line,
   Label
 } from 'recharts';
 import { format } from 'date-fns';
+import Bar3DChart from '@/components/ui/Bar3DChart';
 
 interface ODRecord {
   id: string;
@@ -368,41 +369,14 @@ const Analytics = () => {
 
         {/* Monthly Trend & Revenue Breakdown */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Monthly Trend Line Chart */}
+          {/* Monthly Trend 3D Bar Chart */}
           <Card className="border-none shadow-md">
             <CardHeader className="pb-4">
               <CardTitle className="text-base font-semibold">Monthly Trend</CardTitle>
               <CardDescription className="text-xs">Revenue over the last 6 months</CardDescription>
             </CardHeader>
             <CardContent>
-              <ChartContainer config={chartConfig} className="h-[280px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={monthlyTrendData}>
-                    <XAxis 
-                      dataKey="month" 
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={11}
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <YAxis 
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={11}
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Line 
-                      type="monotone" 
-                      dataKey="revenue" 
-                      stroke="hsl(var(--primary))" 
-                      strokeWidth={3}
-                      dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
-                      activeDot={{ r: 6 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </ChartContainer>
+              <Bar3DChart data={monthlyTrendData} />
             </CardContent>
           </Card>
 
