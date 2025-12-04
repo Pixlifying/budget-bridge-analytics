@@ -498,23 +498,17 @@ const Analytics = () => {
             </Card>
           )}
 
-          {/* OD Flow Area Chart */}
+          {/* OD Flow Bar Chart */}
           {odTrendData.length > 0 && (
             <Card className="border-none shadow-md">
               <CardHeader className="pb-4">
                 <CardTitle className="text-base font-semibold">OD Flow Analytics</CardTitle>
-                <CardDescription className="text-xs">Cash flow over time</CardDescription>
+                <CardDescription className="text-xs">Cash flow breakdown</CardDescription>
               </CardHeader>
               <CardContent>
                 <ChartContainer config={chartConfig} className="h-[280px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={odTrendData}>
-                      <defs>
-                        <linearGradient id="colorReceived" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
+                    <BarChart data={odTrendData} barGap={2}>
                       <XAxis 
                         dataKey="date" 
                         stroke="hsl(var(--muted-foreground))"
@@ -529,12 +523,32 @@ const Analytics = () => {
                         axisLine={false}
                       />
                       <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar dataKey="od_from_bank" fill="hsl(25, 95%, 53%)" fillOpacity={0.7} radius={[4, 4, 0, 0]} name="OD from Bank" />
-                      <Bar dataKey="received" fill="hsl(var(--primary))" fillOpacity={0.6} radius={[4, 4, 0, 0]} name="Amount Received" />
-                      <Line type="monotone" dataKey="cash_in_hand" stroke="hsl(220, 90%, 56%)" strokeWidth={2} dot={false} name="Cash in Hand" />
-                    </ComposedChart>
+                      <Bar dataKey="od_from_bank" fill="hsl(25, 95%, 53%)" radius={[4, 4, 0, 0]} name="OD from Bank" />
+                      <Bar dataKey="received" fill="hsl(160, 84%, 39%)" radius={[4, 4, 0, 0]} name="Amount Received" />
+                      <Bar dataKey="given" fill="hsl(280, 85%, 55%)" radius={[4, 4, 0, 0]} name="Amount Given" />
+                      <Bar dataKey="cash_in_hand" fill="hsl(340, 82%, 52%)" radius={[4, 4, 0, 0]} name="Cash in Hand" />
+                    </BarChart>
                   </ResponsiveContainer>
                 </ChartContainer>
+                {/* Legend */}
+                <div className="flex flex-wrap justify-center gap-4 mt-4 text-xs">
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(25, 95%, 53%)' }}></div>
+                    <span>OD from Bank</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(160, 84%, 39%)' }}></div>
+                    <span>Amount Received</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(280, 85%, 55%)' }}></div>
+                    <span>Amount Given</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(340, 82%, 52%)' }}></div>
+                    <span>Cash in Hand</span>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           )}

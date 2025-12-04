@@ -18,20 +18,43 @@ const NotificationBox = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   // Fetch all data in parallel for faster loading
-  const { data: odData } = useQuery({
+  const { data: odData, refetch: refetchOd } = useQuery({
     queryKey: ['od_notifications'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('od_detail_records')
         .select('*')
         .order('date', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(1);
       
       if (error) throw error;
       return data;
     },
-    refetchInterval: 60000, // Reduced frequency
+    refetchInterval: 60000,
   });
+
+  // Real-time subscription for OD records
+  useEffect(() => {
+    const channel = supabase
+      .channel('od-notifications-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'od_detail_records'
+        },
+        () => {
+          refetchOd();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [refetchOd]);
 
   // Fetch all pending balances
   const { data: pendingData } = useQuery({
