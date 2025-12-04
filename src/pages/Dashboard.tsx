@@ -215,20 +215,43 @@ const Dashboard = () => {
     }
   });
 
-  // Fetch latest cash in hand from OD detail records
-  const { data: odRecordsData } = useQuery({
+  // Fetch latest cash in hand from OD detail records with real-time updates
+  const { data: odRecordsData, refetch: refetchOdRecords } = useQuery({
     queryKey: ['odRecords'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('od_detail_records')
         .select('cash_in_hand')
         .order('date', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(1);
       
       if (error) throw error;
       return data;
     }
   });
+
+  // Real-time subscription for OD records
+  useEffect(() => {
+    const channel = supabase
+      .channel('od-records-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'od_detail_records'
+        },
+        () => {
+          refetchOdRecords();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [refetchOdRecords]);
 
   useEffect(() => {
     if (
@@ -350,7 +373,7 @@ const Dashboard = () => {
         <div className="flex gap-6 mb-8">
           {/* Main content */}
           <div className="flex-1">
-            <div className="grid gap-6 mb-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 mb-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Total Margin"
             value={formatCurrency(totalMargin)}
@@ -369,6 +392,12 @@ const Dashboard = () => {
             value={photostatCount}
             icon={<Printer className="h-5 w-5" />}
             className="bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-orange-200/50 dark:border-orange-800/50 hover:scale-105 transition-all duration-300"
+          />
+          <StatCard
+            title="Cash in Hand"
+            value={formatCurrency(latestCashInHand)}
+            icon={<DollarSign className="h-5 w-5" />}
+            className="bg-gradient-to-br from-amber-500/10 to-yellow-500/10 border border-amber-200/50 dark:border-amber-800/50 hover:scale-105 transition-all duration-300"
           />
         </div>
 
