@@ -30,6 +30,8 @@ import {
 import { format } from 'date-fns';
 import Bar3DChart from '@/components/ui/Bar3DChart';
 import RevenueExpenses3DChart from '@/components/ui/RevenueExpenses3DChart';
+import Pie3DChart from '@/components/ui/Pie3DChart';
+import ServicePerformance3DChart from '@/components/ui/ServicePerformance3DChart';
 
 interface ODRecord {
   id: string;
@@ -381,7 +383,7 @@ const Analytics = () => {
             </CardContent>
           </Card>
 
-          {/* Revenue Breakdown Donut Chart */}
+          {/* Revenue Breakdown 3D Pie Chart */}
           {revenueBreakdownData.length > 0 && (
             <Card className="border-none shadow-md">
               <CardHeader className="pb-4">
@@ -389,43 +391,7 @@ const Analytics = () => {
                 <CardDescription className="text-xs">{format(date, 'MMMM yyyy')}</CardDescription>
               </CardHeader>
               <CardContent>
-                <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[280px]">
-                  <RechartsPieChart>
-                    <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-                    <Pie
-                      data={revenueBreakdownData.map(item => ({ ...item, visitors: item.value }))}
-                      dataKey="visitors"
-                      nameKey="name"
-                      innerRadius={70}
-                      strokeWidth={5}
-                    >
-                      {revenueBreakdownData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                      <Label
-                        content={({ viewBox }) => {
-                          if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                            return (
-                              <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
-                                <tspan x={viewBox.cx} y={viewBox.cy} className="fill-foreground text-2xl font-bold">
-                                  100%
-                                </tspan>
-                              </text>
-                            )
-                          }
-                        }}
-                      />
-                    </Pie>
-                  </RechartsPieChart>
-                </ChartContainer>
-                <div className="mt-4 flex flex-wrap justify-center gap-4">
-                  {revenueBreakdownData.map((entry, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <div className="h-3 w-3 rounded-full" style={{ backgroundColor: entry.color }} />
-                      <span className="text-xs text-muted-foreground">{entry.name}</span>
-                    </div>
-                  ))}
-                </div>
+                <Pie3DChart data={revenueBreakdownData} />
               </CardContent>
             </Card>
           )}
@@ -433,7 +399,7 @@ const Analytics = () => {
 
         {/* Service Performance & OD Flow */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Service Performance Bar Chart */}
+          {/* Service Performance 3D Bar Chart */}
           {serviceBreakdownData.length > 0 && (
             <Card className="border-none shadow-md">
               <CardHeader className="pb-4">
@@ -441,34 +407,7 @@ const Analytics = () => {
                 <CardDescription className="text-xs">Margin by service type</CardDescription>
               </CardHeader>
               <CardContent>
-                <ChartContainer config={chartConfig} className="h-[280px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={serviceBreakdownData}>
-                      <XAxis 
-                        dataKey="service" 
-                        stroke="hsl(var(--muted-foreground))"
-                        fontSize={10}
-                        tickLine={false}
-                        axisLine={false}
-                        angle={-15}
-                        textAnchor="end"
-                        height={60}
-                      />
-                      <YAxis 
-                        stroke="hsl(var(--muted-foreground))"
-                        fontSize={11}
-                        tickLine={false}
-                        axisLine={false}
-                      />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar dataKey="margin" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]}>
-                        {serviceBreakdownData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </ChartContainer>
+                <ServicePerformance3DChart data={serviceBreakdownData} />
               </CardContent>
             </Card>
           )}

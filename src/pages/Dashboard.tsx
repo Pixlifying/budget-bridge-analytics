@@ -20,7 +20,7 @@ import { format, startOfMonth, endOfMonth, startOfDay, endOfDay } from 'date-fns
 import { supabase } from '@/integrations/supabase/client';
 import PageHeader from '@/components/layout/PageHeader';
 import StatCard from '@/components/ui/StatCard';
-import DoughnutChart from '@/components/ui/DoughnutChart';
+import Pie3DChart from '@/components/ui/Pie3DChart';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import NotificationBox from '@/components/ui/NotificationBox';
 import ReminderCalendar from '@/components/ui/ReminderCalendar';
@@ -551,7 +551,7 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-md rounded-xl p-5 border border-white/20 dark:border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] animate-scale-in">
                 <h3 className="font-semibold text-lg mb-4 bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">Margin Distribution</h3>
-                <DoughnutChart
+                <Pie3DChart
                   data={marginProportions}
                   getColor={getServiceColor}
                 />
