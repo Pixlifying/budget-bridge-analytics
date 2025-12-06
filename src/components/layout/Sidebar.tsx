@@ -5,7 +5,7 @@ import {
   CreditCard,
   Globe, 
   BarChart3, 
-  ChevronLeft,
+  ChevronDown,
   ChevronRight,
   PiggyBank,
   AlertCircle,
@@ -14,8 +14,6 @@ import {
   FileText,
   Users,
   Calculator,
-  ChevronsRight,
-  ChevronsDown,
   Landmark,
   BookOpen,
   Printer,
@@ -28,36 +26,34 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 interface SidebarItemProps {
   icon: JSX.Element;
   label: string;
   to: string;
   isActive: boolean;
-  isCollapsed: boolean;
   hasChildren?: boolean;
   isExpanded?: boolean;
   onClick?: () => void;
 }
 
-// SubMenu component for nested items
 interface SidebarSubMenuProps {
   items: {
     icon: JSX.Element;
     label: string;
     to: string;
   }[];
-  isCollapsed: boolean;
   isExpanded: boolean;
 }
 
-const SidebarSubMenu = ({ items, isCollapsed, isExpanded }: SidebarSubMenuProps) => {
+const SidebarSubMenu = ({ items, isExpanded }: SidebarSubMenuProps) => {
   const location = useLocation();
   
-  if (isCollapsed || !isExpanded) return null;
+  if (!isExpanded) return null;
   
   return (
-    <div className="ml-6 mt-1 border-l border-sidebar-border pl-2 space-y-1">
+    <div className="ml-8 mt-1 space-y-1">
       {items.map((item) => {
         const isActive = location.pathname === item.to || location.pathname.startsWith(item.to);
         return (
@@ -65,16 +61,16 @@ const SidebarSubMenu = ({ items, isCollapsed, isExpanded }: SidebarSubMenuProps)
             key={item.to}
             to={item.to}
             className={cn(
-              "flex items-center gap-2 px-2 py-2 rounded-md text-sm transition-all duration-300 ease-in-out",
+              "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200",
               isActive 
-                ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm" 
-                : "text-sidebar-foreground hover:bg-sidebar-accent/10 hover:text-sidebar-accent-foreground"
+                ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30" 
+                : "text-slate-600 hover:bg-slate-100"
             )}
           >
             <div className="shrink-0 w-4 h-4">
               {item.icon}
             </div>
-            <span className="text-sm font-medium">{item.label}</span>
+            <span className="font-medium">{item.label}</span>
           </Link>
         );
       })}
@@ -87,35 +83,27 @@ const SidebarItem = ({
   label, 
   to, 
   isActive, 
-  isCollapsed, 
   hasChildren, 
   isExpanded,
   onClick 
 }: SidebarItemProps) => {
   if (hasChildren) {
     return (
-      <div className="space-y-1">
-        <button
-          onClick={onClick}
-          className={cn(
-            "w-full flex items-center gap-2 px-3 py-3 my-1 rounded-md transition-all duration-300 ease-in-out",
-            isActive 
-              ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm" 
-              : "text-sidebar-foreground hover:bg-sidebar-accent/10 hover:text-sidebar-accent-foreground",
-            isCollapsed ? "justify-center" : ""
-          )}
-        >
-          <div className={cn("shrink-0", isCollapsed ? "w-6 h-6" : "w-5 h-5")}>
-            {icon}
-          </div>
-          {!isCollapsed && (
-            <>
-              <span className="text-sm font-medium flex-1 text-left">{label}</span>
-              {!isCollapsed && (isExpanded ? <ChevronsDown size={16} /> : <ChevronsRight size={16} />)}
-            </>
-          )}
-        </button>
-      </div>
+      <button
+        onClick={onClick}
+        className={cn(
+          "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
+          isActive 
+            ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30" 
+            : "text-slate-700 hover:bg-slate-100"
+        )}
+      >
+        <div className="shrink-0 w-5 h-5">
+          {icon}
+        </div>
+        <span className="text-sm font-medium flex-1 text-left">{label}</span>
+        {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+      </button>
     );
   }
 
@@ -123,24 +111,22 @@ const SidebarItem = ({
     <Link
       to={to}
       className={cn(
-        "flex items-center gap-2 px-3 py-3 my-1 rounded-md transition-all duration-300 ease-in-out",
+        "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
         isActive 
-          ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm" 
-          : "text-sidebar-foreground hover:bg-sidebar-accent/10 hover:text-sidebar-accent-foreground",
-        isCollapsed ? "justify-center" : ""
+          ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30" 
+          : "text-slate-700 hover:bg-slate-100"
       )}
     >
-      <div className={cn("shrink-0", isCollapsed ? "w-6 h-6" : "w-5 h-5")}>
+      <div className="shrink-0 w-5 h-5">
         {icon}
       </div>
-      {!isCollapsed && <span className="text-sm font-medium">{label}</span>}
+      <span className="text-sm font-medium">{label}</span>
     </Link>
   );
 };
 
 const Sidebar = () => {
   const location = useLocation();
-  const [isCollapsed, setIsCollapsed] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
     admin: false,
     financialServices: false,
@@ -157,256 +143,120 @@ const Sidebar = () => {
     }));
   };
 
-  // Admin submenu items (renamed from settings)
+  // Admin submenu items
   const adminItems = [
-    {
-      icon: <UserCog size={isCollapsed ? 20 : 16} />,
-      label: 'User Admin',
-      to: '/user-admin',
-    },
-    {
-      icon: <Palette size={isCollapsed ? 20 : 16} />,
-      label: 'Theme Settings',
-      to: '/theme-settings',
-    },
-    {
-      icon: <Printer size={isCollapsed ? 20 : 16} />,
-      label: 'Print',
-      to: '/downloads',
-    },
+    { icon: <UserCog size={16} />, label: 'User Admin', to: '/user-admin' },
+    { icon: <Palette size={16} />, label: 'Theme Settings', to: '/theme-settings' },
+    { icon: <Printer size={16} />, label: 'Print', to: '/downloads' },
   ];
 
   // Household submenu items
   const householdItems = [
-    {
-      icon: <FileText size={isCollapsed ? 20 : 16} />,
-      label: 'Milk',
-      to: '/milk',
-    },
-    {
-      icon: <FileText size={isCollapsed ? 20 : 16} />,
-      label: 'Misc Expenses',
-      to: '/misc-expenses',
-    },
-    {
-      icon: <PiggyBank size={isCollapsed ? 20 : 16} />,
-      label: 'Money (Udhar)',
-      to: '/udhar',
-    },
+    { icon: <FileText size={16} />, label: 'Milk', to: '/milk' },
+    { icon: <FileText size={16} />, label: 'Misc Expenses', to: '/misc-expenses' },
+    { icon: <PiggyBank size={16} />, label: 'Money (Udhar)', to: '/udhar' },
   ];
 
   // Financial Services submenu items
   const financialServiceItems = [
-    {
-      icon: <CreditCard size={isCollapsed ? 20 : 16} />,
-      label: 'Banking Services',
-      to: '/banking-services',
-    },
-    {
-      icon: <Landmark size={isCollapsed ? 20 : 16} />,
-      label: 'Other Banking Services',
-      to: '/banking-accounts',
-    },
-    {
-      icon: <PiggyBank size={isCollapsed ? 20 : 16} />,
-      label: 'OD Records',
-      to: '/od-records',
-    },
-    {
-      icon: <Users size={isCollapsed ? 20 : 16} />,
-      label: 'Account Details',
-      to: '/account-details',
-    },
-    {
-      icon: <Shield size={isCollapsed ? 20 : 16} />,
-      label: 'Social Security',
-      to: '/social-security',
-    },
-    {
-      icon: <Shield size={isCollapsed ? 20 : 16} />,
-      label: 'Life Certificate (DLC)',
-      to: '/dlc',
-    },
+    { icon: <CreditCard size={16} />, label: 'Banking Services', to: '/banking-services' },
+    { icon: <Landmark size={16} />, label: 'Other Banking Services', to: '/banking-accounts' },
+    { icon: <PiggyBank size={16} />, label: 'OD Records', to: '/od-records' },
+    { icon: <Users size={16} />, label: 'Account Details', to: '/account-details' },
+    { icon: <Shield size={16} />, label: 'Social Security', to: '/social-security' },
+    { icon: <Shield size={16} />, label: 'Life Certificate (DLC)', to: '/dlc' },
   ];
 
   // Customer Services submenu items
   const customerServiceItems = [
-    {
-      icon: <Globe size={isCollapsed ? 20 : 16} />,
-      label: 'Digital Services',
-      to: '/online-services',
-    },
-    {
-      icon: <FilePen size={isCollapsed ? 20 : 16} />,
-      label: 'Offline Services',
-      to: '/applications',
-    },
-    {
-      icon: <Copy size={isCollapsed ? 20 : 16} />,
-      label: 'Print / Photostat',
-      to: '/photostat',
-    },
+    { icon: <Globe size={16} />, label: 'Digital Services', to: '/online-services' },
+    { icon: <FilePen size={16} />, label: 'Offline Services', to: '/applications' },
+    { icon: <Copy size={16} />, label: 'Print / Photostat', to: '/photostat' },
   ];
 
   // Apps submenu items
   const appsItems = [
-    {
-      icon: <Calculator size={isCollapsed ? 20 : 16} />,
-      label: 'Calculator',
-      to: '/calculator',
-    },
-    {
-      icon: <Calculator size={isCollapsed ? 20 : 16} />,
-      label: 'Age Calculator',
-      to: '/age-calculator',
-    },
-    {
-      icon: <FileText size={isCollapsed ? 20 : 16} />,
-      label: 'Forms',
-      to: '/forms',
-    },
+    { icon: <Calculator size={16} />, label: 'Calculator', to: '/calculator' },
+    { icon: <Calculator size={16} />, label: 'Age Calculator', to: '/age-calculator' },
+    { icon: <FileText size={16} />, label: 'Forms', to: '/forms' },
   ];
 
   // Ledger submenu items
   const ledgerItems = [
-    {
-      icon: <BookOpen size={isCollapsed ? 20 : 16} />,
-      label: 'Khata',
-      to: '/khata',
-    },
-    {
-      icon: <FileText size={isCollapsed ? 20 : 16} />,
-      label: 'Papers',
-      to: '/papers',
-    },
-    {
-      icon: <AlertCircle size={isCollapsed ? 20 : 16} />,
-      label: 'Pending Balance',
-      to: '/pending-balance',
-    },
-    {
-      icon: <PiggyBank size={isCollapsed ? 20 : 16} />,
-      label: 'Expenses',
-      to: '/expenses',
-    },
+    { icon: <BookOpen size={16} />, label: 'Khata', to: '/khata' },
+    { icon: <FileText size={16} />, label: 'Papers', to: '/papers' },
+    { icon: <AlertCircle size={16} />, label: 'Pending Balance', to: '/pending-balance' },
+    { icon: <PiggyBank size={16} />, label: 'Expenses', to: '/expenses' },
   ];
 
   // Main sidebar items
   const sidebarItems = [
-    {
-      icon: <LayoutDashboard size={isCollapsed ? 20 : 18} />,
-      label: 'Dashboard',
-      to: '/',
-      hasChildren: false,
-    },
-    {
-      icon: <CreditCard size={isCollapsed ? 20 : 18} />,
-      label: 'Financial Services',
-      to: '#',
-      hasChildren: true,
-      menuKey: 'financialServices',
-      children: financialServiceItems,
-    },
-    {
-      icon: <HeadphonesIcon size={isCollapsed ? 20 : 18} />,
-      label: 'Customer Services',
-      to: '#',
-      hasChildren: true,
-      menuKey: 'customerServices',
-      children: customerServiceItems,
-    },
-    {
-      icon: <BookOpen size={isCollapsed ? 20 : 18} />,
-      label: 'Ledger',
-      to: '#',
-      hasChildren: true,
-      menuKey: 'ledger',
-      children: ledgerItems,
-    },
-    {
-      icon: <Calculator size={isCollapsed ? 20 : 18} />,
-      label: 'Apps',
-      to: '#',
-      hasChildren: true,
-      menuKey: 'apps',
-      children: appsItems,
-    },
-    {
-      icon: <BarChart3 size={isCollapsed ? 20 : 18} />,
-      label: 'Analytics',
-      to: '/analytics',
-      hasChildren: false,
-    },
-    {
-      icon: <Home size={isCollapsed ? 20 : 18} />,
-      label: 'Household',
-      to: '#',
-      hasChildren: true,
-      menuKey: 'household',
-      children: householdItems,
-    },
-    {
-      icon: <Settings size={isCollapsed ? 20 : 18} />,
-      label: 'Admin',
-      to: '#',
-      hasChildren: true,
-      menuKey: 'admin',
-      children: adminItems,
-    },
+    { icon: <LayoutDashboard size={18} />, label: 'Dashboard', to: '/', hasChildren: false },
+    { icon: <CreditCard size={18} />, label: 'Financial Services', to: '#', hasChildren: true, menuKey: 'financialServices', children: financialServiceItems },
+    { icon: <HeadphonesIcon size={18} />, label: 'Customer Services', to: '#', hasChildren: true, menuKey: 'customerServices', children: customerServiceItems },
+    { icon: <BookOpen size={18} />, label: 'Ledger', to: '#', hasChildren: true, menuKey: 'ledger', children: ledgerItems },
+    { icon: <Calculator size={18} />, label: 'Apps', to: '#', hasChildren: true, menuKey: 'apps', children: appsItems },
+    { icon: <BarChart3 size={18} />, label: 'Analytics', to: '/analytics', hasChildren: false },
+    { icon: <Home size={18} />, label: 'Household', to: '#', hasChildren: true, menuKey: 'household', children: householdItems },
+    { icon: <Settings size={18} />, label: 'Admin', to: '#', hasChildren: true, menuKey: 'admin', children: adminItems },
   ];
 
   return (
-    <aside
-      className={cn(
-        "h-screen bg-sidebar flex flex-col border-r border-sidebar-border transition-all duration-300 ease-in-out sticky top-0",
-        isCollapsed ? "w-16" : "w-64"
-      )}
-    >
-      <div className="flex items-center justify-between p-4">
-        {!isCollapsed && (
-          <h1 className="text-xl font-bold text-sidebar-foreground">Hisab Kitab</h1>
-        )}
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-1.5 rounded-full bg-sidebar-accent/10 text-sidebar-foreground hover:bg-sidebar-accent/20 transition-all"
-        >
-          {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-        </button>
-      </div>
-      
-      <ScrollArea className="flex-1 px-2 py-2">
-        <nav className="space-y-1">
-          {sidebarItems.map((item) => {
-            // Calculate if this item or any of its children is active
-            const isActive = item.hasChildren 
-              ? (item.children?.some(child => location.pathname === child.to || location.pathname.startsWith(child.to))) ?? false
-              : (item.to === '/' ? location.pathname === '/' : location.pathname.startsWith(item.to));
-            
-            return (
-              <div key={item.label}>
-                <SidebarItem
-                  icon={item.icon}
-                  label={item.label}
-                  to={item.hasChildren ? '#' : item.to}
-                  isActive={isActive}
-                  isCollapsed={isCollapsed}
-                  hasChildren={item.hasChildren}
-                  isExpanded={item.hasChildren ? expandedMenus[item.menuKey as string] : undefined}
-                  onClick={item.hasChildren ? () => toggleMenu(item.menuKey as string) : undefined}
-                />
-                
-                {item.hasChildren && (
-                  <SidebarSubMenu
-                    items={item.children ?? []}
-                    isCollapsed={isCollapsed}
-                    isExpanded={expandedMenus[item.menuKey as string]}
+    <aside className="h-screen w-72 flex flex-col sticky top-0 p-3">
+      {/* Main Sidebar Container with 3D effect */}
+      <div className="flex-1 bg-white rounded-3xl shadow-xl shadow-slate-200/50 flex flex-col overflow-hidden border border-slate-100">
+        {/* Header with Avatar */}
+        <div className="p-5 border-b border-slate-100">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-12 w-12 ring-4 ring-blue-100">
+              <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold">
+                HK
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="text-xs text-slate-400">Good Morning</p>
+              <h2 className="font-semibold text-slate-800">Hisab Kitab</h2>
+            </div>
+          </div>
+        </div>
+
+        {/* Menu Label */}
+        <div className="px-5 pt-4 pb-2">
+          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Menu</span>
+        </div>
+        
+        {/* Navigation */}
+        <ScrollArea className="flex-1 px-3">
+          <nav className="space-y-1 pb-4">
+            {sidebarItems.map((item) => {
+              const isActive = item.hasChildren 
+                ? (item.children?.some(child => location.pathname === child.to || location.pathname.startsWith(child.to))) ?? false
+                : (item.to === '/' ? location.pathname === '/' : location.pathname.startsWith(item.to));
+              
+              return (
+                <div key={item.label}>
+                  <SidebarItem
+                    icon={item.icon}
+                    label={item.label}
+                    to={item.hasChildren ? '#' : item.to}
+                    isActive={isActive && !item.hasChildren}
+                    hasChildren={item.hasChildren}
+                    isExpanded={item.hasChildren ? expandedMenus[item.menuKey as string] : undefined}
+                    onClick={item.hasChildren ? () => toggleMenu(item.menuKey as string) : undefined}
                   />
-                )}
-              </div>
-            );
-          })}
-        </nav>
-      </ScrollArea>
+                  
+                  {item.hasChildren && (
+                    <SidebarSubMenu
+                      items={item.children ?? []}
+                      isExpanded={expandedMenus[item.menuKey as string]}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </nav>
+        </ScrollArea>
+      </div>
     </aside>
   );
 };
