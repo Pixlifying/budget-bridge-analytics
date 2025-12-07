@@ -14,13 +14,13 @@ import {
   Receipt,
   MoreHorizontal,
   TrendingUp,
+  ChevronDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
 import { format, startOfMonth, endOfMonth, startOfDay, endOfDay } from 'date-fns';
 
 import { supabase } from '@/integrations/supabase/client';
-import PageHeader from '@/components/layout/PageHeader';
 import Pie3DChart from '@/components/ui/Pie3DChart';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import NotificationBox from '@/components/ui/NotificationBox';
@@ -36,12 +36,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 const Dashboard = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
   const [isLoading, setIsLoading] = useState(true);
   const [marginDialogOpen, setMarginDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { data: bankingData, error: bankingError } = useQuery({
     queryKey: ['bankingServices', viewMode, date],
@@ -316,8 +319,8 @@ const Dashboard = () => {
 
   const getServiceColor = (serviceName: string): string => {
     switch (serviceName) {
-      case 'Banking': return '#7c3aed';
-      case 'Other Banking': return '#a78bfa';
+      case 'Banking': return 'hsl(var(--primary))';
+      case 'Other Banking': return 'hsl(var(--accent))';
       case 'Online': return '#f97316';
       case 'Applications': return '#10b981';
       case 'Printout and Photostat': return '#ec4899';
@@ -337,8 +340,8 @@ const Dashboard = () => {
   };
 
   const marginDetails = [
-    { name: 'Banking Services', value: bankingMargin, color: '#7c3aed' },
-    { name: 'Other Banking Services', value: bankingAccountsMargin, color: '#a78bfa' },
+    { name: 'Banking Services', value: bankingMargin, color: 'hsl(var(--primary))' },
+    { name: 'Other Banking Services', value: bankingAccountsMargin, color: 'hsl(var(--accent))' },
     { name: 'Online Services', value: onlineMargin, color: '#f97316' },
     { name: 'Applications', value: applicationsMargin, color: '#10b981' },
     { name: 'Printout and Photostat', value: photostatMarginTotal, color: '#ec4899' },
@@ -346,31 +349,107 @@ const Dashboard = () => {
     { name: 'Expenses', value: expensesTotal, color: '#06b6d4' },
   ];
 
-  // Card component for consistent styling
+  // 3D Dashboard Card component
   const DashboardCard = ({ children, className = '', onClick }: { children: React.ReactNode; className?: string; onClick?: () => void }) => (
     <div 
       onClick={onClick}
-      className={`bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-[0_4px_20px_rgba(124,58,237,0.08)] hover:shadow-[0_8px_30px_rgba(124,58,237,0.12)] transition-all duration-300 ${onClick ? 'cursor-pointer' : ''} ${className}`}
+      className={`card-3d bg-card dark:bg-card ${onClick ? 'cursor-pointer' : ''} ${className}`}
     >
       {children}
     </div>
   );
 
+  // Stats card for top row
+  const StatsCard = ({ 
+    title, 
+    value, 
+    subValue, 
+    icon, 
+    trend, 
+    trendValue,
+    colorClass = 'bg-primary/10 text-primary'
+  }: { 
+    title: string; 
+    value: string; 
+    subValue?: string; 
+    icon: React.ReactNode;
+    trend?: 'up' | 'down';
+    trendValue?: string;
+    colorClass?: string;
+  }) => (
+    <DashboardCard className="flex items-start justify-between">
+      <div className="flex-1">
+        <div className={`w-10 h-10 rounded-xl ${colorClass} flex items-center justify-center mb-3`}>
+          {icon}
+        </div>
+        <p className="text-sm text-muted-foreground">{title}</p>
+        <div className="flex items-baseline gap-2 mt-1">
+          <span className="text-2xl font-bold text-foreground">{value}</span>
+          {subValue && <span className="text-sm text-muted-foreground">- {subValue}</span>}
+        </div>
+        {trendValue && (
+          <div className={`flex items-center gap-1 mt-2 text-xs ${trend === 'up' ? 'text-emerald-500' : 'text-red-500'}`}>
+            <span className={`px-1.5 py-0.5 rounded ${trend === 'up' ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-red-100 dark:bg-red-900/30'}`}>
+              {trend === 'up' ? '+' : '-'}{trendValue}
+            </span>
+          </div>
+        )}
+      </div>
+      <div className="relative w-12 h-12">
+        <svg className="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
+          <circle
+            className="text-muted/30"
+            strokeWidth="3"
+            stroke="currentColor"
+            fill="transparent"
+            r="16"
+            cx="18"
+            cy="18"
+          />
+          <circle
+            className="text-primary"
+            strokeWidth="3"
+            strokeLinecap="round"
+            stroke="currentColor"
+            fill="transparent"
+            r="16"
+            cx="18"
+            cy="18"
+            strokeDasharray="75 100"
+          />
+        </svg>
+      </div>
+    </DashboardCard>
+  );
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-100 via-purple-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+    <div className="min-h-screen theme-gradient-bg">
       {/* Header */}
-      <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-b border-violet-100 dark:border-slate-700 px-6 py-4">
+      <div className="glassmorphism border-b border-border/50 px-6 py-4 sticky top-0 z-10">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Dashboard Overview</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Welcome back! Here's your business summary</p>
+            <h1 className="text-2xl font-bold text-foreground">WELCOME BACK</h1>
+            <p className="text-sm text-muted-foreground mt-1">Here's your business summary</p>
           </div>
-          <DateRangePicker 
-            date={date}
-            onDateChange={handleDateChange}
-            mode={viewMode}
-            onModeChange={handleViewModeChange}
-          />
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <Input 
+                placeholder="Search here" 
+                className="w-64 pl-10 bg-card border-border/50"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <DateRangePicker 
+              date={date}
+              onDateChange={handleDateChange}
+              mode={viewMode}
+              onModeChange={handleViewModeChange}
+            />
+          </div>
         </div>
       </div>
 
@@ -378,238 +457,188 @@ const Dashboard = () => {
         <div className="flex gap-6">
           {/* Main content */}
           <div className="flex-1 space-y-6">
-            {/* Top Stats Row - 3 columns */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {/* Total Margin Card with Ring Chart */}
-              <DashboardCard onClick={() => setMarginDialogOpen(true)} className="flex items-center gap-4">
-                <div className="relative w-24 h-24">
-                  <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
-                    <circle
-                      className="text-violet-100 dark:text-slate-700"
-                      strokeWidth="8"
-                      stroke="currentColor"
-                      fill="transparent"
-                      r="42"
-                      cx="50"
-                      cy="50"
-                    />
-                    <circle
-                      className="text-violet-500"
-                      strokeWidth="8"
-                      strokeLinecap="round"
-                      stroke="currentColor"
-                      fill="transparent"
-                      r="42"
-                      cx="50"
-                      cy="50"
-                      strokeDasharray={`${totalMargin > 0 ? 264 : 0} 264`}
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-lg font-bold text-violet-600 dark:text-violet-400">₹{Math.round(totalMargin / 1000)}k</span>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm">Total Margin</p>
-                  <p className="text-2xl font-bold text-slate-800 dark:text-white">{formatCurrency(totalMargin)}</p>
-                  <button className="mt-2 px-3 py-1 bg-violet-500 text-white text-xs rounded-full hover:bg-violet-600 transition-colors">
-                    VIEW DETAILS
-                  </button>
-                </div>
-              </DashboardCard>
-
-              {/* Banking Services Card */}
-              <DashboardCard>
-                <div className="flex justify-between items-start mb-3">
-                  <h3 className="text-slate-500 dark:text-slate-400 text-sm font-medium">Banking Services</h3>
-                  <MoreHorizontal className="h-4 w-4 text-slate-400" />
-                </div>
-                <p className="text-3xl font-bold text-slate-800 dark:text-white mb-3">{formatCurrency(bankingServicesTotal)}</p>
-                {/* Mini line chart visual */}
-                <div className="h-12 flex items-end gap-1">
-                  {[40, 60, 45, 70, 55, 80, 65].map((height, i) => (
-                    <div 
-                      key={i} 
-                      className="flex-1 bg-gradient-to-t from-orange-400 to-orange-300 rounded-t opacity-80"
-                      style={{ height: `${height}%` }}
-                    />
-                  ))}
-                </div>
-                <div className="flex justify-between text-xs text-slate-400 mt-2">
-                  <span>Margin: {formatCurrency(bankingMargin)}</span>
-                  <span>{bankingServicesCount} txns</span>
-                </div>
-              </DashboardCard>
-
-              {/* Online Services Card */}
-              <DashboardCard>
-                <div className="flex justify-between items-start mb-3">
-                  <h3 className="text-slate-500 dark:text-slate-400 text-sm font-medium">Online Services</h3>
-                  <MoreHorizontal className="h-4 w-4 text-slate-400" />
-                </div>
-                <p className="text-3xl font-bold text-slate-800 dark:text-white mb-3">{formatCurrency(onlineServicesTotal)}</p>
-                {/* Mini bar chart */}
-                <div className="h-12 flex items-end gap-2">
-                  {[60, 80, 40, 90, 70, 50, 85].map((height, i) => (
-                    <div 
-                      key={i} 
-                      className="flex-1 bg-gradient-to-t from-violet-500 to-violet-400 rounded-t"
-                      style={{ height: `${height}%` }}
-                    />
-                  ))}
-                </div>
-                <div className="flex justify-between text-xs text-slate-400 mt-2">
-                  <span>Margin: {formatCurrency(onlineMargin)}</span>
-                  <span>{onlineServicesCount} txns</span>
-                </div>
-              </DashboardCard>
+            {/* Section: Bills */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-foreground">Bills</h2>
+                <ChevronDown className="w-5 h-5 text-muted-foreground" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <StatsCard 
+                  title="Total Margin"
+                  value={formatCurrency(totalMargin).split('₹')[1] || '0'}
+                  subValue={bankingServicesCount.toString()}
+                  icon={<CreditCard className="w-5 h-5" />}
+                  trend="up"
+                  trendValue="42%"
+                />
+                <StatsCard 
+                  title="Banking Services"
+                  value={bankingServicesCount.toString()}
+                  subValue={bankingServicesDays.toString()}
+                  icon={<Wallet className="w-5 h-5" />}
+                  trend="up"
+                  trendValue="22%"
+                  colorClass="bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600"
+                />
+                <StatsCard 
+                  title="Pending Balance"
+                  value={(pendingBalanceData?.length || 0).toString()}
+                  icon={<AlertCircle className="w-5 h-5" />}
+                  trend="down"
+                  trendValue="5%"
+                  colorClass="bg-red-100 dark:bg-red-900/30 text-red-600"
+                />
+                <StatsCard 
+                  title="Applications"
+                  value={applicationsCount.toString()}
+                  subValue={onlineServicesCount.toString()}
+                  icon={<FileText className="w-5 h-5" />}
+                  trend="up"
+                  trendValue="5%"
+                  colorClass="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600"
+                />
+              </div>
             </div>
 
-            {/* Second Row - 3 columns */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {/* Applications Card with 3D bars */}
-              <DashboardCard>
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-slate-800 dark:text-white font-semibold">Applications</h3>
-                  <MoreHorizontal className="h-4 w-4 text-slate-400" />
-                </div>
-                <div className="flex items-center gap-6">
-                  <div className="flex items-end gap-2 h-20">
-                    <div className="w-10 bg-gradient-to-t from-pink-500 to-pink-400 rounded-t relative" style={{ height: '80%' }}>
-                      <div className="absolute -top-1 left-0 w-full h-3 bg-pink-300 rounded-t transform skew-x-12 origin-bottom-left"></div>
+            {/* Section: Invoices */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-foreground">Invoices</h2>
+                <ChevronDown className="w-5 h-5 text-muted-foreground" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Amount Owed Card - Purple gradient card */}
+                <DashboardCard onClick={() => setMarginDialogOpen(true)} className="primary-gradient text-primary-foreground relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="w-16 h-10 relative">
+                        <svg viewBox="0 0 100 50" className="w-full h-full">
+                          <path
+                            d="M 10 45 A 35 35 0 0 1 90 45"
+                            fill="none"
+                            stroke="rgba(255,255,255,0.3)"
+                            strokeWidth="8"
+                            strokeLinecap="round"
+                          />
+                          <path
+                            d="M 10 45 A 35 35 0 0 1 90 45"
+                            fill="none"
+                            stroke="#facc15"
+                            strokeWidth="8"
+                            strokeLinecap="round"
+                            strokeDasharray={`${45 * 1.1} 110`}
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-sm font-bold text-white">45%</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="w-10 bg-gradient-to-t from-violet-500 to-violet-400 rounded-t relative" style={{ height: '100%' }}>
-                      <div className="absolute -top-1 left-0 w-full h-3 bg-violet-300 rounded-t transform skew-x-12 origin-bottom-left"></div>
+                    <div className="bg-white/20 rounded-lg p-3 inline-block mb-4">
+                      <Receipt className="w-6 h-6" />
                     </div>
+                    <p className="text-white/80 text-sm">Amount Owed</p>
+                    <p className="text-3xl font-bold">{formatCurrency(totalMargin)}</p>
+                    <p className="text-white/60 text-sm mt-1">{formatCurrency(bankingAccountsMargin)}</p>
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-2 h-2 rounded-full bg-pink-500"></div>
-                      <span className="text-xs text-slate-500">Amount</span>
-                    </div>
-                    <p className="text-lg font-bold text-slate-800 dark:text-white">{formatCurrency(applicationsTotal)}</p>
-                    <div className="flex items-center gap-2 mt-2 mb-1">
-                      <div className="w-2 h-2 rounded-full bg-violet-500"></div>
-                      <span className="text-xs text-slate-500">Count</span>
-                    </div>
-                    <p className="text-lg font-bold text-slate-800 dark:text-white">{applicationsCount}</p>
-                  </div>
-                </div>
-              </DashboardCard>
+                </DashboardCard>
 
-              {/* Printout & Photostat with 3D hexagon style */}
-              <DashboardCard>
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-slate-800 dark:text-white font-semibold">Printout & Photostat</h3>
-                  <MoreHorizontal className="h-4 w-4 text-slate-400" />
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 relative">
-                    <svg viewBox="0 0 100 100" className="w-full h-full">
-                      <polygon 
-                        points="50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5" 
-                        fill="url(#hexGradient)" 
-                        stroke="#10b981" 
-                        strokeWidth="2"
-                      />
-                      <defs>
-                        <linearGradient id="hexGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" stopColor="#34d399" />
-                          <stop offset="100%" stopColor="#10b981" />
-                        </linearGradient>
-                      </defs>
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                      <span className="text-xs text-slate-500">Amount</span>
+                {/* Paid Invoices & Live Jobs */}
+                <div className="space-y-4">
+                  <DashboardCard>
+                    <div className="flex items-start justify-between">
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <CreditCard className="w-5 h-5 text-primary" />
+                      </div>
+                      <div className="flex items-center gap-1 text-xs text-emerald-500 bg-emerald-100 dark:bg-emerald-900/30 px-2 py-1 rounded-full">
+                        <span>+5%</span>
+                      </div>
                     </div>
-                    <p className="text-lg font-bold text-slate-800 dark:text-white">{formatCurrency(photostatTotal)}</p>
-                    <div className="flex items-center gap-2 mt-2 mb-1">
-                      <div className="w-2 h-2 rounded-full bg-teal-500"></div>
-                      <span className="text-xs text-slate-500">Margin</span>
-                    </div>
-                    <p className="text-lg font-bold text-slate-800 dark:text-white">{formatCurrency(photostatMarginTotal)}</p>
-                  </div>
-                </div>
-              </DashboardCard>
+                    <p className="text-sm text-muted-foreground mt-3">Paid Invoices</p>
+                    <p className="text-2xl font-bold text-foreground">{formatCurrency(bankingServicesTotal)}</p>
+                    <p className="text-xs text-muted-foreground">Current Financial Year</p>
+                  </DashboardCard>
 
-              {/* Pending Balance with gauge style */}
-              <DashboardCard>
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-slate-800 dark:text-white font-semibold">Pending Balance</h3>
-                  <MoreHorizontal className="h-4 w-4 text-slate-400" />
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="w-20 h-12 relative">
-                    <svg viewBox="0 0 100 50" className="w-full h-full">
-                      <path
-                        d="M 10 50 A 40 40 0 0 1 90 50"
-                        fill="none"
-                        stroke="#e2e8f0"
-                        strokeWidth="8"
-                        strokeLinecap="round"
-                      />
-                      <path
-                        d="M 10 50 A 40 40 0 0 1 90 50"
-                        fill="none"
-                        stroke="url(#gaugeGradient)"
-                        strokeWidth="8"
-                        strokeLinecap="round"
-                        strokeDasharray={`${pendingBalanceTotal > 0 ? 126 * 0.7 : 0} 126`}
-                      />
-                      <defs>
-                        <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                          <stop offset="0%" stopColor="#f97316" />
-                          <stop offset="100%" stopColor="#ef4444" />
-                        </linearGradient>
-                      </defs>
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-2 h-2 rounded-full bg-orange-500"></div>
-                      <span className="text-xs text-slate-500">Total Pending</span>
+                  <DashboardCard>
+                    <div className="flex items-start justify-between">
+                      <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
+                        <Globe className="w-5 h-5 text-accent" />
+                      </div>
+                      <div className="relative w-10 h-10">
+                        <svg className="w-10 h-10 transform -rotate-90" viewBox="0 0 36 36">
+                          <circle className="text-muted/20" strokeWidth="3" stroke="currentColor" fill="transparent" r="14" cx="18" cy="18" />
+                          <circle className="text-primary" strokeWidth="3" strokeLinecap="round" stroke="currentColor" fill="transparent" r="14" cx="18" cy="18" strokeDasharray="85 100" />
+                        </svg>
+                        <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold">85%</span>
+                      </div>
                     </div>
-                    <p className="text-xl font-bold text-slate-800 dark:text-white">{formatCurrency(pendingBalanceTotal)}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                      <span className="text-xs text-slate-500">Count: {pendingBalanceData?.length || 0}</span>
-                    </div>
-                  </div>
+                    <p className="text-sm text-muted-foreground mt-3">Live Jobs Value</p>
+                    <p className="text-2xl font-bold text-foreground">{formatCurrency(onlineServicesTotal)}</p>
+                    <p className="text-xs text-muted-foreground">Current Financial Year</p>
+                  </DashboardCard>
                 </div>
-              </DashboardCard>
+
+                {/* Bar Chart Card */}
+                <DashboardCard>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-sm font-medium text-muted-foreground">{format(date, 'MMM yyyy')}</span>
+                    <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                  <div className="h-40 flex items-end gap-2 px-2">
+                    {['Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'].map((month, i) => {
+                      const heights = [45, 60, 40, 75, 55, 50, 70, 65];
+                      return (
+                        <div key={month} className="flex-1 flex flex-col items-center gap-1">
+                          <div 
+                            className="w-full bg-primary/80 rounded-t animate-bar-grow"
+                            style={{ 
+                              height: `${heights[i]}%`,
+                              animationDelay: `${i * 0.1}s`
+                            }}
+                          />
+                          <span className="text-xs text-muted-foreground">{month}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-4 flex items-center justify-end gap-4">
+                    <Button variant="ghost" size="sm" className="text-xs">Yearly Statement</Button>
+                    <Button variant="ghost" size="sm" className="text-xs">View History</Button>
+                  </div>
+                </DashboardCard>
+              </div>
             </div>
 
             {/* Third Row - Expenses and Margin Distribution */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Expenses Card */}
               <DashboardCard>
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="text-slate-800 dark:text-white font-semibold">Expenses</h3>
-                    <p className="text-xs text-slate-500 mt-1">{expensesCount} entries this period</p>
+                    <h3 className="font-semibold text-foreground">Expenses</h3>
+                    <p className="text-xs text-muted-foreground mt-1">{expensesCount} entries this period</p>
                   </div>
-                  <MoreHorizontal className="h-4 w-4 text-slate-400" />
+                  <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <p className="text-4xl font-bold text-slate-800 dark:text-white">{formatCurrency(expensesTotal)}</p>
+                    <p className="text-4xl font-bold text-foreground">{formatCurrency(expensesTotal)}</p>
                     <div className="flex items-center gap-2 mt-2">
-                      <TrendingUp className="h-4 w-4 text-red-500" />
-                      <span className="text-sm text-red-500">Track your expenses</span>
+                      <TrendingUp className="h-4 w-4 text-destructive" />
+                      <span className="text-sm text-destructive">Track your expenses</span>
                     </div>
                   </div>
                   <div className="w-24 h-24">
                     <svg viewBox="0 0 100 100" className="w-full h-full">
-                      <circle cx="50" cy="50" r="40" fill="none" stroke="#fee2e2" strokeWidth="12" />
+                      <circle cx="50" cy="50" r="40" fill="none" stroke="hsl(var(--muted))" strokeWidth="12" />
                       <circle 
                         cx="50" 
                         cy="50" 
                         r="40" 
                         fill="none" 
-                        stroke="#ef4444" 
+                        stroke="hsl(var(--destructive))" 
                         strokeWidth="12"
                         strokeLinecap="round"
                         strokeDasharray={`${expensesTotal > 0 ? 180 : 0} 251`}
@@ -623,8 +652,8 @@ const Dashboard = () => {
               {/* Margin Distribution Chart */}
               <DashboardCard>
                 <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-slate-800 dark:text-white font-semibold">Margin Distribution</h3>
-                  <MoreHorizontal className="h-4 w-4 text-slate-400" />
+                  <h3 className="font-semibold text-foreground">Margin Distribution</h3>
+                  <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <Pie3DChart
                   data={marginProportions}
@@ -634,19 +663,19 @@ const Dashboard = () => {
             </div>
 
             {/* Cash in Hand Banner */}
-            <div className="bg-gradient-to-r from-violet-600 to-purple-600 rounded-2xl p-6 text-white relative overflow-hidden">
+            <div className="primary-gradient rounded-2xl p-6 text-primary-foreground relative overflow-hidden">
               <div className="absolute right-0 top-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
               <div className="absolute right-20 bottom-0 w-24 h-24 bg-white/5 rounded-full translate-y-1/2"></div>
               <div className="relative z-10 flex items-center justify-between">
                 <div>
-                  <h3 className="text-white/80 text-sm mb-1">Cash in Hand</h3>
+                  <h3 className="text-primary-foreground/80 text-sm mb-1">Cash in Hand</h3>
                   <p className="text-4xl font-bold">{formatCurrency(latestCashInHand)}</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="bg-white/20 rounded-full p-2">
+                  <div className="bg-white/20 rounded-full px-4 py-2">
                     <span className="text-2xl font-bold">{bankingServicesCount}</span>
                   </div>
-                  <div className="bg-white/20 rounded-full p-2">
+                  <div className="bg-white/20 rounded-full px-4 py-2">
                     <span className="text-2xl font-bold">{onlineServicesCount}</span>
                   </div>
                 </div>

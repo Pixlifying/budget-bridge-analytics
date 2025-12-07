@@ -63,8 +63,8 @@ const SidebarSubMenu = ({ items, isExpanded }: SidebarSubMenuProps) => {
             className={cn(
               "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200",
               isActive 
-                ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30" 
-                : "text-slate-600 hover:bg-slate-100"
+                ? "primary-gradient text-primary-foreground shadow-lg" 
+                : "text-muted-foreground hover:bg-muted"
             )}
           >
             <div className="shrink-0 w-4 h-4">
@@ -94,8 +94,8 @@ const SidebarItem = ({
         className={cn(
           "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
           isActive 
-            ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30" 
-            : "text-slate-700 hover:bg-slate-100"
+            ? "primary-gradient text-primary-foreground shadow-lg" 
+            : "text-foreground hover:bg-muted"
         )}
       >
         <div className="shrink-0 w-5 h-5">
@@ -113,8 +113,8 @@ const SidebarItem = ({
       className={cn(
         "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
         isActive 
-          ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30" 
-          : "text-slate-700 hover:bg-slate-100"
+          ? "primary-gradient text-primary-foreground shadow-lg" 
+          : "text-foreground hover:bg-muted"
       )}
     >
       <div className="shrink-0 w-5 h-5">
@@ -204,25 +204,25 @@ const Sidebar = () => {
   return (
     <aside className="h-screen w-72 flex flex-col sticky top-0 p-3">
       {/* Main Sidebar Container with 3D effect */}
-      <div className="flex-1 bg-white rounded-3xl shadow-xl shadow-slate-200/50 flex flex-col overflow-hidden border border-slate-100">
+      <div className="flex-1 bg-card rounded-3xl shadow-xl shadow-primary/5 flex flex-col overflow-hidden border border-border">
         {/* Header with Avatar */}
-        <div className="p-5 border-b border-slate-100">
+        <div className="p-5 border-b border-border">
           <div className="flex items-center gap-3">
-            <Avatar className="h-12 w-12 ring-4 ring-blue-100">
-              <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold">
+            <Avatar className="h-12 w-12 ring-4 ring-primary/20">
+              <AvatarFallback className="primary-gradient text-primary-foreground font-semibold">
                 HK
               </AvatarFallback>
             </Avatar>
             <div>
-              <p className="text-xs text-slate-400">Good Morning</p>
-              <h2 className="font-semibold text-slate-800">Hisab Kitab</h2>
+              <p className="text-xs text-muted-foreground">Good Morning</p>
+              <h2 className="font-semibold text-foreground">Hisab Kitab</h2>
             </div>
           </div>
         </div>
 
         {/* Menu Label */}
         <div className="px-5 pt-4 pb-2">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Menu</span>
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Menu</span>
         </div>
         
         {/* Navigation */}
