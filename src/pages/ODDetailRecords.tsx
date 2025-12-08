@@ -238,7 +238,8 @@ const ODDetailRecords = () => {
 
   const handlePrint = () => {
     const filteredRecords = getFilteredRecordsForPrint();
-    const totalPages = Math.ceil(filteredRecords.length / RECORDS_PER_PAGE);
+    const recordsPerPage = 20; // More records per full A4 page
+    const totalPages = Math.ceil(filteredRecords.length / recordsPerPage);
     
     let dateRangeText = '';
     if (printMode === 'month') {
@@ -254,38 +255,38 @@ const ODDetailRecords = () => {
     
     let pagesHtml = '';
     for (let page = 0; page < totalPages; page++) {
-      const pageRecords = filteredRecords.slice(page * RECORDS_PER_PAGE, (page + 1) * RECORDS_PER_PAGE);
+      const pageRecords = filteredRecords.slice(page * recordsPerPage, (page + 1) * recordsPerPage);
       
       pagesHtml += `
         <div class="print-page" ${page > 0 ? 'style="page-break-before: always;"' : ''}>
           <div class="header">
             <h1>OD Records</h1>
-            <p>Period: ${dateRangeText}</p>
+            <p class="subtitle">Period: ${dateRangeText}</p>
             <p class="page-info">Page ${page + 1} of ${totalPages} | Generated: ${format(new Date(), 'dd/MM/yyyy HH:mm')}</p>
           </div>
           <table>
             <thead>
               <tr>
-                <th>S.No</th>
-                <th>Date</th>
-                <th>OD from Bank</th>
-                <th>Last Balance</th>
-                <th>Amount Received</th>
-                <th>Amount Distributed</th>
-                <th>Cash in Hand</th>
-                <th>Remarks</th>
+                <th style="width: 5%;">S.No</th>
+                <th style="width: 12%;">Date</th>
+                <th style="width: 13%;">OD from Bank</th>
+                <th style="width: 13%;">Last Balance</th>
+                <th style="width: 14%;">Amount Received</th>
+                <th style="width: 14%;">Amount Distributed</th>
+                <th style="width: 13%;">Cash in Hand</th>
+                <th style="width: 16%;">Remarks</th>
               </tr>
             </thead>
             <tbody>
               ${pageRecords.map((record, idx) => `
                 <tr>
-                  <td style="text-align: center;">${page * RECORDS_PER_PAGE + idx + 1}</td>
-                  <td style="text-align: left;">${format(new Date(record.date), 'dd/MM/yyyy')}</td>
+                  <td style="text-align: center;">${page * recordsPerPage + idx + 1}</td>
+                  <td style="text-align: center;">${format(new Date(record.date), 'dd/MM/yyyy')}</td>
                   <td style="text-align: right;">₹${record.od_from_bank.toLocaleString('en-IN')}</td>
                   <td style="text-align: right;">₹${record.last_balance.toLocaleString('en-IN')}</td>
                   <td style="text-align: right;">₹${record.amount_received.toLocaleString('en-IN')}</td>
                   <td style="text-align: right;">₹${record.amount_distributed.toLocaleString('en-IN')}</td>
-                  <td style="text-align: right;">₹${record.cash_in_hand.toLocaleString('en-IN')}</td>
+                  <td style="text-align: right; font-weight: 600;">₹${record.cash_in_hand.toLocaleString('en-IN')}</td>
                   <td style="text-align: left;">${record.remarks || '-'}</td>
                 </tr>
               `).join('')}
@@ -294,11 +295,28 @@ const ODDetailRecords = () => {
           ${page === totalPages - 1 ? `
             <div class="summary">
               <h3>Summary</h3>
-              <p><strong>Total Records:</strong> ${filteredRecords.length}</p>
-              <p><strong>Total OD from Bank:</strong> ₹${totalODFromBank.toLocaleString('en-IN')}</p>
-              <p><strong>Total Amount Received:</strong> ₹${totalReceived.toLocaleString('en-IN')}</p>
-              <p><strong>Total Amount Distributed:</strong> ₹${totalDistributed.toLocaleString('en-IN')}</p>
-              <p><strong>Final Cash in Hand:</strong> ₹${filteredRecords.length > 0 ? filteredRecords[filteredRecords.length - 1].cash_in_hand.toLocaleString('en-IN') : '0'}</p>
+              <div class="summary-grid">
+                <div class="summary-item">
+                  <span class="label">Total Records:</span>
+                  <span class="value">${filteredRecords.length}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="label">Total OD from Bank:</span>
+                  <span class="value">₹${totalODFromBank.toLocaleString('en-IN')}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="label">Total Amount Received:</span>
+                  <span class="value">₹${totalReceived.toLocaleString('en-IN')}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="label">Total Amount Distributed:</span>
+                  <span class="value">₹${totalDistributed.toLocaleString('en-IN')}</span>
+                </div>
+                <div class="summary-item highlight">
+                  <span class="label">Final Cash in Hand:</span>
+                  <span class="value">₹${filteredRecords.length > 0 ? filteredRecords[filteredRecords.length - 1].cash_in_hand.toLocaleString('en-IN') : '0'}</span>
+                </div>
+              </div>
             </div>
           ` : ''}
         </div>
@@ -311,21 +329,144 @@ const ODDetailRecords = () => {
       <head>
         <title>OD Records - ${dateRangeText}</title>
         <style>
-          @page { size: A4; margin: 1cm; }
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: Arial, sans-serif; font-size: 11px; line-height: 1.4; }
-          .print-page { padding: 10px; }
-          .header { text-align: center; margin-bottom: 15px; }
-          .header h1 { font-size: 18px; margin-bottom: 5px; }
-          .header p { font-size: 11px; color: #333; }
-          .page-info { font-size: 10px; color: #666; margin-top: 5px; }
-          table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-          th, td { border: 1px solid #333; padding: 5px 4px; font-size: 10px; }
-          th { background-color: #f0f0f0; font-weight: bold; text-align: center; }
-          tbody tr:nth-child(even) { background-color: #f9f9f9; }
-          .summary { margin-top: 15px; padding: 10px; border: 1px solid #333; background-color: #f0f0f0; }
-          .summary h3 { font-size: 13px; margin-bottom: 8px; }
-          .summary p { font-size: 11px; margin: 3px 0; }
+          @page { 
+            size: A4 portrait; 
+            margin: 15mm 10mm 15mm 10mm;
+          }
+          * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+          }
+          body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            font-size: 12px; 
+            line-height: 1.5; 
+            color: #333;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          .print-page { 
+            width: 100%;
+            min-height: 100%;
+            padding: 0;
+          }
+          .header { 
+            text-align: center; 
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #333;
+          }
+          .header h1 { 
+            font-size: 28px; 
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+          }
+          .header .subtitle { 
+            font-size: 16px; 
+            color: #444;
+            font-weight: 500;
+          }
+          .page-info { 
+            font-size: 11px; 
+            color: #666; 
+            margin-top: 8px; 
+          }
+          table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-bottom: 20px;
+            font-size: 12px;
+          }
+          th, td { 
+            border: 1px solid #444; 
+            padding: 10px 8px; 
+          }
+          th { 
+            background-color: #2c3e50 !important; 
+            color: white !important;
+            font-weight: 600; 
+            text-align: center;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          tbody tr:nth-child(even) { 
+            background-color: #f8f9fa !important; 
+          }
+          tbody tr:hover { 
+            background-color: #e9ecef !important; 
+          }
+          .summary { 
+            margin-top: 25px; 
+            padding: 20px; 
+            border: 2px solid #2c3e50; 
+            background-color: #f8f9fa !important;
+            border-radius: 8px;
+          }
+          .summary h3 { 
+            font-size: 18px; 
+            margin-bottom: 15px;
+            color: #2c3e50;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid #2c3e50;
+            padding-bottom: 8px;
+          }
+          .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+          }
+          .summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+          }
+          .summary-item .label {
+            font-weight: 500;
+            color: #555;
+          }
+          .summary-item .value {
+            font-weight: 700;
+            color: #2c3e50;
+          }
+          .summary-item.highlight {
+            background: #2c3e50 !important;
+            grid-column: span 2;
+          }
+          .summary-item.highlight .label,
+          .summary-item.highlight .value {
+            color: white !important;
+            font-size: 14px;
+          }
+          @media print {
+            body { 
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            .print-page {
+              page-break-inside: avoid;
+            }
+            th { 
+              background-color: #2c3e50 !important; 
+              color: white !important;
+            }
+            tbody tr:nth-child(even) { 
+              background-color: #f8f9fa !important; 
+            }
+            .summary {
+              background-color: #f8f9fa !important;
+            }
+            .summary-item.highlight {
+              background: #2c3e50 !important;
+            }
+          }
         </style>
       </head>
       <body>
