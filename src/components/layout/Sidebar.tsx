@@ -179,6 +179,7 @@ const Sidebar = () => {
     { icon: <Calculator size={16} />, label: 'Calculator', to: '/calculator' },
     { icon: <Calculator size={16} />, label: 'Age Calculator', to: '/age-calculator' },
     { icon: <FileText size={16} />, label: 'Forms', to: '/forms' },
+    { icon: <FileText size={16} />, label: 'Records', to: '/records' },
   ];
 
   // Ledger submenu items

@@ -346,13 +346,31 @@ const Dashboard = () => {
     { name: 'Expenses', value: expensesTotal, color: '#06b6d4' },
   ];
 
-  // Card component for consistent styling
+  // 3D Card component for dashboard stats
   const DashboardCard = ({ children, className = '', onClick }: { children: React.ReactNode; className?: string; onClick?: () => void }) => (
     <div 
       onClick={onClick}
-      className={`bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-[0_4px_20px_rgba(124,58,237,0.08)] hover:shadow-[0_8px_30px_rgba(124,58,237,0.12)] transition-all duration-300 ${onClick ? 'cursor-pointer' : ''} ${className}`}
+      className={`
+        bg-white dark:bg-slate-800 rounded-2xl p-5 
+        shadow-[0_10px_40px_-10px_rgba(124,58,237,0.15),0_4px_6px_-2px_rgba(124,58,237,0.05)]
+        hover:shadow-[0_20px_50px_-10px_rgba(124,58,237,0.25),0_8px_16px_-4px_rgba(124,58,237,0.1)]
+        border border-slate-100/80 dark:border-slate-700
+        transform hover:translate-y-[-4px] hover:scale-[1.02]
+        transition-all duration-300 ease-out
+        before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-white/50 before:to-transparent before:opacity-0 hover:before:opacity-100
+        relative overflow-hidden
+        ${onClick ? 'cursor-pointer' : ''} ${className}
+      `}
+      style={{
+        background: 'linear-gradient(145deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.9) 100%)',
+        boxShadow: '0 10px 40px -10px rgba(124,58,237,0.12), 0 4px 25px -5px rgba(147,51,234,0.08), inset 0 1px 1px rgba(255,255,255,0.9)',
+      }}
     >
-      {children}
+      {/* Subtle gradient overlay for 3D depth */}
+      <div className="absolute inset-0 bg-gradient-to-br from-violet-50/30 via-transparent to-purple-50/20 rounded-2xl pointer-events-none" />
+      <div className="relative z-10">
+        {children}
+      </div>
     </div>
   );
 
