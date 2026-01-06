@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { Upload, FileText, Trash2, Edit, Download, Calculator } from 'lucide-react';
+import { useState, useRef, useCallback } from 'react';
+import { Upload, FileText, Trash2, Edit, Calculator, FileSpreadsheet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import PageWrapper from '@/components/layout/PageWrapper';
 import { useQuery } from '@tanstack/react-query';
+import * as XLSX from 'xlsx';
 
 interface CSVRecord {
   id: string;
@@ -42,7 +43,9 @@ const Records = () => {
     id: null,
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   const { data: records = [], refetch: refetchRecords } = useQuery({
@@ -58,76 +61,189 @@ const Records = () => {
     }
   });
 
-  const parseCSV = (content: string): { type: string; amount: number }[] => {
+  const parseFileContent = (content: string): { totalWithdrawal: number; totalDeposit: number } => {
     const lines = content.split('\n');
-    const transactions: { type: string; amount: number }[] = [];
+    let totalWithdrawal = 0;
+    let totalDeposit = 0;
     
-    // Skip header row if it exists
-    const startIndex = lines[0]?.toLowerCase().includes('type') || lines[0]?.toLowerCase().includes('amount') ? 1 : 0;
-    
-    for (let i = startIndex; i < lines.length; i++) {
+    for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
       if (!line) continue;
       
-      // Try different CSV formats
       const cells = line.split(',').map(cell => cell.trim().replace(/"/g, ''));
+      const cellsLower = cells.map(c => c.toLowerCase());
+      const lineText = cellsLower.join(' ');
       
-      // Look for type and amount in the cells
-      for (let j = 0; j < cells.length; j++) {
-        const cellLower = cells[j].toLowerCase();
-        
-        // Check if this cell contains transaction type
-        if (cellLower.includes('withdrawal') || cellLower.includes('withdraw') || cellLower === 'w') {
-          // Find amount in adjacent cells or same cell
-          const amountCell = cells.find((c, idx) => idx !== j && !isNaN(parseFloat(c.replace(/[₹,]/g, ''))));
-          if (amountCell) {
-            transactions.push({ type: 'withdrawal', amount: Math.abs(parseFloat(amountCell.replace(/[₹,]/g, ''))) });
-          }
-        } else if (cellLower.includes('deposit') || cellLower.includes('imps') || cellLower === 'd' || cellLower === 'cr') {
-          const amountCell = cells.find((c, idx) => idx !== j && !isNaN(parseFloat(c.replace(/[₹,]/g, ''))));
-          if (amountCell) {
-            transactions.push({ type: 'deposit', amount: Math.abs(parseFloat(amountCell.replace(/[₹,]/g, ''))) });
+      // Check for withdrawal indicators
+      if (lineText.includes('withdrawal') || lineText.includes('withdraw') || lineText.includes('dr') || lineText.includes('debit')) {
+        for (const cell of cells) {
+          const amount = parseFloat(cell.replace(/[₹,\s]/g, ''));
+          if (!isNaN(amount) && amount > 0) {
+            totalWithdrawal += amount;
+            break;
           }
         }
       }
       
-      // Alternative: Check for credit/debit columns with amounts
-      if (cells.length >= 2) {
-        // Check if the line has a transaction type column and amount column
-        const typeCell = cells.find(c => 
-          c.toLowerCase().includes('withdrawal') || 
-          c.toLowerCase().includes('deposit') || 
-          c.toLowerCase().includes('imps') ||
-          c.toLowerCase().includes('cr') ||
-          c.toLowerCase().includes('dr')
-        );
-        
-        if (!typeCell && cells.length >= 3) {
-          // Try format: Description, Debit, Credit
-          const debitAmount = parseFloat(cells[cells.length - 2]?.replace(/[₹,]/g, '') || '0');
-          const creditAmount = parseFloat(cells[cells.length - 1]?.replace(/[₹,]/g, '') || '0');
-          
-          if (!isNaN(debitAmount) && debitAmount > 0) {
-            transactions.push({ type: 'withdrawal', amount: debitAmount });
+      // Check for deposit/IMPS indicators
+      if (lineText.includes('deposit') || lineText.includes('imps') || lineText.includes('cr') || lineText.includes('credit')) {
+        for (const cell of cells) {
+          const amount = parseFloat(cell.replace(/[₹,\s]/g, ''));
+          if (!isNaN(amount) && amount > 0) {
+            totalDeposit += amount;
+            break;
           }
-          if (!isNaN(creditAmount) && creditAmount > 0) {
-            transactions.push({ type: 'deposit', amount: creditAmount });
+        }
+      }
+      
+      // Alternative: Check for debit/credit columns (last two columns often have amounts)
+      if (cells.length >= 3 && !lineText.includes('withdrawal') && !lineText.includes('deposit')) {
+        const debitIdx = cellsLower.findIndex(c => c.includes('debit') || c.includes('dr'));
+        const creditIdx = cellsLower.findIndex(c => c.includes('credit') || c.includes('cr'));
+        
+        if (debitIdx === -1 && creditIdx === -1) {
+          // Try last two columns as debit/credit amounts
+          const lastAmount = parseFloat(cells[cells.length - 1]?.replace(/[₹,\s]/g, '') || '0');
+          const secondLastAmount = parseFloat(cells[cells.length - 2]?.replace(/[₹,\s]/g, '') || '0');
+          
+          // If both are valid numbers, assume second-last is debit, last is credit
+          if (!isNaN(secondLastAmount) && secondLastAmount > 0 && i > 0) {
+            // Skip header detection
+            const headerLine = lines[0]?.toLowerCase() || '';
+            if (!headerLine.includes('date') && !headerLine.includes('transaction')) {
+              totalWithdrawal += secondLastAmount;
+            }
+          }
+          if (!isNaN(lastAmount) && lastAmount > 0 && i > 0) {
+            const headerLine = lines[0]?.toLowerCase() || '';
+            if (!headerLine.includes('date') && !headerLine.includes('transaction')) {
+              totalDeposit += lastAmount;
+            }
           }
         }
       }
     }
     
-    return transactions;
+    return { totalWithdrawal, totalDeposit };
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const parseExcelFile = async (file: File): Promise<{ totalWithdrawal: number; totalDeposit: number }> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = e.target?.result;
+          const workbook = XLSX.read(data, { type: 'binary' });
+          const sheetName = workbook.SheetNames[0];
+          const sheet = workbook.Sheets[sheetName];
+          const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
+          
+          let totalWithdrawal = 0;
+          let totalDeposit = 0;
+          
+          // Find header row and identify columns
+          let headerRowIndex = -1;
+          let withdrawalColIndex = -1;
+          let depositColIndex = -1;
+          let typeColIndex = -1;
+          let amountColIndex = -1;
+          
+          for (let i = 0; i < Math.min(jsonData.length, 10); i++) {
+            const row = jsonData[i];
+            if (!row) continue;
+            
+            for (let j = 0; j < row.length; j++) {
+              const cell = String(row[j] || '').toLowerCase();
+              if (cell.includes('withdrawal') || cell.includes('debit') || cell.includes('dr')) {
+                withdrawalColIndex = j;
+                headerRowIndex = i;
+              }
+              if (cell.includes('deposit') || cell.includes('credit') || cell.includes('cr')) {
+                depositColIndex = j;
+                headerRowIndex = i;
+              }
+              if (cell.includes('type') || cell.includes('transaction')) {
+                typeColIndex = j;
+                headerRowIndex = i;
+              }
+              if (cell.includes('amount')) {
+                amountColIndex = j;
+                headerRowIndex = i;
+              }
+            }
+          }
+          
+          // Parse data rows
+          const startRow = headerRowIndex >= 0 ? headerRowIndex + 1 : 0;
+          
+          for (let i = startRow; i < jsonData.length; i++) {
+            const row = jsonData[i];
+            if (!row || row.length === 0) continue;
+            
+            // If we found separate withdrawal/deposit columns
+            if (withdrawalColIndex >= 0 || depositColIndex >= 0) {
+              if (withdrawalColIndex >= 0) {
+                const amount = parseFloat(String(row[withdrawalColIndex] || '0').replace(/[₹,\s]/g, ''));
+                if (!isNaN(amount) && amount > 0) {
+                  totalWithdrawal += amount;
+                }
+              }
+              if (depositColIndex >= 0) {
+                const amount = parseFloat(String(row[depositColIndex] || '0').replace(/[₹,\s]/g, ''));
+                if (!isNaN(amount) && amount > 0) {
+                  totalDeposit += amount;
+                }
+              }
+            } else if (typeColIndex >= 0 && amountColIndex >= 0) {
+              // If we have type and amount columns
+              const type = String(row[typeColIndex] || '').toLowerCase();
+              const amount = parseFloat(String(row[amountColIndex] || '0').replace(/[₹,\s]/g, ''));
+              
+              if (!isNaN(amount) && amount > 0) {
+                if (type.includes('withdrawal') || type.includes('dr') || type.includes('debit')) {
+                  totalWithdrawal += amount;
+                } else if (type.includes('deposit') || type.includes('imps') || type.includes('cr') || type.includes('credit')) {
+                  totalDeposit += amount;
+                }
+              }
+            } else {
+              // Fallback: check row content for type indicators
+              const rowText = row.map(c => String(c || '').toLowerCase()).join(' ');
+              
+              for (const cell of row) {
+                const amount = parseFloat(String(cell || '0').replace(/[₹,\s]/g, ''));
+                if (!isNaN(amount) && amount > 0) {
+                  if (rowText.includes('withdrawal') || rowText.includes('dr') || rowText.includes('debit')) {
+                    totalWithdrawal += amount;
+                    break;
+                  } else if (rowText.includes('deposit') || rowText.includes('imps') || rowText.includes('cr') || rowText.includes('credit')) {
+                    totalDeposit += amount;
+                    break;
+                  }
+                }
+              }
+            }
+          }
+          
+          resolve({ totalWithdrawal, totalDeposit });
+        } catch (error) {
+          reject(error);
+        }
+      };
+      reader.onerror = reject;
+      reader.readAsBinaryString(file);
+    });
+  };
 
-    if (!file.name.endsWith('.csv')) {
+  const processFile = async (file: File) => {
+    const fileName = file.name.toLowerCase();
+    const isCSV = fileName.endsWith('.csv');
+    const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
+    
+    if (!isCSV && !isExcel) {
       toast({
         title: "Invalid File",
-        description: "Please upload a CSV file",
+        description: "Please upload a CSV or Excel (.xlsx, .xls) file",
         variant: "destructive",
       });
       return;
@@ -136,70 +252,33 @@ const Records = () => {
     setIsLoading(true);
     
     try {
-      const content = await file.text();
-      const transactions = parseCSV(content);
+      let result: { totalWithdrawal: number; totalDeposit: number };
       
-      if (transactions.length === 0) {
-        // If our parsing didn't work, try a simpler approach
-        const lines = content.split('\n');
-        let totalWithdrawal = 0;
-        let totalDeposit = 0;
-        
-        for (const line of lines) {
-          const cells = line.split(',').map(c => c.trim().replace(/"/g, '').toLowerCase());
-          
-          for (let i = 0; i < cells.length; i++) {
-            const cell = cells[i];
-            const amount = parseFloat(cells[i]?.replace(/[₹,]/g, '') || '0');
-            
-            if (!isNaN(amount) && amount !== 0) {
-              // Check previous cells for type indicators
-              const prevCells = cells.slice(0, i).join(' ');
-              if (prevCells.includes('withdraw') || prevCells.includes('dr') || prevCells.includes('debit')) {
-                totalWithdrawal += Math.abs(amount);
-              } else if (prevCells.includes('deposit') || prevCells.includes('imps') || prevCells.includes('cr') || prevCells.includes('credit')) {
-                totalDeposit += Math.abs(amount);
-              }
-            }
-          }
-        }
-        
-        const cashInHand = totalDeposit - totalWithdrawal;
-        
-        setAnalysisResult({
-          totalWithdrawal,
-          totalDeposit,
-          cashInHand,
-          fileName: file.name,
-        });
+      if (isExcel) {
+        result = await parseExcelFile(file);
       } else {
-        const totalWithdrawal = transactions
-          .filter(t => t.type === 'withdrawal')
-          .reduce((sum, t) => sum + t.amount, 0);
-          
-        const totalDeposit = transactions
-          .filter(t => t.type === 'deposit')
-          .reduce((sum, t) => sum + t.amount, 0);
-          
-        const cashInHand = totalDeposit - totalWithdrawal;
-        
-        setAnalysisResult({
-          totalWithdrawal,
-          totalDeposit,
-          cashInHand,
-          fileName: file.name,
-        });
+        const content = await file.text();
+        result = parseFileContent(content);
       }
       
+      const cashInHand = result.totalDeposit - result.totalWithdrawal;
+      
+      setAnalysisResult({
+        totalWithdrawal: result.totalWithdrawal,
+        totalDeposit: result.totalDeposit,
+        cashInHand,
+        fileName: file.name,
+      });
+      
       toast({
-        title: "CSV Analyzed",
-        description: "File has been analyzed successfully. Review the results below.",
+        title: "File Analyzed",
+        description: `${isExcel ? 'Excel' : 'CSV'} file has been analyzed successfully. Review the results below.`,
       });
     } catch (error) {
-      console.error('Error parsing CSV:', error);
+      console.error('Error parsing file:', error);
       toast({
         title: "Error",
-        description: "Failed to parse CSV file",
+        description: "Failed to parse file",
         variant: "destructive",
       });
     } finally {
@@ -209,6 +288,42 @@ const Records = () => {
       }
     }
   };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    await processFile(file);
+  };
+
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (dropZoneRef.current && !dropZoneRef.current.contains(e.relatedTarget as Node)) {
+      setIsDragging(false);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      await processFile(files[0]);
+    }
+  }, []);
 
   const handleSaveAnalysis = async () => {
     if (!analysisResult) return;
@@ -319,40 +434,88 @@ const Records = () => {
   };
 
   return (
-    <PageWrapper title="Records - CSV Analysis">
+    <PageWrapper title="Records - File Analysis">
       <div className="space-y-6">
-        {/* Upload Section */}
-        <Card className="border-2 border-dashed border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
+        {/* Upload Section with Drag & Drop */}
+        <Card 
+          ref={dropZoneRef}
+          className={`
+            border-2 border-dashed transition-all duration-300
+            ${isDragging 
+              ? 'border-primary bg-primary/10 scale-[1.02] shadow-lg shadow-primary/20' 
+              : 'border-primary/30 bg-gradient-to-br from-primary/5 to-transparent'
+            }
+          `}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+        >
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Upload className="h-5 w-5" />
-              Upload CSV File
+              Upload CSV or Excel File
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Upload a CSV file to analyze. The system will sum all Withdrawal types, sum all Deposit and IMPS types,
-                and calculate Cash in Hand (Deposit - Withdrawal). If withdrawal is greater, the result will be negative.
+                Drag & drop or browse to upload a CSV or Excel file. The system will sum all Withdrawal types, 
+                sum all Deposit and IMPS types, and calculate Cash in Hand (Deposit - Withdrawal).
               </p>
               
-              <div className="flex items-center gap-4">
-                <Input
+              {/* Drag & Drop Zone */}
+              <div 
+                className={`
+                  relative rounded-xl border-2 border-dashed p-8 text-center cursor-pointer
+                  transition-all duration-300
+                  ${isDragging 
+                    ? 'border-primary bg-primary/20 scale-[1.01]' 
+                    : 'border-slate-300 hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  }
+                `}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".csv"
+                  accept=".csv,.xlsx,.xls"
                   onChange={handleFileUpload}
-                  className="max-w-xs"
+                  className="hidden"
                   disabled={isLoading}
                 />
-                <Button 
-                  variant="outline" 
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isLoading}
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Browse
-                </Button>
+                
+                <div className="flex flex-col items-center gap-3">
+                  <div className={`
+                    p-4 rounded-full transition-all duration-300
+                    ${isDragging 
+                      ? 'bg-primary/30 scale-110' 
+                      : 'bg-gradient-to-br from-primary/20 to-primary/10'
+                    }
+                  `}>
+                    {isDragging ? (
+                      <Upload className="h-8 w-8 text-primary animate-bounce" />
+                    ) : (
+                      <FileSpreadsheet className="h-8 w-8 text-primary" />
+                    )}
+                  </div>
+                  
+                  <div>
+                    <p className="text-lg font-medium text-slate-700 dark:text-slate-200">
+                      {isDragging ? 'Drop your file here' : 'Drag & drop your file here'}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      or click to browse • Supports CSV, XLSX, XLS
+                    </p>
+                  </div>
+                  
+                  {isLoading && (
+                    <div className="flex items-center gap-2 text-primary mt-2">
+                      <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                      <span className="text-sm">Analyzing file...</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </CardContent>
@@ -445,7 +608,7 @@ const Records = () => {
                   {records.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                        No records found. Upload a CSV file to analyze.
+                        No records found. Upload a CSV or Excel file to analyze.
                       </TableCell>
                     </TableRow>
                   )}
