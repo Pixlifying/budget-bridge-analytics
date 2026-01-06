@@ -346,33 +346,83 @@ const Dashboard = () => {
     { name: 'Expenses', value: expensesTotal, color: '#06b6d4' },
   ];
 
-  // 3D Card component for dashboard stats
-  const DashboardCard = ({ children, className = '', onClick }: { children: React.ReactNode; className?: string; onClick?: () => void }) => (
+  // 3D Card component for dashboard stats - matching reference image style
+  const DashboardCard = ({ children, className = '', onClick, badge }: { children: React.ReactNode; className?: string; onClick?: () => void; badge?: { value: string; positive: boolean } }) => (
     <div 
       onClick={onClick}
       className={`
-        bg-white dark:bg-slate-800 rounded-2xl p-5 
-        shadow-[0_10px_40px_-10px_rgba(124,58,237,0.15),0_4px_6px_-2px_rgba(124,58,237,0.05)]
-        hover:shadow-[0_20px_50px_-10px_rgba(124,58,237,0.25),0_8px_16px_-4px_rgba(124,58,237,0.1)]
-        border border-slate-100/80 dark:border-slate-700
-        transform hover:translate-y-[-4px] hover:scale-[1.02]
+        relative rounded-3xl p-5 
         transition-all duration-300 ease-out
-        before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-white/50 before:to-transparent before:opacity-0 hover:before:opacity-100
-        relative overflow-hidden
+        hover:translate-y-[-2px]
         ${onClick ? 'cursor-pointer' : ''} ${className}
       `}
       style={{
-        background: 'linear-gradient(145deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.9) 100%)',
-        boxShadow: '0 10px 40px -10px rgba(124,58,237,0.12), 0 4px 25px -5px rgba(147,51,234,0.08), inset 0 1px 1px rgba(255,255,255,0.9)',
+        background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+        boxShadow: `
+          0 20px 40px -15px rgba(148, 163, 184, 0.25),
+          0 8px 16px -8px rgba(148, 163, 184, 0.2),
+          inset 0 2px 4px rgba(255, 255, 255, 0.9),
+          inset 0 -1px 2px rgba(148, 163, 184, 0.1)
+        `,
+        border: '1px solid rgba(241, 245, 249, 0.8)',
       }}
     >
-      {/* Subtle gradient overlay for 3D depth */}
-      <div className="absolute inset-0 bg-gradient-to-br from-violet-50/30 via-transparent to-purple-50/20 rounded-2xl pointer-events-none" />
+      {/* Top highlight edge for 3D effect */}
+      <div 
+        className="absolute top-0 left-4 right-4 h-[2px] rounded-full"
+        style={{
+          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)'
+        }}
+      />
+      
+      {/* Badge indicator like in reference image */}
+      {badge && (
+        <div className={`
+          absolute top-4 right-4 px-2 py-0.5 rounded-full text-xs font-semibold
+          ${badge.positive 
+            ? 'bg-emerald-100 text-emerald-600' 
+            : 'bg-rose-100 text-rose-600'
+          }
+        `}>
+          {badge.positive ? '+' : ''}{badge.value}
+        </div>
+      )}
+      
+      {/* Content */}
       <div className="relative z-10">
         {children}
       </div>
+      
+      {/* Bottom shadow for depth */}
+      <div 
+        className="absolute -bottom-1 left-3 right-3 h-4 rounded-b-3xl -z-10"
+        style={{
+          background: 'linear-gradient(180deg, transparent, rgba(148, 163, 184, 0.1))',
+          filter: 'blur(4px)'
+        }}
+      />
     </div>
   );
+
+  // Icon container matching reference style
+  const IconBox = ({ children, color = 'violet' }: { children: React.ReactNode; color?: string }) => {
+    const colorMap: Record<string, string> = {
+      violet: 'from-violet-100 to-violet-50 text-violet-600',
+      orange: 'from-orange-100 to-orange-50 text-orange-600',
+      emerald: 'from-emerald-100 to-emerald-50 text-emerald-600',
+      pink: 'from-pink-100 to-pink-50 text-pink-600',
+      blue: 'from-blue-100 to-blue-50 text-blue-600',
+    };
+    
+    return (
+      <div className={`
+        w-12 h-12 rounded-xl bg-gradient-to-br ${colorMap[color] || colorMap.violet}
+        flex items-center justify-center shadow-sm
+      `}>
+        {children}
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-100 via-purple-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
@@ -399,75 +449,83 @@ const Dashboard = () => {
             {/* Top Stats Row - 3 columns */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {/* Total Margin Card with Ring Chart */}
-              <DashboardCard onClick={() => setMarginDialogOpen(true)} className="flex items-center gap-4">
-                <div className="relative w-24 h-24">
-                  <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
-                    <circle
-                      className="text-violet-100 dark:text-slate-700"
-                      strokeWidth="8"
-                      stroke="currentColor"
-                      fill="transparent"
-                      r="42"
-                      cx="50"
-                      cy="50"
-                    />
-                    <circle
-                      className="text-violet-500"
-                      strokeWidth="8"
-                      strokeLinecap="round"
-                      stroke="currentColor"
-                      fill="transparent"
-                      r="42"
-                      cx="50"
-                      cy="50"
-                      strokeDasharray={`${totalMargin > 0 ? 264 : 0} 264`}
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-lg font-bold text-violet-600 dark:text-violet-400">₹{Math.round(totalMargin / 1000)}k</span>
+              <DashboardCard onClick={() => setMarginDialogOpen(true)} badge={{ value: '12%', positive: true }}>
+                <div className="flex items-center gap-4">
+                  <div className="relative w-20 h-20">
+                    <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 100 100">
+                      <circle
+                        className="text-violet-100"
+                        strokeWidth="10"
+                        stroke="currentColor"
+                        fill="transparent"
+                        r="40"
+                        cx="50"
+                        cy="50"
+                      />
+                      <circle
+                        className="text-violet-500"
+                        strokeWidth="10"
+                        strokeLinecap="round"
+                        stroke="currentColor"
+                        fill="transparent"
+                        r="40"
+                        cx="50"
+                        cy="50"
+                        strokeDasharray={`${totalMargin > 0 ? 251 : 0} 251`}
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-sm font-bold text-violet-600">₹{Math.round(totalMargin / 1000)}k</span>
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm">Total Margin</p>
-                  <p className="text-2xl font-bold text-slate-800 dark:text-white">{formatCurrency(totalMargin)}</p>
-                  <button className="mt-2 px-3 py-1 bg-violet-500 text-white text-xs rounded-full hover:bg-violet-600 transition-colors">
-                    VIEW DETAILS
-                  </button>
+                  <div>
+                    <p className="text-slate-500 text-sm">Total Margin</p>
+                    <p className="text-2xl font-bold text-slate-800">{formatCurrency(totalMargin)}</p>
+                    <button className="mt-2 px-3 py-1 bg-violet-500 text-white text-xs rounded-full hover:bg-violet-600 transition-colors">
+                      VIEW DETAILS
+                    </button>
+                  </div>
                 </div>
               </DashboardCard>
 
               {/* Banking Services Card */}
-              <DashboardCard>
-                <div className="flex justify-between items-start mb-3">
-                  <h3 className="text-slate-500 dark:text-slate-400 text-sm font-medium">Banking Services</h3>
-                  <MoreHorizontal className="h-4 w-4 text-slate-400" />
+              <DashboardCard badge={{ value: '22%', positive: true }}>
+                <div className="flex items-start gap-3 mb-3">
+                  <IconBox color="orange">
+                    <CreditCard className="h-5 w-5" />
+                  </IconBox>
+                  <div>
+                    <p className="text-slate-500 text-sm">Banking Services</p>
+                    <p className="text-2xl font-bold text-slate-800">{formatCurrency(bankingServicesTotal)}</p>
+                    <p className="text-xs text-slate-400 mt-1">Margin: {formatCurrency(bankingMargin)}</p>
+                  </div>
                 </div>
-                <p className="text-3xl font-bold text-slate-800 dark:text-white mb-3">{formatCurrency(bankingServicesTotal)}</p>
                 {/* Mini line chart visual */}
-                <div className="h-12 flex items-end gap-1">
+                <div className="h-10 flex items-end gap-1 mt-2">
                   {[40, 60, 45, 70, 55, 80, 65].map((height, i) => (
                     <div 
                       key={i} 
-                      className="flex-1 bg-gradient-to-t from-orange-400 to-orange-300 rounded-t opacity-80"
+                      className="flex-1 bg-gradient-to-t from-orange-400 to-orange-300 rounded-t"
                       style={{ height: `${height}%` }}
                     />
                   ))}
                 </div>
-                <div className="flex justify-between text-xs text-slate-400 mt-2">
-                  <span>Margin: {formatCurrency(bankingMargin)}</span>
-                  <span>{bankingServicesCount} txns</span>
-                </div>
               </DashboardCard>
 
               {/* Online Services Card */}
-              <DashboardCard>
-                <div className="flex justify-between items-start mb-3">
-                  <h3 className="text-slate-500 dark:text-slate-400 text-sm font-medium">Online Services</h3>
-                  <MoreHorizontal className="h-4 w-4 text-slate-400" />
+              <DashboardCard badge={{ value: '5%', positive: false }}>
+                <div className="flex items-start gap-3 mb-3">
+                  <IconBox color="violet">
+                    <Globe className="h-5 w-5" />
+                  </IconBox>
+                  <div>
+                    <p className="text-slate-500 text-sm">Online Services</p>
+                    <p className="text-2xl font-bold text-slate-800">{formatCurrency(onlineServicesTotal)}</p>
+                    <p className="text-xs text-slate-400 mt-1">Margin: {formatCurrency(onlineMargin)}</p>
+                  </div>
                 </div>
-                <p className="text-3xl font-bold text-slate-800 dark:text-white mb-3">{formatCurrency(onlineServicesTotal)}</p>
                 {/* Mini bar chart */}
-                <div className="h-12 flex items-end gap-2">
+                <div className="h-10 flex items-end gap-1 mt-2">
                   {[60, 80, 40, 90, 70, 50, 85].map((height, i) => (
                     <div 
                       key={i} 
@@ -475,10 +533,6 @@ const Dashboard = () => {
                       style={{ height: `${height}%` }}
                     />
                   ))}
-                </div>
-                <div className="flex justify-between text-xs text-slate-400 mt-2">
-                  <span>Margin: {formatCurrency(onlineMargin)}</span>
-                  <span>{onlineServicesCount} txns</span>
                 </div>
               </DashboardCard>
             </div>
