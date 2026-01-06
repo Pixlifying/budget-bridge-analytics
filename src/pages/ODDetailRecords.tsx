@@ -271,8 +271,8 @@ const ODDetailRecords = () => {
                 <th style="width: 12%;">Date</th>
                 <th style="width: 13%;">OD from Bank</th>
                 <th style="width: 13%;">Last Balance</th>
-                <th style="width: 14%;">Amount Received</th>
-                <th style="width: 14%;">Amount Distributed</th>
+                <th style="width: 14%;">Deposit</th>
+                <th style="width: 14%;">Withdrawal</th>
                 <th style="width: 13%;">Cash in Hand</th>
                 <th style="width: 16%;">Remarks</th>
               </tr>
@@ -305,11 +305,11 @@ const ODDetailRecords = () => {
                   <span class="value">₹${totalODFromBank.toLocaleString('en-IN')}</span>
                 </div>
                 <div class="summary-item">
-                  <span class="label">Total Amount Received:</span>
+                  <span class="label">Total Deposit:</span>
                   <span class="value">₹${totalReceived.toLocaleString('en-IN')}</span>
                 </div>
                 <div class="summary-item">
-                  <span class="label">Total Amount Distributed:</span>
+                  <span class="label">Total Withdrawal:</span>
                   <span class="value">₹${totalDistributed.toLocaleString('en-IN')}</span>
                 </div>
                 <div class="summary-item highlight">
@@ -490,8 +490,8 @@ const ODDetailRecords = () => {
       Date: format(new Date(record.date), 'dd/MM/yyyy'),
       'OD from Bank': record.od_from_bank,
       'Last Balance': record.last_balance,
-      'Amount Received': record.amount_received,
-      'Amount Distributed': record.amount_distributed,
+      'Deposit': record.amount_received,
+      'Withdrawal': record.amount_distributed,
       'Cash in Hand': record.cash_in_hand,
       'Remarks': record.remarks || '',
     }));
@@ -620,7 +620,7 @@ const ODDetailRecords = () => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="amount_received">Amount Received</Label>
+                  <Label htmlFor="amount_received">Deposit</Label>
                   <Input
                     id="amount_received"
                     type="number"
@@ -632,7 +632,7 @@ const ODDetailRecords = () => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="amount_distributed">Amount Distributed</Label>
+                  <Label htmlFor="amount_distributed">Withdrawal</Label>
                   <Input
                     id="amount_distributed"
                     type="number"
@@ -694,8 +694,8 @@ const ODDetailRecords = () => {
                     <TableHead>Date</TableHead>
                     <TableHead className="text-right">OD from Bank</TableHead>
                     <TableHead className="text-right">Last Balance</TableHead>
-                    <TableHead className="text-right">Amount Received</TableHead>
-                    <TableHead className="text-right">Amount Distributed</TableHead>
+                    <TableHead className="text-right">Deposit</TableHead>
+                    <TableHead className="text-right">Withdrawal</TableHead>
                     <TableHead className="text-right">Cash in Hand</TableHead>
                     <TableHead>Remarks</TableHead>
                     <TableHead className="text-center">Actions</TableHead>

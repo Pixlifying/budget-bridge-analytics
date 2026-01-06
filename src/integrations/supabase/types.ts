@@ -172,6 +172,39 @@ export type Database = {
           },
         ]
       }
+      csv_analysis_records: {
+        Row: {
+          cash_in_hand: number
+          created_at: string
+          date: string
+          file_name: string
+          id: string
+          total_deposit: number
+          total_withdrawal: number
+          updated_at: string
+        }
+        Insert: {
+          cash_in_hand?: number
+          created_at?: string
+          date?: string
+          file_name: string
+          id?: string
+          total_deposit?: number
+          total_withdrawal?: number
+          updated_at?: string
+        }
+        Update: {
+          cash_in_hand?: number
+          created_at?: string
+          date?: string
+          file_name?: string
+          id?: string
+          total_deposit?: number
+          total_withdrawal?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customer_transactions: {
         Row: {
           amount: number
