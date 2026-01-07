@@ -2,11 +2,12 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Palette, Check, Sparkles } from 'lucide-react';
+import { Palette, Check, Sparkles, Sun, Moon, Monitor } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import PageWrapper from '@/components/layout/PageWrapper';
 import PageHeader from '@/components/layout/PageHeader';
 import { setColorTheme, getColorTheme } from '@/lib/themeUtils';
+import { Switch } from '@/components/ui/switch';
 
 interface ColorTheme {
   name: string;
@@ -291,40 +292,91 @@ const ThemeSettings = () => {
       <PageHeader title="Theme Settings" />
 
       <div className="max-w-6xl mx-auto space-y-8 animate-fade-in">
-        {/* Dark/Light Mode Toggle */}
-        <Card className="transition-all duration-300 hover:shadow-lg">
-          <CardHeader>
+        {/* Dark/Light Mode Toggle - Enhanced */}
+        <Card className="transition-all duration-300 hover:shadow-lg overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-primary/10 to-accent/10">
             <CardTitle className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
               Display Mode
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-4">
-              <Button
-                variant={theme === 'light' ? 'default' : 'outline'}
+          <CardContent className="pt-6">
+            {/* Main Dark Mode Toggle */}
+            <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50 mb-6">
+              <div className="flex items-center gap-4">
+                <div className={`p-3 rounded-full transition-all duration-300 ${theme === 'dark' ? 'bg-primary text-primary-foreground' : 'bg-yellow-100 text-yellow-600'}`}>
+                  {theme === 'dark' ? <Moon className="h-6 w-6" /> : <Sun className="h-6 w-6" />}
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground">Dark Mode</p>
+                  <p className="text-sm text-muted-foreground">Toggle between light and dark theme</p>
+                </div>
+              </div>
+              <Switch
+                checked={theme === 'dark'}
+                onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
+                className="data-[state=checked]:bg-primary scale-125"
+              />
+            </div>
+
+            {/* Theme Options */}
+            <div className="grid grid-cols-3 gap-4">
+              <button
                 onClick={() => setTheme('light')}
-                className="flex items-center gap-2 transition-all duration-200 hover:scale-105"
+                className={`relative p-4 rounded-xl border-2 transition-all duration-300 flex flex-col items-center gap-3 hover:scale-105 ${
+                  theme === 'light' 
+                    ? 'border-primary bg-primary/10 shadow-lg' 
+                    : 'border-border hover:border-primary/50'
+                }`}
               >
-                {theme === 'light' && <Check className="h-4 w-4" />}
-                Light Mode
-              </Button>
-              <Button
-                variant={theme === 'dark' ? 'default' : 'outline'}
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-yellow-200 to-orange-300 flex items-center justify-center shadow-lg">
+                  <Sun className="h-8 w-8 text-yellow-600" />
+                </div>
+                <span className="font-medium text-foreground">Light</span>
+                {theme === 'light' && (
+                  <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
+                    <Check className="h-3 w-3" />
+                  </div>
+                )}
+              </button>
+
+              <button
                 onClick={() => setTheme('dark')}
-                className="flex items-center gap-2 transition-all duration-200 hover:scale-105"
+                className={`relative p-4 rounded-xl border-2 transition-all duration-300 flex flex-col items-center gap-3 hover:scale-105 ${
+                  theme === 'dark' 
+                    ? 'border-primary bg-primary/10 shadow-lg' 
+                    : 'border-border hover:border-primary/50'
+                }`}
               >
-                {theme === 'dark' && <Check className="h-4 w-4" />}
-                Dark Mode
-              </Button>
-              <Button
-                variant={theme === 'system' ? 'default' : 'outline'}
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center shadow-lg">
+                  <Moon className="h-8 w-8 text-purple-400" />
+                </div>
+                <span className="font-medium text-foreground">Dark</span>
+                {theme === 'dark' && (
+                  <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
+                    <Check className="h-3 w-3" />
+                  </div>
+                )}
+              </button>
+
+              <button
                 onClick={() => setTheme('system')}
-                className="flex items-center gap-2 transition-all duration-200 hover:scale-105"
+                className={`relative p-4 rounded-xl border-2 transition-all duration-300 flex flex-col items-center gap-3 hover:scale-105 ${
+                  theme === 'system' 
+                    ? 'border-primary bg-primary/10 shadow-lg' 
+                    : 'border-border hover:border-primary/50'
+                }`}
               >
-                {theme === 'system' && <Check className="h-4 w-4" />}
-                System
-              </Button>
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center shadow-lg">
+                  <Monitor className="h-8 w-8 text-white" />
+                </div>
+                <span className="font-medium text-foreground">System</span>
+                {theme === 'system' && (
+                  <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
+                    <Check className="h-3 w-3" />
+                  </div>
+                )}
+              </button>
             </div>
           </CardContent>
         </Card>

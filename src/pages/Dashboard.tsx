@@ -346,78 +346,159 @@ const Dashboard = () => {
     { name: 'Expenses', value: expensesTotal, color: '#06b6d4' },
   ];
 
-  // 3D Card component for dashboard stats - matching reference image style
-  const DashboardCard = ({ children, className = '', onClick, badge }: { children: React.ReactNode; className?: string; onClick?: () => void; badge?: { value: string; positive: boolean } }) => (
-    <div 
-      onClick={onClick}
-      className={`
-        relative rounded-3xl p-5 
-        transition-all duration-300 ease-out
-        hover:translate-y-[-2px]
-        ${onClick ? 'cursor-pointer' : ''} ${className}
-      `}
-      style={{
-        background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
-        boxShadow: `
-          0 20px 40px -15px rgba(148, 163, 184, 0.25),
-          0 8px 16px -8px rgba(148, 163, 184, 0.2),
-          inset 0 2px 4px rgba(255, 255, 255, 0.9),
-          inset 0 -1px 2px rgba(148, 163, 184, 0.1)
-        `,
-        border: '1px solid rgba(241, 245, 249, 0.8)',
-      }}
-    >
-      {/* Top highlight edge for 3D effect */}
+  // 3D Card component for dashboard stats - matching dark sleek reference image style
+  const DashboardCard = ({ 
+    children, 
+    className = '', 
+    onClick, 
+    badge,
+    gradient
+  }: { 
+    children: React.ReactNode; 
+    className?: string; 
+    onClick?: () => void; 
+    badge?: { value: string; positive: boolean };
+    gradient?: 'violet' | 'orange' | 'emerald' | 'pink' | 'blue';
+  }) => {
+    const gradientStyles: Record<string, string> = {
+      violet: 'from-violet-500/20 via-purple-500/10 to-transparent',
+      orange: 'from-orange-500/20 via-amber-500/10 to-transparent',
+      emerald: 'from-emerald-500/20 via-teal-500/10 to-transparent',
+      pink: 'from-pink-500/20 via-rose-500/10 to-transparent',
+      blue: 'from-blue-500/20 via-cyan-500/10 to-transparent',
+    };
+    
+    return (
       <div 
-        className="absolute top-0 left-4 right-4 h-[2px] rounded-full"
+        onClick={onClick}
+        className={`
+          relative rounded-2xl p-5 overflow-hidden
+          transition-all duration-300 ease-out
+          hover:translate-y-[-2px] hover:shadow-2xl
+          bg-card border border-border/50
+          dark:bg-[hsl(240,6%,10%)] dark:border-white/5
+          ${onClick ? 'cursor-pointer' : ''} ${className}
+        `}
         style={{
-          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)'
+          boxShadow: 'var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), 0 10px 40px -15px rgba(0,0,0,0.3)',
         }}
-      />
-      
-      {/* Badge indicator like in reference image */}
-      {badge && (
-        <div className={`
-          absolute top-4 right-4 px-2 py-0.5 rounded-full text-xs font-semibold
-          ${badge.positive 
-            ? 'bg-emerald-100 text-emerald-600' 
-            : 'bg-rose-100 text-rose-600'
-          }
-        `}>
-          {badge.positive ? '+' : ''}{badge.value}
+      >
+        {/* Gradient overlay for dark mode */}
+        {gradient && (
+          <div className={`absolute inset-0 bg-gradient-to-br ${gradientStyles[gradient] || ''} pointer-events-none`} />
+        )}
+        
+        {/* Subtle inner glow */}
+        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/5 to-transparent dark:from-white/[0.02] pointer-events-none" />
+        
+        {/* Badge indicator */}
+        {badge && (
+          <div className={`
+            absolute top-4 right-4 px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1
+            ${badge.positive 
+              ? 'bg-emerald-500/20 text-emerald-400 dark:bg-emerald-500/20 dark:text-emerald-400' 
+              : 'bg-rose-500/20 text-rose-400 dark:bg-rose-500/20 dark:text-rose-400'
+            }
+          `}>
+            <span className={`w-1.5 h-1.5 rounded-full ${badge.positive ? 'bg-emerald-400' : 'bg-rose-400'}`} />
+            {badge.positive ? '+' : ''}{badge.value}
+          </div>
+        )}
+        
+        {/* Content */}
+        <div className="relative z-10">
+          {children}
         </div>
-      )}
-      
-      {/* Content */}
-      <div className="relative z-10">
-        {children}
       </div>
-      
-      {/* Bottom shadow for depth */}
-      <div 
-        className="absolute -bottom-1 left-3 right-3 h-4 rounded-b-3xl -z-10"
-        style={{
-          background: 'linear-gradient(180deg, transparent, rgba(148, 163, 184, 0.1))',
-          filter: 'blur(4px)'
-        }}
-      />
-    </div>
-  );
+    );
+  };
+
+  // Mini line chart component for cards
+  const MiniLineChart = ({ data, color = 'violet' }: { data: number[]; color?: string }) => {
+    const max = Math.max(...data);
+    const min = Math.min(...data);
+    const range = max - min || 1;
+    const height = 40;
+    const width = 120;
+    const points = data.map((value, index) => {
+      const x = (index / (data.length - 1)) * width;
+      const y = height - ((value - min) / range) * height;
+      return `${x},${y}`;
+    }).join(' ');
+
+    const colorMap: Record<string, { stroke: string; fill: string }> = {
+      violet: { stroke: '#a78bfa', fill: 'url(#violetGrad)' },
+      orange: { stroke: '#fb923c', fill: 'url(#orangeGrad)' },
+      emerald: { stroke: '#34d399', fill: 'url(#emeraldGrad)' },
+      pink: { stroke: '#f472b6', fill: 'url(#pinkGrad)' },
+      blue: { stroke: '#60a5fa', fill: 'url(#blueGrad)' },
+    };
+
+    const colors = colorMap[color] || colorMap.violet;
+
+    return (
+      <svg width={width} height={height + 10} className="overflow-visible">
+        <defs>
+          <linearGradient id="violetGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#a78bfa" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#a78bfa" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id="orangeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#fb923c" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#fb923c" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id="emeraldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#34d399" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#34d399" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id="pinkGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#f472b6" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#f472b6" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id="blueGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#60a5fa" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {/* Area fill */}
+        <polygon
+          points={`0,${height} ${points} ${width},${height}`}
+          fill={colors.fill}
+        />
+        {/* Line */}
+        <polyline
+          points={points}
+          fill="none"
+          stroke={colors.stroke}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        {/* End dot */}
+        <circle
+          cx={width}
+          cy={height - ((data[data.length - 1] - min) / range) * height}
+          r="4"
+          fill={colors.stroke}
+        />
+      </svg>
+    );
+  };
 
   // Icon container matching reference style
   const IconBox = ({ children, color = 'violet' }: { children: React.ReactNode; color?: string }) => {
     const colorMap: Record<string, string> = {
-      violet: 'from-violet-100 to-violet-50 text-violet-600',
-      orange: 'from-orange-100 to-orange-50 text-orange-600',
-      emerald: 'from-emerald-100 to-emerald-50 text-emerald-600',
-      pink: 'from-pink-100 to-pink-50 text-pink-600',
-      blue: 'from-blue-100 to-blue-50 text-blue-600',
+      violet: 'from-violet-500 to-purple-600 text-white shadow-violet-500/30',
+      orange: 'from-orange-500 to-amber-600 text-white shadow-orange-500/30',
+      emerald: 'from-emerald-500 to-teal-600 text-white shadow-emerald-500/30',
+      pink: 'from-pink-500 to-rose-600 text-white shadow-pink-500/30',
+      blue: 'from-blue-500 to-cyan-600 text-white shadow-blue-500/30',
     };
     
     return (
       <div className={`
-        w-12 h-12 rounded-xl bg-gradient-to-br ${colorMap[color] || colorMap.violet}
-        flex items-center justify-center shadow-sm
+        w-11 h-11 rounded-xl bg-gradient-to-br ${colorMap[color] || colorMap.violet}
+        flex items-center justify-center shadow-lg
       `}>
         {children}
       </div>
@@ -425,9 +506,9 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-100 via-purple-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-violet-50/30 to-indigo-50 dark:from-[hsl(240,10%,4%)] dark:via-[hsl(240,10%,6%)] dark:to-[hsl(260,10%,8%)]">
       {/* Header */}
-      <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-b border-violet-100 dark:border-slate-700 px-6 py-4">
+      <div className="bg-white/80 dark:bg-[hsl(240,6%,8%)]/90 backdrop-blur-sm border-b border-slate-200/50 dark:border-white/5 px-6 py-4">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Dashboard Overview</h1>
@@ -449,12 +530,12 @@ const Dashboard = () => {
             {/* Top Stats Row - 3 columns */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {/* Total Margin Card with Ring Chart */}
-              <DashboardCard onClick={() => setMarginDialogOpen(true)} badge={{ value: '12%', positive: true }}>
+              <DashboardCard onClick={() => setMarginDialogOpen(true)} badge={{ value: '12%', positive: true }} gradient="violet">
                 <div className="flex items-center gap-4">
                   <div className="relative w-20 h-20">
                     <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 100 100">
                       <circle
-                        className="text-violet-100"
+                        className="text-violet-500/20 dark:text-violet-500/30"
                         strokeWidth="10"
                         stroke="currentColor"
                         fill="transparent"
@@ -475,13 +556,13 @@ const Dashboard = () => {
                       />
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-sm font-bold text-violet-600">₹{Math.round(totalMargin / 1000)}k</span>
+                      <span className="text-sm font-bold text-violet-500 dark:text-violet-400">₹{Math.round(totalMargin / 1000)}k</span>
                     </div>
                   </div>
                   <div>
-                    <p className="text-slate-500 text-sm">Total Margin</p>
-                    <p className="text-2xl font-bold text-slate-800">{formatCurrency(totalMargin)}</p>
-                    <button className="mt-2 px-3 py-1 bg-violet-500 text-white text-xs rounded-full hover:bg-violet-600 transition-colors">
+                    <p className="text-muted-foreground text-sm">Total Margin</p>
+                    <p className="text-2xl font-bold text-foreground">{formatCurrency(totalMargin)}</p>
+                    <button className="mt-2 px-3 py-1 bg-violet-500 hover:bg-violet-600 text-white text-xs rounded-full transition-colors">
                       VIEW DETAILS
                     </button>
                   </div>
@@ -489,139 +570,113 @@ const Dashboard = () => {
               </DashboardCard>
 
               {/* Banking Services Card */}
-              <DashboardCard badge={{ value: '22%', positive: true }}>
-                <div className="flex items-start gap-3 mb-3">
-                  <IconBox color="orange">
-                    <CreditCard className="h-5 w-5" />
-                  </IconBox>
-                  <div>
-                    <p className="text-slate-500 text-sm">Banking Services</p>
-                    <p className="text-2xl font-bold text-slate-800">{formatCurrency(bankingServicesTotal)}</p>
-                    <p className="text-xs text-slate-400 mt-1">Margin: {formatCurrency(bankingMargin)}</p>
+              <DashboardCard badge={{ value: '22%', positive: true }} gradient="orange">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-start gap-3">
+                    <IconBox color="orange">
+                      <CreditCard className="h-5 w-5" />
+                    </IconBox>
+                    <div>
+                      <p className="text-muted-foreground text-sm">Banking Services</p>
+                      <p className="text-2xl font-bold text-foreground">{formatCurrency(bankingServicesTotal)}</p>
+                      <p className="text-xs text-muted-foreground mt-1">Margin: {formatCurrency(bankingMargin)}</p>
+                    </div>
                   </div>
                 </div>
-                {/* Mini line chart visual */}
-                <div className="h-10 flex items-end gap-1 mt-2">
-                  {[40, 60, 45, 70, 55, 80, 65].map((height, i) => (
-                    <div 
-                      key={i} 
-                      className="flex-1 bg-gradient-to-t from-orange-400 to-orange-300 rounded-t"
-                      style={{ height: `${height}%` }}
-                    />
-                  ))}
+                {/* Mini line chart */}
+                <div className="flex justify-end mt-2">
+                  <MiniLineChart data={[40, 60, 45, 70, 55, 80, 65, 90]} color="orange" />
                 </div>
+                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                  <span className="text-emerald-500">+₹2,956</span> from last period
+                </p>
               </DashboardCard>
 
               {/* Online Services Card */}
-              <DashboardCard badge={{ value: '5%', positive: false }}>
-                <div className="flex items-start gap-3 mb-3">
-                  <IconBox color="violet">
-                    <Globe className="h-5 w-5" />
-                  </IconBox>
-                  <div>
-                    <p className="text-slate-500 text-sm">Online Services</p>
-                    <p className="text-2xl font-bold text-slate-800">{formatCurrency(onlineServicesTotal)}</p>
-                    <p className="text-xs text-slate-400 mt-1">Margin: {formatCurrency(onlineMargin)}</p>
+              <DashboardCard badge={{ value: '5%', positive: false }} gradient="violet">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-start gap-3">
+                    <IconBox color="violet">
+                      <Globe className="h-5 w-5" />
+                    </IconBox>
+                    <div>
+                      <p className="text-muted-foreground text-sm">Online Services</p>
+                      <p className="text-2xl font-bold text-foreground">{formatCurrency(onlineServicesTotal)}</p>
+                      <p className="text-xs text-muted-foreground mt-1">Margin: {formatCurrency(onlineMargin)}</p>
+                    </div>
                   </div>
                 </div>
-                {/* Mini bar chart */}
-                <div className="h-10 flex items-end gap-1 mt-2">
-                  {[60, 80, 40, 90, 70, 50, 85].map((height, i) => (
-                    <div 
-                      key={i} 
-                      className="flex-1 bg-gradient-to-t from-violet-500 to-violet-400 rounded-t"
-                      style={{ height: `${height}%` }}
-                    />
-                  ))}
+                {/* Mini line chart */}
+                <div className="flex justify-end mt-2">
+                  <MiniLineChart data={[60, 80, 40, 90, 70, 50, 85, 75]} color="violet" />
                 </div>
+                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                  <span className="text-rose-500">-₹987</span> from last period
+                </p>
               </DashboardCard>
             </div>
 
             {/* Second Row - 3 columns */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {/* Applications Card with 3D bars */}
-              <DashboardCard>
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-slate-800 dark:text-white font-semibold">Applications</h3>
-                  <MoreHorizontal className="h-4 w-4 text-slate-400" />
+              {/* Applications Card */}
+              <DashboardCard gradient="pink">
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="text-foreground font-semibold flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-pink-500" />
+                    Applications
+                  </h3>
+                  <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                 </div>
-                <div className="flex items-center gap-6">
-                  <div className="flex items-end gap-2 h-20">
-                    <div className="w-10 bg-gradient-to-t from-pink-500 to-pink-400 rounded-t relative" style={{ height: '80%' }}>
-                      <div className="absolute -top-1 left-0 w-full h-3 bg-pink-300 rounded-t transform skew-x-12 origin-bottom-left"></div>
-                    </div>
-                    <div className="w-10 bg-gradient-to-t from-violet-500 to-violet-400 rounded-t relative" style={{ height: '100%' }}>
-                      <div className="absolute -top-1 left-0 w-full h-3 bg-violet-300 rounded-t transform skew-x-12 origin-bottom-left"></div>
-                    </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-3xl font-bold text-foreground">{formatCurrency(applicationsTotal)}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{applicationsCount} applications</p>
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-2 h-2 rounded-full bg-pink-500"></div>
-                      <span className="text-xs text-slate-500">Amount</span>
-                    </div>
-                    <p className="text-lg font-bold text-slate-800 dark:text-white">{formatCurrency(applicationsTotal)}</p>
-                    <div className="flex items-center gap-2 mt-2 mb-1">
-                      <div className="w-2 h-2 rounded-full bg-violet-500"></div>
-                      <span className="text-xs text-slate-500">Count</span>
-                    </div>
-                    <p className="text-lg font-bold text-slate-800 dark:text-white">{applicationsCount}</p>
-                  </div>
+                  <MiniLineChart data={[30, 50, 40, 60, 45, 70, 55]} color="pink" />
                 </div>
               </DashboardCard>
 
-              {/* Printout & Photostat with 3D hexagon style */}
-              <DashboardCard>
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-slate-800 dark:text-white font-semibold">Printout & Photostat</h3>
-                  <MoreHorizontal className="h-4 w-4 text-slate-400" />
+              {/* Printout & Photostat */}
+              <DashboardCard gradient="emerald">
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="text-foreground font-semibold flex items-center gap-2">
+                    <Printer className="h-4 w-4 text-emerald-500" />
+                    Printout & Photostat
+                  </h3>
+                  <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-3xl font-bold text-foreground">{formatCurrency(photostatTotal)}</p>
+                    <p className="text-sm text-muted-foreground mt-1">Margin: {formatCurrency(photostatMarginTotal)}</p>
+                  </div>
+                  <MiniLineChart data={[25, 45, 35, 55, 40, 65, 50]} color="emerald" />
+                </div>
+              </DashboardCard>
+
+              {/* Pending Balance */}
+              <DashboardCard gradient="orange">
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="text-foreground font-semibold flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-orange-500" />
+                    Pending Balance
+                  </h3>
+                  <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-3xl font-bold text-foreground">{formatCurrency(pendingBalanceTotal)}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{pendingBalanceData?.length || 0} pending entries</p>
+                  </div>
                   <div className="w-16 h-16 relative">
-                    <svg viewBox="0 0 100 100" className="w-full h-full">
-                      <polygon 
-                        points="50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5" 
-                        fill="url(#hexGradient)" 
-                        stroke="#10b981" 
-                        strokeWidth="2"
-                      />
-                      <defs>
-                        <linearGradient id="hexGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" stopColor="#34d399" />
-                          <stop offset="100%" stopColor="#10b981" />
-                        </linearGradient>
-                      </defs>
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                      <span className="text-xs text-slate-500">Amount</span>
-                    </div>
-                    <p className="text-lg font-bold text-slate-800 dark:text-white">{formatCurrency(photostatTotal)}</p>
-                    <div className="flex items-center gap-2 mt-2 mb-1">
-                      <div className="w-2 h-2 rounded-full bg-teal-500"></div>
-                      <span className="text-xs text-slate-500">Margin</span>
-                    </div>
-                    <p className="text-lg font-bold text-slate-800 dark:text-white">{formatCurrency(photostatMarginTotal)}</p>
-                  </div>
-                </div>
-              </DashboardCard>
-
-              {/* Pending Balance with gauge style */}
-              <DashboardCard>
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-slate-800 dark:text-white font-semibold">Pending Balance</h3>
-                  <MoreHorizontal className="h-4 w-4 text-slate-400" />
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="w-20 h-12 relative">
                     <svg viewBox="0 0 100 50" className="w-full h-full">
                       <path
                         d="M 10 50 A 40 40 0 0 1 90 50"
                         fill="none"
-                        stroke="#e2e8f0"
+                        stroke="currentColor"
                         strokeWidth="8"
                         strokeLinecap="round"
+                        className="text-orange-500/20"
                       />
                       <path
                         d="M 10 50 A 40 40 0 0 1 90 50"
@@ -639,17 +694,6 @@ const Dashboard = () => {
                       </defs>
                     </svg>
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-2 h-2 rounded-full bg-orange-500"></div>
-                      <span className="text-xs text-slate-500">Total Pending</span>
-                    </div>
-                    <p className="text-xl font-bold text-slate-800 dark:text-white">{formatCurrency(pendingBalanceTotal)}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                      <span className="text-xs text-slate-500">Count: {pendingBalanceData?.length || 0}</span>
-                    </div>
-                  </div>
                 </div>
               </DashboardCard>
             </div>
@@ -657,25 +701,28 @@ const Dashboard = () => {
             {/* Third Row - Expenses and Margin Distribution */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {/* Expenses Card */}
-              <DashboardCard>
+              <DashboardCard gradient="pink">
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="text-slate-800 dark:text-white font-semibold">Expenses</h3>
-                    <p className="text-xs text-slate-500 mt-1">{expensesCount} entries this period</p>
+                    <h3 className="text-foreground font-semibold flex items-center gap-2">
+                      <Receipt className="h-4 w-4 text-rose-500" />
+                      Expenses
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1">{expensesCount} entries this period</p>
                   </div>
-                  <MoreHorizontal className="h-4 w-4 text-slate-400" />
+                  <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <p className="text-4xl font-bold text-slate-800 dark:text-white">{formatCurrency(expensesTotal)}</p>
+                    <p className="text-4xl font-bold text-foreground">{formatCurrency(expensesTotal)}</p>
                     <div className="flex items-center gap-2 mt-2">
-                      <TrendingUp className="h-4 w-4 text-red-500" />
-                      <span className="text-sm text-red-500">Track your expenses</span>
+                      <TrendingUp className="h-4 w-4 text-rose-500" />
+                      <span className="text-sm text-rose-500">Track your expenses</span>
                     </div>
                   </div>
                   <div className="w-24 h-24">
                     <svg viewBox="0 0 100 100" className="w-full h-full">
-                      <circle cx="50" cy="50" r="40" fill="none" stroke="#fee2e2" strokeWidth="12" />
+                      <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="12" className="text-rose-500/20" />
                       <circle 
                         cx="50" 
                         cy="50" 
@@ -693,10 +740,13 @@ const Dashboard = () => {
               </DashboardCard>
 
               {/* Margin Distribution Chart */}
-              <DashboardCard>
+              <DashboardCard gradient="violet">
                 <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-slate-800 dark:text-white font-semibold">Margin Distribution</h3>
-                  <MoreHorizontal className="h-4 w-4 text-slate-400" />
+                  <h3 className="text-foreground font-semibold flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4 text-violet-500" />
+                    Margin Distribution
+                  </h3>
+                  <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <Pie3DChart
                   data={marginProportions}
@@ -706,20 +756,30 @@ const Dashboard = () => {
             </div>
 
             {/* Cash in Hand Banner */}
-            <div className="bg-gradient-to-r from-violet-600 to-purple-600 rounded-2xl p-6 text-white relative overflow-hidden">
-              <div className="absolute right-0 top-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
-              <div className="absolute right-20 bottom-0 w-24 h-24 bg-white/5 rounded-full translate-y-1/2"></div>
+            <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 rounded-2xl p-6 text-white relative overflow-hidden shadow-xl shadow-violet-500/20">
+              <div className="absolute right-0 top-0 w-40 h-40 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
+              <div className="absolute right-20 bottom-0 w-32 h-32 bg-white/5 rounded-full translate-y-1/2 blur-xl"></div>
+              <div className="absolute left-10 top-0 w-20 h-20 bg-white/5 rounded-full -translate-y-1/2 blur-lg"></div>
               <div className="relative z-10 flex items-center justify-between">
                 <div>
-                  <h3 className="text-white/80 text-sm mb-1">Cash in Hand</h3>
-                  <p className="text-4xl font-bold">{formatCurrency(latestCashInHand)}</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="bg-white/20 rounded-full p-2">
-                    <span className="text-2xl font-bold">{bankingServicesCount}</span>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Wallet className="h-5 w-5 text-white/70" />
+                    <h3 className="text-white/80 text-sm">Cash in Hand</h3>
                   </div>
-                  <div className="bg-white/20 rounded-full p-2">
-                    <span className="text-2xl font-bold">{onlineServicesCount}</span>
+                  <p className="text-5xl font-bold">{formatCurrency(latestCashInHand)}</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="text-center">
+                    <div className="bg-white/20 rounded-xl p-3 backdrop-blur-sm mb-1">
+                      <span className="text-3xl font-bold">{bankingServicesCount}</span>
+                    </div>
+                    <span className="text-xs text-white/70">Banking</span>
+                  </div>
+                  <div className="text-center">
+                    <div className="bg-white/20 rounded-xl p-3 backdrop-blur-sm mb-1">
+                      <span className="text-3xl font-bold">{onlineServicesCount}</span>
+                    </div>
+                    <span className="text-xs text-white/70">Online</span>
                   </div>
                 </div>
               </div>
