@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import PageWrapper from '@/components/layout/PageWrapper';
 import { useQuery } from '@tanstack/react-query';
 import * as XLSX from 'xlsx';
+import Papa from 'papaparse';
 
 interface CSVRecord {
   id: string;
@@ -30,6 +31,10 @@ interface AnalysisResult {
   cashInHand: number;
   fileName: string;
 }
+
+// Specific transaction types to filter
+const WITHDRAWAL_TYPES = ['AEPS Cash Withdrawal', 'Withdrawal'];
+const DEPOSIT_TYPES = ['Savings Deposit By Cash', 'AEPS Cash Deposit', 'IMPS Transaction'];
 
 const Records = () => {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
@@ -61,69 +66,75 @@ const Records = () => {
     }
   });
 
-  const parseFileContent = (content: string): { totalWithdrawal: number; totalDeposit: number } => {
-    const lines = content.split('\n');
-    let totalWithdrawal = 0;
-    let totalDeposit = 0;
-    
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line) continue;
+  const findTransactionTypeAndAmount = (row: Record<string, string>): { type: string; amount: number } | null => {
+    // Look for transaction type in any column
+    let transactionType = '';
+    let amount = 0;
+
+    for (const [key, value] of Object.entries(row)) {
+      const val = String(value || '').trim();
       
-      const cells = line.split(',').map(cell => cell.trim().replace(/"/g, ''));
-      const cellsLower = cells.map(c => c.toLowerCase());
-      const lineText = cellsLower.join(' ');
+      // Check if this cell matches any withdrawal or deposit type
+      const matchedWithdrawal = WITHDRAWAL_TYPES.find(t => val.toLowerCase() === t.toLowerCase());
+      const matchedDeposit = DEPOSIT_TYPES.find(t => val.toLowerCase() === t.toLowerCase());
       
-      // Check for withdrawal indicators
-      if (lineText.includes('withdrawal') || lineText.includes('withdraw') || lineText.includes('dr') || lineText.includes('debit')) {
-        for (const cell of cells) {
-          const amount = parseFloat(cell.replace(/[₹,\s]/g, ''));
-          if (!isNaN(amount) && amount > 0) {
-            totalWithdrawal += amount;
-            break;
-          }
-        }
+      if (matchedWithdrawal || matchedDeposit) {
+        transactionType = val;
       }
       
-      // Check for deposit/IMPS indicators
-      if (lineText.includes('deposit') || lineText.includes('imps') || lineText.includes('cr') || lineText.includes('credit')) {
-        for (const cell of cells) {
-          const amount = parseFloat(cell.replace(/[₹,\s]/g, ''));
-          if (!isNaN(amount) && amount > 0) {
-            totalDeposit += amount;
-            break;
-          }
-        }
-      }
-      
-      // Alternative: Check for debit/credit columns (last two columns often have amounts)
-      if (cells.length >= 3 && !lineText.includes('withdrawal') && !lineText.includes('deposit')) {
-        const debitIdx = cellsLower.findIndex(c => c.includes('debit') || c.includes('dr'));
-        const creditIdx = cellsLower.findIndex(c => c.includes('credit') || c.includes('cr'));
-        
-        if (debitIdx === -1 && creditIdx === -1) {
-          // Try last two columns as debit/credit amounts
-          const lastAmount = parseFloat(cells[cells.length - 1]?.replace(/[₹,\s]/g, '') || '0');
-          const secondLastAmount = parseFloat(cells[cells.length - 2]?.replace(/[₹,\s]/g, '') || '0');
-          
-          // If both are valid numbers, assume second-last is debit, last is credit
-          if (!isNaN(secondLastAmount) && secondLastAmount > 0 && i > 0) {
-            // Skip header detection
-            const headerLine = lines[0]?.toLowerCase() || '';
-            if (!headerLine.includes('date') && !headerLine.includes('transaction')) {
-              totalWithdrawal += secondLastAmount;
-            }
-          }
-          if (!isNaN(lastAmount) && lastAmount > 0 && i > 0) {
-            const headerLine = lines[0]?.toLowerCase() || '';
-            if (!headerLine.includes('date') && !headerLine.includes('transaction')) {
-              totalDeposit += lastAmount;
-            }
-          }
+      // Try to parse amount from numeric columns
+      const keyLower = key.toLowerCase();
+      if (keyLower.includes('amount') || keyLower.includes('debit') || keyLower.includes('credit') || keyLower.includes('value')) {
+        const parsed = parseFloat(val.replace(/[₹,\s]/g, ''));
+        if (!isNaN(parsed) && parsed > 0) {
+          amount = parsed;
         }
       }
     }
-    
+
+    // If no amount found in named columns, look for any numeric value in the row
+    if (amount === 0) {
+      for (const value of Object.values(row)) {
+        const val = String(value || '').trim();
+        const parsed = parseFloat(val.replace(/[₹,\s]/g, ''));
+        if (!isNaN(parsed) && parsed > 0) {
+          amount = parsed;
+          break;
+        }
+      }
+    }
+
+    if (transactionType && amount > 0) {
+      return { type: transactionType, amount };
+    }
+    return null;
+  };
+
+  const parseCSVWithPapaparse = (content: string): { totalWithdrawal: number; totalDeposit: number } => {
+    let totalWithdrawal = 0;
+    let totalDeposit = 0;
+
+    const result = Papa.parse(content, {
+      header: true,
+      skipEmptyLines: true,
+      transformHeader: (header) => header.trim(),
+    });
+
+    for (const row of result.data as Record<string, string>[]) {
+      const transaction = findTransactionTypeAndAmount(row);
+      
+      if (transaction) {
+        const isWithdrawal = WITHDRAWAL_TYPES.some(t => t.toLowerCase() === transaction.type.toLowerCase());
+        const isDeposit = DEPOSIT_TYPES.some(t => t.toLowerCase() === transaction.type.toLowerCase());
+        
+        if (isWithdrawal) {
+          totalWithdrawal += transaction.amount;
+        } else if (isDeposit) {
+          totalDeposit += transaction.amount;
+        }
+      }
+    }
+
     return { totalWithdrawal, totalDeposit };
   };
 
@@ -136,91 +147,30 @@ const Records = () => {
           const workbook = XLSX.read(data, { type: 'binary' });
           const sheetName = workbook.SheetNames[0];
           const sheet = workbook.Sheets[sheetName];
-          const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
+          
+          // Convert to JSON with headers
+          const jsonData = XLSX.utils.sheet_to_json(sheet) as Record<string, any>[];
           
           let totalWithdrawal = 0;
           let totalDeposit = 0;
           
-          // Find header row and identify columns
-          let headerRowIndex = -1;
-          let withdrawalColIndex = -1;
-          let depositColIndex = -1;
-          let typeColIndex = -1;
-          let amountColIndex = -1;
-          
-          for (let i = 0; i < Math.min(jsonData.length, 10); i++) {
-            const row = jsonData[i];
-            if (!row) continue;
-            
-            for (let j = 0; j < row.length; j++) {
-              const cell = String(row[j] || '').toLowerCase();
-              if (cell.includes('withdrawal') || cell.includes('debit') || cell.includes('dr')) {
-                withdrawalColIndex = j;
-                headerRowIndex = i;
-              }
-              if (cell.includes('deposit') || cell.includes('credit') || cell.includes('cr')) {
-                depositColIndex = j;
-                headerRowIndex = i;
-              }
-              if (cell.includes('type') || cell.includes('transaction')) {
-                typeColIndex = j;
-                headerRowIndex = i;
-              }
-              if (cell.includes('amount')) {
-                amountColIndex = j;
-                headerRowIndex = i;
-              }
+          for (const row of jsonData) {
+            // Convert row values to strings for processing
+            const stringRow: Record<string, string> = {};
+            for (const [key, value] of Object.entries(row)) {
+              stringRow[key] = String(value || '');
             }
-          }
-          
-          // Parse data rows
-          const startRow = headerRowIndex >= 0 ? headerRowIndex + 1 : 0;
-          
-          for (let i = startRow; i < jsonData.length; i++) {
-            const row = jsonData[i];
-            if (!row || row.length === 0) continue;
             
-            // If we found separate withdrawal/deposit columns
-            if (withdrawalColIndex >= 0 || depositColIndex >= 0) {
-              if (withdrawalColIndex >= 0) {
-                const amount = parseFloat(String(row[withdrawalColIndex] || '0').replace(/[₹,\s]/g, ''));
-                if (!isNaN(amount) && amount > 0) {
-                  totalWithdrawal += amount;
-                }
-              }
-              if (depositColIndex >= 0) {
-                const amount = parseFloat(String(row[depositColIndex] || '0').replace(/[₹,\s]/g, ''));
-                if (!isNaN(amount) && amount > 0) {
-                  totalDeposit += amount;
-                }
-              }
-            } else if (typeColIndex >= 0 && amountColIndex >= 0) {
-              // If we have type and amount columns
-              const type = String(row[typeColIndex] || '').toLowerCase();
-              const amount = parseFloat(String(row[amountColIndex] || '0').replace(/[₹,\s]/g, ''));
+            const transaction = findTransactionTypeAndAmount(stringRow);
+            
+            if (transaction) {
+              const isWithdrawal = WITHDRAWAL_TYPES.some(t => t.toLowerCase() === transaction.type.toLowerCase());
+              const isDeposit = DEPOSIT_TYPES.some(t => t.toLowerCase() === transaction.type.toLowerCase());
               
-              if (!isNaN(amount) && amount > 0) {
-                if (type.includes('withdrawal') || type.includes('dr') || type.includes('debit')) {
-                  totalWithdrawal += amount;
-                } else if (type.includes('deposit') || type.includes('imps') || type.includes('cr') || type.includes('credit')) {
-                  totalDeposit += amount;
-                }
-              }
-            } else {
-              // Fallback: check row content for type indicators
-              const rowText = row.map(c => String(c || '').toLowerCase()).join(' ');
-              
-              for (const cell of row) {
-                const amount = parseFloat(String(cell || '0').replace(/[₹,\s]/g, ''));
-                if (!isNaN(amount) && amount > 0) {
-                  if (rowText.includes('withdrawal') || rowText.includes('dr') || rowText.includes('debit')) {
-                    totalWithdrawal += amount;
-                    break;
-                  } else if (rowText.includes('deposit') || rowText.includes('imps') || rowText.includes('cr') || rowText.includes('credit')) {
-                    totalDeposit += amount;
-                    break;
-                  }
-                }
+              if (isWithdrawal) {
+                totalWithdrawal += transaction.amount;
+              } else if (isDeposit) {
+                totalDeposit += transaction.amount;
               }
             }
           }
@@ -258,7 +208,7 @@ const Records = () => {
         result = await parseExcelFile(file);
       } else {
         const content = await file.text();
-        result = parseFileContent(content);
+        result = parseCSVWithPapaparse(content);
       }
       
       const cashInHand = result.totalDeposit - result.totalWithdrawal;
