@@ -281,7 +281,8 @@ const Records = () => {
     setIsLoading(true);
     
     try {
-      const { error } = await supabase
+      // Save to csv_analysis_records
+      const { error: csvError } = await supabase
         .from('csv_analysis_records')
         .insert([{
           file_name: analysisResult.fileName,
@@ -290,11 +291,37 @@ const Records = () => {
           cash_in_hand: analysisResult.cashInHand,
         }]);
 
-      if (error) throw error;
+      if (csvError) throw csvError;
+
+      // Get the latest OD record to use its cash_in_hand as last_balance
+      const { data: latestODRecord } = await supabase
+        .from('od_detail_records')
+        .select('cash_in_hand')
+        .order('date', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      const lastBalance = latestODRecord?.[0]?.cash_in_hand || 0;
+      const newCashInHand = lastBalance + analysisResult.totalDeposit - analysisResult.totalWithdrawal;
+
+      // Also save to od_detail_records
+      const { error: odError } = await supabase
+        .from('od_detail_records')
+        .insert([{
+          date: format(new Date(), 'yyyy-MM-dd'),
+          od_from_bank: 0,
+          last_balance: lastBalance,
+          amount_received: analysisResult.totalDeposit,
+          amount_given: analysisResult.totalWithdrawal,
+          cash_in_hand: newCashInHand,
+          remarks: `Auto-saved from file: ${analysisResult.fileName}`,
+        }]);
+
+      if (odError) throw odError;
       
       toast({
         title: "Success",
-        description: "Analysis saved successfully",
+        description: "Analysis saved to Records and OD Records",
       });
       
       setAnalysisResult(null);

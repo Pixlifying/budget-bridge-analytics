@@ -47,6 +47,45 @@ export type Database = {
         }
         Relationships: []
       }
+      account_records: {
+        Row: {
+          aadhar_number: string | null
+          account_number: string
+          account_type: string
+          address: string | null
+          created_at: string
+          id: string
+          mobile_number: string | null
+          name: string | null
+          remarks: string | null
+          updated_at: string
+        }
+        Insert: {
+          aadhar_number?: string | null
+          account_number: string
+          account_type: string
+          address?: string | null
+          created_at?: string
+          id?: string
+          mobile_number?: string | null
+          name?: string | null
+          remarks?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aadhar_number?: string | null
+          account_number?: string
+          account_type?: string
+          address?: string | null
+          created_at?: string
+          id?: string
+          mobile_number?: string | null
+          name?: string | null
+          remarks?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       applications: {
         Row: {
           amount: number
