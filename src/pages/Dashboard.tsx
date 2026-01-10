@@ -334,8 +334,8 @@ const Dashboard = () => {
       <div className="bg-card/80 backdrop-blur-sm border-b border-border px-6 py-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-foreground">Hello, User!</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">Explore information and activity about your property</p>
+            <h1 className="text-2xl font-semibold text-foreground">Hello, Harry</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">Explore information </p>
           </div>
           <div className="flex items-center gap-4">
             <div className="relative">
