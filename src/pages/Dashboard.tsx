@@ -417,35 +417,7 @@ const Dashboard = () => {
             {/* Balance Section */}
             <div className="grid grid-cols-3 gap-4">
               {/* Balance Card - Large */}
-              <DashCard className="col-span-2">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-foreground">Balance</h3>
-                    <span className="flex items-center gap-1 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                      <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
-                      On track
-                    </span>
-                  </div>
-                  <span className="text-sm text-muted-foreground">Monthly</span>
-                </div>
-                <div className="flex items-end justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Deposit</p>
-                    <p className="text-2xl font-bold text-foreground">{formatCurrency(latestCashInHand)}</p>
-                    
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Withdrawal</p>
-                    <p className="text-2xl font-bold text-foreground">{formatCurrency(expensesTotal)}</p>
-                    
-                  </div>
-                  {/* Line chart placeholder */}
-                  <svg width="200" height="60" className="overflow-visible">
-                    <path d="M 0 50 Q 30 45, 50 30 T 100 25 T 150 35 T 200 20" fill="none" stroke="hsl(var(--primary))" strokeWidth="2" />
-                    <path d="M 0 50 Q 30 45, 50 30 T 100 25 T 150 35 T 200 20 L 200 60 L 0 60 Z" fill="hsl(var(--primary) / 0.1)" />
-                  </svg>
-                </div>
-              </DashCard>
+              
 
               {/* Earnings Card */}
               <DashCard onClick={() => setMarginDialogOpen(true)}>
