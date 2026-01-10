@@ -5,30 +5,31 @@ import {
   FileText,
   Globe, 
   BarChart3,
-  FilePenLine,
   AlertCircle,
-  DollarSign,
   Wallet,
-  X,
   Printer,
   Receipt,
-  MoreHorizontal,
   TrendingUp,
+  Search,
+  Bell,
+  MessageSquare,
+  Users,
+  ArrowUpRight,
+  ArrowDownRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
 import { format, startOfMonth, endOfMonth, startOfDay, endOfDay } from 'date-fns';
 
 import { supabase } from '@/integrations/supabase/client';
-import PageHeader from '@/components/layout/PageHeader';
-import Pie3DChart from '@/components/ui/Pie3DChart';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import NotificationBox from '@/components/ui/NotificationBox';
 import ReminderCalendar from '@/components/ui/ReminderCalendar';
 import DigitalClock from '@/components/ui/DigitalClock';
+import { Input } from '@/components/ui/input';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   formatCurrency,
-  getTotalMargin,
 } from '@/utils/calculateUtils';
 import {
   Dialog,
@@ -40,7 +41,6 @@ import {
 const Dashboard = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
-  const [isLoading, setIsLoading] = useState(true);
   const [marginDialogOpen, setMarginDialogOpen] = useState(false);
 
   const { data: bankingData, error: bankingError } = useQuery({
@@ -58,9 +58,7 @@ const Dashboard = () => {
       }
       
       const { data, error } = await query.order('date', { ascending: false });
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
       return data;
     }
   });
@@ -73,7 +71,6 @@ const Dashboard = () => {
       if (viewMode === 'day') {
         const startDateStr = format(startOfDay(date), 'yyyy-MM-dd');
         const endDateStr = format(endOfDay(date), 'yyyy-MM-dd');
-        
         query = query.gte('date', startDateStr).lt('date', endDateStr + 'T23:59:59');
       } else if (viewMode === 'month') {
         const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
@@ -82,10 +79,7 @@ const Dashboard = () => {
       }
       
       const { data, error } = await query.order('date', { ascending: false });
-      if (error) {
-        throw error;
-      }
-      
+      if (error) throw error;
       return data;
     }
   });
@@ -98,7 +92,6 @@ const Dashboard = () => {
       if (viewMode === 'day') {
         const startDateStr = format(startOfDay(date), 'yyyy-MM-dd');
         const endDateStr = format(endOfDay(date), 'yyyy-MM-dd');
-        
         query = query.gte('date', startDateStr).lt('date', endDateStr + 'T23:59:59');
       } else if (viewMode === 'month') {
         const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
@@ -107,9 +100,7 @@ const Dashboard = () => {
       }
       
       const { data, error } = await query.order('date', { ascending: false });
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
       return data;
     }
   });
@@ -122,7 +113,6 @@ const Dashboard = () => {
       if (viewMode === 'day') {
         const startDateStr = format(startOfDay(date), 'yyyy-MM-dd');
         const endDateStr = format(endOfDay(date), 'yyyy-MM-dd');
-        
         query = query.gte('date', startDateStr).lt('date', endDateStr + 'T23:59:59');
       } else if (viewMode === 'month') {
         const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
@@ -131,9 +121,7 @@ const Dashboard = () => {
       }
       
       const { data, error } = await query.order('date', { ascending: false });
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
       return data;
     }
   });
@@ -146,7 +134,6 @@ const Dashboard = () => {
       if (viewMode === 'day') {
         const startDateStr = format(startOfDay(date), 'yyyy-MM-dd');
         const endDateStr = format(endOfDay(date), 'yyyy-MM-dd');
-        
         query = query.gte('date', startDateStr).lt('date', endDateStr + 'T23:59:59');
       } else if (viewMode === 'month') {
         const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
@@ -155,9 +142,7 @@ const Dashboard = () => {
       }
       
       const { data, error } = await query.order('date', { ascending: false });
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
       return data;
     }
   });
@@ -170,7 +155,6 @@ const Dashboard = () => {
       if (viewMode === 'day') {
         const startDateStr = format(startOfDay(date), 'yyyy-MM-dd');
         const endDateStr = format(endOfDay(date), 'yyyy-MM-dd');
-        
         query = query.gte('date', startDateStr).lt('date', endDateStr + 'T23:59:59');
       } else if (viewMode === 'month') {
         const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
@@ -179,9 +163,7 @@ const Dashboard = () => {
       }
       
       const { data, error } = await query.order('date', { ascending: false });
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
       return data;
     }
   });
@@ -194,7 +176,6 @@ const Dashboard = () => {
       if (viewMode === 'day') {
         const startDateStr = format(startOfDay(date), 'yyyy-MM-dd');
         const endDateStr = format(endOfDay(date), 'yyyy-MM-dd');
-        
         query = query.gte('date', startDateStr).lt('date', endDateStr + 'T23:59:59');
       } else if (viewMode === 'month') {
         const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
@@ -203,14 +184,11 @@ const Dashboard = () => {
       }
       
       const { data, error } = await query.order('date', { ascending: false });
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
       return data;
     }
   });
 
-  // Fetch latest cash in hand from OD detail records with real-time updates
   const { data: odRecordsData, refetch: refetchOdRecords } = useQuery({
     queryKey: ['odRecords'],
     queryFn: async () => {
@@ -226,560 +204,369 @@ const Dashboard = () => {
     }
   });
 
-  // Real-time subscription for OD records
   useEffect(() => {
     const channel = supabase
       .channel('od-records-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'od_detail_records'
-        },
-        () => {
-          refetchOdRecords();
-        }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'od_detail_records' }, () => {
+        refetchOdRecords();
+      })
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [refetchOdRecords]);
 
   useEffect(() => {
-    if (
-      bankingError ||
-      bankingAccountsError ||
-      onlineError ||
-      applicationsError ||
-      photostatError ||
-      pendingBalanceError ||
-      expensesError
-    ) {
+    if (bankingError || bankingAccountsError || onlineError || applicationsError || photostatError || pendingBalanceError || expensesError) {
       toast.error('Failed to load data');
     }
-  }, [
-    bankingError,
-    bankingAccountsError,
-    onlineError,
-    applicationsError,
-    photostatError,
-    pendingBalanceError,
-    expensesError,
-  ]);
+  }, [bankingError, bankingAccountsError, onlineError, applicationsError, photostatError, pendingBalanceError, expensesError]);
 
-  // Calculate metrics from fetched data
+  // Calculate metrics
   const bankingServicesTotal = bankingData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
   const bankingServicesCount = bankingData?.reduce((sum, entry) => sum + (entry.transaction_count || 1), 0) || 0;
   const bankingMargin = bankingData?.reduce((sum, entry) => sum + entry.margin, 0) || 0;
-  const bankingServicesDays = bankingData?.reduce((uniqueDays, entry) => {
-    const dateStr = format(new Date(entry.date), 'yyyy-MM-dd');
-    return uniqueDays.includes(dateStr) ? uniqueDays : [...uniqueDays, dateStr];
-  }, [] as string[])?.length || 0;
-  
   const bankingAccountsMargin = bankingAccountsData?.reduce((sum, entry) => sum + Number(entry.margin || 0), 0) || 0;
-
   const onlineServicesTotal = onlineData?.reduce((sum, entry) => sum + Number(entry.total || 0), 0) || 0;
   const onlineServicesCount = onlineData?.length || 0;
   const onlineMargin = onlineData?.reduce((sum, entry) => sum + Number(entry.total || 0), 0) || 0;
-
   const applicationsTotal = applicationsData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
   const applicationsCount = applicationsData?.length || 0;
   const applicationsMargin = applicationsData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
-
   const photostatTotal = photostatData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
-  const photostatCount = photostatData?.length || 0;
   const photostatMarginTotal = photostatData?.reduce((sum, entry) => sum + Number(entry.margin), 0) || 0;
-
   const pendingBalanceTotal = pendingBalanceData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
-
   const expensesTotal = expensesData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
   const expensesCount = expensesData?.length || 0;
-
-  // Get latest cash in hand
   const latestCashInHand = odRecordsData?.[0]?.cash_in_hand || 0;
-
-  // Calculate total margin including Photostat and Other Banking Services
   const totalMargin = bankingMargin + bankingAccountsMargin + onlineMargin + applicationsMargin + photostatMarginTotal;
 
-  const marginProportions = [
-    { name: 'Banking', value: bankingMargin },
-    { name: 'Other Banking', value: bankingAccountsMargin },
-    { name: 'Online', value: onlineMargin },
-    { name: 'Applications', value: applicationsMargin },
-    { name: 'Printout and Photostat', value: photostatMarginTotal },
-    { name: 'Pending Balance', value: pendingBalanceTotal },
-    { name: 'Expenses', value: expensesTotal },
-  ];
-
-  const getServiceColor = (serviceName: string): string => {
-    switch (serviceName) {
-      case 'Banking': return '#7c3aed';
-      case 'Other Banking': return '#a78bfa';
-      case 'Online': return '#f97316';
-      case 'Applications': return '#10b981';
-      case 'Printout and Photostat': return '#ec4899';
-      case 'Photostat': return '#ec4899';
-      case 'Pending Balance': return '#eab308';
-      case 'Expenses': return '#06b6d4';
-      default: return '#94a3b8';
-    }
-  };
-
-  const handleDateChange = (newDate: Date) => {
-    setDate(newDate);
-  };
-
-  const handleViewModeChange = (mode: 'day' | 'month') => {
-    setViewMode(mode);
-  };
-
   const marginDetails = [
-    { name: 'Banking Services', value: bankingMargin, color: '#7c3aed' },
-    { name: 'Other Banking Services', value: bankingAccountsMargin, color: '#a78bfa' },
-    { name: 'Online Services', value: onlineMargin, color: '#f97316' },
-    { name: 'Applications', value: applicationsMargin, color: '#10b981' },
-    { name: 'Printout and Photostat', value: photostatMarginTotal, color: '#ec4899' },
-    { name: 'Pending Balance', value: pendingBalanceTotal, color: '#eab308' },
-    { name: 'Expenses', value: expensesTotal, color: '#06b6d4' },
+    { name: 'Banking Services', value: bankingMargin, color: 'hsl(var(--chart-1))' },
+    { name: 'Other Banking', value: bankingAccountsMargin, color: 'hsl(var(--chart-2))' },
+    { name: 'Online Services', value: onlineMargin, color: 'hsl(var(--chart-3))' },
+    { name: 'Applications', value: applicationsMargin, color: 'hsl(var(--chart-4))' },
+    { name: 'Printout & Photostat', value: photostatMarginTotal, color: 'hsl(var(--chart-5))' },
   ];
 
-  // 3D Card component for dashboard stats - matching dark sleek reference image style
-  const DashboardCard = ({ 
-    children, 
-    className = '', 
-    onClick, 
-    badge,
-    gradient
-  }: { 
-    children: React.ReactNode; 
-    className?: string; 
-    onClick?: () => void; 
-    badge?: { value: string; positive: boolean };
-    gradient?: 'violet' | 'orange' | 'emerald' | 'pink' | 'blue';
-  }) => {
-    const gradientStyles: Record<string, string> = {
-      violet: 'from-violet-500/20 via-purple-500/10 to-transparent',
-      orange: 'from-orange-500/20 via-amber-500/10 to-transparent',
-      emerald: 'from-emerald-500/20 via-teal-500/10 to-transparent',
-      pink: 'from-pink-500/20 via-rose-500/10 to-transparent',
-      blue: 'from-blue-500/20 via-cyan-500/10 to-transparent',
-    };
-    
-    return (
-      <div 
-        onClick={onClick}
-        className={`
-          relative rounded-2xl p-5 overflow-hidden
-          transition-all duration-300 ease-out
-          hover:translate-y-[-2px] hover:shadow-2xl
-          bg-card border border-border/50
-          dark:bg-[hsl(240,6%,10%)] dark:border-white/5
-          ${onClick ? 'cursor-pointer' : ''} ${className}
-        `}
-        style={{
-          boxShadow: 'var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), 0 10px 40px -15px rgba(0,0,0,0.3)',
-        }}
-      >
-        {/* Gradient overlay for dark mode */}
-        {gradient && (
-          <div className={`absolute inset-0 bg-gradient-to-br ${gradientStyles[gradient] || ''} pointer-events-none`} />
-        )}
-        
-        {/* Subtle inner glow */}
-        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/5 to-transparent dark:from-white/[0.02] pointer-events-none" />
-        
-        {/* Badge indicator */}
-        {badge && (
-          <div className={`
-            absolute top-4 right-4 px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1
-            ${badge.positive 
-              ? 'bg-emerald-500/20 text-emerald-400 dark:bg-emerald-500/20 dark:text-emerald-400' 
-              : 'bg-rose-500/20 text-rose-400 dark:bg-rose-500/20 dark:text-rose-400'
-            }
-          `}>
-            <span className={`w-1.5 h-1.5 rounded-full ${badge.positive ? 'bg-emerald-400' : 'bg-rose-400'}`} />
-            {badge.positive ? '+' : ''}{badge.value}
-          </div>
-        )}
-        
-        {/* Content */}
-        <div className="relative z-10">
-          {children}
-        </div>
-      </div>
-    );
-  };
+  const handleDateChange = (newDate: Date) => setDate(newDate);
+  const handleViewModeChange = (mode: 'day' | 'month') => setViewMode(mode);
 
-  // Mini line chart component for cards
-  const MiniLineChart = ({ data, color = 'violet' }: { data: number[]; color?: string }) => {
+  // Mini line chart for cards
+  const MiniLineChart = ({ data, color = 'primary' }: { data: number[]; color?: string }) => {
     const max = Math.max(...data);
     const min = Math.min(...data);
     const range = max - min || 1;
     const height = 40;
-    const width = 120;
+    const width = 80;
     const points = data.map((value, index) => {
       const x = (index / (data.length - 1)) * width;
       const y = height - ((value - min) / range) * height;
       return `${x},${y}`;
     }).join(' ');
 
-    const colorMap: Record<string, { stroke: string; fill: string }> = {
-      violet: { stroke: '#a78bfa', fill: 'url(#violetGrad)' },
-      orange: { stroke: '#fb923c', fill: 'url(#orangeGrad)' },
-      emerald: { stroke: '#34d399', fill: 'url(#emeraldGrad)' },
-      pink: { stroke: '#f472b6', fill: 'url(#pinkGrad)' },
-      blue: { stroke: '#60a5fa', fill: 'url(#blueGrad)' },
-    };
-
-    const colors = colorMap[color] || colorMap.violet;
-
     return (
-      <svg width={width} height={height + 10} className="overflow-visible">
-        <defs>
-          <linearGradient id="violetGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#a78bfa" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="#a78bfa" stopOpacity="0" />
-          </linearGradient>
-          <linearGradient id="orangeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#fb923c" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="#fb923c" stopOpacity="0" />
-          </linearGradient>
-          <linearGradient id="emeraldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#34d399" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="#34d399" stopOpacity="0" />
-          </linearGradient>
-          <linearGradient id="pinkGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#f472b6" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="#f472b6" stopOpacity="0" />
-          </linearGradient>
-          <linearGradient id="blueGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="#60a5fa" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        {/* Area fill */}
-        <polygon
-          points={`0,${height} ${points} ${width},${height}`}
-          fill={colors.fill}
-        />
-        {/* Line */}
-        <polyline
-          points={points}
-          fill="none"
-          stroke={colors.stroke}
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        {/* End dot */}
-        <circle
-          cx={width}
-          cy={height - ((data[data.length - 1] - min) / range) * height}
-          r="4"
-          fill={colors.stroke}
-        />
+      <svg width={width} height={height} className="overflow-visible">
+        <polyline points={points} fill="none" stroke="hsl(var(--primary))" strokeWidth="2" strokeLinecap="round" />
       </svg>
     );
   };
 
-  // Icon container matching reference style
-  const IconBox = ({ children, color = 'violet' }: { children: React.ReactNode; color?: string }) => {
-    const colorMap: Record<string, string> = {
-      violet: 'from-violet-500 to-purple-600 text-white shadow-violet-500/30',
-      orange: 'from-orange-500 to-amber-600 text-white shadow-orange-500/30',
-      emerald: 'from-emerald-500 to-teal-600 text-white shadow-emerald-500/30',
-      pink: 'from-pink-500 to-rose-600 text-white shadow-pink-500/30',
-      blue: 'from-blue-500 to-cyan-600 text-white shadow-blue-500/30',
-    };
-    
+  // Mini bar chart
+  const MiniBarChart = ({ data }: { data: number[] }) => {
+    const max = Math.max(...data);
     return (
-      <div className={`
-        w-11 h-11 rounded-xl bg-gradient-to-br ${colorMap[color] || colorMap.violet}
-        flex items-center justify-center shadow-lg
-      `}>
-        {children}
+      <div className="flex items-end gap-1 h-10">
+        {data.map((value, i) => (
+          <div
+            key={i}
+            className="w-2 bg-primary rounded-t"
+            style={{ height: `${(value / max) * 100}%` }}
+          />
+        ))}
       </div>
     );
   };
 
+  // Dashboard Card component matching reference image style
+  const DashCard = ({ 
+    children, 
+    className = '', 
+    onClick 
+  }: { 
+    children: React.ReactNode; 
+    className?: string; 
+    onClick?: () => void;
+  }) => (
+    <div 
+      onClick={onClick}
+      className={`
+        bg-card rounded-2xl p-5 border border-border/50
+        transition-all duration-200 hover:shadow-lg
+        ${onClick ? 'cursor-pointer hover:-translate-y-0.5' : ''} 
+        ${className}
+      `}
+    >
+      {children}
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-violet-50/30 to-indigo-50 dark:from-[hsl(240,10%,4%)] dark:via-[hsl(240,10%,6%)] dark:to-[hsl(260,10%,8%)]">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-white/80 dark:bg-[hsl(240,6%,8%)]/90 backdrop-blur-sm border-b border-slate-200/50 dark:border-white/5 px-6 py-4">
+      <div className="bg-card/80 backdrop-blur-sm border-b border-border px-6 py-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Dashboard Overview</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Welcome back! Here's your business summary</p>
+            <h1 className="text-2xl font-semibold text-foreground">Hello, User!</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">Explore information and activity about your property</p>
           </div>
-          <DateRangePicker 
-            date={date}
-            onDateChange={handleDateChange}
-            mode={viewMode}
-            onModeChange={handleViewModeChange}
-          />
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Search..." className="pl-9 w-64 bg-background border-border" />
+            </div>
+            <DateRangePicker 
+              date={date}
+              onDateChange={handleDateChange}
+              mode={viewMode}
+              onModeChange={handleViewModeChange}
+            />
+            <button className="p-2 rounded-full bg-background border border-border hover:bg-muted transition-colors">
+              <MessageSquare className="h-5 w-5 text-muted-foreground" />
+            </button>
+            <button className="p-2 rounded-full bg-background border border-border hover:bg-muted transition-colors relative">
+              <Bell className="h-5 w-5 text-muted-foreground" />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full"></span>
+            </button>
+          </div>
         </div>
       </div>
 
       <div className="p-6">
         <div className="flex gap-6">
-          {/* Main content */}
-          <div className="flex-1 space-y-6">
-            {/* Top Stats Row - 3 columns */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {/* Total Margin Card with Ring Chart */}
-              <DashboardCard onClick={() => setMarginDialogOpen(true)} badge={{ value: '12%', positive: true }} gradient="violet">
-                <div className="flex items-center gap-4">
-                  <div className="relative w-20 h-20">
-                    <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 100 100">
-                      <circle
-                        className="text-violet-500/20 dark:text-violet-500/30"
-                        strokeWidth="10"
-                        stroke="currentColor"
-                        fill="transparent"
-                        r="40"
-                        cx="50"
-                        cy="50"
-                      />
-                      <circle
-                        className="text-violet-500"
-                        strokeWidth="10"
-                        strokeLinecap="round"
-                        stroke="currentColor"
-                        fill="transparent"
-                        r="40"
-                        cx="50"
-                        cy="50"
-                        strokeDasharray={`${totalMargin > 0 ? 251 : 0} 251`}
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-sm font-bold text-violet-500 dark:text-violet-400">₹{Math.round(totalMargin / 1000)}k</span>
-                    </div>
-                  </div>
+          {/* Main Content */}
+          <div className="flex-1 space-y-5">
+            {/* Top Stats Row */}
+            <div className="grid grid-cols-4 gap-4">
+              {/* Spent This Month */}
+              <DashCard>
+                <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-muted-foreground text-sm">Total Margin</p>
-                    <p className="text-2xl font-bold text-foreground">{formatCurrency(totalMargin)}</p>
-                    <button className="mt-2 px-3 py-1 bg-violet-500 hover:bg-violet-600 text-white text-xs rounded-full transition-colors">
-                      VIEW DETAILS
-                    </button>
+                    <p className="text-sm text-muted-foreground">Total Margin</p>
+                    <p className="text-2xl font-bold text-foreground mt-1">{formatCurrency(totalMargin)}</p>
                   </div>
+                  <MiniBarChart data={[40, 65, 45, 80, 55, 70, 60]} />
                 </div>
-              </DashboardCard>
+              </DashCard>
 
-              {/* Banking Services Card */}
-              <DashboardCard badge={{ value: '22%', positive: true }} gradient="orange">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-start gap-3">
-                    <IconBox color="orange">
-                      <CreditCard className="h-5 w-5" />
-                    </IconBox>
+              {/* Banking Services */}
+              <DashCard>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-primary/10">
+                      <CreditCard className="h-5 w-5 text-primary" />
+                    </div>
                     <div>
-                      <p className="text-muted-foreground text-sm">Banking Services</p>
-                      <p className="text-2xl font-bold text-foreground">{formatCurrency(bankingServicesTotal)}</p>
-                      <p className="text-xs text-muted-foreground mt-1">Margin: {formatCurrency(bankingMargin)}</p>
+                      <p className="text-sm text-muted-foreground">Banking</p>
+                      <p className="text-xl font-bold text-foreground">{bankingServicesCount}</p>
+                    </div>
+                  </div>
+                  <MiniLineChart data={[30, 50, 35, 60, 45, 70, 55]} />
+                </div>
+              </DashCard>
+
+              {/* Online Services */}
+              <DashCard>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-primary/10">
+                      <Globe className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Online</p>
+                      <p className="text-xl font-bold text-foreground">{formatCurrency(onlineServicesTotal)}</p>
                     </div>
                   </div>
                 </div>
-                {/* Mini line chart */}
-                <div className="flex justify-end mt-2">
-                  <MiniLineChart data={[40, 60, 45, 70, 55, 80, 65, 90]} color="orange" />
-                </div>
-                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                  <span className="text-emerald-500">+₹2,956</span> from last period
-                </p>
-              </DashboardCard>
+              </DashCard>
 
-              {/* Online Services Card */}
-              <DashboardCard badge={{ value: '5%', positive: false }} gradient="violet">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-start gap-3">
-                    <IconBox color="violet">
-                      <Globe className="h-5 w-5" />
-                    </IconBox>
-                    <div>
-                      <p className="text-muted-foreground text-sm">Online Services</p>
-                      <p className="text-2xl font-bold text-foreground">{formatCurrency(onlineServicesTotal)}</p>
-                      <p className="text-xs text-muted-foreground mt-1">Margin: {formatCurrency(onlineMargin)}</p>
-                    </div>
+              {/* Activity */}
+              <DashCard>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Activity</p>
+                    <p className="text-2xl font-bold text-foreground mt-1">{formatCurrency(bankingServicesTotal)}</p>
                   </div>
+                  <MiniLineChart data={[20, 40, 30, 50, 45, 60, 55, 70]} />
                 </div>
-                {/* Mini line chart */}
-                <div className="flex justify-end mt-2">
-                  <MiniLineChart data={[60, 80, 40, 90, 70, 50, 85, 75]} color="violet" />
-                </div>
-                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                  <span className="text-rose-500">-₹987</span> from last period
-                </p>
-              </DashboardCard>
+              </DashCard>
             </div>
 
-            {/* Second Row - 3 columns */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {/* Applications Card */}
-              <DashboardCard gradient="pink">
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-foreground font-semibold flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-pink-500" />
-                    Applications
-                  </h3>
-                  <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-3xl font-bold text-foreground">{formatCurrency(applicationsTotal)}</p>
-                    <p className="text-sm text-muted-foreground mt-1">{applicationsCount} applications</p>
+            {/* Balance Section */}
+            <div className="grid grid-cols-3 gap-4">
+              {/* Balance Card - Large */}
+              <DashCard className="col-span-2">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-foreground">Balance</h3>
+                    <span className="flex items-center gap-1 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                      <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
+                      On track
+                    </span>
                   </div>
-                  <MiniLineChart data={[30, 50, 40, 60, 45, 70, 55]} color="pink" />
+                  <span className="text-sm text-muted-foreground">Monthly</span>
                 </div>
-              </DashboardCard>
+                <div className="flex items-end justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Deposit</p>
+                    <p className="text-2xl font-bold text-foreground">{formatCurrency(latestCashInHand)}</p>
+                    <span className="text-xs text-primary flex items-center gap-1 mt-1">
+                      <ArrowUpRight className="h-3 w-3" /> +2.45%
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Withdrawal</p>
+                    <p className="text-2xl font-bold text-foreground">{formatCurrency(expensesTotal)}</p>
+                    <span className="text-xs text-destructive flex items-center gap-1 mt-1">
+                      <ArrowDownRight className="h-3 w-3" /> -4.75%
+                    </span>
+                  </div>
+                  {/* Line chart placeholder */}
+                  <svg width="200" height="60" className="overflow-visible">
+                    <path
+                      d="M 0 50 Q 30 45, 50 30 T 100 25 T 150 35 T 200 20"
+                      fill="none"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth="2"
+                    />
+                    <path
+                      d="M 0 50 Q 30 45, 50 30 T 100 25 T 150 35 T 200 20 L 200 60 L 0 60 Z"
+                      fill="hsl(var(--primary) / 0.1)"
+                    />
+                  </svg>
+                </div>
+              </DashCard>
 
-              {/* Printout & Photostat */}
-              <DashboardCard gradient="emerald">
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-foreground font-semibold flex items-center gap-2">
-                    <Printer className="h-4 w-4 text-emerald-500" />
-                    Printout & Photostat
-                  </h3>
-                  <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+              {/* Earnings Card */}
+              <DashCard onClick={() => setMarginDialogOpen(true)}>
+                <div className="mb-3">
+                  <p className="text-sm text-muted-foreground">Earnings</p>
+                  <p className="text-xs text-muted-foreground">Total Expense</p>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-3xl font-bold text-foreground">{formatCurrency(photostatTotal)}</p>
-                    <p className="text-sm text-muted-foreground mt-1">Margin: {formatCurrency(photostatMarginTotal)}</p>
+                <p className="text-3xl font-bold text-foreground">{formatCurrency(totalMargin)}</p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Profit is <span className="text-primary font-medium">34%</span> More than last Month
+                </p>
+                {/* Circular progress */}
+                <div className="flex items-center justify-between mt-4">
+                  <span className="text-2xl font-bold text-primary">80%</span>
+                  <svg width="60" height="60" viewBox="0 0 60 60">
+                    <circle cx="30" cy="30" r="25" fill="none" stroke="hsl(var(--muted))" strokeWidth="6" />
+                    <circle
+                      cx="30" cy="30" r="25" fill="none"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth="6"
+                      strokeLinecap="round"
+                      strokeDasharray="126 157"
+                      transform="rotate(-90 30 30)"
+                    />
+                  </svg>
+                </div>
+              </DashCard>
+            </div>
+
+            {/* Third Row */}
+            <div className="grid grid-cols-3 gap-4">
+              {/* Applications Card */}
+              <DashCard>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <FileText className="h-4 w-4 text-primary" />
                   </div>
-                  <MiniLineChart data={[25, 45, 35, 55, 40, 65, 50]} color="emerald" />
+                  <h3 className="font-medium text-foreground">Applications</h3>
                 </div>
-              </DashboardCard>
+                <p className="text-2xl font-bold text-foreground">{formatCurrency(applicationsTotal)}</p>
+                <p className="text-xs text-muted-foreground mt-1">{applicationsCount} applications</p>
+              </DashCard>
+
+              {/* Transfers Card */}
+              <DashCard>
+                <h3 className="font-medium text-foreground mb-3">Your Transfers</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Users className="h-4 w-4 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Banking Services</p>
+                        <p className="text-xs text-muted-foreground">Today</p>
+                      </div>
+                    </div>
+                    <span className="text-xs text-primary">+2.45%</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-destructive/10 flex items-center justify-center">
+                        <Receipt className="h-4 w-4 text-destructive" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Expenses</p>
+                        <p className="text-xs text-muted-foreground">Today</p>
+                      </div>
+                    </div>
+                    <span className="text-xs text-destructive">-4.75%</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Printer className="h-4 w-4 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Printout & Photostat</p>
+                        <p className="text-xs text-muted-foreground">Today</p>
+                      </div>
+                    </div>
+                    <span className="text-xs text-primary">+2.45%</span>
+                  </div>
+                </div>
+              </DashCard>
 
               {/* Pending Balance */}
-              <DashboardCard gradient="orange">
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-foreground font-semibold flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4 text-orange-500" />
-                    Pending Balance
-                  </h3>
-                  <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-3xl font-bold text-foreground">{formatCurrency(pendingBalanceTotal)}</p>
-                    <p className="text-sm text-muted-foreground mt-1">{pendingBalanceData?.length || 0} pending entries</p>
+              <DashCard>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-lg bg-destructive/10">
+                    <AlertCircle className="h-4 w-4 text-destructive" />
                   </div>
-                  <div className="w-16 h-16 relative">
-                    <svg viewBox="0 0 100 50" className="w-full h-full">
-                      <path
-                        d="M 10 50 A 40 40 0 0 1 90 50"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="8"
-                        strokeLinecap="round"
-                        className="text-orange-500/20"
-                      />
-                      <path
-                        d="M 10 50 A 40 40 0 0 1 90 50"
-                        fill="none"
-                        stroke="url(#gaugeGradient)"
-                        strokeWidth="8"
-                        strokeLinecap="round"
-                        strokeDasharray={`${pendingBalanceTotal > 0 ? 126 * 0.7 : 0} 126`}
-                      />
-                      <defs>
-                        <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                          <stop offset="0%" stopColor="#f97316" />
-                          <stop offset="100%" stopColor="#ef4444" />
-                        </linearGradient>
-                      </defs>
-                    </svg>
-                  </div>
+                  <h3 className="font-medium text-foreground">Pending Balance</h3>
                 </div>
-              </DashboardCard>
-            </div>
-
-            {/* Third Row - Expenses and Margin Distribution */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {/* Expenses Card */}
-              <DashboardCard gradient="pink">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="text-foreground font-semibold flex items-center gap-2">
-                      <Receipt className="h-4 w-4 text-rose-500" />
-                      Expenses
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-1">{expensesCount} entries this period</p>
-                  </div>
-                  <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="text-4xl font-bold text-foreground">{formatCurrency(expensesTotal)}</p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <TrendingUp className="h-4 w-4 text-rose-500" />
-                      <span className="text-sm text-rose-500">Track your expenses</span>
-                    </div>
-                  </div>
-                  <div className="w-24 h-24">
-                    <svg viewBox="0 0 100 100" className="w-full h-full">
-                      <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="12" className="text-rose-500/20" />
-                      <circle 
-                        cx="50" 
-                        cy="50" 
-                        r="40" 
-                        fill="none" 
-                        stroke="#ef4444" 
-                        strokeWidth="12"
-                        strokeLinecap="round"
-                        strokeDasharray={`${expensesTotal > 0 ? 180 : 0} 251`}
-                        transform="rotate(-90 50 50)"
-                      />
-                    </svg>
-                  </div>
-                </div>
-              </DashboardCard>
-
-              {/* Margin Distribution Chart */}
-              <DashboardCard gradient="violet">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-foreground font-semibold flex items-center gap-2">
-                    <BarChart3 className="h-4 w-4 text-violet-500" />
-                    Margin Distribution
-                  </h3>
-                  <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <Pie3DChart
-                  data={marginProportions}
-                  getColor={getServiceColor}
-                />
-              </DashboardCard>
+                <p className="text-2xl font-bold text-foreground">{formatCurrency(pendingBalanceTotal)}</p>
+                <p className="text-xs text-muted-foreground mt-1">{pendingBalanceData?.length || 0} pending entries</p>
+              </DashCard>
             </div>
 
             {/* Cash in Hand Banner */}
-            <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 rounded-2xl p-6 text-white relative overflow-hidden shadow-xl shadow-violet-500/20">
+            <div className="bg-gradient-to-r from-primary via-primary/90 to-primary/80 rounded-2xl p-6 text-primary-foreground relative overflow-hidden">
               <div className="absolute right-0 top-0 w-40 h-40 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
-              <div className="absolute right-20 bottom-0 w-32 h-32 bg-white/5 rounded-full translate-y-1/2 blur-xl"></div>
-              <div className="absolute left-10 top-0 w-20 h-20 bg-white/5 rounded-full -translate-y-1/2 blur-lg"></div>
               <div className="relative z-10 flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <Wallet className="h-5 w-5 text-white/70" />
-                    <h3 className="text-white/80 text-sm">Cash in Hand</h3>
+                    <Wallet className="h-5 w-5 opacity-80" />
+                    <h3 className="text-sm opacity-80">Cash in Hand</h3>
                   </div>
-                  <p className="text-5xl font-bold">{formatCurrency(latestCashInHand)}</p>
+                  <p className="text-4xl font-bold">{formatCurrency(latestCashInHand)}</p>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-center">
                     <div className="bg-white/20 rounded-xl p-3 backdrop-blur-sm mb-1">
-                      <span className="text-3xl font-bold">{bankingServicesCount}</span>
+                      <span className="text-2xl font-bold">{bankingServicesCount}</span>
                     </div>
-                    <span className="text-xs text-white/70">Banking</span>
+                    <span className="text-xs opacity-80">Banking</span>
                   </div>
                   <div className="text-center">
                     <div className="bg-white/20 rounded-xl p-3 backdrop-blur-sm mb-1">
-                      <span className="text-3xl font-bold">{onlineServicesCount}</span>
+                      <span className="text-2xl font-bold">{onlineServicesCount}</span>
                     </div>
-                    <span className="text-xs text-white/70">Online</span>
+                    <span className="text-xs opacity-80">Online</span>
                   </div>
                 </div>
               </div>
@@ -788,6 +575,30 @@ const Dashboard = () => {
 
           {/* Right Sidebar */}
           <div className="hidden lg:block w-80 space-y-5">
+            {/* User Profile Card */}
+            <DashCard className="text-center">
+              <Avatar className="w-16 h-16 mx-auto mb-3">
+                <AvatarImage src="" />
+                <AvatarFallback className="bg-primary/10 text-primary text-lg">U</AvatarFallback>
+              </Avatar>
+              <h3 className="font-semibold text-foreground">User Name</h3>
+              <p className="text-xs text-muted-foreground">user@example.com</p>
+              <div className="flex justify-center gap-6 mt-4 text-center">
+                <div>
+                  <p className="text-lg font-bold text-foreground">{applicationsCount}</p>
+                  <p className="text-xs text-muted-foreground">Applications</p>
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-foreground">{bankingServicesCount}</p>
+                  <p className="text-xs text-muted-foreground">Banking</p>
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-foreground">{onlineServicesCount}</p>
+                  <p className="text-xs text-muted-foreground">Online</p>
+                </div>
+              </div>
+            </DashCard>
+
             <DigitalClock />
             <NotificationBox />
             <ReminderCalendar />
@@ -801,22 +612,20 @@ const Dashboard = () => {
           <DialogHeader>
             <DialogTitle>Margin Breakdown</DialogTitle>
           </DialogHeader>
-          <div className="py-4">
-            <div className="space-y-4">
-              {marginDetails.map((item) => (
-                <div key={item.name} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
-                    <span>{item.name}</span>
-                  </div>
-                  <span className="font-semibold">{formatCurrency(item.value)}</span>
+          <div className="py-4 space-y-4">
+            {marginDetails.map((item) => (
+              <div key={item.name} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
+                  <span className="text-foreground">{item.name}</span>
                 </div>
-              ))}
-              <div className="border-t pt-2 mt-2">
-                <div className="flex items-center justify-between font-bold">
-                  <span>Total Margin</span>
-                  <span>{formatCurrency(totalMargin)}</span>
-                </div>
+                <span className="font-semibold text-foreground">{formatCurrency(item.value)}</span>
+              </div>
+            ))}
+            <div className="border-t pt-2 mt-2">
+              <div className="flex items-center justify-between font-bold">
+                <span className="text-foreground">Total Margin</span>
+                <span className="text-foreground">{formatCurrency(totalMargin)}</span>
               </div>
             </div>
           </div>

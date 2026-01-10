@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Search, Plus, Edit, Trash2, Download, Printer } from 'lucide-react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { Search, Plus, Edit, Trash2, Download, Printer, Upload, Save, X, FileSpreadsheet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,9 +22,12 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
 import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
 import { exportToExcel } from '@/utils/calculateUtils';
 import { escapeHtml } from '@/lib/sanitize';
+import * as XLSX from 'xlsx';
+import Papa from 'papaparse';
 
 interface AccountDetail {
   id: string;
@@ -45,8 +48,10 @@ const AccountDetails = () => {
   const [editingAccount, setEditingAccount] = useState<AccountDetail | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [extractedAccounts, setExtractedAccounts] = useState<{ accountNumber: string; type: string }[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Form state
   const [form, setForm] = useState({
     name: '',
     account_number: '',
@@ -78,9 +83,7 @@ const AccountDetails = () => {
   }, []);
 
   const formatAadhar = (value: string) => {
-    // Remove all non-digits
     const numbers = value.replace(/\D/g, '');
-    // Add space after every 4 digits
     return numbers.replace(/(\d{4})(?=\d)/g, '$1 ');
   };
 
@@ -91,22 +94,121 @@ const AccountDetails = () => {
     }
   };
 
+  // Extract account numbers from CSV/Excel
+  const extractAccountNumbers = (data: Record<string, any>[]): { accountNumber: string; type: string }[] => {
+    const accountSet = new Map<string, string>();
+    
+    for (const row of data) {
+      // Look for FROM ACCOUNT
+      for (const [key, value] of Object.entries(row)) {
+        const keyLower = key.toLowerCase();
+        const val = String(value || '').trim();
+        
+        if (val && /^\d{9,18}$/.test(val.replace(/\s/g, ''))) {
+          const cleanAccount = val.replace(/\s/g, '');
+          if (keyLower.includes('from') || keyLower.includes('source') || keyLower.includes('debit')) {
+            if (!accountSet.has(cleanAccount)) accountSet.set(cleanAccount, 'from');
+            else if (accountSet.get(cleanAccount) === 'to') accountSet.set(cleanAccount, 'both');
+          } else if (keyLower.includes('to') || keyLower.includes('dest') || keyLower.includes('credit') || keyLower.includes('beneficiary')) {
+            if (!accountSet.has(cleanAccount)) accountSet.set(cleanAccount, 'to');
+            else if (accountSet.get(cleanAccount) === 'from') accountSet.set(cleanAccount, 'both');
+          } else if (keyLower.includes('account')) {
+            if (!accountSet.has(cleanAccount)) accountSet.set(cleanAccount, 'unknown');
+          }
+        }
+      }
+    }
+    
+    return Array.from(accountSet.entries()).map(([accountNumber, type]) => ({ accountNumber, type }));
+  };
+
+  const parseCSV = (content: string): Record<string, any>[] => {
+    const result = Papa.parse(content, { header: true, skipEmptyLines: true, transformHeader: (h) => h.trim() });
+    return result.data as Record<string, any>[];
+  };
+
+  const parseExcel = async (file: File): Promise<Record<string, any>[]> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = e.target?.result;
+          const workbook = XLSX.read(data, { type: 'binary' });
+          const sheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonData = XLSX.utils.sheet_to_json(sheet);
+          resolve(jsonData);
+        } catch (error) { reject(error); }
+      };
+      reader.onerror = reject;
+      reader.readAsBinaryString(file);
+    });
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const fileName = file.name.toLowerCase();
+    const isCSV = fileName.endsWith('.csv');
+    const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
+
+    if (!isCSV && !isExcel) {
+      toast.error("Please upload a CSV or Excel file");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      let data: Record<string, any>[];
+      if (isExcel) data = await parseExcel(file);
+      else {
+        const content = await file.text();
+        data = parseCSV(content);
+      }
+
+      const accounts = extractAccountNumbers(data);
+      
+      if (accounts.length === 0) {
+        toast.error("No account numbers found in the file");
+        return;
+      }
+
+      // Filter out existing accounts
+      const existingNumbers = new Set(accountDetails.map(a => a.account_number));
+      const newAccounts = accounts.filter(a => !existingNumbers.has(a.accountNumber));
+      
+      if (newAccounts.length === 0) {
+        toast.info("All accounts already exist in the system");
+        return;
+      }
+
+      // Save new accounts
+      const insertData = newAccounts.map(a => ({
+        account_number: a.accountNumber,
+        name: '',
+        aadhar_number: '',
+        mobile_number: null,
+        address: null,
+      }));
+
+      const { error } = await supabase.from('account_details').insert(insertData);
+      if (error) throw error;
+
+      toast.success(`${newAccounts.length} account(s) added successfully`);
+      await fetchAccountDetails();
+    } catch (error) {
+      console.error('Error processing file:', error);
+      toast.error("Failed to process file");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   const handleAddAccount = async () => {
     try {
       const cleanAadhar = form.aadhar_number.replace(/\s/g, '');
       
-      // Check for duplicates before inserting
-      const { data: existingAadhar } = await supabase
-        .from('account_details')
-        .select('id')
-        .eq('aadhar_number', cleanAadhar)
-        .single();
-
-      if (existingAadhar) {
-        toast.error("An account with this Aadhar number already exists");
-        return;
-      }
-
       const { data: existingAccount } = await supabase
         .from('account_details')
         .select('id')
@@ -118,7 +220,7 @@ const AccountDetails = () => {
         return;
       }
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('account_details')
         .insert({
           name: form.name,
@@ -126,23 +228,9 @@ const AccountDetails = () => {
           aadhar_number: cleanAadhar,
           mobile_number: form.mobile_number || null,
           address: form.address || null,
-        })
-        .select();
+        });
 
-      if (error) {
-        if (error.code === '23505') {
-          if (error.message.includes('unique_aadhar_number')) {
-            toast.error("An account with this Aadhar number already exists");
-          } else if (error.message.includes('unique_account_number')) {
-            toast.error("An account with this account number already exists");
-          } else {
-            toast.error("This data already exists in the system");
-          }
-        } else {
-          throw error;
-        }
-        return;
-      }
+      if (error) throw error;
       
       toast.success("Account details added successfully");
       await fetchAccountDetails();
@@ -160,19 +248,6 @@ const AccountDetails = () => {
     try {
       const cleanAadhar = form.aadhar_number.replace(/\s/g, '');
       
-      // Check for duplicates before updating (excluding current record)
-      const { data: existingAadhar } = await supabase
-        .from('account_details')
-        .select('id')
-        .eq('aadhar_number', cleanAadhar)
-        .neq('id', editingAccount.id)
-        .single();
-
-      if (existingAadhar) {
-        toast.error("An account with this Aadhar number already exists");
-        return;
-      }
-
       const { data: existingAccount } = await supabase
         .from('account_details')
         .select('id')
@@ -196,20 +271,7 @@ const AccountDetails = () => {
         })
         .eq('id', editingAccount.id);
 
-      if (error) {
-        if (error.code === '23505') {
-          if (error.message.includes('unique_aadhar_number')) {
-            toast.error("An account with this Aadhar number already exists");
-          } else if (error.message.includes('unique_account_number')) {
-            toast.error("An account with this account number already exists");
-          } else {
-            toast.error("This data already exists in the system");
-          }
-        } else {
-          throw error;
-        }
-        return;
-      }
+      if (error) throw error;
       
       toast.success("Account details updated successfully");
       await fetchAccountDetails();
@@ -244,13 +306,7 @@ const AccountDetails = () => {
   };
 
   const resetForm = () => {
-    setForm({
-      name: '',
-      account_number: '',
-      aadhar_number: '',
-      mobile_number: '',
-      address: ''
-    });
+    setForm({ name: '', account_number: '', aadhar_number: '', mobile_number: '', address: '' });
   };
 
   const openEdit = (account: AccountDetail) => {
@@ -348,7 +404,7 @@ const AccountDetails = () => {
   }, [accountDetails, searchTerm]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-700">
+    <div className="min-h-screen bg-background">
       <PageHeader
         title="Account Details"
         searchValue={searchTerm}
@@ -369,57 +425,25 @@ const AccountDetails = () => {
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label htmlFor="name">Name *</Label>
-                <Input
-                  id="name"
-                  value={form.name}
-                  onChange={(e) => setForm(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Customer name"
-                  required
-                />
+                <Input id="name" value={form.name} onChange={(e) => setForm(prev => ({ ...prev, name: e.target.value }))} placeholder="Customer name" required />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="account_number">Account Number *</Label>
-                <Input
-                  id="account_number"
-                  value={form.account_number}
-                  onChange={(e) => setForm(prev => ({ ...prev, account_number: e.target.value }))}
-                  placeholder="Account number"
-                  required
-                />
+                <Input id="account_number" value={form.account_number} onChange={(e) => setForm(prev => ({ ...prev, account_number: e.target.value }))} placeholder="Account number" required />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="aadhar_number">Aadhar Number *</Label>
-                <Input
-                  id="aadhar_number"
-                  value={form.aadhar_number}
-                  onChange={handleAadharChange}
-                  placeholder="1234 5678 9012"
-                  maxLength={14}
-                  required
-                />
+                <Input id="aadhar_number" value={form.aadhar_number} onChange={handleAadharChange} placeholder="1234 5678 9012" maxLength={14} required />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="address">Address</Label>
-                <Input
-                  id="address"
-                  value={form.address}
-                  onChange={(e) => setForm(prev => ({ ...prev, address: e.target.value }))}
-                  placeholder="Address (optional)"
-                />
+                <Input id="address" value={form.address} onChange={(e) => setForm(prev => ({ ...prev, address: e.target.value }))} placeholder="Address (optional)" />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="mobile_number">Mobile Number</Label>
-                <Input
-                  id="mobile_number"
-                  value={form.mobile_number}
-                  onChange={(e) => setForm(prev => ({ ...prev, mobile_number: e.target.value }))}
-                  placeholder="Mobile number (optional)"
-                />
+                <Input id="mobile_number" value={form.mobile_number} onChange={(e) => setForm(prev => ({ ...prev, mobile_number: e.target.value }))} placeholder="Mobile number (optional)" />
               </div>
-              <Button 
-                onClick={editingAccount ? handleEditAccount : handleAddAccount}
-                disabled={!form.name || !form.account_number || !form.aadhar_number}
-              >
+              <Button onClick={editingAccount ? handleEditAccount : handleAddAccount} disabled={!form.name || !form.account_number || !form.aadhar_number}>
                 {editingAccount ? 'Update Account' : 'Save Account'}
               </Button>
             </div>
@@ -437,18 +461,53 @@ const AccountDetails = () => {
         </Button>
       </PageHeader>
 
-      <div className="flex-1 p-6">
-        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden">
+      <div className="flex-1 p-6 space-y-4">
+        {/* Compact Upload Section */}
+        <Card className="border-primary/20">
+          <CardContent className="py-4">
+            <div className="flex items-center gap-4">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                onChange={handleFileUpload}
+                className="hidden"
+                disabled={isUploading}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className="gap-2"
+              >
+                <Upload className="h-4 w-4" />
+                Browse CSV/Excel
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                Upload CSV or Excel file to extract account numbers (duplicates will be skipped)
+              </span>
+              {isUploading && (
+                <div className="flex items-center gap-2 text-primary">
+                  <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  <span className="text-sm">Processing...</span>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="bg-card rounded-lg shadow-sm border overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>S.No</TableHead>
+                <TableHead className="w-16">S.No</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Account Number</TableHead>
                 <TableHead>Aadhar Number</TableHead>
                 <TableHead>Address</TableHead>
                 <TableHead>Mobile Number</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="w-24">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -468,25 +527,17 @@ const AccountDetails = () => {
                 filteredAccountDetails.map((account, index) => (
                   <TableRow key={account.id}>
                     <TableCell>{index + 1}</TableCell>
-                    <TableCell className="font-medium">{account.name}</TableCell>
+                    <TableCell className="font-medium">{account.name || '-'}</TableCell>
                     <TableCell>{account.account_number}</TableCell>
-                    <TableCell>{formatAadhar(account.aadhar_number)}</TableCell>
+                    <TableCell>{account.aadhar_number ? formatAadhar(account.aadhar_number) : '-'}</TableCell>
                     <TableCell>{account.address || '-'}</TableCell>
                     <TableCell>{account.mobile_number || '-'}</TableCell>
                     <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openEdit(account)}
-                        >
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => openEdit(account)}>
                           <Edit size={14} />
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => initiateDelete(account.id)}
-                        >
+                        <Button variant="ghost" size="sm" onClick={() => initiateDelete(account.id)}>
                           <Trash2 size={14} />
                         </Button>
                       </div>
@@ -501,13 +552,10 @@ const AccountDetails = () => {
 
       <DeleteConfirmation
         isOpen={showDeleteConfirm}
-        onClose={() => {
-          setShowDeleteConfirm(false);
-          setDeleteId(null);
-        }}
+        onClose={() => { setShowDeleteConfirm(false); setDeleteId(null); }}
         onConfirm={handleDeleteAccount}
-        title="Delete Account Details?"
-        description="Are you sure you want to delete this account details? This action cannot be undone."
+        title="Delete Account"
+        description="Are you sure you want to delete this account? This action cannot be undone."
       />
     </div>
   );
