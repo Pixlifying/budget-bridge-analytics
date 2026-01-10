@@ -1,26 +1,8 @@
-
 import { useEffect, useState } from 'react';
-import {
-  CreditCard,
-  FileText,
-  Globe, 
-  BarChart3,
-  AlertCircle,
-  Wallet,
-  Printer,
-  Receipt,
-  TrendingUp,
-  Search,
-  Bell,
-  MessageSquare,
-  Users,
-  ArrowUpRight,
-  ArrowDownRight,
-} from 'lucide-react';
+import { CreditCard, FileText, Globe, BarChart3, AlertCircle, Wallet, Printer, Receipt, TrendingUp, Search, Bell, MessageSquare, Users, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
 import { format, startOfMonth, endOfMonth, startOfDay, endOfDay } from 'date-fns';
-
 import { supabase } from '@/integrations/supabase/client';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import NotificationBox from '@/components/ui/NotificationBox';
@@ -28,26 +10,19 @@ import ReminderCalendar from '@/components/ui/ReminderCalendar';
 import DigitalClock from '@/components/ui/DigitalClock';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-  formatCurrency,
-} from '@/utils/calculateUtils';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-
+import { formatCurrency } from '@/utils/calculateUtils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 const Dashboard = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
   const [marginDialogOpen, setMarginDialogOpen] = useState(false);
-
-  const { data: bankingData, error: bankingError } = useQuery({
+  const {
+    data: bankingData,
+    error: bankingError
+  } = useQuery({
     queryKey: ['bankingServices', viewMode, date],
     queryFn: async () => {
       let query = supabase.from('banking_services').select('*');
-      
       if (viewMode === 'day') {
         const dateStr = format(date, 'yyyy-MM-dd');
         query = query.eq('date', dateStr);
@@ -56,18 +31,23 @@ const Dashboard = () => {
         const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
         query = query.gte('date', startDate).lte('date', endDate);
       }
-      
-      const { data, error } = await query.order('date', { ascending: false });
+      const {
+        data,
+        error
+      } = await query.order('date', {
+        ascending: false
+      });
       if (error) throw error;
       return data;
     }
   });
-
-  const { data: onlineData, error: onlineError } = useQuery({
+  const {
+    data: onlineData,
+    error: onlineError
+  } = useQuery({
     queryKey: ['onlineServices', viewMode, date],
     queryFn: async () => {
       let query = supabase.from('online_services').select('*');
-      
       if (viewMode === 'day') {
         const startDateStr = format(startOfDay(date), 'yyyy-MM-dd');
         const endDateStr = format(endOfDay(date), 'yyyy-MM-dd');
@@ -77,18 +57,23 @@ const Dashboard = () => {
         const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
         query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59');
       }
-      
-      const { data, error } = await query.order('date', { ascending: false });
+      const {
+        data,
+        error
+      } = await query.order('date', {
+        ascending: false
+      });
       if (error) throw error;
       return data;
     }
   });
-
-  const { data: applicationsData, error: applicationsError } = useQuery({
+  const {
+    data: applicationsData,
+    error: applicationsError
+  } = useQuery({
     queryKey: ['applications', viewMode, date],
     queryFn: async () => {
       let query = supabase.from('applications').select('*');
-      
       if (viewMode === 'day') {
         const startDateStr = format(startOfDay(date), 'yyyy-MM-dd');
         const endDateStr = format(endOfDay(date), 'yyyy-MM-dd');
@@ -98,18 +83,23 @@ const Dashboard = () => {
         const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
         query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59');
       }
-      
-      const { data, error } = await query.order('date', { ascending: false });
+      const {
+        data,
+        error
+      } = await query.order('date', {
+        ascending: false
+      });
       if (error) throw error;
       return data;
     }
   });
-
-  const { data: photostatData, error: photostatError } = useQuery({
+  const {
+    data: photostatData,
+    error: photostatError
+  } = useQuery({
     queryKey: ['photostat', viewMode, date],
     queryFn: async () => {
       let query = supabase.from('photostats').select('*');
-      
       if (viewMode === 'day') {
         const startDateStr = format(startOfDay(date), 'yyyy-MM-dd');
         const endDateStr = format(endOfDay(date), 'yyyy-MM-dd');
@@ -119,18 +109,23 @@ const Dashboard = () => {
         const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
         query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59');
       }
-      
-      const { data, error } = await query.order('date', { ascending: false });
+      const {
+        data,
+        error
+      } = await query.order('date', {
+        ascending: false
+      });
       if (error) throw error;
       return data;
     }
   });
-
-  const { data: bankingAccountsData, error: bankingAccountsError } = useQuery({
+  const {
+    data: bankingAccountsData,
+    error: bankingAccountsError
+  } = useQuery({
     queryKey: ['bankingAccounts', viewMode, date],
     queryFn: async () => {
       let query = supabase.from('banking_accounts').select('*');
-      
       if (viewMode === 'day') {
         const startDateStr = format(startOfDay(date), 'yyyy-MM-dd');
         const endDateStr = format(endOfDay(date), 'yyyy-MM-dd');
@@ -140,18 +135,23 @@ const Dashboard = () => {
         const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
         query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59');
       }
-      
-      const { data, error } = await query.order('date', { ascending: false });
+      const {
+        data,
+        error
+      } = await query.order('date', {
+        ascending: false
+      });
       if (error) throw error;
       return data;
     }
   });
-
-  const { data: pendingBalanceData, error: pendingBalanceError } = useQuery({
+  const {
+    data: pendingBalanceData,
+    error: pendingBalanceError
+  } = useQuery({
     queryKey: ['pendingBalances', viewMode, date],
     queryFn: async () => {
       let query = supabase.from('pending_balances').select('*');
-      
       if (viewMode === 'day') {
         const startDateStr = format(startOfDay(date), 'yyyy-MM-dd');
         const endDateStr = format(endOfDay(date), 'yyyy-MM-dd');
@@ -161,18 +161,23 @@ const Dashboard = () => {
         const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
         query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59');
       }
-      
-      const { data, error } = await query.order('date', { ascending: false });
+      const {
+        data,
+        error
+      } = await query.order('date', {
+        ascending: false
+      });
       if (error) throw error;
       return data;
     }
   });
-
-  const { data: expensesData, error: expensesError } = useQuery({
+  const {
+    data: expensesData,
+    error: expensesError
+  } = useQuery({
     queryKey: ['expenses', viewMode, date],
     queryFn: async () => {
       let query = supabase.from('expenses').select('*');
-      
       if (viewMode === 'day') {
         const startDateStr = format(startOfDay(date), 'yyyy-MM-dd');
         const endDateStr = format(endOfDay(date), 'yyyy-MM-dd');
@@ -182,39 +187,46 @@ const Dashboard = () => {
         const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
         query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59');
       }
-      
-      const { data, error } = await query.order('date', { ascending: false });
+      const {
+        data,
+        error
+      } = await query.order('date', {
+        ascending: false
+      });
       if (error) throw error;
       return data;
     }
   });
-
-  const { data: odRecordsData, refetch: refetchOdRecords } = useQuery({
+  const {
+    data: odRecordsData,
+    refetch: refetchOdRecords
+  } = useQuery({
     queryKey: ['odRecords'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('od_detail_records')
-        .select('cash_in_hand')
-        .order('date', { ascending: false })
-        .order('created_at', { ascending: false })
-        .limit(1);
-      
+      const {
+        data,
+        error
+      } = await supabase.from('od_detail_records').select('cash_in_hand').order('date', {
+        ascending: false
+      }).order('created_at', {
+        ascending: false
+      }).limit(1);
       if (error) throw error;
       return data;
     }
   });
-
   useEffect(() => {
-    const channel = supabase
-      .channel('od-records-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'od_detail_records' }, () => {
-        refetchOdRecords();
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
+    const channel = supabase.channel('od-records-realtime').on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'od_detail_records'
+    }, () => {
+      refetchOdRecords();
+    }).subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [refetchOdRecords]);
-
   useEffect(() => {
     if (bankingError || bankingAccountsError || onlineError || applicationsError || photostatError || pendingBalanceError || expensesError) {
       toast.error('Failed to load data');
@@ -239,79 +251,85 @@ const Dashboard = () => {
   const expensesCount = expensesData?.length || 0;
   const latestCashInHand = odRecordsData?.[0]?.cash_in_hand || 0;
   const totalMargin = bankingMargin + bankingAccountsMargin + onlineMargin + applicationsMargin + photostatMarginTotal;
-
-  const marginDetails = [
-    { name: 'Banking Services', value: bankingMargin, color: 'hsl(var(--chart-1))' },
-    { name: 'Other Banking', value: bankingAccountsMargin, color: 'hsl(var(--chart-2))' },
-    { name: 'Online Services', value: onlineMargin, color: 'hsl(var(--chart-3))' },
-    { name: 'Applications', value: applicationsMargin, color: 'hsl(var(--chart-4))' },
-    { name: 'Printout & Photostat', value: photostatMarginTotal, color: 'hsl(var(--chart-5))' },
-  ];
-
+  const marginDetails = [{
+    name: 'Banking Services',
+    value: bankingMargin,
+    color: 'hsl(var(--chart-1))'
+  }, {
+    name: 'Other Banking',
+    value: bankingAccountsMargin,
+    color: 'hsl(var(--chart-2))'
+  }, {
+    name: 'Online Services',
+    value: onlineMargin,
+    color: 'hsl(var(--chart-3))'
+  }, {
+    name: 'Applications',
+    value: applicationsMargin,
+    color: 'hsl(var(--chart-4))'
+  }, {
+    name: 'Printout & Photostat',
+    value: photostatMarginTotal,
+    color: 'hsl(var(--chart-5))'
+  }];
   const handleDateChange = (newDate: Date) => setDate(newDate);
   const handleViewModeChange = (mode: 'day' | 'month') => setViewMode(mode);
 
   // Mini line chart for cards
-  const MiniLineChart = ({ data, color = 'primary' }: { data: number[]; color?: string }) => {
+  const MiniLineChart = ({
+    data,
+    color = 'primary'
+  }: {
+    data: number[];
+    color?: string;
+  }) => {
     const max = Math.max(...data);
     const min = Math.min(...data);
     const range = max - min || 1;
     const height = 40;
     const width = 80;
     const points = data.map((value, index) => {
-      const x = (index / (data.length - 1)) * width;
-      const y = height - ((value - min) / range) * height;
+      const x = index / (data.length - 1) * width;
+      const y = height - (value - min) / range * height;
       return `${x},${y}`;
     }).join(' ');
-
-    return (
-      <svg width={width} height={height} className="overflow-visible">
+    return <svg width={width} height={height} className="overflow-visible">
         <polyline points={points} fill="none" stroke="hsl(var(--primary))" strokeWidth="2" strokeLinecap="round" />
-      </svg>
-    );
+      </svg>;
   };
 
   // Mini bar chart
-  const MiniBarChart = ({ data }: { data: number[] }) => {
+  const MiniBarChart = ({
+    data
+  }: {
+    data: number[];
+  }) => {
     const max = Math.max(...data);
-    return (
-      <div className="flex items-end gap-1 h-10">
-        {data.map((value, i) => (
-          <div
-            key={i}
-            className="w-2 bg-primary rounded-t"
-            style={{ height: `${(value / max) * 100}%` }}
-          />
-        ))}
-      </div>
-    );
+    return <div className="flex items-end gap-1 h-10">
+        {data.map((value, i) => <div key={i} className="w-2 bg-primary rounded-t" style={{
+        height: `${value / max * 100}%`
+      }} />)}
+      </div>;
   };
 
   // Dashboard Card component matching reference image style
-  const DashCard = ({ 
-    children, 
-    className = '', 
-    onClick 
-  }: { 
-    children: React.ReactNode; 
-    className?: string; 
+  const DashCard = ({
+    children,
+    className = '',
+    onClick
+  }: {
+    children: React.ReactNode;
+    className?: string;
     onClick?: () => void;
-  }) => (
-    <div 
-      onClick={onClick}
-      className={`
+  }) => <div onClick={onClick} className={`
         bg-card rounded-2xl p-5 border border-border/50
         transition-all duration-200 hover:shadow-lg
         ${onClick ? 'cursor-pointer hover:-translate-y-0.5' : ''} 
         ${className}
-      `}
-    >
+      `}>
       {children}
-    </div>
-  );
-
-  return (
-    <div className="min-h-screen bg-background">
+    </div>;
+  return <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="bg-card/80 backdrop-blur-sm border-b border-border px-6 py-4">
         <div className="flex items-center justify-between">
@@ -324,12 +342,7 @@ const Dashboard = () => {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search..." className="pl-9 w-64 bg-background border-border" />
             </div>
-            <DateRangePicker 
-              date={date}
-              onDateChange={handleDateChange}
-              mode={viewMode}
-              onModeChange={handleViewModeChange}
-            />
+            <DateRangePicker date={date} onDateChange={handleDateChange} mode={viewMode} onModeChange={handleViewModeChange} />
             <button className="p-2 rounded-full bg-background border border-border hover:bg-muted transition-colors">
               <MessageSquare className="h-5 w-5 text-muted-foreground" />
             </button>
@@ -351,7 +364,7 @@ const Dashboard = () => {
               <DashCard>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Total Margin</p>
+                    <p className="text-sm text-muted-foreground"> Margin</p>
                     <p className="text-2xl font-bold text-foreground mt-1">{formatCurrency(totalMargin)}</p>
                   </div>
                   <MiniBarChart data={[40, 65, 45, 80, 55, 70, 60]} />
@@ -366,7 +379,7 @@ const Dashboard = () => {
                       <CreditCard className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Banking</p>
+                      <p className="text-sm text-muted-foreground">Banking Txn</p>
                       <p className="text-xl font-bold text-foreground">{bankingServicesCount}</p>
                     </div>
                   </div>
@@ -382,7 +395,7 @@ const Dashboard = () => {
                       <Globe className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Online</p>
+                      <p className="text-sm text-muted-foreground">Online Services</p>
                       <p className="text-xl font-bold text-foreground">{formatCurrency(onlineServicesTotal)}</p>
                     </div>
                   </div>
@@ -419,29 +432,17 @@ const Dashboard = () => {
                   <div>
                     <p className="text-sm text-muted-foreground">Deposit</p>
                     <p className="text-2xl font-bold text-foreground">{formatCurrency(latestCashInHand)}</p>
-                    <span className="text-xs text-primary flex items-center gap-1 mt-1">
-                      <ArrowUpRight className="h-3 w-3" /> +2.45%
-                    </span>
+                    
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Withdrawal</p>
                     <p className="text-2xl font-bold text-foreground">{formatCurrency(expensesTotal)}</p>
-                    <span className="text-xs text-destructive flex items-center gap-1 mt-1">
-                      <ArrowDownRight className="h-3 w-3" /> -4.75%
-                    </span>
+                    
                   </div>
                   {/* Line chart placeholder */}
                   <svg width="200" height="60" className="overflow-visible">
-                    <path
-                      d="M 0 50 Q 30 45, 50 30 T 100 25 T 150 35 T 200 20"
-                      fill="none"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth="2"
-                    />
-                    <path
-                      d="M 0 50 Q 30 45, 50 30 T 100 25 T 150 35 T 200 20 L 200 60 L 0 60 Z"
-                      fill="hsl(var(--primary) / 0.1)"
-                    />
+                    <path d="M 0 50 Q 30 45, 50 30 T 100 25 T 150 35 T 200 20" fill="none" stroke="hsl(var(--primary))" strokeWidth="2" />
+                    <path d="M 0 50 Q 30 45, 50 30 T 100 25 T 150 35 T 200 20 L 200 60 L 0 60 Z" fill="hsl(var(--primary) / 0.1)" />
                   </svg>
                 </div>
               </DashCard>
@@ -461,14 +462,7 @@ const Dashboard = () => {
                   <span className="text-2xl font-bold text-primary">80%</span>
                   <svg width="60" height="60" viewBox="0 0 60 60">
                     <circle cx="30" cy="30" r="25" fill="none" stroke="hsl(var(--muted))" strokeWidth="6" />
-                    <circle
-                      cx="30" cy="30" r="25" fill="none"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth="6"
-                      strokeLinecap="round"
-                      strokeDasharray="126 157"
-                      transform="rotate(-90 30 30)"
-                    />
+                    <circle cx="30" cy="30" r="25" fill="none" stroke="hsl(var(--primary))" strokeWidth="6" strokeLinecap="round" strokeDasharray="126 157" transform="rotate(-90 30 30)" />
                   </svg>
                 </div>
               </DashCard>
@@ -490,7 +484,7 @@ const Dashboard = () => {
 
               {/* Transfers Card */}
               <DashCard>
-                <h3 className="font-medium text-foreground mb-3">Your Transfers</h3>
+                <h3 className="font-medium text-foreground mb-3">Recent Activities</h3>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -613,15 +607,15 @@ const Dashboard = () => {
             <DialogTitle>Margin Breakdown</DialogTitle>
           </DialogHeader>
           <div className="py-4 space-y-4">
-            {marginDetails.map((item) => (
-              <div key={item.name} className="flex items-center justify-between">
+            {marginDetails.map(item => <div key={item.name} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
+                  <div className="w-3 h-3 rounded-full" style={{
+                backgroundColor: item.color
+              }}></div>
                   <span className="text-foreground">{item.name}</span>
                 </div>
                 <span className="font-semibold text-foreground">{formatCurrency(item.value)}</span>
-              </div>
-            ))}
+              </div>)}
             <div className="border-t pt-2 mt-2">
               <div className="flex items-center justify-between font-bold">
                 <span className="text-foreground">Total Margin</span>
@@ -631,8 +625,6 @@ const Dashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
-  );
+    </div>;
 };
-
 export default Dashboard;
