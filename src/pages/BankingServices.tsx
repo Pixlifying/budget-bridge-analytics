@@ -1,6 +1,5 @@
-
-import { useState, useEffect } from 'react';
-import { CreditCard, Plus, Edit, Trash2, Printer } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { CreditCard, Plus, Edit, Trash2, Printer, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency, formatDate, filterByDate, filterByMonth, calculateBankingServicesMargin } from '@/utils/calculateUtils';
@@ -20,6 +19,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { format } from 'date-fns';
+import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
 
 interface BankingService {
   id: string;
@@ -39,6 +40,7 @@ const BankingServices = () => {
   const [editingEntry, setEditingEntry] = useState<BankingService | null>(null);
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state for inline entry
   const [newEntry, setNewEntry] = useState({
@@ -105,6 +107,157 @@ const BankingServices = () => {
       setFilteredServices(filterByMonth(bankingServices, date));
     }
   }, [date, viewMode, bankingServices]);
+
+  // Process CSV/Excel file using PapaParse
+  const processFile = async (file: File) => {
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    
+    try {
+      let rows: any[] = [];
+      
+      if (fileExtension === 'csv') {
+        // Parse CSV with PapaParse
+        const result = await new Promise<Papa.ParseResult<any>>((resolve, reject) => {
+          Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: resolve,
+            error: reject,
+          });
+        });
+        rows = result.data;
+      } else if (fileExtension === 'xlsx' || fileExtension === 'xls') {
+        // Parse Excel file
+        const arrayBuffer = await file.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        rows = XLSX.utils.sheet_to_json(worksheet);
+      } else {
+        toast.error('Please upload a CSV or Excel file');
+        return;
+      }
+
+      if (rows.length === 0) {
+        toast.error('No data found in file');
+        return;
+      }
+
+      // Find AMOUNT and TRANSACTION ID columns (case-insensitive)
+      const headers = Object.keys(rows[0]);
+      const amountKey = headers.find(h => h.toUpperCase().includes('AMOUNT'));
+      const transactionIdKey = headers.find(h => 
+        h.toUpperCase().includes('TRANSACTION') || 
+        h.toUpperCase().includes('TXN') ||
+        h.toUpperCase().includes('ID')
+      );
+
+      if (!amountKey) {
+        toast.error('AMOUNT column not found in file');
+        return;
+      }
+
+      // Process each row and calculate amounts
+      let totalAmount = 0;
+      let extraAmount = 0;
+      let transactionCount = 0;
+
+      rows.forEach((row) => {
+        // Parse amount value
+        let amount = 0;
+        const amountValue = row[amountKey];
+        
+        if (typeof amountValue === 'number') {
+          amount = amountValue;
+        } else if (typeof amountValue === 'string') {
+          // Remove currency symbols and commas
+          const cleanedAmount = amountValue.replace(/[₹$,\s]/g, '');
+          amount = parseFloat(cleanedAmount) || 0;
+        }
+
+        // Skip if amount is 0 or negative
+        if (amount <= 0) return;
+
+        // If amount > 10000, cap at 10000 and add excess to extra_amount
+        if (amount > 10000) {
+          totalAmount += 10000;
+          extraAmount += (amount - 10000);
+        } else {
+          totalAmount += amount;
+        }
+
+        // Count transaction
+        transactionCount++;
+      });
+
+      if (transactionCount === 0) {
+        toast.error('No valid transactions found in file');
+        return;
+      }
+
+      // Calculate margin only on the capped amount (not extra_amount)
+      const margin = calculateBankingServicesMargin(totalAmount);
+
+      // Update form with extracted data
+      setNewEntry({
+        date: new Date().toISOString().split('T')[0],
+        amount: totalAmount,
+        transaction_count: transactionCount,
+        extra_amount: extraAmount,
+      });
+
+      toast.success(`Extracted ${transactionCount} transactions. Total: ₹${totalAmount.toLocaleString()}, Extra: ₹${extraAmount.toLocaleString()}`);
+
+      // Auto-save the entry
+      const { data, error } = await supabase
+        .from('banking_services')
+        .insert({
+          date: new Date().toISOString(),
+          amount: totalAmount,
+          margin: margin,
+          transaction_count: transactionCount,
+          extra_amount: extraAmount,
+        })
+        .select();
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const newService: BankingService = {
+          id: data[0].id,
+          date: new Date(data[0].date),
+          amount: Number(data[0].amount),
+          margin: Number(data[0].margin),
+          transaction_count: Number(data[0].transaction_count),
+          extra_amount: Number(data[0].extra_amount || 0),
+          created_at: data[0].created_at
+        };
+
+        setBankingServices(prev => [newService, ...prev]);
+        setNewEntry({
+          date: new Date().toISOString().split('T')[0],
+          amount: 0,
+          transaction_count: 1,
+          extra_amount: 0,
+        });
+        toast.success('Banking service saved successfully');
+      }
+    } catch (error) {
+      console.error('Error processing file:', error);
+      toast.error('Failed to process file');
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      processFile(file);
+    }
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const handleAddEntry = async () => {
     if (!newEntry.amount || !newEntry.transaction_count) {
@@ -249,6 +402,7 @@ const BankingServices = () => {
                 <th>Date</th>
                 <th>Transaction Count</th>
                 <th>Amount</th>
+                <th>Extra Amount</th>
                 <th>Margin</th>
               </tr>
             </thead>
@@ -258,6 +412,7 @@ const BankingServices = () => {
                   <td>${escapeHtml(format(service.date, 'dd/MM/yyyy'))}</td>
                   <td>${escapeHtml(service.transaction_count.toString())}</td>
                   <td>₹${escapeHtml(service.amount.toFixed(2))}</td>
+                  <td>₹${escapeHtml((service.extra_amount || 0).toFixed(2))}</td>
                   <td>₹${escapeHtml(service.margin.toFixed(2))}</td>
                 </tr>
               `).join('')}
@@ -275,6 +430,7 @@ const BankingServices = () => {
   const totalServices = filteredServices.length;
   const totalAmount = filteredServices.reduce((sum, service) => sum + service.amount, 0);
   const totalTransactions = filteredServices.reduce((sum, service) => sum + service.transaction_count, 0);
+  const totalExtraAmount = filteredServices.reduce((sum, service) => sum + (service.extra_amount || 0), 0);
   
   // Filter banking accounts by date/month
   const filteredBankingAccounts = viewMode === 'day' 
@@ -320,8 +476,30 @@ const BankingServices = () => {
       }
     >
       {/* Add Banking Service Form */}
-      <div className="mb-6 p-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg shadow-lg">
-        <h3 className="text-lg font-semibold mb-4">Add Banking Service</h3>
+      <div className="mb-6 p-4 bg-card backdrop-blur-sm rounded-lg shadow-lg border border-border">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-foreground">Add Banking Service</h3>
+          {/* Small Browse Button */}
+          <div className="flex items-center gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,.xlsx,.xls"
+              onChange={handleFileUpload}
+              className="hidden"
+              id="csv-upload"
+            />
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-1"
+            >
+              <Upload size={14} />
+              Browse CSV/Excel
+            </Button>
+          </div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
           <div>
             <Label htmlFor="date">Date</Label>
@@ -344,7 +522,7 @@ const BankingServices = () => {
             />
           </div>
           <div>
-            <Label htmlFor="amount">Amount</Label>
+            <Label htmlFor="amount">Amount (Max ₹10,000/txn)</Label>
             <Input
               id="amount"
               type="number"
@@ -367,9 +545,12 @@ const BankingServices = () => {
             Save
           </Button>
         </div>
+        <p className="text-xs text-muted-foreground mt-2">
+          * Margin is calculated only on Amount (capped at ₹10,000 per transaction). Extra amount is saved separately.
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
         <StatCard 
           title="Total Services"
           value={totalServices.toString()}
@@ -383,6 +564,11 @@ const BankingServices = () => {
         <StatCard 
           title="Total Amount"
           value={formatCurrency(totalAmount)}
+          icon={<CreditCard size={20} />}
+        />
+        <StatCard 
+          title="Extra Amount"
+          value={formatCurrency(totalExtraAmount)}
           icon={<CreditCard size={20} />}
         />
         <StatCard 
