@@ -230,3 +230,21 @@
 .animate-slide-left-right {
   animation: slide-left-right 3s ease-in-out infinite;
 }
+
+/* Ticker animation for recent activities */
+@keyframes ticker {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+.animate-ticker {
+  animation: ticker 20s linear infinite;
+}
+
+.animate-ticker:hover {
+  animation-play-state: paused;
+}

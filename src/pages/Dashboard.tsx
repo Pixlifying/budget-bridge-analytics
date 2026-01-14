@@ -23,7 +23,8 @@ const Dashboard = () => {
 
   const {
     data: bankingData,
-    error: bankingError
+    error: bankingError,
+    refetch: refetchBanking
   } = useQuery({
     queryKey: ['bankingServices', viewMode, date],
     queryFn: async () => {
@@ -39,7 +40,8 @@ const Dashboard = () => {
       const { data, error } = await query.order('date', { ascending: false });
       if (error) throw error;
       return data;
-    }
+    },
+    refetchInterval: 5000, // Real-time refresh every 5 seconds
   });
 
   // Previous month banking data for comparison
@@ -60,7 +62,8 @@ const Dashboard = () => {
 
   const {
     data: onlineData,
-    error: onlineError
+    error: onlineError,
+    refetch: refetchOnline
   } = useQuery({
     queryKey: ['onlineServices', viewMode, date],
     queryFn: async () => {
@@ -77,7 +80,8 @@ const Dashboard = () => {
       const { data, error } = await query.order('date', { ascending: false });
       if (error) throw error;
       return data;
-    }
+    },
+    refetchInterval: 5000,
   });
 
   // Previous month online services for comparison
@@ -98,7 +102,8 @@ const Dashboard = () => {
 
   const {
     data: applicationsData,
-    error: applicationsError
+    error: applicationsError,
+    refetch: refetchApplications
   } = useQuery({
     queryKey: ['applications', viewMode, date],
     queryFn: async () => {
@@ -115,12 +120,14 @@ const Dashboard = () => {
       const { data, error } = await query.order('date', { ascending: false });
       if (error) throw error;
       return data;
-    }
+    },
+    refetchInterval: 5000,
   });
 
   const {
     data: photostatData,
-    error: photostatError
+    error: photostatError,
+    refetch: refetchPhotostat
   } = useQuery({
     queryKey: ['photostat', viewMode, date],
     queryFn: async () => {
@@ -137,12 +144,14 @@ const Dashboard = () => {
       const { data, error } = await query.order('date', { ascending: false });
       if (error) throw error;
       return data;
-    }
+    },
+    refetchInterval: 5000,
   });
 
   const {
     data: bankingAccountsData,
-    error: bankingAccountsError
+    error: bankingAccountsError,
+    refetch: refetchBankingAccounts
   } = useQuery({
     queryKey: ['bankingAccounts', viewMode, date],
     queryFn: async () => {
@@ -159,12 +168,14 @@ const Dashboard = () => {
       const { data, error } = await query.order('date', { ascending: false });
       if (error) throw error;
       return data;
-    }
+    },
+    refetchInterval: 5000,
   });
 
   const {
     data: pendingBalanceData,
-    error: pendingBalanceError
+    error: pendingBalanceError,
+    refetch: refetchPendingBalance
   } = useQuery({
     queryKey: ['pendingBalances', viewMode, date],
     queryFn: async () => {
@@ -181,12 +192,14 @@ const Dashboard = () => {
       const { data, error } = await query.order('date', { ascending: false });
       if (error) throw error;
       return data;
-    }
+    },
+    refetchInterval: 5000,
   });
 
   const {
     data: expensesData,
-    error: expensesError
+    error: expensesError,
+    refetch: refetchExpenses
   } = useQuery({
     queryKey: ['expenses', viewMode, date],
     queryFn: async () => {
@@ -203,7 +216,8 @@ const Dashboard = () => {
       const { data, error } = await query.order('date', { ascending: false });
       if (error) throw error;
       return data;
-    }
+    },
+    refetchInterval: 5000,
   });
 
   // Previous month expenses for comparison
@@ -236,11 +250,12 @@ const Dashboard = () => {
         .limit(1);
       if (error) throw error;
       return data;
-    }
+    },
+    refetchInterval: 5000,
   });
 
-  // Recent activities - fetch latest 5 entries from various tables
-  const { data: recentActivitiesData } = useQuery({
+  // Recent activities - fetch latest 10 entries for ticker
+  const { data: recentActivitiesData, refetch: refetchActivities } = useQuery({
     queryKey: ['recentActivities'],
     queryFn: async () => {
       const activities: Array<{
@@ -258,7 +273,7 @@ const Dashboard = () => {
         .from('banking_services')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(2);
+        .limit(3);
       
       banking?.forEach(item => {
         activities.push({
@@ -277,7 +292,7 @@ const Dashboard = () => {
         .from('online_services')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(2);
+        .limit(3);
 
       online?.forEach(item => {
         activities.push({
@@ -296,7 +311,7 @@ const Dashboard = () => {
         .from('expenses')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(2);
+        .limit(3);
 
       expenses?.forEach(item => {
         activities.push({
@@ -310,11 +325,31 @@ const Dashboard = () => {
         });
       });
 
-      // Sort by date and return latest 5
+      // Fetch latest applications
+      const { data: applications } = await supabase
+        .from('applications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(2);
+
+      applications?.forEach(item => {
+        activities.push({
+          id: `app-${item.id}`,
+          type: 'Application',
+          description: item.customer_name,
+          amount: item.amount,
+          date: item.date,
+          icon: 'application',
+          color: 'primary'
+        });
+      });
+
+      // Sort by date and return latest 10
       return activities
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, 5);
-    }
+        .slice(0, 10);
+    },
+    refetchInterval: 10000,
   });
 
   // Fetch daily margin data for the current month for charts
@@ -337,17 +372,20 @@ const Dashboard = () => {
   });
 
   useEffect(() => {
-    const channel = supabase.channel('od-records-realtime').on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'od_detail_records'
-    }, () => {
-      refetchOdRecords();
-    }).subscribe();
+    const channel = supabase.channel('dashboard-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'od_detail_records' }, () => refetchOdRecords())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'banking_services' }, () => refetchBanking())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'online_services' }, () => refetchOnline())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, () => refetchApplications())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'photostats' }, () => refetchPhotostat())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'banking_accounts' }, () => refetchBankingAccounts())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, () => refetchExpenses())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pending_balances' }, () => refetchPendingBalance())
+      .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [refetchOdRecords]);
+  }, [refetchOdRecords, refetchBanking, refetchOnline, refetchApplications, refetchPhotostat, refetchBankingAccounts, refetchExpenses, refetchPendingBalance]);
 
   useEffect(() => {
     if (bankingError || bankingAccountsError || onlineError || applicationsError || photostatError || pendingBalanceError || expensesError) {
@@ -703,70 +741,67 @@ const Dashboard = () => {
               </DashCard>
             </div>
 
-            {/* Third Row - Earnings & Recent Activities */}
+            {/* Third Row - Banking Margin & Recent Activities */}
             <div className="grid grid-cols-2 gap-4">
-              {/* Earnings Card */}
+              {/* Banking Margin Breakdown */}
               <DashCard onClick={() => setMarginDialogOpen(true)}>
-                <div className="mb-3">
-                  <p className="text-sm text-muted-foreground">Earnings</p>
-                  <p className="text-xs text-muted-foreground">Net Profit</p>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <BarChart3 className="h-4 w-4 text-primary" />
+                  </div>
+                  <h3 className="font-medium text-foreground">Margin Breakdown</h3>
                 </div>
-                <p className="text-3xl font-bold text-foreground">{formatCurrency(totalMargin - expensesTotal)}</p>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Profit margin is <span className={`font-medium ${marginChange >= 0 ? 'text-primary' : 'text-destructive'}`}>
-                    {marginChange >= 0 ? '+' : ''}{marginChange.toFixed(1)}%
-                  </span> vs last month
-                </p>
-                {/* Circular progress */}
-                <div className="flex items-center justify-between mt-4">
-                  <span className="text-2xl font-bold text-primary">
-                    {totalMargin > 0 ? Math.round(((totalMargin - expensesTotal) / totalMargin) * 100) : 0}%
-                  </span>
-                  <svg width="60" height="60" viewBox="0 0 60 60">
-                    <circle cx="30" cy="30" r="25" fill="none" stroke="hsl(var(--muted))" strokeWidth="6" />
-                    <circle 
-                      cx="30" 
-                      cy="30" 
-                      r="25" 
-                      fill="none" 
-                      stroke="hsl(var(--primary))" 
-                      strokeWidth="6" 
-                      strokeLinecap="round" 
-                      strokeDasharray={`${totalMargin > 0 ? ((totalMargin - expensesTotal) / totalMargin) * 157 : 0} 157`} 
-                      transform="rotate(-90 30 30)" 
-                    />
-                  </svg>
+                <div className="space-y-2">
+                  {marginDetails.slice(0, 4).map(item => (
+                    <div key={item.name} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></div>
+                        <span className="text-xs text-muted-foreground">{item.name}</span>
+                      </div>
+                      <span className="text-sm font-medium text-foreground">{formatCurrency(item.value)}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="border-t border-border mt-3 pt-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-foreground">Total</span>
+                    <span className="text-lg font-bold text-primary">{formatCurrency(totalMargin)}</span>
+                  </div>
                 </div>
               </DashCard>
 
-              {/* Recent Activities - Real Data */}
-              <DashCard>
+              {/* Recent Activities - Ticker Animation */}
+              <DashCard className="overflow-hidden">
                 <h3 className="font-medium text-foreground mb-3">Recent Activities</h3>
-                <div className="space-y-3 max-h-48 overflow-y-auto">
+                <div className="relative h-48 overflow-hidden">
                   {recentActivitiesData && recentActivitiesData.length > 0 ? (
-                    recentActivitiesData.map((activity) => (
-                      <div key={activity.id} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                            activity.color === 'destructive' ? 'bg-destructive/10' : 'bg-primary/10'
-                          }`}>
-                            {activity.icon === 'banking' && <CreditCard className={`h-4 w-4 ${activity.color === 'destructive' ? 'text-destructive' : 'text-primary'}`} />}
-                            {activity.icon === 'online' && <Globe className={`h-4 w-4 ${activity.color === 'destructive' ? 'text-destructive' : 'text-primary'}`} />}
-                            {activity.icon === 'expense' && <Receipt className="h-4 w-4 text-destructive" />}
+                    <div className="animate-ticker space-y-3">
+                      {/* Duplicate activities for seamless loop */}
+                      {[...recentActivitiesData, ...recentActivitiesData].map((activity, index) => (
+                        <div key={`${activity.id}-${index}`} className="flex items-center justify-between py-1">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                              activity.color === 'destructive' ? 'bg-destructive/10' : 'bg-primary/10'
+                            }`}>
+                              {activity.icon === 'banking' && <CreditCard className={`h-4 w-4 ${activity.color === 'destructive' ? 'text-destructive' : 'text-primary'}`} />}
+                              {activity.icon === 'online' && <Globe className={`h-4 w-4 ${activity.color === 'destructive' ? 'text-destructive' : 'text-primary'}`} />}
+                              {activity.icon === 'expense' && <Receipt className="h-4 w-4 text-destructive" />}
+                              {activity.icon === 'application' && <FileText className={`h-4 w-4 text-primary`} />}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-foreground truncate">{activity.type}</p>
+                              <p className="text-xs text-muted-foreground truncate">{activity.description}</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-sm font-medium text-foreground">{activity.type}</p>
-                            <p className="text-xs text-muted-foreground">{activity.description}</p>
+                          <div className="text-right flex-shrink-0 ml-2">
+                            <span className={`text-sm font-medium ${activity.amount < 0 ? 'text-destructive' : 'text-primary'}`}>
+                              {activity.amount < 0 ? '-' : '+'}{formatCurrency(Math.abs(activity.amount))}
+                            </span>
+                            <p className="text-xs text-muted-foreground">{format(new Date(activity.date), 'dd MMM')}</p>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <span className={`text-sm font-medium ${activity.amount < 0 ? 'text-destructive' : 'text-primary'}`}>
-                            {activity.amount < 0 ? '-' : '+'}{formatCurrency(Math.abs(activity.amount))}
-                          </span>
-                          <p className="text-xs text-muted-foreground">{format(new Date(activity.date), 'dd MMM')}</p>
-                        </div>
-                      </div>
-                    ))
+                      ))}
+                    </div>
                   ) : (
                     <p className="text-sm text-muted-foreground text-center py-4">No recent activities</p>
                   )}

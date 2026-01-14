@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Search, Plus, Edit, Trash2, Download, Printer, Upload, Save, X, FileSpreadsheet } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Download, Printer, Upload, Save, X, FileSpreadsheet, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
@@ -51,6 +51,11 @@ const AccountDetails = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [extractedAccounts, setExtractedAccounts] = useState<{ accountNumber: string; type: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const itemsPerPage = 50;
 
   const [form, setForm] = useState({
     name: '',
@@ -60,16 +65,31 @@ const AccountDetails = () => {
     address: ''
   });
 
-  const fetchAccountDetails = async () => {
+  const fetchAccountDetails = async (page = 1) => {
     try {
       setLoading(true);
+      
+      // First get total count
+      const { count, error: countError } = await supabase
+        .from('account_details')
+        .select('*', { count: 'exact', head: true });
+      
+      if (countError) throw countError;
+      setTotalCount(count || 0);
+      
+      // Then fetch paginated data
+      const from = (page - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
+      
       const { data, error } = await supabase
         .from('account_details')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
       if (error) throw error;
       setAccountDetails(data || []);
+      setCurrentPage(page);
     } catch (error) {
       console.error('Error fetching account details:', error);
       toast.error("Failed to load account details");
@@ -79,7 +99,7 @@ const AccountDetails = () => {
   };
 
   useEffect(() => {
-    fetchAccountDetails();
+    fetchAccountDetails(1);
   }, []);
 
   const formatAadhar = (value: string) => {
@@ -173,8 +193,12 @@ const AccountDetails = () => {
         return;
       }
 
-      // Filter out existing accounts
-      const existingNumbers = new Set(accountDetails.map(a => a.account_number));
+      // Check existing accounts from database (not just current page)
+      const { data: existingAccounts } = await supabase
+        .from('account_details')
+        .select('account_number');
+      
+      const existingNumbers = new Set(existingAccounts?.map(a => a.account_number) || []);
       const newAccounts = accounts.filter(a => !existingNumbers.has(a.accountNumber));
       
       if (newAccounts.length === 0) {
@@ -182,20 +206,27 @@ const AccountDetails = () => {
         return;
       }
 
-      // Save new accounts
-      const insertData = newAccounts.map(a => ({
-        account_number: a.accountNumber,
-        name: '',
-        aadhar_number: '',
-        mobile_number: null,
-        address: null,
-      }));
+      // Save new accounts in batches to avoid timeout
+      const batchSize = 100;
+      let savedCount = 0;
+      
+      for (let i = 0; i < newAccounts.length; i += batchSize) {
+        const batch = newAccounts.slice(i, i + batchSize);
+        const insertData = batch.map(a => ({
+          account_number: a.accountNumber,
+          name: '',
+          aadhar_number: '',
+          mobile_number: null,
+          address: null,
+        }));
 
-      const { error } = await supabase.from('account_details').insert(insertData);
-      if (error) throw error;
+        const { error } = await supabase.from('account_details').insert(insertData);
+        if (error) throw error;
+        savedCount += batch.length;
+      }
 
-      toast.success(`${newAccounts.length} account(s) added successfully`);
-      await fetchAccountDetails();
+      toast.success(`${savedCount} account(s) added successfully`);
+      await fetchAccountDetails(1);
     } catch (error) {
       console.error('Error processing file:', error);
       toast.error("Failed to process file");
@@ -233,7 +264,7 @@ const AccountDetails = () => {
       if (error) throw error;
       
       toast.success("Account details added successfully");
-      await fetchAccountDetails();
+      await fetchAccountDetails(1);
       setShowDialog(false);
       resetForm();
     } catch (error) {
@@ -274,7 +305,7 @@ const AccountDetails = () => {
       if (error) throw error;
       
       toast.success("Account details updated successfully");
-      await fetchAccountDetails();
+      await fetchAccountDetails(currentPage);
       setShowDialog(false);
       setEditingAccount(null);
       resetForm();
@@ -296,7 +327,7 @@ const AccountDetails = () => {
       if (error) throw error;
       
       toast.success("Account details deleted successfully");
-      await fetchAccountDetails();
+      await fetchAccountDetails(currentPage);
       setShowDeleteConfirm(false);
       setDeleteId(null);
     } catch (error) {
@@ -526,7 +557,7 @@ const AccountDetails = () => {
               ) : (
                 filteredAccountDetails.map((account, index) => (
                   <TableRow key={account.id}>
-                    <TableCell>{index + 1}</TableCell>
+                    <TableCell>{(currentPage - 1) * itemsPerPage + index + 1}</TableCell>
                     <TableCell className="font-medium">{account.name || '-'}</TableCell>
                     <TableCell>{account.account_number}</TableCell>
                     <TableCell>{account.aadhar_number ? formatAadhar(account.aadhar_number) : '-'}</TableCell>
@@ -548,6 +579,76 @@ const AccountDetails = () => {
             </TableBody>
           </Table>
         </div>
+
+        {/* Pagination Controls */}
+        {totalCount > itemsPerPage && (
+          <div className="flex items-center justify-between mt-4 px-2">
+            <div className="text-sm text-muted-foreground">
+              Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, totalCount)} of {totalCount} records
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fetchAccountDetails(currentPage - 1)}
+                disabled={currentPage === 1 || loading}
+              >
+                <ChevronLeft size={16} className="mr-1" />
+                Previous
+              </Button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, Math.ceil(totalCount / itemsPerPage)) }, (_, i) => {
+                  const totalPages = Math.ceil(totalCount / itemsPerPage);
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      className="w-8 h-8 p-0"
+                      onClick={() => fetchAccountDetails(pageNum)}
+                      disabled={loading}
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
+                {Math.ceil(totalCount / itemsPerPage) > 5 && currentPage < Math.ceil(totalCount / itemsPerPage) - 2 && (
+                  <>
+                    <span className="px-1 text-muted-foreground">...</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-8 h-8 p-0"
+                      onClick={() => fetchAccountDetails(Math.ceil(totalCount / itemsPerPage))}
+                      disabled={loading}
+                    >
+                      {Math.ceil(totalCount / itemsPerPage)}
+                    </Button>
+                  </>
+                )}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fetchAccountDetails(currentPage + 1)}
+                disabled={currentPage >= Math.ceil(totalCount / itemsPerPage) || loading}
+              >
+                Next
+                <ChevronRight size={16} className="ml-1" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       <DeleteConfirmation
