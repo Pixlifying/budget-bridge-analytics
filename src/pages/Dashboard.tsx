@@ -17,6 +17,7 @@ const Dashboard = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
   const [marginDialogOpen, setMarginDialogOpen] = useState(false);
+  const [pendingDialogOpen, setPendingDialogOpen] = useState(false);
 
   // Previous month for comparison
   const previousMonth = subMonths(date, 1);
@@ -764,7 +765,10 @@ const Dashboard = () => {
               </DashCard>
 
               {/* Pending Balance */}
-              <DashCard>
+              <DashCard 
+                className="cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => setPendingDialogOpen(true)}
+              >
                 <div className="flex items-center gap-3 mb-2">
                   <div className="p-2 rounded-lg bg-destructive/10">
                     <AlertCircle className="h-4 w-4 text-destructive" />
@@ -772,7 +776,7 @@ const Dashboard = () => {
                   <h3 className="font-medium text-foreground">Pending Balance</h3>
                 </div>
                 <p className="text-2xl font-bold text-foreground">{formatCurrency(pendingBalanceTotal)}</p>
-                <p className="text-xs text-muted-foreground mt-1">{pendingBalanceData?.length || 0} pending entries</p>
+                <p className="text-xs text-muted-foreground mt-1">{pendingBalanceData?.length || 0} pending entries • Click to view</p>
               </DashCard>
             </div>
 
@@ -955,6 +959,58 @@ const Dashboard = () => {
                 <span className="text-foreground">{formatCurrency(totalMargin)}</span>
               </div>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Pending Balance Dialog */}
+      <Dialog open={pendingDialogOpen} onOpenChange={setPendingDialogOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-destructive" />
+              Pending Balance Details
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            {pendingBalanceData && pendingBalanceData.length > 0 ? (
+              <div className="space-y-3">
+                {pendingBalanceData.map((item) => (
+                  <div 
+                    key={item.id} 
+                    className="p-4 rounded-xl border border-border/50 bg-gradient-to-br from-muted/30 to-muted/10 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-foreground text-lg">{item.name}</h4>
+                        <p className="text-sm text-muted-foreground mt-1">{item.address}</p>
+                        <div className="flex items-center gap-4 mt-2 text-sm">
+                          <span className="text-muted-foreground">📞 {item.phone}</span>
+                          <span className="text-muted-foreground">📅 {format(new Date(item.date), 'dd MMM yyyy')}</span>
+                        </div>
+                        <div className="mt-2">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                            {item.service === 'Other' ? item.custom_service : item.service}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-destructive">{formatCurrency(item.amount)}</p>
+                        <p className="text-xs text-muted-foreground">Pending</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <div className="border-t pt-4 mt-4">
+                  <div className="flex items-center justify-between font-bold text-lg">
+                    <span className="text-foreground">Total Pending</span>
+                    <span className="text-destructive">{formatCurrency(pendingBalanceTotal)}</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-center text-muted-foreground py-8">No pending balances found</p>
+            )}
           </div>
         </DialogContent>
       </Dialog>
