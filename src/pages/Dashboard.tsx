@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { CreditCard, FileText, Globe, BarChart3, AlertCircle, Wallet, Printer, Receipt, TrendingUp, Search, Bell, MessageSquare, Users, ArrowUpRight, ArrowDownRight, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
-import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, subMonths } from 'date-fns';
+import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import NotificationBox from '@/components/ui/NotificationBox';
@@ -20,6 +20,8 @@ const Dashboard = () => {
 
   // Previous month for comparison
   const previousMonth = subMonths(date, 1);
+
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
 
   const {
     data: bankingData,
@@ -66,13 +68,12 @@ const Dashboard = () => {
     queryFn: async () => {
       let query = supabase.from('online_services').select('*');
       if (viewMode === 'day') {
-        const startDateStr = format(startOfDay(date), 'yyyy-MM-dd');
-        const endDateStr = format(endOfDay(date), 'yyyy-MM-dd');
-        query = query.gte('date', startDateStr).lt('date', endDateStr + 'T23:59:59');
+        const dateStr = format(date, 'yyyy-MM-dd');
+        query = query.gte('date', dateStr).lt('date', dateStr + 'T23:59:59.999');
       } else if (viewMode === 'month') {
         const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
         const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
-        query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59');
+        query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59.999');
       }
       const { data, error } = await query.order('date', { ascending: false });
       if (error) throw error;
@@ -90,7 +91,7 @@ const Dashboard = () => {
         .from('online_services')
         .select('*')
         .gte('date', startDate)
-        .lte('date', endDate + 'T23:59:59');
+        .lte('date', endDate + 'T23:59:59.999');
       if (error) throw error;
       return data;
     }
@@ -104,13 +105,12 @@ const Dashboard = () => {
     queryFn: async () => {
       let query = supabase.from('applications').select('*');
       if (viewMode === 'day') {
-        const startDateStr = format(startOfDay(date), 'yyyy-MM-dd');
-        const endDateStr = format(endOfDay(date), 'yyyy-MM-dd');
-        query = query.gte('date', startDateStr).lt('date', endDateStr + 'T23:59:59');
+        const dateStr = format(date, 'yyyy-MM-dd');
+        query = query.eq('date', dateStr);
       } else if (viewMode === 'month') {
         const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
         const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
-        query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59');
+        query = query.gte('date', startDate).lte('date', endDate);
       }
       const { data, error } = await query.order('date', { ascending: false });
       if (error) throw error;
@@ -126,13 +126,12 @@ const Dashboard = () => {
     queryFn: async () => {
       let query = supabase.from('photostats').select('*');
       if (viewMode === 'day') {
-        const startDateStr = format(startOfDay(date), 'yyyy-MM-dd');
-        const endDateStr = format(endOfDay(date), 'yyyy-MM-dd');
-        query = query.gte('date', startDateStr).lt('date', endDateStr + 'T23:59:59');
+        const dateStr = format(date, 'yyyy-MM-dd');
+        query = query.gte('date', dateStr).lt('date', dateStr + 'T23:59:59.999');
       } else if (viewMode === 'month') {
         const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
         const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
-        query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59');
+        query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59.999');
       }
       const { data, error } = await query.order('date', { ascending: false });
       if (error) throw error;
@@ -148,13 +147,12 @@ const Dashboard = () => {
     queryFn: async () => {
       let query = supabase.from('banking_accounts').select('*');
       if (viewMode === 'day') {
-        const startDateStr = format(startOfDay(date), 'yyyy-MM-dd');
-        const endDateStr = format(endOfDay(date), 'yyyy-MM-dd');
-        query = query.gte('date', startDateStr).lt('date', endDateStr + 'T23:59:59');
+        const dateStr = format(date, 'yyyy-MM-dd');
+        query = query.gte('date', dateStr).lt('date', dateStr + 'T23:59:59.999');
       } else if (viewMode === 'month') {
         const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
         const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
-        query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59');
+        query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59.999');
       }
       const { data, error } = await query.order('date', { ascending: false });
       if (error) throw error;
@@ -170,13 +168,12 @@ const Dashboard = () => {
     queryFn: async () => {
       let query = supabase.from('pending_balances').select('*');
       if (viewMode === 'day') {
-        const startDateStr = format(startOfDay(date), 'yyyy-MM-dd');
-        const endDateStr = format(endOfDay(date), 'yyyy-MM-dd');
-        query = query.gte('date', startDateStr).lt('date', endDateStr + 'T23:59:59');
+        const dateStr = format(date, 'yyyy-MM-dd');
+        query = query.gte('date', dateStr).lt('date', dateStr + 'T23:59:59.999');
       } else if (viewMode === 'month') {
         const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
         const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
-        query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59');
+        query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59.999');
       }
       const { data, error } = await query.order('date', { ascending: false });
       if (error) throw error;
@@ -192,13 +189,12 @@ const Dashboard = () => {
     queryFn: async () => {
       let query = supabase.from('expenses').select('*');
       if (viewMode === 'day') {
-        const startDateStr = format(startOfDay(date), 'yyyy-MM-dd');
-        const endDateStr = format(endOfDay(date), 'yyyy-MM-dd');
-        query = query.gte('date', startDateStr).lt('date', endDateStr + 'T23:59:59');
+        const dateStr = format(date, 'yyyy-MM-dd');
+        query = query.gte('date', dateStr).lt('date', dateStr + 'T23:59:59.999');
       } else if (viewMode === 'month') {
         const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
         const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
-        query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59');
+        query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59.999');
       }
       const { data, error } = await query.order('date', { ascending: false });
       if (error) throw error;
@@ -239,9 +235,9 @@ const Dashboard = () => {
     }
   });
 
-  // Recent activities - fetch latest 5 entries from various tables
+  // Recent activities - fetch today's data for day mode, or filtered data for month mode
   const { data: recentActivitiesData } = useQuery({
-    queryKey: ['recentActivities'],
+    queryKey: ['recentActivities', viewMode, date],
     queryFn: async () => {
       const activities: Array<{
         id: string;
@@ -253,37 +249,45 @@ const Dashboard = () => {
         color: string;
       }> = [];
 
-      // Fetch latest banking services
-      const { data: banking } = await supabase
-        .from('banking_services')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(2);
+      const filterDate = viewMode === 'day' ? format(date, 'yyyy-MM-dd') : null;
+      const startDate = viewMode === 'month' ? format(startOfMonth(date), 'yyyy-MM-dd') : null;
+      const endDate = viewMode === 'month' ? format(endOfMonth(date), 'yyyy-MM-dd') : null;
+
+      // Fetch banking services
+      let bankingQuery = supabase.from('banking_services').select('*');
+      if (filterDate) {
+        bankingQuery = bankingQuery.eq('date', filterDate);
+      } else if (startDate && endDate) {
+        bankingQuery = bankingQuery.gte('date', startDate).lte('date', endDate);
+      }
+      const { data: banking } = await bankingQuery.order('created_at', { ascending: false }).limit(10);
       
       banking?.forEach(item => {
         activities.push({
           id: `banking-${item.id}`,
-          type: 'Banking Service',
-          description: `${item.transaction_count} transactions`,
-          amount: item.amount,
+          type: 'Banking',
+          description: `You did ${item.transaction_count} transactions`,
+          amount: item.margin,
           date: item.date,
           icon: 'banking',
           color: 'primary'
         });
       });
 
-      // Fetch latest online services
-      const { data: online } = await supabase
-        .from('online_services')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(2);
+      // Fetch online services
+      let onlineQuery = supabase.from('online_services').select('*');
+      if (filterDate) {
+        onlineQuery = onlineQuery.gte('date', filterDate).lt('date', filterDate + 'T23:59:59');
+      } else if (startDate && endDate) {
+        onlineQuery = onlineQuery.gte('date', startDate).lte('date', endDate + 'T23:59:59');
+      }
+      const { data: online } = await onlineQuery.order('created_at', { ascending: false }).limit(10);
 
       online?.forEach(item => {
         activities.push({
           id: `online-${item.id}`,
-          type: item.service,
-          description: item.customer_name || 'Online Service',
+          type: 'Online',
+          description: `You did ${item.service} service${item.customer_name ? ` for ${item.customer_name}` : ''}`,
           amount: item.total,
           date: item.date,
           icon: 'online',
@@ -291,18 +295,62 @@ const Dashboard = () => {
         });
       });
 
-      // Fetch latest expenses
-      const { data: expenses } = await supabase
-        .from('expenses')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(2);
+      // Fetch applications
+      let appsQuery = supabase.from('applications').select('*');
+      if (filterDate) {
+        appsQuery = appsQuery.gte('date', filterDate).lt('date', filterDate + 'T23:59:59');
+      } else if (startDate && endDate) {
+        appsQuery = appsQuery.gte('date', startDate).lte('date', endDate + 'T23:59:59');
+      }
+      const { data: apps } = await appsQuery.order('created_at', { ascending: false }).limit(10);
+
+      apps?.forEach(item => {
+        activities.push({
+          id: `app-${item.id}`,
+          type: 'Application',
+          description: `You did application for ${item.customer_name}`,
+          amount: item.amount,
+          date: item.date,
+          icon: 'application',
+          color: 'primary'
+        });
+      });
+
+      // Fetch photostat
+      let photoQuery = supabase.from('photostats').select('*');
+      if (filterDate) {
+        photoQuery = photoQuery.gte('date', filterDate).lt('date', filterDate + 'T23:59:59');
+      } else if (startDate && endDate) {
+        photoQuery = photoQuery.gte('date', startDate).lte('date', endDate + 'T23:59:59');
+      }
+      const { data: photos } = await photoQuery.order('created_at', { ascending: false }).limit(5);
+
+      photos?.forEach(item => {
+        activities.push({
+          id: `photo-${item.id}`,
+          type: 'Photostat',
+          description: `You did photostat work`,
+          amount: item.margin,
+          date: item.date,
+          icon: 'photostat',
+          color: 'primary'
+        });
+      });
+
+      // Fetch expenses
+      let expenseQuery = supabase.from('expenses').select('*');
+      if (filterDate) {
+        expenseQuery = expenseQuery.gte('date', filterDate).lt('date', filterDate + 'T23:59:59');
+      } else if (startDate && endDate) {
+        expenseQuery = expenseQuery.gte('date', startDate).lte('date', endDate + 'T23:59:59');
+      }
+      const { data: expenses } = await expenseQuery.order('created_at', { ascending: false }).limit(5);
 
       expenses?.forEach(item => {
         activities.push({
           id: `expense-${item.id}`,
           type: 'Expense',
-          description: item.name,
+          description: `You spent on ${item.name}`,
           amount: -item.amount,
           date: item.date,
           icon: 'expense',
@@ -310,10 +358,30 @@ const Dashboard = () => {
         });
       });
 
-      // Sort by date and return latest 5
+      // Fetch banking accounts (Other Banking)
+      let bankingAccQuery = supabase.from('banking_accounts').select('*');
+      if (filterDate) {
+        bankingAccQuery = bankingAccQuery.gte('date', filterDate).lt('date', filterDate + 'T23:59:59');
+      } else if (startDate && endDate) {
+        bankingAccQuery = bankingAccQuery.gte('date', startDate).lte('date', endDate + 'T23:59:59');
+      }
+      const { data: bankingAccounts } = await bankingAccQuery.order('created_at', { ascending: false }).limit(5);
+
+      bankingAccounts?.forEach(item => {
+        activities.push({
+          id: `bankingAcc-${item.id}`,
+          type: 'Other Banking',
+          description: `You did ${item.account_type} for ${item.customer_name}`,
+          amount: item.margin || 0,
+          date: item.date,
+          icon: 'banking',
+          color: 'primary'
+        });
+      });
+
+      // Sort by date and created_at
       return activities
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, 5);
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }
   });
 
@@ -703,76 +771,35 @@ const Dashboard = () => {
               </DashCard>
             </div>
 
-            {/* Third Row - Earnings & Recent Activities */}
-            <div className="grid grid-cols-2 gap-4">
-              {/* Earnings Card */}
-              <DashCard onClick={() => setMarginDialogOpen(true)}>
-                <div className="mb-3">
-                  <p className="text-sm text-muted-foreground">Earnings</p>
-                  <p className="text-xs text-muted-foreground">Net Profit</p>
-                </div>
-                <p className="text-3xl font-bold text-foreground">{formatCurrency(totalMargin - expensesTotal)}</p>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Profit margin is <span className={`font-medium ${marginChange >= 0 ? 'text-primary' : 'text-destructive'}`}>
-                    {marginChange >= 0 ? '+' : ''}{marginChange.toFixed(1)}%
-                  </span> vs last month
-                </p>
-                {/* Circular progress */}
-                <div className="flex items-center justify-between mt-4">
-                  <span className="text-2xl font-bold text-primary">
-                    {totalMargin > 0 ? Math.round(((totalMargin - expensesTotal) / totalMargin) * 100) : 0}%
-                  </span>
-                  <svg width="60" height="60" viewBox="0 0 60 60">
-                    <circle cx="30" cy="30" r="25" fill="none" stroke="hsl(var(--muted))" strokeWidth="6" />
-                    <circle 
-                      cx="30" 
-                      cy="30" 
-                      r="25" 
-                      fill="none" 
-                      stroke="hsl(var(--primary))" 
-                      strokeWidth="6" 
-                      strokeLinecap="round" 
-                      strokeDasharray={`${totalMargin > 0 ? ((totalMargin - expensesTotal) / totalMargin) * 157 : 0} 157`} 
-                      transform="rotate(-90 30 30)" 
-                    />
-                  </svg>
-                </div>
-              </DashCard>
-
-              {/* Recent Activities - Real Data */}
-              <DashCard>
-                <h3 className="font-medium text-foreground mb-3">Recent Activities</h3>
-                <div className="space-y-3 max-h-48 overflow-y-auto">
-                  {recentActivitiesData && recentActivitiesData.length > 0 ? (
-                    recentActivitiesData.map((activity) => (
-                      <div key={activity.id} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                            activity.color === 'destructive' ? 'bg-destructive/10' : 'bg-primary/10'
-                          }`}>
-                            {activity.icon === 'banking' && <CreditCard className={`h-4 w-4 ${activity.color === 'destructive' ? 'text-destructive' : 'text-primary'}`} />}
-                            {activity.icon === 'online' && <Globe className={`h-4 w-4 ${activity.color === 'destructive' ? 'text-destructive' : 'text-primary'}`} />}
-                            {activity.icon === 'expense' && <Receipt className="h-4 w-4 text-destructive" />}
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-foreground">{activity.type}</p>
-                            <p className="text-xs text-muted-foreground">{activity.description}</p>
-                          </div>
+            {/* Third Row - Recent Activities (Full Width Ticker) */}
+            <DashCard>
+              <h3 className="font-medium text-foreground mb-3">Recent Activities {viewMode === 'day' ? '(Today)' : '(This Month)'}</h3>
+              <div className="relative overflow-hidden h-12">
+                {recentActivitiesData && recentActivitiesData.length > 0 ? (
+                  <div className="flex animate-marquee whitespace-nowrap">
+                    {[...recentActivitiesData, ...recentActivitiesData].map((activity, idx) => (
+                      <div key={`${activity.id}-${idx}`} className="inline-flex items-center gap-3 px-4 border-r border-border/50">
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          activity.color === 'destructive' ? 'bg-destructive/10' : 'bg-primary/10'
+                        }`}>
+                          {activity.icon === 'banking' && <CreditCard className={`h-3 w-3 ${activity.color === 'destructive' ? 'text-destructive' : 'text-primary'}`} />}
+                          {activity.icon === 'online' && <Globe className={`h-3 w-3 ${activity.color === 'destructive' ? 'text-destructive' : 'text-primary'}`} />}
+                          {activity.icon === 'expense' && <Receipt className="h-3 w-3 text-destructive" />}
+                          {activity.icon === 'application' && <FileText className={`h-3 w-3 text-primary`} />}
+                          {activity.icon === 'photostat' && <Printer className={`h-3 w-3 text-primary`} />}
                         </div>
-                        <div className="text-right">
-                          <span className={`text-sm font-medium ${activity.amount < 0 ? 'text-destructive' : 'text-primary'}`}>
-                            {activity.amount < 0 ? '-' : '+'}{formatCurrency(Math.abs(activity.amount))}
-                          </span>
-                          <p className="text-xs text-muted-foreground">{format(new Date(activity.date), 'dd MMM')}</p>
-                        </div>
+                        <span className="text-sm text-foreground">{activity.description}</span>
+                        <span className={`text-sm font-medium ${activity.amount < 0 ? 'text-destructive' : 'text-primary'}`}>
+                          {activity.amount < 0 ? '-' : '+'}{formatCurrency(Math.abs(activity.amount))}
+                        </span>
                       </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground text-center py-4">No recent activities</p>
-                  )}
-                </div>
-              </DashCard>
-            </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-2">No activities {viewMode === 'day' ? 'today' : 'this month'}</p>
+                )}
+              </div>
+            </DashCard>
 
             {/* Fourth Row - Other Banking & Summary */}
             <div className="grid grid-cols-3 gap-4">
