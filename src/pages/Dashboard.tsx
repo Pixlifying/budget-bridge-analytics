@@ -371,11 +371,11 @@ const Dashboard = () => {
         activities.push({
           id: `bankingAcc-${item.id}`,
           type: 'Other Banking',
-          description: `${item.account_type} - ${item.customer_name}`,
+          description: `${item.account_type} - ${item.customer_name} (${formatCurrency(item.amount)})`,
           amount: item.margin || 0,
           date: item.date,
           icon: 'banking',
-          color: 'primary'
+          color: 'accent'
         });
       });
 
@@ -777,28 +777,36 @@ const Dashboard = () => {
             </div>
 
             {/* Third Row - Recent Activities (Vertical Ticker) */}
-            <div className="grid grid-cols-3 gap-4">
-              <DashCard className="col-span-2">
+            <div className="grid grid-cols-4 gap-4">
+              <DashCard className="col-span-3">
                 <h3 className="font-medium text-foreground mb-3">Recent Activities {viewMode === 'day' ? '(Today)' : '(This Month)'}</h3>
                 <div className="relative overflow-hidden h-48">
                   {recentActivitiesData && recentActivitiesData.length > 0 ? (
                     <div className="animate-vertical-ticker">
                       {[...recentActivitiesData, ...recentActivitiesData].map((activity, idx) => (
-                        <div key={`${activity.id}-${idx}`} className="flex items-center gap-3 py-2 border-b border-border/30">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                            activity.color === 'destructive' ? 'bg-destructive/10' : 'bg-primary/10'
+                        <div key={`${activity.id}-${idx}`} className="flex items-center gap-3 py-2.5 border-b border-border/20 hover:bg-muted/30 transition-colors rounded-lg px-2">
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm ${
+                            activity.color === 'destructive' 
+                              ? 'bg-gradient-to-br from-destructive/20 to-destructive/5' 
+                              : activity.color === 'accent'
+                              ? 'bg-gradient-to-br from-accent/30 to-accent/10'
+                              : 'bg-gradient-to-br from-primary/20 to-primary/5'
                           }`}>
-                            {activity.icon === 'banking' && <CreditCard className={`h-4 w-4 ${activity.color === 'destructive' ? 'text-destructive' : 'text-primary'}`} />}
+                            {activity.icon === 'banking' && <CreditCard className={`h-4 w-4 ${activity.color === 'destructive' ? 'text-destructive' : activity.color === 'accent' ? 'text-accent-foreground' : 'text-primary'}`} />}
                             {activity.icon === 'online' && <Globe className={`h-4 w-4 ${activity.color === 'destructive' ? 'text-destructive' : 'text-primary'}`} />}
                             {activity.icon === 'expense' && <Receipt className="h-4 w-4 text-destructive" />}
-                            {activity.icon === 'application' && <FileText className={`h-4 w-4 text-primary`} />}
-                            {activity.icon === 'photostat' && <Printer className={`h-4 w-4 text-primary`} />}
+                            {activity.icon === 'application' && <FileText className="h-4 w-4 text-primary" />}
+                            {activity.icon === 'photostat' && <Printer className="h-4 w-4 text-primary" />}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <span className="text-sm text-foreground block truncate">{activity.description}</span>
-                            <span className="text-xs text-muted-foreground">{activity.type}</span>
+                            <span className="text-sm font-medium text-foreground block truncate">{activity.description}</span>
+                            <span className="text-xs text-muted-foreground/70">{activity.type}</span>
                           </div>
-                          <span className={`text-sm font-semibold flex-shrink-0 ${activity.amount < 0 ? 'text-destructive' : 'text-primary'}`}>
+                          <span className={`text-sm font-semibold flex-shrink-0 px-2 py-1 rounded-md ${
+                            activity.amount < 0 
+                              ? 'text-destructive bg-destructive/10' 
+                              : 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
+                          }`}>
                             {activity.amount < 0 ? '-' : '+'}{formatCurrency(Math.abs(activity.amount))}
                           </span>
                         </div>
