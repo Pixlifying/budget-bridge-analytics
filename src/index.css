@@ -230,3 +230,21 @@
 .animate-slide-left-right {
   animation: slide-left-right 3s ease-in-out infinite;
 }
+
+/* Marquee ticker animation */
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}

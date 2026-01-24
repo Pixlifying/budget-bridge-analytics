@@ -31,7 +31,7 @@ interface ODDetailRecord {
 
 const RECORDS_PER_PAGE = 15;
 const WITHDRAWAL_TYPES = ['AEPS Cash Withdrawal', 'Withdrawal'];
-const DEPOSIT_TYPES = ['Savings Deposit By Cash', 'AEPS Cash Deposit', 'IMPS Transaction'];
+const DEPOSIT_TYPES = ['Savings Deposit By Cash', 'AEPS Cash Deposit', 'IMPS Transaction', 'BBPS Make Payment'];
 
 const ODDetailRecords = () => {
   const [records, setRecords] = useState<ODDetailRecord[]>([]);
