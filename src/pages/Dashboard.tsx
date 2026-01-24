@@ -32,11 +32,11 @@ const Dashboard = () => {
       let query = supabase.from('banking_services').select('*');
       if (viewMode === 'day') {
         const dateStr = format(date, 'yyyy-MM-dd');
-        query = query.eq('date', dateStr);
+        query = query.gte('date', dateStr).lt('date', dateStr + 'T23:59:59.999');
       } else if (viewMode === 'month') {
         const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
         const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
-        query = query.gte('date', startDate).lte('date', endDate);
+        query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59.999');
       }
       const { data, error } = await query.order('date', { ascending: false });
       if (error) throw error;
@@ -106,11 +106,11 @@ const Dashboard = () => {
       let query = supabase.from('applications').select('*');
       if (viewMode === 'day') {
         const dateStr = format(date, 'yyyy-MM-dd');
-        query = query.eq('date', dateStr);
+        query = query.gte('date', dateStr).lt('date', dateStr + 'T23:59:59.999');
       } else if (viewMode === 'month') {
         const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
         const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
-        query = query.gte('date', startDate).lte('date', endDate);
+        query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59.999');
       }
       const { data, error } = await query.order('date', { ascending: false });
       if (error) throw error;
@@ -256,9 +256,9 @@ const Dashboard = () => {
       // Fetch banking services
       let bankingQuery = supabase.from('banking_services').select('*');
       if (filterDate) {
-        bankingQuery = bankingQuery.eq('date', filterDate);
+        bankingQuery = bankingQuery.gte('date', filterDate).lt('date', filterDate + 'T23:59:59.999');
       } else if (startDate && endDate) {
-        bankingQuery = bankingQuery.gte('date', startDate).lte('date', endDate);
+        bankingQuery = bankingQuery.gte('date', startDate).lte('date', endDate + 'T23:59:59.999');
       }
       const { data: banking } = await bankingQuery.order('created_at', { ascending: false }).limit(10);
       
@@ -266,7 +266,7 @@ const Dashboard = () => {
         activities.push({
           id: `banking-${item.id}`,
           type: 'Banking',
-          description: `You did ${item.transaction_count} transactions`,
+          description: `Banking ${item.transaction_count} transactions`,
           amount: item.margin,
           date: item.date,
           icon: 'banking',
@@ -287,7 +287,7 @@ const Dashboard = () => {
         activities.push({
           id: `online-${item.id}`,
           type: 'Online',
-          description: `You did ${item.service} service${item.customer_name ? ` for ${item.customer_name}` : ''}`,
+          description: `${item.service}${item.customer_name ? ` - ${item.customer_name}` : ''}`,
           amount: item.total,
           date: item.date,
           icon: 'online',
@@ -298,9 +298,9 @@ const Dashboard = () => {
       // Fetch applications
       let appsQuery = supabase.from('applications').select('*');
       if (filterDate) {
-        appsQuery = appsQuery.gte('date', filterDate).lt('date', filterDate + 'T23:59:59');
+        appsQuery = appsQuery.gte('date', filterDate).lt('date', filterDate + 'T23:59:59.999');
       } else if (startDate && endDate) {
-        appsQuery = appsQuery.gte('date', startDate).lte('date', endDate + 'T23:59:59');
+        appsQuery = appsQuery.gte('date', startDate).lte('date', endDate + 'T23:59:59.999');
       }
       const { data: apps } = await appsQuery.order('created_at', { ascending: false }).limit(10);
 
@@ -308,7 +308,7 @@ const Dashboard = () => {
         activities.push({
           id: `app-${item.id}`,
           type: 'Application',
-          description: `You did application for ${item.customer_name}`,
+          description: `Application - ${item.customer_name}`,
           amount: item.amount,
           date: item.date,
           icon: 'application',
@@ -329,7 +329,7 @@ const Dashboard = () => {
         activities.push({
           id: `photo-${item.id}`,
           type: 'Photostat',
-          description: `You did photostat work`,
+          description: `Photostat work`,
           amount: item.margin,
           date: item.date,
           icon: 'photostat',
@@ -350,7 +350,7 @@ const Dashboard = () => {
         activities.push({
           id: `expense-${item.id}`,
           type: 'Expense',
-          description: `You spent on ${item.name}`,
+          description: `Expense - ${item.name}`,
           amount: -item.amount,
           date: item.date,
           icon: 'expense',
@@ -371,7 +371,7 @@ const Dashboard = () => {
         activities.push({
           id: `bankingAcc-${item.id}`,
           type: 'Other Banking',
-          description: `You did ${item.account_type} for ${item.customer_name}`,
+          description: `${item.account_type} - ${item.customer_name}`,
           amount: item.margin || 0,
           date: item.date,
           icon: 'banking',
@@ -777,37 +777,68 @@ const Dashboard = () => {
             </div>
 
             {/* Third Row - Recent Activities (Vertical Ticker) */}
-            <DashCard>
-              <h3 className="font-medium text-foreground mb-3">Recent Activities {viewMode === 'day' ? '(Today)' : '(This Month)'}</h3>
-              <div className="relative overflow-hidden h-48">
-                {recentActivitiesData && recentActivitiesData.length > 0 ? (
-                  <div className="animate-vertical-ticker">
-                    {[...recentActivitiesData, ...recentActivitiesData].map((activity, idx) => (
-                      <div key={`${activity.id}-${idx}`} className="flex items-center gap-3 py-2 border-b border-border/30">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                          activity.color === 'destructive' ? 'bg-destructive/10' : 'bg-primary/10'
-                        }`}>
-                          {activity.icon === 'banking' && <CreditCard className={`h-4 w-4 ${activity.color === 'destructive' ? 'text-destructive' : 'text-primary'}`} />}
-                          {activity.icon === 'online' && <Globe className={`h-4 w-4 ${activity.color === 'destructive' ? 'text-destructive' : 'text-primary'}`} />}
-                          {activity.icon === 'expense' && <Receipt className="h-4 w-4 text-destructive" />}
-                          {activity.icon === 'application' && <FileText className={`h-4 w-4 text-primary`} />}
-                          {activity.icon === 'photostat' && <Printer className={`h-4 w-4 text-primary`} />}
+            <div className="grid grid-cols-3 gap-4">
+              <DashCard className="col-span-2">
+                <h3 className="font-medium text-foreground mb-3">Recent Activities {viewMode === 'day' ? '(Today)' : '(This Month)'}</h3>
+                <div className="relative overflow-hidden h-48">
+                  {recentActivitiesData && recentActivitiesData.length > 0 ? (
+                    <div className="animate-vertical-ticker">
+                      {[...recentActivitiesData, ...recentActivitiesData].map((activity, idx) => (
+                        <div key={`${activity.id}-${idx}`} className="flex items-center gap-3 py-2 border-b border-border/30">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                            activity.color === 'destructive' ? 'bg-destructive/10' : 'bg-primary/10'
+                          }`}>
+                            {activity.icon === 'banking' && <CreditCard className={`h-4 w-4 ${activity.color === 'destructive' ? 'text-destructive' : 'text-primary'}`} />}
+                            {activity.icon === 'online' && <Globe className={`h-4 w-4 ${activity.color === 'destructive' ? 'text-destructive' : 'text-primary'}`} />}
+                            {activity.icon === 'expense' && <Receipt className="h-4 w-4 text-destructive" />}
+                            {activity.icon === 'application' && <FileText className={`h-4 w-4 text-primary`} />}
+                            {activity.icon === 'photostat' && <Printer className={`h-4 w-4 text-primary`} />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <span className="text-sm text-foreground block truncate">{activity.description}</span>
+                            <span className="text-xs text-muted-foreground">{activity.type}</span>
+                          </div>
+                          <span className={`text-sm font-semibold flex-shrink-0 ${activity.amount < 0 ? 'text-destructive' : 'text-primary'}`}>
+                            {activity.amount < 0 ? '-' : '+'}{formatCurrency(Math.abs(activity.amount))}
+                          </span>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <span className="text-sm text-foreground block truncate">{activity.description}</span>
-                          <span className="text-xs text-muted-foreground">{activity.type}</span>
-                        </div>
-                        <span className={`text-sm font-semibold flex-shrink-0 ${activity.amount < 0 ? 'text-destructive' : 'text-primary'}`}>
-                          {activity.amount < 0 ? '-' : '+'}{formatCurrency(Math.abs(activity.amount))}
-                        </span>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-8">No activities {viewMode === 'day' ? 'today' : 'this month'}</p>
+                  )}
+                </div>
+              </DashCard>
+              
+              {/* Quick Stats */}
+              <DashCard>
+                <h3 className="font-medium text-foreground mb-3">Today's Summary</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Total Entries</span>
+                    <span className="text-sm font-semibold text-foreground">
+                      {(bankingData?.length || 0) + (onlineData?.length || 0) + (applicationsData?.length || 0)}
+                    </span>
                   </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-8">No activities {viewMode === 'day' ? 'today' : 'this month'}</p>
-                )}
-              </div>
-            </DashCard>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Banking Margin</span>
+                    <span className="text-sm font-semibold text-primary">{formatCurrency(bankingMargin)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Other Banking</span>
+                    <span className="text-sm font-semibold text-primary">{formatCurrency(bankingAccountsMargin)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Online Services</span>
+                    <span className="text-sm font-semibold text-primary">{formatCurrency(onlineMargin)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Total Expenses</span>
+                    <span className="text-sm font-semibold text-destructive">{formatCurrency(expensesTotal)}</span>
+                  </div>
+                </div>
+              </DashCard>
+            </div>
 
             {/* Fourth Row - Other Banking & Summary */}
             <div className="grid grid-cols-3 gap-4">
