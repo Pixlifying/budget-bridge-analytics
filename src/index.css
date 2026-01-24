@@ -248,3 +248,21 @@
 .animate-marquee:hover {
   animation-play-state: paused;
 }
+
+/* Vertical ticker animation - medium speed */
+@keyframes vertical-ticker {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+.animate-vertical-ticker {
+  animation: vertical-ticker 20s linear infinite;
+}
+
+.animate-vertical-ticker:hover {
+  animation-play-state: paused;
+}

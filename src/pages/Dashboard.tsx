@@ -702,11 +702,16 @@ const Dashboard = () => {
               {/* Banking Amount */}
               <DashCard>
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Banking Amount</p>
-                    <p className="text-2xl font-bold text-foreground mt-1">{formatCurrency(bankingServicesTotal)}</p>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-primary/10">
+                      <Wallet className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Banking Amount</p>
+                      <p className="text-xl font-bold text-foreground">{formatCurrency(bankingServicesTotal)}</p>
+                      <p className="text-xs text-muted-foreground">Margin: {formatCurrency(bankingMargin)}</p>
+                    </div>
                   </div>
-                  <MiniLineChart data={chartData} />
                 </div>
               </DashCard>
             </div>
@@ -771,32 +776,35 @@ const Dashboard = () => {
               </DashCard>
             </div>
 
-            {/* Third Row - Recent Activities (Full Width Ticker) */}
+            {/* Third Row - Recent Activities (Vertical Ticker) */}
             <DashCard>
               <h3 className="font-medium text-foreground mb-3">Recent Activities {viewMode === 'day' ? '(Today)' : '(This Month)'}</h3>
-              <div className="relative overflow-hidden h-12">
+              <div className="relative overflow-hidden h-48">
                 {recentActivitiesData && recentActivitiesData.length > 0 ? (
-                  <div className="flex animate-marquee whitespace-nowrap">
+                  <div className="animate-vertical-ticker">
                     {[...recentActivitiesData, ...recentActivitiesData].map((activity, idx) => (
-                      <div key={`${activity.id}-${idx}`} className="inline-flex items-center gap-3 px-4 border-r border-border/50">
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      <div key={`${activity.id}-${idx}`} className="flex items-center gap-3 py-2 border-b border-border/30">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                           activity.color === 'destructive' ? 'bg-destructive/10' : 'bg-primary/10'
                         }`}>
-                          {activity.icon === 'banking' && <CreditCard className={`h-3 w-3 ${activity.color === 'destructive' ? 'text-destructive' : 'text-primary'}`} />}
-                          {activity.icon === 'online' && <Globe className={`h-3 w-3 ${activity.color === 'destructive' ? 'text-destructive' : 'text-primary'}`} />}
-                          {activity.icon === 'expense' && <Receipt className="h-3 w-3 text-destructive" />}
-                          {activity.icon === 'application' && <FileText className={`h-3 w-3 text-primary`} />}
-                          {activity.icon === 'photostat' && <Printer className={`h-3 w-3 text-primary`} />}
+                          {activity.icon === 'banking' && <CreditCard className={`h-4 w-4 ${activity.color === 'destructive' ? 'text-destructive' : 'text-primary'}`} />}
+                          {activity.icon === 'online' && <Globe className={`h-4 w-4 ${activity.color === 'destructive' ? 'text-destructive' : 'text-primary'}`} />}
+                          {activity.icon === 'expense' && <Receipt className="h-4 w-4 text-destructive" />}
+                          {activity.icon === 'application' && <FileText className={`h-4 w-4 text-primary`} />}
+                          {activity.icon === 'photostat' && <Printer className={`h-4 w-4 text-primary`} />}
                         </div>
-                        <span className="text-sm text-foreground">{activity.description}</span>
-                        <span className={`text-sm font-medium ${activity.amount < 0 ? 'text-destructive' : 'text-primary'}`}>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm text-foreground block truncate">{activity.description}</span>
+                          <span className="text-xs text-muted-foreground">{activity.type}</span>
+                        </div>
+                        <span className={`text-sm font-semibold flex-shrink-0 ${activity.amount < 0 ? 'text-destructive' : 'text-primary'}`}>
                           {activity.amount < 0 ? '-' : '+'}{formatCurrency(Math.abs(activity.amount))}
                         </span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground text-center py-2">No activities {viewMode === 'day' ? 'today' : 'this month'}</p>
+                  <p className="text-sm text-muted-foreground text-center py-8">No activities {viewMode === 'day' ? 'today' : 'this month'}</p>
                 )}
               </div>
             </DashCard>
