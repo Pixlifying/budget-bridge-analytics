@@ -22,7 +22,7 @@ import { format } from 'date-fns';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 
-interface BankingService {
+interface BankingEntry {
   id: string;
   date: Date;
   amount: number;
@@ -32,12 +32,11 @@ interface BankingService {
   created_at?: string;
 }
 
-const BankingServices = () => {
-  const [bankingServices, setBankingServices] = useState<BankingService[]>([]);
-  const [bankingAccounts, setBankingAccounts] = useState<any[]>([]);
-  const [filteredServices, setFilteredServices] = useState<BankingService[]>([]);
+const Banking = () => {
+  const [bankingEntries, setBankingEntries] = useState<BankingEntry[]>([]);
+  const [filteredEntries, setFilteredEntries] = useState<BankingEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [editingEntry, setEditingEntry] = useState<BankingService | null>(null);
+  const [editingEntry, setEditingEntry] = useState<BankingEntry | null>(null);
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -57,7 +56,7 @@ const BankingServices = () => {
     extra_amount: 0,
   });
 
-  const fetchBankingServices = async () => {
+  const fetchBankingEntries = async () => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase
@@ -77,36 +76,26 @@ const BankingServices = () => {
         created_at: entry.created_at
       }));
 
-      setBankingServices(formattedData);
-
-      // Fetch banking accounts (Other Banking Services)
-      const { data: accountsData, error: accountsError } = await supabase
-        .from('banking_accounts')
-        .select('*')
-        .order('date', { ascending: false });
-
-      if (accountsError) throw accountsError;
-
-      setBankingAccounts(accountsData || []);
+      setBankingEntries(formattedData);
     } catch (error) {
-      console.error('Error fetching banking services:', error);
-      toast.error('Failed to load banking services');
+      console.error('Error fetching banking entries:', error);
+      toast.error('Failed to load banking entries');
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchBankingServices();
+    fetchBankingEntries();
   }, []);
 
   useEffect(() => {
     if (viewMode === 'day') {
-      setFilteredServices(filterByDate(bankingServices, date));
+      setFilteredEntries(filterByDate(bankingEntries, date));
     } else {
-      setFilteredServices(filterByMonth(bankingServices, date));
+      setFilteredEntries(filterByMonth(bankingEntries, date));
     }
-  }, [date, viewMode, bankingServices]);
+  }, [date, viewMode, bankingEntries]);
 
   // Process CSV/Excel file using PapaParse
   const processFile = async (file: File) => {
@@ -116,7 +105,6 @@ const BankingServices = () => {
       let rows: any[] = [];
       
       if (fileExtension === 'csv') {
-        // Parse CSV with PapaParse
         const result = await new Promise<Papa.ParseResult<any>>((resolve, reject) => {
           Papa.parse(file, {
             header: true,
@@ -127,7 +115,6 @@ const BankingServices = () => {
         });
         rows = result.data;
       } else if (fileExtension === 'xlsx' || fileExtension === 'xls') {
-        // Parse Excel file
         const arrayBuffer = await file.arrayBuffer();
         const workbook = XLSX.read(arrayBuffer, { type: 'array' });
         const firstSheetName = workbook.SheetNames[0];
@@ -163,19 +150,16 @@ const BankingServices = () => {
       let transactionCount = 0;
 
       rows.forEach((row) => {
-        // Parse amount value
         let amount = 0;
         const amountValue = row[amountKey];
         
         if (typeof amountValue === 'number') {
           amount = amountValue;
         } else if (typeof amountValue === 'string') {
-          // Remove currency symbols and commas
           const cleanedAmount = amountValue.replace(/[₹$,\s]/g, '');
           amount = parseFloat(cleanedAmount) || 0;
         }
 
-        // Skip if amount is 0 or negative
         if (amount <= 0) return;
 
         // If amount > 10000, cap at 10000 and add excess to extra_amount
@@ -186,7 +170,6 @@ const BankingServices = () => {
           totalAmount += amount;
         }
 
-        // Count transaction
         transactionCount++;
       });
 
@@ -198,7 +181,6 @@ const BankingServices = () => {
       // Calculate margin only on the capped amount (not extra_amount)
       const margin = calculateBankingServicesMargin(totalAmount);
 
-      // Update form with extracted data
       setNewEntry({
         date: new Date().toISOString().split('T')[0],
         amount: totalAmount,
@@ -223,7 +205,7 @@ const BankingServices = () => {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        const newService: BankingService = {
+        const newBankingEntry: BankingEntry = {
           id: data[0].id,
           date: new Date(data[0].date),
           amount: Number(data[0].amount),
@@ -233,14 +215,14 @@ const BankingServices = () => {
           created_at: data[0].created_at
         };
 
-        setBankingServices(prev => [newService, ...prev]);
+        setBankingEntries(prev => [newBankingEntry, ...prev]);
         setNewEntry({
           date: new Date().toISOString().split('T')[0],
           amount: 0,
           transaction_count: 1,
           extra_amount: 0,
         });
-        toast.success('Banking service saved successfully');
+        toast.success('Banking entry saved successfully');
       }
     } catch (error) {
       console.error('Error processing file:', error);
@@ -253,7 +235,6 @@ const BankingServices = () => {
     if (file) {
       processFile(file);
     }
-    // Reset input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -282,7 +263,7 @@ const BankingServices = () => {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        const newService: BankingService = {
+        const newBankingEntry: BankingEntry = {
           id: data[0].id,
           date: new Date(data[0].date),
           amount: Number(data[0].amount),
@@ -292,18 +273,18 @@ const BankingServices = () => {
           created_at: data[0].created_at
         };
 
-        setBankingServices(prev => [newService, ...prev]);
+        setBankingEntries(prev => [newBankingEntry, ...prev]);
         setNewEntry({
           date: new Date().toISOString().split('T')[0],
           amount: 0,
           transaction_count: 1,
           extra_amount: 0,
         });
-        toast.success('Banking service added successfully');
+        toast.success('Banking entry added successfully');
       }
     } catch (error) {
-      console.error('Error adding banking service:', error);
-      toast.error('Failed to add banking service');
+      console.error('Error adding banking entry:', error);
+      toast.error('Failed to add banking entry');
     }
   };
 
@@ -326,7 +307,7 @@ const BankingServices = () => {
 
       if (error) throw error;
 
-      const updatedEntry: BankingService = {
+      const updatedEntry: BankingEntry = {
         ...editingEntry,
         date: new Date(editForm.date),
         amount: editForm.amount,
@@ -335,15 +316,15 @@ const BankingServices = () => {
         extra_amount: editForm.extra_amount,
       };
 
-      setBankingServices(prev =>
+      setBankingEntries(prev =>
         prev.map(entry => entry.id === editingEntry.id ? updatedEntry : entry)
       );
 
       setEditingEntry(null);
-      toast.success('Banking service updated successfully');
+      toast.success('Banking entry updated successfully');
     } catch (error) {
-      console.error('Error updating banking service:', error);
-      toast.error('Failed to update banking service');
+      console.error('Error updating banking entry:', error);
+      toast.error('Failed to update banking entry');
     }
   };
 
@@ -356,15 +337,15 @@ const BankingServices = () => {
 
       if (error) throw error;
 
-      setBankingServices(prev => prev.filter(entry => entry.id !== id));
-      toast.success('Banking service deleted successfully');
+      setBankingEntries(prev => prev.filter(entry => entry.id !== id));
+      toast.success('Banking entry deleted successfully');
     } catch (error) {
-      console.error('Error deleting banking service:', error);
-      toast.error('Failed to delete banking service');
+      console.error('Error deleting banking entry:', error);
+      toast.error('Failed to delete banking entry');
     }
   };
 
-  const openEditEntry = (entry: BankingService) => {
+  const openEditEntry = (entry: BankingEntry) => {
     setEditingEntry(entry);
     setEditForm({
       date: format(entry.date, 'yyyy-MM-dd'),
@@ -382,7 +363,7 @@ const BankingServices = () => {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Banking Services Report</title>
+          <title>Banking Report</title>
           <style>
             @page { size: A4; margin: 20mm; }
             body { font-family: Arial, sans-serif; font-size: 12px; }
@@ -394,8 +375,8 @@ const BankingServices = () => {
           </style>
         </head>
         <body>
-          <h1>Banking Services Report</h1>
-          <div class="total">Total Services: ${totalServices} | Total Amount: ₹${totalAmount.toFixed(2)} | Total Margin: ₹${totalMargin.toFixed(2)}</div>
+          <h1>Banking Report</h1>
+          <div class="total">Total Entries: ${totalEntries} | Total Amount: ₹${totalAmount.toFixed(2)} | Total Margin: ₹${totalMargin.toFixed(2)}</div>
           <table>
             <thead>
               <tr>
@@ -407,13 +388,13 @@ const BankingServices = () => {
               </tr>
             </thead>
             <tbody>
-              ${filteredServices.map((service) => `
+              ${filteredEntries.map((entry) => `
                 <tr>
-                  <td>${escapeHtml(format(service.date, 'dd/MM/yyyy'))}</td>
-                  <td>${escapeHtml(service.transaction_count.toString())}</td>
-                  <td>₹${escapeHtml(service.amount.toFixed(2))}</td>
-                  <td>₹${escapeHtml((service.extra_amount || 0).toFixed(2))}</td>
-                  <td>₹${escapeHtml(service.margin.toFixed(2))}</td>
+                  <td>${escapeHtml(format(entry.date, 'dd/MM/yyyy'))}</td>
+                  <td>${escapeHtml(entry.transaction_count.toString())}</td>
+                  <td>₹${escapeHtml(entry.amount.toFixed(2))}</td>
+                  <td>₹${escapeHtml((entry.extra_amount || 0).toFixed(2))}</td>
+                  <td>₹${escapeHtml(entry.margin.toFixed(2))}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -427,32 +408,16 @@ const BankingServices = () => {
     printWindow.print();
   };
 
-  const totalServices = filteredServices.length;
-  const totalAmount = filteredServices.reduce((sum, service) => sum + service.amount, 0);
-  const totalTransactions = filteredServices.reduce((sum, service) => sum + service.transaction_count, 0);
-  const totalExtraAmount = filteredServices.reduce((sum, service) => sum + (service.extra_amount || 0), 0);
-  
-  // Filter banking accounts by date/month
-  const filteredBankingAccounts = viewMode === 'day' 
-    ? bankingAccounts.filter(account => {
-        const accountDate = new Date(account.date);
-        return accountDate.toDateString() === date.toDateString();
-      })
-    : bankingAccounts.filter(account => {
-        const accountDate = new Date(account.date);
-        return accountDate.getMonth() === date.getMonth() && 
-               accountDate.getFullYear() === date.getFullYear();
-      });
-  
-  const bankingAccountsMargin = filteredBankingAccounts.reduce((sum, account) => 
-    sum + Number(account.margin || 0), 0);
-  
-  const totalMargin = filteredServices.reduce((sum, service) => sum + service.margin, 0) + bankingAccountsMargin;
+  const totalEntries = filteredEntries.length;
+  const totalAmount = filteredEntries.reduce((sum, entry) => sum + entry.amount, 0);
+  const totalTransactions = filteredEntries.reduce((sum, entry) => sum + entry.transaction_count, 0);
+  const totalExtraAmount = filteredEntries.reduce((sum, entry) => sum + (entry.extra_amount || 0), 0);
+  const totalMargin = filteredEntries.reduce((sum, entry) => sum + entry.margin, 0);
 
   return (
     <PageWrapper
-      title="Banking Services"
-      subtitle="Manage banking services and view analytics"
+      title="Banking"
+      subtitle="Manage banking transactions and view analytics"
       action={
         <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
           <DateRangePicker 
@@ -467,19 +432,18 @@ const BankingServices = () => {
               Print
             </Button>
             <DownloadButton
-              data={bankingServices}
-              filename="banking-services-data"
-              currentData={filteredServices}
+              data={bankingEntries}
+              filename="banking-data"
+              currentData={filteredEntries}
             />
           </div>
         </div>
       }
     >
-      {/* Add Banking Service Form */}
+      {/* Add Banking Entry Form */}
       <div className="mb-6 p-4 bg-card backdrop-blur-sm rounded-lg shadow-lg border border-border">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-foreground">Add Banking Service</h3>
-          {/* Small Browse Button */}
+          <h3 className="text-lg font-semibold text-foreground">Add Banking Entry</h3>
           <div className="flex items-center gap-2">
             <input
               ref={fileInputRef}
@@ -552,8 +516,8 @@ const BankingServices = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
         <StatCard 
-          title="Total Services"
-          value={totalServices.toString()}
+          title="Total Entries"
+          value={totalEntries.toString()}
           icon={<CreditCard size={20} />}
         />
         <StatCard 
@@ -579,16 +543,16 @@ const BankingServices = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredServices.length === 0 ? (
+        {filteredEntries.length === 0 ? (
           <div className="col-span-full text-center py-8 bg-muted/30 rounded-lg">
-            <p className="text-muted-foreground">No banking services found for this {viewMode === 'day' ? 'day' : 'month'}.</p>
+            <p className="text-muted-foreground">No banking entries found for this {viewMode === 'day' ? 'day' : 'month'}.</p>
           </div>
         ) : (
-          filteredServices.map(entry => (
+          filteredEntries.map(entry => (
             <ServiceCard
               key={entry.id}
               id={entry.id}
-              title="Banking Service"
+              title="Banking Entry"
               date={entry.date}
               data={{
                 transactions: entry.transaction_count,
@@ -613,7 +577,7 @@ const BankingServices = () => {
       <Dialog open={!!editingEntry} onOpenChange={() => setEditingEntry(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Banking Service</DialogTitle>
+            <DialogTitle>Edit Banking Entry</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
@@ -656,7 +620,7 @@ const BankingServices = () => {
                 placeholder="Extra Amount"
               />
             </div>
-            <Button onClick={handleEditEntry}>Update Banking Service</Button>
+            <Button onClick={handleEditEntry}>Update Banking Entry</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -664,4 +628,4 @@ const BankingServices = () => {
   );
 };
 
-export default BankingServices;
+export default Banking;
