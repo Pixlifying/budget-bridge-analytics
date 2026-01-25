@@ -853,7 +853,7 @@ const Dashboard = () => {
             </div>
 
             {/* Fourth Row - Other Banking & Summary */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               {/* Other Banking Services */}
               <DashCard>
                 <div className="flex items-center gap-3 mb-2">
@@ -878,28 +878,6 @@ const Dashboard = () => {
                   {formatCurrency(bankingServicesTotal + onlineServicesTotal + applicationsTotal + photostatTotal)}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">All services combined</p>
-              </DashCard>
-
-              {/* Service Summary */}
-              <DashCard>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 rounded-lg bg-primary/10">
-                    <Users className="h-4 w-4 text-primary" />
-                  </div>
-                  <h3 className="font-medium text-foreground">Service Summary</h3>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Banking:</span>
-                  <span className="font-medium text-foreground">{bankingServicesCount}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Online:</span>
-                  <span className="font-medium text-foreground">{onlineServicesCount}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Apps:</span>
-                  <span className="font-medium text-foreground">{applicationsCount}</span>
-                </div>
               </DashCard>
             </div>
           </div>
@@ -965,7 +943,7 @@ const Dashboard = () => {
 
       {/* Pending Balance Dialog */}
       <Dialog open={pendingDialogOpen} onOpenChange={setPendingDialogOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-lg max-h-[70vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-destructive" />

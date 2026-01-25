@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Sidebar from "@/components/layout/Sidebar";
 import Dashboard from "@/pages/Dashboard";
-import BankingServices from "@/pages/BankingServices";
+import Banking from "@/pages/Banking";
 import BankingAccounts from "@/pages/BankingAccounts";
 import OnlineServices from "@/pages/OnlineServices";
 import Applications from "@/pages/Applications";
@@ -63,7 +63,7 @@ const App = () => {
                 <main className="flex-1 overflow-auto">
                   <Routes>
                     <Route path="/" element={<Dashboard />} />
-                    <Route path="/banking-services" element={<BankingServices />} />
+                    <Route path="/banking" element={<Banking />} />
                     <Route path="/banking-accounts" element={<BankingAccounts />} />
                     
                     <Route path="/od-records" element={<ODDetailRecords />} />

@@ -164,7 +164,7 @@ const Sidebar = () => {
 
   // Financial Services submenu items
   const financialServiceItems = [
-    { icon: <CreditCard size={16} />, label: 'Banking Services', to: '/banking-services' },
+    { icon: <CreditCard size={16} />, label: 'Banking', to: '/banking' },
     { icon: <Landmark size={16} />, label: 'Other Banking Services', to: '/banking-accounts' },
     { icon: <PiggyBank size={16} />, label: 'OD Records', to: '/od-records' },
     { icon: <Users size={16} />, label: 'Account Details', to: '/account-details' },

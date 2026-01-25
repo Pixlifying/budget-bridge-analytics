@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Search, Plus, Edit, Trash2, Download, Printer, Upload, Save, X, FileSpreadsheet } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Download, Printer, Upload, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,6 +28,22 @@ import { exportToExcel } from '@/utils/calculateUtils';
 import { escapeHtml } from '@/lib/sanitize';
 import * as XLSX from 'xlsx';
 import Papa from 'papaparse';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface AccountDetail {
   id: string;
@@ -40,6 +56,8 @@ interface AccountDetail {
   updated_at: string;
 }
 
+const ITEMS_PER_PAGE = 500;
+
 const AccountDetails = () => {
   const [accountDetails, setAccountDetails] = useState<AccountDetail[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,7 +67,7 @@ const AccountDetails = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [extractedAccounts, setExtractedAccounts] = useState<{ accountNumber: string; type: string }[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({
@@ -99,7 +117,6 @@ const AccountDetails = () => {
     const accountSet = new Map<string, string>();
     
     for (const row of data) {
-      // Look for FROM ACCOUNT
       for (const [key, value] of Object.entries(row)) {
         const keyLower = key.toLowerCase();
         const val = String(value || '').trim();
@@ -394,6 +411,7 @@ const AccountDetails = () => {
     printWindow.print();
   };
 
+  // Filter accounts based on search - searches across ALL data
   const filteredAccountDetails = useMemo(() => {
     return accountDetails.filter(account =>
       account.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -402,6 +420,44 @@ const AccountDetails = () => {
       (account.mobile_number && account.mobile_number.includes(searchTerm))
     );
   }, [accountDetails, searchTerm]);
+
+  // Reset to page 1 when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredAccountDetails.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedData = filteredAccountDetails.slice(startIndex, endIndex);
+
+  // Generate page numbers to display
+  const getPageNumbers = () => {
+    const pages: (number | 'ellipsis')[] = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) pages.push(i);
+        pages.push('ellipsis');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push('ellipsis');
+        for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push('ellipsis');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i);
+        pages.push('ellipsis');
+        pages.push(totalPages);
+      }
+    }
+    return pages;
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -497,6 +553,29 @@ const AccountDetails = () => {
           </CardContent>
         </Card>
 
+        {/* Pagination Info and Controls */}
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            Showing {startIndex + 1} - {Math.min(endIndex, filteredAccountDetails.length)} of {filteredAccountDetails.length} entries
+            {searchTerm && ` (filtered from ${accountDetails.length} total)`}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Go to page:</span>
+            <Select value={currentPage.toString()} onValueChange={(val) => setCurrentPage(Number(val))}>
+              <SelectTrigger className="w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                  <SelectItem key={page} value={page.toString()}>
+                    {page}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         <div className="bg-card rounded-lg shadow-sm border overflow-hidden">
           <Table>
             <TableHeader>
@@ -517,16 +596,16 @@ const AccountDetails = () => {
                     Loading account details...
                   </TableCell>
                 </TableRow>
-              ) : filteredAccountDetails.length === 0 ? (
+              ) : paginatedData.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     No account details found
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredAccountDetails.map((account, index) => (
+                paginatedData.map((account, index) => (
                   <TableRow key={account.id}>
-                    <TableCell>{index + 1}</TableCell>
+                    <TableCell>{startIndex + index + 1}</TableCell>
                     <TableCell className="font-medium">{account.name || '-'}</TableCell>
                     <TableCell>{account.account_number}</TableCell>
                     <TableCell>{account.aadhar_number ? formatAadhar(account.aadhar_number) : '-'}</TableCell>
@@ -548,6 +627,45 @@ const AccountDetails = () => {
             </TableBody>
           </Table>
         </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious 
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  />
+                </PaginationItem>
+                
+                {getPageNumbers().map((page, idx) => (
+                  <PaginationItem key={idx}>
+                    {page === 'ellipsis' ? (
+                      <PaginationEllipsis />
+                    ) : (
+                      <PaginationLink
+                        onClick={() => setCurrentPage(page)}
+                        isActive={currentPage === page}
+                        className="cursor-pointer"
+                      >
+                        {page}
+                      </PaginationLink>
+                    )}
+                  </PaginationItem>
+                ))}
+                
+                <PaginationItem>
+                  <PaginationNext 
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
       </div>
 
       <DeleteConfirmation
