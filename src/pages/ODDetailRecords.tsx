@@ -55,6 +55,11 @@ const ODDetailRecords = () => {
   });
   const [printMonth, setPrintMonth] = useState(format(new Date(), 'yyyy-MM'));
   const [analysisResult, setAnalysisResult] = useState<{ totalWithdrawal: number; totalDeposit: number; cashInHand: number; fileName: string } | null>(null);
+  
+  // Time filter state for CSV/Excel parsing
+  const [timeFilterMode, setTimeFilterMode] = useState<'all' | 'before' | 'after'>('all');
+  const [filterTime, setFilterTime] = useState('12:00');
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -128,6 +133,43 @@ const ODDetailRecords = () => {
     return null;
   };
 
+  // Extract transaction time from row and check if it passes the filter
+  const getTransactionTime = (row: Record<string, string>): string | null => {
+    for (const [key, value] of Object.entries(row)) {
+      const keyLower = key.toLowerCase().trim();
+      if (keyLower === 'transaction time' || keyLower === 'transactiontime' || keyLower.includes('transaction') && keyLower.includes('time')) {
+        const val = String(value || '').trim();
+        // Expected format: YYYY-MM-DD HH:MM:SS (e.g., 2026-01-31 15:52:49)
+        const timeMatch = val.match(/\d{2}:\d{2}:\d{2}$/);
+        if (timeMatch) {
+          return timeMatch[0]; // Returns "HH:MM:SS"
+        }
+        // Also try to extract just time if full datetime
+        const dateTimeMatch = val.match(/(\d{2}:\d{2})/);
+        if (dateTimeMatch) {
+          return dateTimeMatch[1] + ':00';
+        }
+      }
+    }
+    return null;
+  };
+
+  const passesTimeFilter = (rowTime: string | null): boolean => {
+    if (timeFilterMode === 'all' || !rowTime) return true;
+    
+    const [filterHour, filterMinute] = filterTime.split(':').map(Number);
+    const filterMinutes = filterHour * 60 + filterMinute;
+    
+    const [rowHour, rowMinute] = rowTime.split(':').map(Number);
+    const rowMinutes = rowHour * 60 + rowMinute;
+    
+    if (timeFilterMode === 'before') {
+      return rowMinutes < filterMinutes;
+    } else {
+      return rowMinutes >= filterMinutes;
+    }
+  };
+
   const parseCSVWithPapaparse = (content: string): { totalWithdrawal: number; totalDeposit: number } => {
     let totalWithdrawal = 0;
     let totalDeposit = 0;
@@ -135,6 +177,9 @@ const ODDetailRecords = () => {
     const result = Papa.parse(content, { header: true, skipEmptyLines: true, transformHeader: (h) => h.trim() });
 
     for (const row of result.data as Record<string, string>[]) {
+      const transactionTime = getTransactionTime(row);
+      if (!passesTimeFilter(transactionTime)) continue;
+      
       const transaction = findTransactionTypeAndAmount(row);
       if (transaction) {
         if (WITHDRAWAL_TYPES.some(t => t.toLowerCase() === transaction.type.toLowerCase())) totalWithdrawal += transaction.amount;
@@ -160,6 +205,9 @@ const ODDetailRecords = () => {
           for (const row of jsonData) {
             const stringRow: Record<string, string> = {};
             for (const [key, value] of Object.entries(row)) stringRow[key] = String(value || '');
+            
+            const transactionTime = getTransactionTime(stringRow);
+            if (!passesTimeFilter(transactionTime)) continue;
             
             const transaction = findTransactionTypeAndAmount(stringRow);
             if (transaction) {
@@ -511,10 +559,10 @@ const ODDetailRecords = () => {
   return (
     <PageWrapper title="OD Detail Records">
       <div className="space-y-6">
-        {/* Compact Upload Section */}
+        {/* Compact Upload Section with Time Filter */}
         <Card className="border-primary/20">
           <CardContent className="py-4">
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-4">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -523,6 +571,30 @@ const ODDetailRecords = () => {
                 className="hidden"
                 disabled={isLoading}
               />
+              
+              {/* Time Filter Controls */}
+              <div className="flex items-center gap-2">
+                <Label className="text-sm whitespace-nowrap">Transaction Time:</Label>
+                <Select value={timeFilterMode} onValueChange={(v: 'all' | 'before' | 'after') => setTimeFilterMode(v)}>
+                  <SelectTrigger className="w-28 h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="before">Before</SelectItem>
+                    <SelectItem value="after">After</SelectItem>
+                  </SelectContent>
+                </Select>
+                {timeFilterMode !== 'all' && (
+                  <Input
+                    type="time"
+                    value={filterTime}
+                    onChange={(e) => setFilterTime(e.target.value)}
+                    className="w-28 h-9"
+                  />
+                )}
+              </div>
+              
               <Button
                 variant="outline"
                 size="sm"
@@ -533,9 +605,14 @@ const ODDetailRecords = () => {
                 <Upload className="h-4 w-4" />
                 Browse CSV/Excel
               </Button>
+              
               <span className="text-sm text-muted-foreground">
-                Upload CSV or Excel file to auto-calculate deposit, withdrawal & cash in hand
+                {timeFilterMode === 'all' 
+                  ? 'Upload CSV or Excel file to auto-calculate deposit, withdrawal & cash in hand'
+                  : `Filters transactions ${timeFilterMode} ${filterTime}`
+                }
               </span>
+              
               {isLoading && (
                 <div className="flex items-center gap-2 text-primary">
                   <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
