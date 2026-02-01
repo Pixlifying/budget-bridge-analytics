@@ -135,10 +135,11 @@ const Sidebar = () => {
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
     admin: false,
     financialServices: false,
+    nonFinancialServices: false,
     customerServices: false,
     ledger: false,
     apps: false,
-    homeDetails: false
+    household: false
   });
 
   const toggleMenu = (menuKey: string) => {
@@ -165,8 +166,12 @@ const Sidebar = () => {
   // Financial Services submenu items
   const financialServiceItems = [
     { icon: <CreditCard size={16} />, label: 'Banking', to: '/banking' },
-    { icon: <Landmark size={16} />, label: 'Other Banking Services', to: '/banking-accounts' },
     { icon: <PiggyBank size={16} />, label: 'OD Records', to: '/od-records' },
+  ];
+
+  // Non Financial Services submenu items
+  const nonFinancialServiceItems = [
+    { icon: <Landmark size={16} />, label: 'Other Banking Services', to: '/banking-accounts' },
     { icon: <Users size={16} />, label: 'Account Details', to: '/account-details' },
     { icon: <Shield size={16} />, label: 'Social Security', to: '/social-security' },
     { icon: <Shield size={16} />, label: 'Life Certificate (DLC)', to: '/dlc' },
@@ -184,8 +189,6 @@ const Sidebar = () => {
     { icon: <Calculator size={16} />, label: 'Calculator', to: '/calculator' },
     { icon: <Calculator size={16} />, label: 'Age Calculator', to: '/age-calculator' },
     { icon: <FileText size={16} />, label: 'Forms', to: '/forms' },
-    { icon: <FileText size={16} />, label: 'Records', to: '/records' },
-    { icon: <Wallet size={16} />, label: 'Account Records', to: '/account-records' },
   ];
 
   // Ledger submenu items
@@ -200,6 +203,7 @@ const Sidebar = () => {
   const sidebarItems = [
     { icon: <LayoutDashboard size={18} />, label: 'Dashboard', to: '/', hasChildren: false },
     { icon: <CreditCard size={18} />, label: 'Financial Services', to: '#', hasChildren: true, menuKey: 'financialServices', children: financialServiceItems },
+    { icon: <Landmark size={18} />, label: 'Non Financial Services', to: '#', hasChildren: true, menuKey: 'nonFinancialServices', children: nonFinancialServiceItems },
     { icon: <HeadphonesIcon size={18} />, label: 'Customer Services', to: '#', hasChildren: true, menuKey: 'customerServices', children: customerServiceItems },
     { icon: <BookOpen size={18} />, label: 'Ledger', to: '#', hasChildren: true, menuKey: 'ledger', children: ledgerItems },
     { icon: <Calculator size={18} />, label: 'Apps', to: '#', hasChildren: true, menuKey: 'apps', children: appsItems },

@@ -38,8 +38,6 @@ import SocialSecurity from "@/pages/SocialSecurity";
 import DLC from "@/pages/DLC";
 import Udhar from '@/pages/Udhar';
 import ODDetailRecords from "@/pages/ODDetailRecords";
-import Records from "@/pages/Records";
-import AccountRecords from "@/pages/AccountRecords";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -85,8 +83,6 @@ const App = () => {
                     <Route path="/calculator" element={<Calculator />} />
                     <Route path="/age-calculator" element={<AgeCalculator />} />
                     <Route path="/forms" element={<Forms />} />
-                    <Route path="/records" element={<Records />} />
-                    <Route path="/account-records" element={<AccountRecords />} />
                     <Route path="/milk" element={<Milk />} />
                     <Route path="/downloads" element={<Downloads />} />
                     <Route path="/user-admin" element={<UserAdmin />} />
