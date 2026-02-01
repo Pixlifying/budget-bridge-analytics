@@ -28,7 +28,6 @@ import {
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { useTheme } from '@/hooks/useTheme';
 
 interface SidebarItemProps {
   icon: JSX.Element;
@@ -65,8 +64,8 @@ const SidebarSubMenu = ({ items, isExpanded }: SidebarSubMenuProps) => {
             className={cn(
               "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200",
               isActive 
-                ? "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/30" 
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-sidebar-primary/30" 
+                : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             )}
           >
             <div className="shrink-0 w-4 h-4">
@@ -96,8 +95,8 @@ const SidebarItem = ({
         className={cn(
           "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
           isActive 
-            ? "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/30" 
-            : "text-foreground hover:bg-muted"
+            ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-sidebar-primary/30" 
+            : "text-sidebar-foreground hover:bg-sidebar-accent"
         )}
       >
         <div className="shrink-0 w-5 h-5">
@@ -115,8 +114,8 @@ const SidebarItem = ({
       className={cn(
         "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
         isActive 
-          ? "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/30" 
-          : "text-foreground hover:bg-muted"
+          ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-sidebar-primary/30" 
+          : "text-sidebar-foreground hover:bg-sidebar-accent"
       )}
     >
       <div className="shrink-0 w-5 h-5">
@@ -129,8 +128,6 @@ const SidebarItem = ({
 
 const Sidebar = () => {
   const location = useLocation();
-  const { theme } = useTheme();
-  const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
     admin: false,
@@ -165,13 +162,13 @@ const Sidebar = () => {
 
   // Financial Services submenu items
   const financialServiceItems = [
-    { icon: <CreditCard size={16} />, label: 'Banking', to: '/banking' },
+    { icon: <CreditCard size={16} />, label: 'Banking Transaction', to: '/banking' },
     { icon: <PiggyBank size={16} />, label: 'OD Records', to: '/od-records' },
   ];
 
   // Non Financial Services submenu items
   const nonFinancialServiceItems = [
-    { icon: <Landmark size={16} />, label: 'Other Banking Services', to: '/banking-accounts' },
+    { icon: <Landmark size={16} />, label: 'Accounts Opened', to: '/banking-accounts' },
     { icon: <Users size={16} />, label: 'Account Details', to: '/account-details' },
     { icon: <Shield size={16} />, label: 'Social Security', to: '/social-security' },
     { icon: <Shield size={16} />, label: 'Life Certificate (DLC)', to: '/dlc' },
@@ -214,37 +211,26 @@ const Sidebar = () => {
 
   return (
     <aside className="h-screen w-72 flex flex-col sticky top-0 p-3">
-      {/* Main Sidebar Container with theme-aware styling */}
-      <div className={cn(
-        "flex-1 rounded-3xl shadow-xl flex flex-col overflow-hidden border transition-colors duration-300",
-        isDark 
-          ? "bg-sidebar-background border-sidebar-border shadow-black/20" 
-          : "bg-white border-slate-100 shadow-slate-200/50"
-      )}>
+      {/* Main Sidebar Container with theme colors */}
+      <div className="flex-1 rounded-3xl shadow-xl flex flex-col overflow-hidden border transition-colors duration-300 bg-sidebar border-sidebar-border shadow-primary/20">
         {/* Header with Avatar */}
-        <div className={cn(
-          "p-5 border-b transition-colors duration-300",
-          isDark ? "border-sidebar-border" : "border-slate-100"
-        )}>
+        <div className="p-5 border-b transition-colors duration-300 border-sidebar-border/50">
           <div className="flex items-center gap-3">
-            <Avatar className={cn(
-              "h-12 w-12 ring-4",
-              isDark ? "ring-primary/30" : "ring-blue-100"
-            )}>
-              <AvatarFallback className="bg-gradient-to-br from-primary to-primary/60 text-primary-foreground font-semibold">
+            <Avatar className="h-12 w-12 ring-4 ring-sidebar-primary/30">
+              <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground font-semibold">
                 HK
               </AvatarFallback>
             </Avatar>
             <div>
-              <p className="text-xs text-muted-foreground">Good Morning</p>
-              <h2 className="font-semibold text-foreground">Hisab Kitab</h2>
+              <p className="text-xs text-sidebar-foreground/70">Good Morning</p>
+              <h2 className="font-semibold text-sidebar-foreground">Hisab Kitab</h2>
             </div>
           </div>
         </div>
 
         {/* Menu Label */}
         <div className="px-5 pt-4 pb-2">
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Menu</span>
+          <span className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider">Menu</span>
         </div>
         
         {/* Navigation */}
