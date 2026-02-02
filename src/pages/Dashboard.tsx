@@ -615,6 +615,12 @@ const Dashboard = () => {
                 <div className="flex items-center gap-4">
                   <div className="text-center">
                     <div className="bg-white/20 rounded-xl p-3 backdrop-blur-sm mb-1">
+                      <span className="text-2xl font-bold">{bankingData?.length || 0}</span>
+                    </div>
+                    <span className="text-xs opacity-80">Txn Days</span>
+                  </div>
+                  <div className="text-center">
+                    <div className="bg-white/20 rounded-xl p-3 backdrop-blur-sm mb-1">
                       <span className="text-2xl font-bold">{bankingServicesCount}</span>
                     </div>
                     <span className="text-xs opacity-80">Banking Txn</span>

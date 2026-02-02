@@ -57,8 +57,10 @@ const ODDetailRecords = () => {
   const [analysisResult, setAnalysisResult] = useState<{ totalWithdrawal: number; totalDeposit: number; cashInHand: number; fileName: string } | null>(null);
   
   // Time filter state for CSV/Excel parsing
-  const [timeFilterMode, setTimeFilterMode] = useState<'all' | 'before' | 'after'>('all');
+  const [timeFilterMode, setTimeFilterMode] = useState<'all' | 'before' | 'after' | 'range'>('all');
   const [filterTime, setFilterTime] = useState('12:00');
+  const [filterTimeFrom, setFilterTimeFrom] = useState('09:00');
+  const [filterTimeTo, setFilterTimeTo] = useState('17:00');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -157,17 +159,25 @@ const ODDetailRecords = () => {
   const passesTimeFilter = (rowTime: string | null): boolean => {
     if (timeFilterMode === 'all' || !rowTime) return true;
     
-    const [filterHour, filterMinute] = filterTime.split(':').map(Number);
-    const filterMinutes = filterHour * 60 + filterMinute;
-    
     const [rowHour, rowMinute] = rowTime.split(':').map(Number);
     const rowMinutes = rowHour * 60 + rowMinute;
     
     if (timeFilterMode === 'before') {
+      const [filterHour, filterMinute] = filterTime.split(':').map(Number);
+      const filterMinutes = filterHour * 60 + filterMinute;
       return rowMinutes < filterMinutes;
-    } else {
+    } else if (timeFilterMode === 'after') {
+      const [filterHour, filterMinute] = filterTime.split(':').map(Number);
+      const filterMinutes = filterHour * 60 + filterMinute;
       return rowMinutes >= filterMinutes;
+    } else if (timeFilterMode === 'range') {
+      const [fromHour, fromMinute] = filterTimeFrom.split(':').map(Number);
+      const fromMinutes = fromHour * 60 + fromMinute;
+      const [toHour, toMinute] = filterTimeTo.split(':').map(Number);
+      const toMinutes = toHour * 60 + toMinute;
+      return rowMinutes >= fromMinutes && rowMinutes <= toMinutes;
     }
+    return true;
   };
 
   const parseCSVWithPapaparse = (content: string): { totalWithdrawal: number; totalDeposit: number } => {
@@ -575,7 +585,7 @@ const ODDetailRecords = () => {
               {/* Time Filter Controls */}
               <div className="flex items-center gap-2">
                 <Label className="text-sm whitespace-nowrap">Transaction Time:</Label>
-                <Select value={timeFilterMode} onValueChange={(v: 'all' | 'before' | 'after') => setTimeFilterMode(v)}>
+                <Select value={timeFilterMode} onValueChange={(v: 'all' | 'before' | 'after' | 'range') => setTimeFilterMode(v)}>
                   <SelectTrigger className="w-28 h-9">
                     <SelectValue />
                   </SelectTrigger>
@@ -583,15 +593,34 @@ const ODDetailRecords = () => {
                     <SelectItem value="all">All</SelectItem>
                     <SelectItem value="before">Before</SelectItem>
                     <SelectItem value="after">After</SelectItem>
+                    <SelectItem value="range">Range</SelectItem>
                   </SelectContent>
                 </Select>
-                {timeFilterMode !== 'all' && (
+                {(timeFilterMode === 'before' || timeFilterMode === 'after') && (
                   <Input
                     type="time"
                     value={filterTime}
                     onChange={(e) => setFilterTime(e.target.value)}
                     className="w-28 h-9"
                   />
+                )}
+                {timeFilterMode === 'range' && (
+                  <>
+                    <Label className="text-sm">From:</Label>
+                    <Input
+                      type="time"
+                      value={filterTimeFrom}
+                      onChange={(e) => setFilterTimeFrom(e.target.value)}
+                      className="w-28 h-9"
+                    />
+                    <Label className="text-sm">To:</Label>
+                    <Input
+                      type="time"
+                      value={filterTimeTo}
+                      onChange={(e) => setFilterTimeTo(e.target.value)}
+                      className="w-28 h-9"
+                    />
+                  </>
                 )}
               </div>
               
@@ -609,7 +638,9 @@ const ODDetailRecords = () => {
               <span className="text-sm text-muted-foreground">
                 {timeFilterMode === 'all' 
                   ? 'Upload CSV or Excel file to auto-calculate deposit, withdrawal & cash in hand'
-                  : `Filters transactions ${timeFilterMode} ${filterTime}`
+                  : timeFilterMode === 'range'
+                    ? `Filters transactions from ${filterTimeFrom} to ${filterTimeTo}`
+                    : `Filters transactions ${timeFilterMode} ${filterTime}`
                 }
               </span>
               
