@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Search, Plus, Edit, Trash2, Download, Printer, Upload, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Download, Printer, Upload, ChevronLeft, ChevronRight, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
@@ -613,6 +613,17 @@ const AccountDetails = () => {
                     <TableCell>{account.mobile_number || '-'}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
+                        {account.mobile_number && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => window.open(`https://wa.me/91${account.mobile_number?.replace(/\D/g, '')}`, '_blank')}
+                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                            title="Open WhatsApp"
+                          >
+                            <MessageCircle size={14} />
+                          </Button>
+                        )}
                         <Button variant="ghost" size="sm" onClick={() => openEdit(account)}>
                           <Edit size={14} />
                         </Button>
