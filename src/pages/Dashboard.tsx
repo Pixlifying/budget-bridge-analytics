@@ -428,7 +428,7 @@ const Dashboard = () => {
   const bankingServicesTotal = bankingData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
   const bankingServicesCount = bankingData?.reduce((sum, entry) => sum + (entry.transaction_count || 1), 0) || 0;
   const bankingMargin = bankingData?.reduce((sum, entry) => sum + entry.margin, 0) || 0;
-  const bankingAccountsMargin = bankingAccountsData?.reduce((sum, entry) => sum + Number(entry.margin || 0), 0) || 0;
+  const bankingAccountsMargin = bankingAccountsData?.reduce((sum, entry) => sum + Number(entry.amount || 0), 0) || 0;
   const onlineServicesTotal = onlineData?.reduce((sum, entry) => sum + Number(entry.total || 0), 0) || 0;
   const onlineServicesCount = onlineData?.length || 0;
   const onlineMargin = onlineData?.reduce((sum, entry) => sum + Number(entry.total || 0), 0) || 0;
