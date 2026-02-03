@@ -190,8 +190,14 @@ const AccountDetails = () => {
         return;
       }
 
-      // Filter out existing accounts
-      const existingNumbers = new Set(accountDetails.map(a => a.account_number));
+      // Fetch ALL existing account numbers from database to check for duplicates
+      const { data: existingDbAccounts, error: fetchError } = await supabase
+        .from('account_details')
+        .select('account_number');
+      
+      if (fetchError) throw fetchError;
+
+      const existingNumbers = new Set(existingDbAccounts?.map(a => a.account_number) || []);
       const newAccounts = accounts.filter(a => !existingNumbers.has(a.accountNumber));
       
       if (newAccounts.length === 0) {
@@ -199,7 +205,7 @@ const AccountDetails = () => {
         return;
       }
 
-      // Save new accounts
+      // Prepare insert data
       const insertData = newAccounts.map(a => ({
         account_number: a.accountNumber,
         name: '',
@@ -208,8 +214,21 @@ const AccountDetails = () => {
         address: null,
       }));
 
-      const { error } = await supabase.from('account_details').insert(insertData);
-      if (error) throw error;
+      // Insert in batches of 500 to handle large datasets
+      const BATCH_SIZE = 500;
+      let insertedCount = 0;
+      
+      for (let i = 0; i < insertData.length; i += BATCH_SIZE) {
+        const batch = insertData.slice(i, i + BATCH_SIZE);
+        const { error } = await supabase.from('account_details').insert(batch);
+        if (error) throw error;
+        insertedCount += batch.length;
+        
+        // Show progress for large uploads
+        if (insertData.length > BATCH_SIZE) {
+          toast.info(`Uploaded ${insertedCount} of ${insertData.length} accounts...`);
+        }
+      }
 
       toast.success(`${newAccounts.length} account(s) added successfully`);
       await fetchAccountDetails();
