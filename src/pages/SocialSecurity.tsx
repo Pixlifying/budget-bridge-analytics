@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { format } from 'date-fns';
-import { Calendar, Plus, Printer, Download, Trash2, Edit2 } from 'lucide-react';
+import { Calendar, Plus, Printer, Trash2, Edit2, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import PageWrapper from '@/components/layout/PageWrapper';
@@ -15,12 +15,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import DownloadButton from '@/components/ui/DownloadButton';
+import { escapeHtml } from '@/lib/sanitize';
 
 interface SocialSecurityForm {
   date: Date;
   name: string;
   account_number: string;
   address?: string;
+  mobile_number?: string;
   scheme_type: string;
   remarks?: string;
 }
@@ -31,6 +33,7 @@ interface SocialSecurityRecord {
   name: string;
   account_number: string;
   address: string;
+  mobile_number: string | null;
   scheme_type: string;
   remarks: string;
   created_at: string;
@@ -40,11 +43,12 @@ const SocialSecurity = () => {
   const [records, setRecords] = useState<SocialSecurityRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
   const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<SocialSecurityForm>({
     defaultValues: {
       date: new Date(),
-      scheme_type: 'PMSBY'
+      scheme_type: 'APY'
     }
   });
 
@@ -81,6 +85,7 @@ const SocialSecurity = () => {
         name: data.name,
         account_number: data.account_number,
         address: data.address || null,
+        mobile_number: data.mobile_number || null,
         scheme_type: data.scheme_type,
         remarks: data.remarks || null,
       };
@@ -103,7 +108,7 @@ const SocialSecurity = () => {
         toast({ title: 'Success', description: 'Record added successfully' });
       }
 
-      reset({ date: new Date(), scheme_type: 'PMSBY' });
+      reset({ date: new Date(), scheme_type: 'APY' });
       fetchRecords();
     } catch (error: any) {
       toast({
@@ -120,6 +125,7 @@ const SocialSecurity = () => {
     setValue('name', record.name);
     setValue('account_number', record.account_number);
     setValue('address', record.address || '');
+    setValue('mobile_number', record.mobile_number || '');
     setValue('scheme_type', record.scheme_type);
     setValue('remarks', record.remarks || '');
   };
@@ -158,7 +164,7 @@ const SocialSecurity = () => {
             body { font-family: Arial, sans-serif; padding: 20px; }
             h1 { text-align: center; color: #333; }
             table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 10px; }
             th { background-color: #f4f4f4; }
             @media print {
               button { display: none; }
@@ -166,7 +172,7 @@ const SocialSecurity = () => {
           </style>
         </head>
         <body>
-          <h1>Social Security Records</h1>
+          <h1>Social Security Records (APY/PMSBY/PMJJY)</h1>
           <table>
             <thead>
               <tr>
@@ -174,19 +180,21 @@ const SocialSecurity = () => {
                 <th>Name</th>
                 <th>Account No.</th>
                 <th>Address</th>
+                <th>Mobile</th>
                 <th>Scheme</th>
                 <th>Remarks</th>
               </tr>
             </thead>
             <tbody>
-              ${records.map(record => `
+              ${filteredRecords.map(record => `
                 <tr>
-                  <td>${format(new Date(record.date), 'dd/MM/yyyy')}</td>
-                  <td>${record.name}</td>
-                  <td>${record.account_number}</td>
-                  <td>${record.address || '-'}</td>
-                  <td>${record.scheme_type}</td>
-                  <td>${record.remarks || '-'}</td>
+                  <td>${escapeHtml(format(new Date(record.date), 'dd/MM/yyyy'))}</td>
+                  <td>${escapeHtml(record.name)}</td>
+                  <td>${escapeHtml(record.account_number)}</td>
+                  <td>${escapeHtml(record.address || '-')}</td>
+                  <td>${escapeHtml(record.mobile_number || '-')}</td>
+                  <td>${escapeHtml(record.scheme_type)}</td>
+                  <td>${escapeHtml(record.remarks || '-')}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -200,17 +208,51 @@ const SocialSecurity = () => {
     printWindow.print();
   };
 
+  const filteredRecords = records.filter(record => {
+    const query = searchQuery.toLowerCase();
+    return (
+      record.name.toLowerCase().includes(query) ||
+      record.account_number.toLowerCase().includes(query) ||
+      (record.address && record.address.toLowerCase().includes(query)) ||
+      (record.mobile_number && record.mobile_number.toLowerCase().includes(query)) ||
+      record.scheme_type.toLowerCase().includes(query)
+    );
+  });
+
   return (
     <PageWrapper
       title="Social Security"
-      subtitle="Manage PMSBY & PMJJY records"
+      subtitle="Manage APY, PMSBY & PMJJY records"
       icon={<Calendar className="h-6 w-6" />}
     >
       <div className="space-y-6">
-        {/* Form */}
+        {/* Top Actions Bar */}
+        <div className="flex flex-wrap items-center gap-3 bg-sidebar p-4 rounded-lg border">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-sidebar-foreground/60" />
+            <Input
+              placeholder="Search by name, account, mobile..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 bg-sidebar-accent border-sidebar-border text-sidebar-foreground"
+            />
+          </div>
+          <Button variant="outline" onClick={handlePrint} className="gap-2">
+            <Printer className="h-4 w-4" />
+            Print
+          </Button>
+          <DownloadButton
+            data={filteredRecords}
+            currentData={filteredRecords}
+            filename="social-security"
+            label="Download"
+          />
+        </div>
+
+        {/* Inline Form */}
         <div className="bg-card rounded-lg border p-6">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
               {/* Date */}
               <div className="space-y-2">
                 <Label htmlFor="date">Date *</Label>
@@ -224,7 +266,7 @@ const SocialSecurity = () => {
                       )}
                     >
                       <Calendar className="mr-2 h-4 w-4" />
-                      {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                      {selectedDate ? format(selectedDate, "dd/MM/yyyy") : <span>Pick a date</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
@@ -253,7 +295,7 @@ const SocialSecurity = () => {
 
               {/* Account Number */}
               <div className="space-y-2">
-                <Label htmlFor="account_number">Account No. (max 16 digits) *</Label>
+                <Label htmlFor="account_number">Account No. (16 digits) *</Label>
                 <Input
                   id="account_number"
                   {...register('account_number', {
@@ -275,8 +317,25 @@ const SocialSecurity = () => {
                 <Input
                   id="address"
                   {...register('address')}
-                  placeholder="Enter address (optional)"
+                  placeholder="Enter address"
                 />
+              </div>
+
+              {/* Mobile Number */}
+              <div className="space-y-2">
+                <Label htmlFor="mobile_number">Mobile No. (10 digits)</Label>
+                <Input
+                  id="mobile_number"
+                  {...register('mobile_number', {
+                    maxLength: { value: 10, message: 'Max 10 digits allowed' },
+                    pattern: { value: /^\d*$/, message: 'Only numbers allowed' }
+                  })}
+                  placeholder="Enter mobile"
+                  maxLength={10}
+                />
+                {errors.mobile_number && (
+                  <p className="text-sm text-destructive">{errors.mobile_number.message}</p>
+                )}
               </div>
 
               {/* Scheme Type */}
@@ -290,6 +349,7 @@ const SocialSecurity = () => {
                     <SelectValue placeholder="Select scheme" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="APY">APY</SelectItem>
                     <SelectItem value="PMSBY">PMSBY</SelectItem>
                     <SelectItem value="PMJJY">PMJJY</SelectItem>
                   </SelectContent>
@@ -299,11 +359,10 @@ const SocialSecurity = () => {
               {/* Remarks */}
               <div className="space-y-2">
                 <Label htmlFor="remarks">Remarks</Label>
-                <Textarea
+                <Input
                   id="remarks"
                   {...register('remarks')}
-                  placeholder="Enter remarks (optional)"
-                  rows={1}
+                  placeholder="Enter remarks"
                 />
               </div>
             </div>
@@ -319,7 +378,7 @@ const SocialSecurity = () => {
                   variant="outline"
                   onClick={() => {
                     setEditingId(null);
-                    reset({ date: new Date(), scheme_type: 'PMSBY' });
+                    reset({ date: new Date(), scheme_type: 'APY' });
                   }}
                 >
                   Cancel
@@ -327,20 +386,6 @@ const SocialSecurity = () => {
               )}
             </div>
           </form>
-        </div>
-
-        {/* Actions */}
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={handlePrint} className="gap-2">
-            <Printer className="h-4 w-4" />
-            Print
-          </Button>
-          <DownloadButton
-            data={records}
-            currentData={records}
-            filename="social-security"
-            label="Download"
-          />
         </div>
 
         {/* Table */}
@@ -353,6 +398,7 @@ const SocialSecurity = () => {
                   <TableHead>Name</TableHead>
                   <TableHead>Account No.</TableHead>
                   <TableHead>Address</TableHead>
+                  <TableHead>Mobile</TableHead>
                   <TableHead>Scheme</TableHead>
                   <TableHead>Remarks</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -361,19 +407,20 @@ const SocialSecurity = () => {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center">Loading...</TableCell>
+                    <TableCell colSpan={8} className="text-center">Loading...</TableCell>
                   </TableRow>
-                ) : records.length === 0 ? (
+                ) : filteredRecords.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center">No records found</TableCell>
+                    <TableCell colSpan={8} className="text-center">No records found</TableCell>
                   </TableRow>
                 ) : (
-                  records.map((record) => (
+                  filteredRecords.map((record) => (
                     <TableRow key={record.id}>
                       <TableCell>{format(new Date(record.date), 'dd/MM/yyyy')}</TableCell>
                       <TableCell>{record.name}</TableCell>
                       <TableCell>{record.account_number}</TableCell>
                       <TableCell>{record.address || '-'}</TableCell>
+                      <TableCell>{record.mobile_number || '-'}</TableCell>
                       <TableCell>
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
                           {record.scheme_type}

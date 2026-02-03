@@ -912,6 +912,7 @@ export type Database = {
           created_at: string | null
           date: string
           id: string
+          mobile_number: string | null
           name: string
           remarks: string | null
           scheme_type: string
@@ -923,6 +924,7 @@ export type Database = {
           created_at?: string | null
           date?: string
           id?: string
+          mobile_number?: string | null
           name: string
           remarks?: string | null
           scheme_type: string
@@ -934,6 +936,7 @@ export type Database = {
           created_at?: string | null
           date?: string
           id?: string
+          mobile_number?: string | null
           name?: string
           remarks?: string | null
           scheme_type?: string
