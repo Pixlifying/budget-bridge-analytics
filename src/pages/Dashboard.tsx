@@ -18,6 +18,8 @@ const Dashboard = () => {
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
   const [marginDialogOpen, setMarginDialogOpen] = useState(false);
   const [pendingDialogOpen, setPendingDialogOpen] = useState(false);
+  const [applicationsDialogOpen, setApplicationsDialogOpen] = useState(false);
+  const [onlineServicesDialogOpen, setOnlineServicesDialogOpen] = useState(false);
 
   // Previous month for comparison
   const previousMonth = subMonths(date, 1);
@@ -691,7 +693,7 @@ const Dashboard = () => {
               </DashCard>
 
               {/* Online Services */}
-              <DashCard>
+              <DashCard onClick={() => setOnlineServicesDialogOpen(true)}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="p-2.5 rounded-xl bg-primary/10">
@@ -700,7 +702,7 @@ const Dashboard = () => {
                     <div>
                       <p className="text-sm text-muted-foreground">Online Services</p>
                       <p className="text-xl font-bold text-foreground">{formatCurrency(onlineServicesTotal)}</p>
-                      <p className="text-xs text-muted-foreground">{onlineServicesCount} services</p>
+                      <p className="text-xs text-muted-foreground">{onlineServicesCount} services • Click to view</p>
                     </div>
                   </div>
                 </div>
@@ -747,7 +749,7 @@ const Dashboard = () => {
               </DashCard>
 
               {/* Applications */}
-              <DashCard>
+              <DashCard onClick={() => setApplicationsDialogOpen(true)}>
                 <div className="flex items-center gap-3 mb-2">
                   <div className="p-2 rounded-lg bg-primary/10">
                     <FileText className="h-4 w-4 text-primary" />
@@ -755,7 +757,7 @@ const Dashboard = () => {
                   <h3 className="font-medium text-foreground">Applications</h3>
                 </div>
                 <p className="text-2xl font-bold text-foreground">{formatCurrency(applicationsTotal)}</p>
-                <p className="text-xs text-muted-foreground mt-1">{applicationsCount} applications</p>
+                <p className="text-xs text-muted-foreground mt-1">{applicationsCount} applications • Click to view</p>
               </DashCard>
 
               {/* Photostat */}
@@ -994,6 +996,107 @@ const Dashboard = () => {
               </div>
             ) : (
               <p className="text-center text-muted-foreground py-8">No pending balances found</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Applications Dialog */}
+      <Dialog open={applicationsDialogOpen} onOpenChange={setApplicationsDialogOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[70vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              Applications Details
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            {applicationsData && applicationsData.length > 0 ? (
+              <div className="space-y-3">
+                {applicationsData.map((item) => (
+                  <div 
+                    key={item.id} 
+                    className="p-4 rounded-xl border border-border/50 bg-gradient-to-br from-muted/30 to-muted/10 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-foreground text-lg">{item.customer_name}</h4>
+                        <div className="flex items-center gap-4 mt-2 text-sm">
+                          <span className="text-muted-foreground">📅 {format(new Date(item.date), 'dd MMM yyyy')}</span>
+                          {item.expense && (
+                            <span className="text-destructive">Expense: {formatCurrency(item.expense)}</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-primary">{formatCurrency(item.amount)}</p>
+                        <p className="text-xs text-muted-foreground">Amount</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <div className="border-t pt-4 mt-4">
+                  <div className="flex items-center justify-between font-bold text-lg">
+                    <span className="text-foreground">Total Applications</span>
+                    <span className="text-primary">{formatCurrency(applicationsTotal)}</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-center text-muted-foreground py-8">No applications found</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Online Services Dialog */}
+      <Dialog open={onlineServicesDialogOpen} onOpenChange={setOnlineServicesDialogOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[70vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Globe className="h-5 w-5 text-primary" />
+              Online Services Details
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            {onlineData && onlineData.length > 0 ? (
+              <div className="space-y-3">
+                {onlineData.map((item) => (
+                  <div 
+                    key={item.id} 
+                    className="p-4 rounded-xl border border-border/50 bg-gradient-to-br from-muted/30 to-muted/10 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-foreground text-lg">
+                          {item.service === 'Other' ? item.custom_service : item.service}
+                        </h4>
+                        {item.customer_name && (
+                          <p className="text-sm text-muted-foreground mt-1">{item.customer_name}</p>
+                        )}
+                        <div className="flex items-center gap-4 mt-2 text-sm">
+                          <span className="text-muted-foreground">📅 {format(new Date(item.date), 'dd MMM yyyy')}</span>
+                          {item.expense && (
+                            <span className="text-destructive">Expense: {formatCurrency(item.expense)}</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-primary">{formatCurrency(item.total)}</p>
+                        <p className="text-xs text-muted-foreground">Amount: {formatCurrency(item.amount)}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <div className="border-t pt-4 mt-4">
+                  <div className="flex items-center justify-between font-bold text-lg">
+                    <span className="text-foreground">Total Online Services</span>
+                    <span className="text-primary">{formatCurrency(onlineServicesTotal)}</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-center text-muted-foreground py-8">No online services found</p>
             )}
           </div>
         </DialogContent>

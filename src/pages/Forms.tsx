@@ -335,14 +335,30 @@ const Forms = () => {
               </div>
               <div>
                 <Label htmlFor="form_department">Department</Label>
-                <Input
-                  id="form_department"
+                <Select
                   value={formData.department}
-                  onChange={(e) => setFormData(prev => ({ ...prev, department: e.target.value }))}
-                  placeholder="Department name"
-                  required
-                />
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, department: value }))}
+                >
+                  <SelectTrigger id="form_department">
+                    <SelectValue placeholder="Select department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Deceased File">Deceased File</SelectItem>
+                    <SelectItem value="Others">Others</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
+              {formData.department === 'Others' && (
+                <div>
+                  <Label htmlFor="custom_dept_name">Custom Department</Label>
+                  <Input
+                    id="custom_dept_name"
+                    value={formData.remarks}
+                    onChange={(e) => setFormData(prev => ({ ...prev, remarks: e.target.value }))}
+                    placeholder="Enter custom name (optional)"
+                  />
+                </div>
+              )}
               <div>
                 <Label htmlFor="form_remarks">Remarks</Label>
                 <Input
@@ -441,13 +457,30 @@ const Forms = () => {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="edit_department">Department</Label>
-              <Input
-                id="edit_department"
+              <Select
                 value={formData.department}
-                onChange={(e) => setFormData(prev => ({ ...prev, department: e.target.value }))}
-                placeholder="Department name"
-              />
+                onValueChange={(value) => setFormData(prev => ({ ...prev, department: value }))}
+              >
+                <SelectTrigger id="edit_department">
+                  <SelectValue placeholder="Select department" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Deceased File">Deceased File</SelectItem>
+                  <SelectItem value="Others">Others</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+            {formData.department === 'Others' && (
+              <div className="grid gap-2">
+                <Label htmlFor="edit_custom_dept">Custom Department</Label>
+                <Input
+                  id="edit_custom_dept"
+                  value={formData.remarks}
+                  onChange={(e) => setFormData(prev => ({ ...prev, remarks: e.target.value }))}
+                  placeholder="Enter custom name (optional)"
+                />
+              </div>
+            )}
             <div className="grid gap-2">
               <Label htmlFor="edit_remarks">Remarks</Label>
               <Textarea

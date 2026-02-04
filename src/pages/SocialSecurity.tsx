@@ -44,6 +44,7 @@ const SocialSecurity = () => {
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [schemeFilter, setSchemeFilter] = useState<string>('all');
   const { toast } = useToast();
   const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<SocialSecurityForm>({
     defaultValues: {
@@ -210,13 +211,15 @@ const SocialSecurity = () => {
 
   const filteredRecords = records.filter(record => {
     const query = searchQuery.toLowerCase();
-    return (
+    const matchesSearch = (
       record.name.toLowerCase().includes(query) ||
       record.account_number.toLowerCase().includes(query) ||
       (record.address && record.address.toLowerCase().includes(query)) ||
       (record.mobile_number && record.mobile_number.toLowerCase().includes(query)) ||
       record.scheme_type.toLowerCase().includes(query)
     );
+    const matchesScheme = schemeFilter === 'all' || record.scheme_type === schemeFilter;
+    return matchesSearch && matchesScheme;
   });
 
   return (
@@ -237,6 +240,18 @@ const SocialSecurity = () => {
               className="pl-9 bg-sidebar-accent border-sidebar-border text-sidebar-foreground"
             />
           </div>
+          <Select value={schemeFilter} onValueChange={setSchemeFilter}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Filter by scheme" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Schemes</SelectItem>
+              <SelectItem value="APY">APY</SelectItem>
+              <SelectItem value="PMSBY">PMSBY</SelectItem>
+              <SelectItem value="PMJJY">PMJJY</SelectItem>
+              <SelectItem value="DLC">DLC (Life Certificate)</SelectItem>
+            </SelectContent>
+          </Select>
           <Button variant="outline" onClick={handlePrint} className="gap-2">
             <Printer className="h-4 w-4" />
             Print
@@ -352,6 +367,7 @@ const SocialSecurity = () => {
                     <SelectItem value="APY">APY</SelectItem>
                     <SelectItem value="PMSBY">PMSBY</SelectItem>
                     <SelectItem value="PMJJY">PMJJY</SelectItem>
+                    <SelectItem value="DLC">DLC (Life Certificate)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
