@@ -326,13 +326,15 @@ const SocialSecurity = () => {
                 )}
               </div>
 
-              {/* Address */}
+              {/* Address / PPO */}
               <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
+                <Label htmlFor="address">
+                  {watch('scheme_type') === 'DLC' ? 'PPO Number' : 'Address'}
+                </Label>
                 <Input
                   id="address"
                   {...register('address')}
-                  placeholder="Enter address"
+                  placeholder={watch('scheme_type') === 'DLC' ? 'Enter PPO number' : 'Enter address'}
                 />
               </div>
 
