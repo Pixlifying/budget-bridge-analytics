@@ -125,31 +125,22 @@
      }
    };
  
-   const extractAccountNumbers = (data: Record<string, any>[]): { accountNumber: string; type: string }[] => {
-     const accountSet = new Map<string, string>();
-     
-     for (const row of data) {
-       for (const [key, value] of Object.entries(row)) {
-         const keyLower = key.toLowerCase();
-         const val = String(value || '').trim();
-         
-         if (val && /^\d{9,18}$/.test(val.replace(/\s/g, ''))) {
-           const cleanAccount = val.replace(/\s/g, '');
-           if (keyLower.includes('from') || keyLower.includes('source') || keyLower.includes('debit')) {
-             if (!accountSet.has(cleanAccount)) accountSet.set(cleanAccount, 'from');
-             else if (accountSet.get(cleanAccount) === 'to') accountSet.set(cleanAccount, 'both');
-           } else if (keyLower.includes('to') || keyLower.includes('dest') || keyLower.includes('credit') || keyLower.includes('beneficiary')) {
-             if (!accountSet.has(cleanAccount)) accountSet.set(cleanAccount, 'to');
-             else if (accountSet.get(cleanAccount) === 'from') accountSet.set(cleanAccount, 'both');
-           } else if (keyLower.includes('account')) {
-             if (!accountSet.has(cleanAccount)) accountSet.set(cleanAccount, 'unknown');
-           }
-         }
-       }
-     }
-     
-     return Array.from(accountSet.entries()).map(([accountNumber, type]) => ({ accountNumber, type }));
-   };
+  const extractAccountNumbers = (data: Record<string, any>[]): string[] => {
+    const accountSet = new Set<string>();
+    
+    for (const row of data) {
+      for (const value of Object.values(row)) {
+        const val = String(value || '').trim();
+        // Match account numbers: 9-18 digits (with or without spaces)
+        const cleanVal = val.replace(/\s/g, '');
+        if (cleanVal && /^\d{9,18}$/.test(cleanVal)) {
+          accountSet.add(cleanVal);
+        }
+      }
+    }
+    
+    return Array.from(accountSet);
+  };
  
    const parseCSV = (content: string): Record<string, any>[] => {
      const result = Papa.parse(content, { header: true, skipEmptyLines: true, transformHeader: (h) => h.trim() });
@@ -199,6 +190,7 @@
        
        if (extractedAccounts.length === 0) {
          toast.error("No account numbers found in the file");
+        setIsUploading(false);
          return;
        }
  
@@ -209,15 +201,16 @@
        if (fetchError) throw fetchError;
  
        const existingNumbers = new Set(existingDbAccounts?.map(a => a.account_number) || []);
-       const newAccounts = extractedAccounts.filter(a => !existingNumbers.has(a.accountNumber));
+      const newAccounts = extractedAccounts.filter(acc => !existingNumbers.has(acc));
        
        if (newAccounts.length === 0) {
          toast.info("All accounts already exist in the system");
+        setIsUploading(false);
          return;
        }
  
-       const insertData = newAccounts.map(a => ({
-         account_number: a.accountNumber,
+      const insertData = newAccounts.map(acc => ({
+        account_number: acc,
          account_type: 'Savings',
          name: null,
          aadhar_number: null,
