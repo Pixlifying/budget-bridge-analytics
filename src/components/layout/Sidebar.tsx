@@ -168,7 +168,6 @@ const Sidebar = () => {
 
   // Non Financial Services submenu items
   const nonFinancialServiceItems = [
-     { icon: <Users size={16} />, label: 'Accounts', to: '/accounts' },
     { icon: <Landmark size={16} />, label: 'Accounts Opened', to: '/banking-accounts' },
     { icon: <Users size={16} />, label: 'Account Details', to: '/account-details' },
     { icon: <Shield size={16} />, label: 'Social Security', to: '/social-security' },
