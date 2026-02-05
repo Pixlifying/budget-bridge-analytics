@@ -39,6 +39,7 @@ import DLC from "@/pages/DLC";
 import Udhar from '@/pages/Udhar';
 import ODDetailRecords from "@/pages/ODDetailRecords";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+ import Accounts from "@/pages/Accounts";
 
 const queryClient = new QueryClient();
 
@@ -65,6 +66,7 @@ const App = () => {
                     <Route path="/banking-accounts" element={<BankingAccounts />} />
                     
                     <Route path="/od-records" element={<ODDetailRecords />} />
+                     <Route path="/accounts" element={<Accounts />} />
                     <Route path="/social-security" element={<SocialSecurity />} />
                     <Route path="/dlc" element={<DLC />} />
                     <Route path="/udhar" element={<Udhar />} />
