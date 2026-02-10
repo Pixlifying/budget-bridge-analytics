@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { format, isSameDay } from 'date-fns';
+import { format, isSameDay, startOfMonth, endOfMonth } from 'date-fns';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -11,12 +11,19 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Plus, Trash2, Calendar as CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatCurrency } from '@/utils/calculateUtils';
 
 interface Reminder {
   id: string;
@@ -32,6 +39,8 @@ const ReminderCalendar = () => {
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [newReminder, setNewReminder] = useState({ title: '', description: '' });
   const queryClient = useQueryClient();
+
+  const currentMonth = selectedDate || new Date();
 
   // Fetch all reminders
   const { data: reminders = [] } = useQuery({
@@ -50,6 +59,99 @@ const ReminderCalendar = () => {
       return data as Reminder[];
     },
   });
+
+  // Fetch monthly data for calendar tooltips
+  const monthStart = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
+  const monthEnd = format(endOfMonth(currentMonth), 'yyyy-MM-dd');
+
+  const { data: calApplications } = useQuery({
+    queryKey: ['cal-applications', monthStart],
+    queryFn: async () => {
+      const { data } = await supabase.from('applications').select('*')
+        .gte('date', monthStart).lte('date', monthEnd + 'T23:59:59.999');
+      return data || [];
+    },
+  });
+
+  const { data: calPhotostats } = useQuery({
+    queryKey: ['cal-photostats', monthStart],
+    queryFn: async () => {
+      const { data } = await supabase.from('photostats').select('*')
+        .gte('date', monthStart).lte('date', monthEnd + 'T23:59:59.999');
+      return data || [];
+    },
+  });
+
+  const { data: calExpenses } = useQuery({
+    queryKey: ['cal-expenses', monthStart],
+    queryFn: async () => {
+      const { data } = await supabase.from('expenses').select('*')
+        .gte('date', monthStart).lte('date', monthEnd + 'T23:59:59.999');
+      return data || [];
+    },
+  });
+
+  const { data: calPending } = useQuery({
+    queryKey: ['cal-pending', monthStart],
+    queryFn: async () => {
+      const { data } = await supabase.from('pending_balances').select('*')
+        .gte('date', monthStart).lte('date', monthEnd + 'T23:59:59.999');
+      return data || [];
+    },
+  });
+
+  const { data: calOnline } = useQuery({
+    queryKey: ['cal-online', monthStart],
+    queryFn: async () => {
+      const { data } = await supabase.from('online_services').select('*')
+        .gte('date', monthStart).lte('date', monthEnd + 'T23:59:59.999');
+      return data || [];
+    },
+  });
+
+  const { data: calBanking } = useQuery({
+    queryKey: ['cal-banking', monthStart],
+    queryFn: async () => {
+      const { data } = await supabase.from('banking_services').select('*')
+        .gte('date', monthStart).lte('date', monthEnd + 'T23:59:59.999');
+      return data || [];
+    },
+  });
+
+  // Build a map of date -> summary
+  const daySummaryMap = useMemo(() => {
+    const map: Record<string, {
+      applications: number;
+      photostat: number;
+      expenses: number;
+      pending: number;
+      online: number;
+      bankingAmount: number;
+      bankingMargin: number;
+      hasData: boolean;
+    }> = {};
+
+    const addToDate = (dateStr: string, field: string, value: number) => {
+      const key = dateStr.split('T')[0];
+      if (!map[key]) {
+        map[key] = { applications: 0, photostat: 0, expenses: 0, pending: 0, online: 0, bankingAmount: 0, bankingMargin: 0, hasData: false };
+      }
+      (map[key] as any)[field] += value;
+      map[key].hasData = true;
+    };
+
+    calApplications?.forEach(i => addToDate(i.date, 'applications', Number(i.amount)));
+    calPhotostats?.forEach(i => addToDate(i.date, 'photostat', Number(i.margin)));
+    calExpenses?.forEach(i => addToDate(i.date, 'expenses', Number(i.amount)));
+    calPending?.forEach(i => addToDate(i.date, 'pending', Number(i.amount)));
+    calOnline?.forEach(i => addToDate(i.date, 'online', Number(i.total)));
+    calBanking?.forEach(i => {
+      addToDate(i.date, 'bankingAmount', Number(i.amount));
+      addToDate(i.date, 'bankingMargin', Number(i.margin));
+    });
+
+    return map;
+  }, [calApplications, calPhotostats, calExpenses, calPending, calOnline, calBanking]);
 
   // Get reminders for selected date
   const selectedDateReminders = reminders.filter(
@@ -153,14 +255,82 @@ const ReminderCalendar = () => {
         </Button>
       </div>
 
-      <Calendar
-        mode="single"
-        selected={selectedDate}
-        onSelect={handleDateSelect}
-        modifiers={modifiers}
-        modifiersClassNames={modifiersClassNames}
-        className="rounded-md border w-full"
-      />
+      <TooltipProvider delayDuration={200}>
+        <Calendar
+          mode="single"
+          selected={selectedDate}
+          onSelect={handleDateSelect}
+          modifiers={modifiers}
+          modifiersClassNames={modifiersClassNames}
+          className="rounded-md border w-full"
+          components={{
+            DayContent: ({ date: dayDate, ...props }) => {
+              const dateKey = format(dayDate, 'yyyy-MM-dd');
+              const summary = daySummaryMap[dateKey];
+              
+              if (summary?.hasData) {
+                return (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="relative w-full h-full flex items-center justify-center">
+                        {dayDate.getDate()}
+                        <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-chart-1 rounded-full" />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-[220px] p-3 text-xs space-y-1.5 z-50">
+                      <p className="font-semibold text-foreground mb-1">{format(dayDate, 'dd MMM yyyy')}</p>
+                      {summary.applications > 0 && (
+                        <div className="flex justify-between gap-3">
+                          <span className="text-muted-foreground">Applications</span>
+                          <span className="font-medium text-foreground">{formatCurrency(summary.applications)}</span>
+                        </div>
+                      )}
+                      {summary.photostat > 0 && (
+                        <div className="flex justify-between gap-3">
+                          <span className="text-muted-foreground">Photostat</span>
+                          <span className="font-medium text-foreground">{formatCurrency(summary.photostat)}</span>
+                        </div>
+                      )}
+                      {summary.expenses > 0 && (
+                        <div className="flex justify-between gap-3">
+                          <span className="text-muted-foreground">Expenses</span>
+                          <span className="font-medium text-destructive">{formatCurrency(summary.expenses)}</span>
+                        </div>
+                      )}
+                      {summary.pending > 0 && (
+                        <div className="flex justify-between gap-3">
+                          <span className="text-muted-foreground">Pending Bal.</span>
+                          <span className="font-medium text-destructive">{formatCurrency(summary.pending)}</span>
+                        </div>
+                      )}
+                      {summary.online > 0 && (
+                        <div className="flex justify-between gap-3">
+                          <span className="text-muted-foreground">Online Svc.</span>
+                          <span className="font-medium text-foreground">{formatCurrency(summary.online)}</span>
+                        </div>
+                      )}
+                      {summary.bankingAmount > 0 && (
+                        <div className="flex justify-between gap-3">
+                          <span className="text-muted-foreground">Banking</span>
+                          <span className="font-medium text-foreground">{formatCurrency(summary.bankingAmount)}</span>
+                        </div>
+                      )}
+                      {summary.bankingMargin > 0 && (
+                        <div className="flex justify-between gap-3">
+                          <span className="text-muted-foreground">Bank Margin</span>
+                          <span className="font-medium text-primary">{formatCurrency(summary.bankingMargin)}</span>
+                        </div>
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              }
+              
+              return <span>{dayDate.getDate()}</span>;
+            },
+          }}
+        />
+      </TooltipProvider>
 
       {/* Add Reminder Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
