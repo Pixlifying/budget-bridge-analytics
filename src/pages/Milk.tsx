@@ -40,7 +40,7 @@ const Milk = () => {
   const [tempRate, setTempRate] = useState(defaultRate.toString());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [date, setDate] = useState<Date>(new Date());
-  const [viewMode, setViewMode] = useState<'day' | 'month' | 'year'>('day');
+  const [viewMode, setViewMode] = useState<'day' | 'month' | 'quarter' | 'year'>('day');
 
   // Form state for new record
   const [newRecord, setNewRecord] = useState({
@@ -87,6 +87,13 @@ const Milk = () => {
         const recordDate = new Date(record.date);
         return recordDate.getMonth() === date.getMonth() && 
                recordDate.getFullYear() === date.getFullYear();
+      });
+    } else if (viewMode === 'quarter') {
+      const qStart = new Date(date.getFullYear(), Math.floor(date.getMonth() / 3) * 3, 1);
+      const qEnd = new Date(date.getFullYear(), Math.floor(date.getMonth() / 3) * 3 + 3, 0, 23, 59, 59);
+      filtered = records.filter(record => {
+        const recordDate = new Date(record.date);
+        return recordDate >= qStart && recordDate <= qEnd;
       });
     } else if (viewMode === 'year') {
       filtered = records.filter(record => {

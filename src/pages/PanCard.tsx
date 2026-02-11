@@ -14,6 +14,7 @@ import {
   calculatePanCardMargin,
   filterByDate, 
   filterByMonth,
+  filterByQuarter,
   formatCurrency
 } from '@/utils/calculateUtils';
 
@@ -28,7 +29,7 @@ interface PanCardEntry {
 
 const PanCard = () => {
   const [date, setDate] = useState<Date>(new Date());
-  const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
+  const [viewMode, setViewMode] = useState<'day' | 'month' | 'quarter'>('day');
   const [panCards, setPanCards] = useState<PanCardEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filteredPanCards, setFilteredPanCards] = useState<PanCardEntry[]>([]);
@@ -74,8 +75,10 @@ const PanCard = () => {
   useEffect(() => {
     if (viewMode === 'day') {
       setFilteredPanCards(filterByDate(panCards, date));
-    } else {
+    } else if (viewMode === 'month') {
       setFilteredPanCards(filterByMonth(panCards, date));
+    } else {
+      setFilteredPanCards(filterByQuarter(panCards, date));
     }
   }, [date, viewMode, panCards]);
 

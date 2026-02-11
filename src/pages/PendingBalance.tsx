@@ -16,6 +16,7 @@ import { format } from 'date-fns';
 import { 
   filterByDate, 
   filterByMonth,
+  filterByQuarter,
   formatCurrency
 } from '@/utils/calculateUtils';
 
@@ -31,7 +32,7 @@ interface PendingBalanceEntry {
 
 const PendingBalance = () => {
   const [date, setDate] = useState<Date>(new Date());
-  const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
+  const [viewMode, setViewMode] = useState<'day' | 'month' | 'quarter'>('day');
   const [pendingBalances, setPendingBalances] = useState<PendingBalanceEntry[]>([]);
   const [filteredBalances, setFilteredBalances] = useState<PendingBalanceEntry[]>([]);
   const [editingEntry, setEditingEntry] = useState<PendingBalanceEntry | null>(null);
@@ -97,8 +98,10 @@ const PendingBalance = () => {
   useEffect(() => {
     if (viewMode === 'day') {
       setFilteredBalances(filterByDate(pendingBalances, date));
-    } else {
+    } else if (viewMode === 'month') {
       setFilteredBalances(filterByMonth(pendingBalances, date));
+    } else {
+      setFilteredBalances(filterByQuarter(pendingBalances, date));
     }
   }, [date, viewMode, pendingBalances]);
 

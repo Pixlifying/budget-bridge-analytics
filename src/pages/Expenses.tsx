@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
   filterByDate, 
   filterByMonth,
+  filterByQuarter,
   formatCurrency
 } from '@/utils/calculateUtils';
 import { escapeHtml } from '@/lib/sanitize';
@@ -28,7 +29,7 @@ interface ExpenseEntry {
 
 const Expenses = () => {
   const [date, setDate] = useState<Date>(new Date());
-  const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
+  const [viewMode, setViewMode] = useState<'day' | 'month' | 'quarter'>('day');
   const [expenses, setExpenses] = useState<ExpenseEntry[]>([]);
   const [filteredExpenses, setFilteredExpenses] = useState<ExpenseEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -79,8 +80,10 @@ const Expenses = () => {
   useEffect(() => {
     if (viewMode === 'day') {
       setFilteredExpenses(filterByDate(expenses, date));
-    } else {
+    } else if (viewMode === 'month') {
       setFilteredExpenses(filterByMonth(expenses, date));
+    } else {
+      setFilteredExpenses(filterByQuarter(expenses, date));
     }
   }, [date, viewMode, expenses]);
 
