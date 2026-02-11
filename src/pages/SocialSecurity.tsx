@@ -203,7 +203,7 @@ const SocialSecurity = () => {
           account_number: getValue(['account', 'acc']),
           address: getValue(['address', 'ppo']) || null,
           mobile_number: getValue(['mobile', 'phone', 'contact']) || null,
-          scheme_type: getValue(['scheme', 'type']) || 'APY',
+          scheme_type: schemeFilter !== 'all' ? schemeFilter : (getValue(['scheme', 'type']) || 'APY'),
           remarks: getValue(['remark', 'note']) || null,
           date: new Date().toISOString(),
         };
