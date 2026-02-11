@@ -156,11 +156,14 @@ const SocialSecurity = () => {
     const printWindow = window.open('', '', 'height=600,width=800');
     if (!printWindow) return;
 
+    const schemeLabel = schemeFilter === 'all' ? 'All Schemes (APY/PMSBY/PMJJY/DLC)' : schemeFilter === 'DLC' ? 'DLC (Life Certificate)' : schemeFilter;
+    const addressHeader = schemeFilter === 'DLC' ? 'PPO Number' : 'Address';
+
     const printContent = `
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Social Security Records</title>
+          <title>Social Security Records - ${escapeHtml(schemeLabel)}</title>
           <style>
             body { font-family: Arial, sans-serif; padding: 20px; }
             h1 { text-align: center; color: #333; }
@@ -173,14 +176,14 @@ const SocialSecurity = () => {
           </style>
         </head>
         <body>
-          <h1>Social Security Records (APY/PMSBY/PMJJY)</h1>
+          <h1>Social Security Records - ${escapeHtml(schemeLabel)}</h1>
           <table>
             <thead>
               <tr>
                 <th>Date</th>
                 <th>Name</th>
                 <th>Account No.</th>
-                <th>Address</th>
+                <th>${escapeHtml(addressHeader)}</th>
                 <th>Mobile</th>
                 <th>Scheme</th>
                 <th>Remarks</th>
@@ -415,7 +418,7 @@ const SocialSecurity = () => {
                   <TableHead>Date</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Account No.</TableHead>
-                  <TableHead>Address</TableHead>
+                  <TableHead>{schemeFilter === 'DLC' ? 'PPO Number' : 'Address'}</TableHead>
                   <TableHead>Mobile</TableHead>
                   <TableHead>Scheme</TableHead>
                   <TableHead>Remarks</TableHead>
