@@ -9,11 +9,12 @@ import ServiceForm from '@/components/ui/ServiceForm';
 import ServiceCard from '@/components/ui/ServiceCard';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import { Button } from '@/components/ui/button';
-import { 
+import {
   calculatePassportTotal, 
   calculatePassportMargin,
   filterByDate, 
   filterByMonth,
+  filterByQuarter,
   formatCurrency
 } from '@/utils/calculateUtils';
 
@@ -28,7 +29,7 @@ interface PassportEntry {
 
 const Passport = () => {
   const [date, setDate] = useState<Date>(new Date());
-  const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
+  const [viewMode, setViewMode] = useState<'day' | 'month' | 'quarter'>('day');
   const [passports, setPassports] = useState<PassportEntry[]>([]);
   const [filteredPassports, setFilteredPassports] = useState<PassportEntry[]>([]);
   const [editingEntry, setEditingEntry] = useState<PassportEntry | null>(null);
@@ -72,8 +73,10 @@ const Passport = () => {
   useEffect(() => {
     if (viewMode === 'day') {
       setFilteredPassports(filterByDate(passports, date));
-    } else {
+    } else if (viewMode === 'month') {
       setFilteredPassports(filterByMonth(passports, date));
+    } else {
+      setFilteredPassports(filterByQuarter(passports, date));
     }
   }, [date, viewMode, passports]);
 

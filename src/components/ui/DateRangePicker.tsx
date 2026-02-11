@@ -42,7 +42,7 @@ const DateRangePicker = ({ date, onDateChange, mode, onModeChange, showYearMode 
     onModeChange(value as 'day' | 'month' | 'year');
   };
 
-  const dateFormat = mode === 'day' ? 'd MMM yyyy' : mode === 'month' ? 'MMMM yyyy' : 'yyyy';
+  const dateFormat = mode === 'day' ? 'd MMM yyyy' : mode === 'month' ? 'MMMM yyyy' : mode === 'quarter' ? 'QQQ yyyy' : 'yyyy';
 
   return (
     <div className="flex items-center space-x-2">
@@ -56,6 +56,7 @@ const DateRangePicker = ({ date, onDateChange, mode, onModeChange, showYearMode 
         <SelectContent>
           <SelectItem value="day">Daily</SelectItem>
           <SelectItem value="month">Monthly</SelectItem>
+          <SelectItem value="quarter">Quarterly</SelectItem>
           {showYearMode && <SelectItem value="year">Yearly</SelectItem>}
         </SelectContent>
       </Select>

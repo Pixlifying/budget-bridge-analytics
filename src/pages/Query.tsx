@@ -29,7 +29,7 @@ const Query = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentQuery, setCurrentQuery] = useState<QueryEntry | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
+  const [viewMode, setViewMode] = useState<'day' | 'month' | 'quarter'>('day');
   const [filterCompleted, setFilterCompleted] = useState<boolean | null>(null);
 
   // Fetch queries data - using a simple placeholder since queries table doesn't exist yet

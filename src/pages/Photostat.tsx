@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { FileText, Plus, Edit, Trash2, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { formatCurrency, formatDate, filterByDate, filterByMonth } from '@/utils/calculateUtils';
+import { formatCurrency, formatDate, filterByDate, filterByMonth, filterByQuarter } from '@/utils/calculateUtils';
 import PageWrapper from '@/components/layout/PageWrapper';
 import { Button } from '@/components/ui/button';
 import ServiceCard from '@/components/ui/ServiceCard';
@@ -34,7 +34,7 @@ const Photostat = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [editingEntry, setEditingEntry] = useState<PhotostatEntry | null>(null);
   const [date, setDate] = useState<Date>(new Date());
-  const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
+  const [viewMode, setViewMode] = useState<'day' | 'month' | 'quarter'>('day');
 
   // Form state for inline entry
   const [newEntry, setNewEntry] = useState({
@@ -83,8 +83,10 @@ const Photostat = () => {
   useEffect(() => {
     if (viewMode === 'day') {
       setFilteredPhotostats(filterByDate(photostats, date));
-    } else {
+    } else if (viewMode === 'month') {
       setFilteredPhotostats(filterByMonth(photostats, date));
+    } else {
+      setFilteredPhotostats(filterByQuarter(photostats, date));
     }
   }, [date, viewMode, photostats]);
 

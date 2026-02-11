@@ -16,7 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { formatCurrency, filterByDate, filterByMonth } from '@/utils/calculateUtils';
+import { formatCurrency, filterByDate, filterByMonth, filterByQuarter } from '@/utils/calculateUtils';
 import { escapeHtml } from '@/lib/sanitize';
 import { format } from 'date-fns';
 
@@ -35,7 +35,7 @@ const Applications = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [editingEntry, setEditingEntry] = useState<ApplicationEntry | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [filterMode, setFilterMode] = useState<'day' | 'month'>('day');
+  const [filterMode, setFilterMode] = useState<'day' | 'month' | 'quarter'>('day');
 
   // Form state for inline entry
   const [newEntry, setNewEntry] = useState({
@@ -84,12 +84,15 @@ const Applications = () => {
     }
   };
 
-  const applyDateFilter = (data: ApplicationEntry[], date: Date, mode: 'day' | 'month') => {
+  const applyDateFilter = (data: ApplicationEntry[], date: Date, mode: 'day' | 'month' | 'quarter') => {
     if (mode === 'day') {
       const filtered = filterByDate(data, date);
       setFilteredApplications(filtered);
-    } else {
+    } else if (mode === 'month') {
       const filtered = filterByMonth(data, date);
+      setFilteredApplications(filtered);
+    } else {
+      const filtered = filterByQuarter(data, date);
       setFilteredApplications(filtered);
     }
   };
@@ -106,7 +109,7 @@ const Applications = () => {
     setSelectedDate(date);
   };
 
-  const handleModeChange = (mode: 'day' | 'month') => {
+  const handleModeChange = (mode: 'day' | 'month' | 'quarter') => {
     setFilterMode(mode);
   };
 

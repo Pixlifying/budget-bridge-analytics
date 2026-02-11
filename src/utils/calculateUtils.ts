@@ -1,5 +1,5 @@
 
-import { format, isSameDay, isSameMonth } from 'date-fns';
+import { format, isSameDay, isSameMonth, startOfQuarter, endOfQuarter, isWithinInterval } from 'date-fns';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -25,6 +25,15 @@ export const filterByMonth = <T extends { date: Date }>(items: T[], date: Date):
   return items.filter(item => {
     const itemDate = new Date(item.date);
     return isSameMonth(itemDate, date);
+  });
+};
+
+export const filterByQuarter = <T extends { date: Date }>(items: T[], date: Date): T[] => {
+  const qStart = startOfQuarter(date);
+  const qEnd = endOfQuarter(date);
+  return items.filter(item => {
+    const itemDate = new Date(item.date);
+    return isWithinInterval(itemDate, { start: qStart, end: qEnd });
   });
 };
 

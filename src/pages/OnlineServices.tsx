@@ -22,7 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { formatCurrency, filterByDate, filterByMonth } from '@/utils/calculateUtils';
+import { formatCurrency, filterByDate, filterByMonth, filterByQuarter } from '@/utils/calculateUtils';
 import { escapeHtml } from '@/lib/sanitize';
 import { format, startOfDay, endOfDay } from 'date-fns';
 
@@ -44,7 +44,7 @@ const OnlineServices = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [editingEntry, setEditingEntry] = useState<OnlineServiceEntry | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [filterMode, setFilterMode] = useState<'day' | 'month'>('day');
+  const [filterMode, setFilterMode] = useState<'day' | 'month' | 'quarter'>('day');
 
   // Form state for inline entry
   const [newEntry, setNewEntry] = useState({
@@ -113,15 +113,19 @@ const OnlineServices = () => {
     }
   };
 
-  const applyDateFilter = (data: OnlineServiceEntry[], date: Date, mode: 'day' | 'month') => {
+  const applyDateFilter = (data: OnlineServiceEntry[], date: Date, mode: 'day' | 'month' | 'quarter') => {
     console.log('Applying filter:', mode, 'for date:', date);
     if (mode === 'day') {
       const filtered = filterByDate(data, date);
       console.log('Filtered services by day:', filtered.length);
       setFilteredServices(filtered);
-    } else {
+    } else if (mode === 'month') {
       const filtered = filterByMonth(data, date);
       console.log('Filtered services by month:', filtered.length);
+      setFilteredServices(filtered);
+    } else {
+      const filtered = filterByQuarter(data, date);
+      console.log('Filtered services by quarter:', filtered.length);
       setFilteredServices(filtered);
     }
   };

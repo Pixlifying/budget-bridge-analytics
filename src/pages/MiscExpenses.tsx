@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import PageWrapper from '@/components/layout/PageWrapper';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
-import { filterByDate, filterByMonth, formatCurrency } from '@/utils/calculateUtils';
+import { filterByDate, filterByMonth, filterByQuarter, formatCurrency } from '@/utils/calculateUtils';
 import { escapeHtml } from '@/lib/sanitize';
 
 interface MiscExpense {
@@ -28,7 +28,7 @@ const MiscExpenses = () => {
   const [expenses, setExpenses] = useState<MiscExpense[]>([]);
   const [filteredExpenses, setFilteredExpenses] = useState<MiscExpense[]>([]);
   const [date, setDate] = useState<Date>(new Date());
-  const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
+  const [viewMode, setViewMode] = useState<'day' | 'month' | 'quarter'>('day');
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [expenseToDelete, setExpenseToDelete] = useState<string | null>(null);
 
@@ -74,8 +74,10 @@ const MiscExpenses = () => {
   useEffect(() => {
     if (viewMode === 'day') {
       setFilteredExpenses(filterByDate(expenses, date));
-    } else {
+    } else if (viewMode === 'month') {
       setFilteredExpenses(filterByMonth(expenses, date));
+    } else {
+      setFilteredExpenses(filterByQuarter(expenses, date));
     }
   }, [date, viewMode, expenses]);
 

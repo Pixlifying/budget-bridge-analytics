@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { CreditCard, Plus, Edit, Trash2, Printer, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { formatCurrency, formatDate, filterByDate, filterByMonth, calculateBankingServicesMargin } from '@/utils/calculateUtils';
+import { formatCurrency, formatDate, filterByDate, filterByMonth, filterByQuarter, calculateBankingServicesMargin } from '@/utils/calculateUtils';
 import { escapeHtml } from '@/lib/sanitize';
 import PageWrapper from '@/components/layout/PageWrapper';
 import { Button } from '@/components/ui/button';
@@ -38,7 +38,7 @@ const Banking = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [editingEntry, setEditingEntry] = useState<BankingEntry | null>(null);
   const [date, setDate] = useState<Date>(new Date());
-  const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
+  const [viewMode, setViewMode] = useState<'day' | 'month' | 'quarter'>('day');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state for inline entry
@@ -92,8 +92,10 @@ const Banking = () => {
   useEffect(() => {
     if (viewMode === 'day') {
       setFilteredEntries(filterByDate(bankingEntries, date));
-    } else {
+    } else if (viewMode === 'month') {
       setFilteredEntries(filterByMonth(bankingEntries, date));
+    } else {
+      setFilteredEntries(filterByQuarter(bankingEntries, date));
     }
   }, [date, viewMode, bankingEntries]);
 
