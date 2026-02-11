@@ -81,13 +81,30 @@ const AccountDetails = () => {
   const fetchAccountDetails = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('account_details')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // Fetch all records in batches to overcome Supabase 1000 row limit
+      const PAGE_SIZE = 1000;
+      let allData: AccountDetail[] = [];
+      let from = 0;
+      let hasMore = true;
 
-      if (error) throw error;
-      setAccountDetails(data || []);
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('account_details')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .range(from, from + PAGE_SIZE - 1);
+
+        if (error) throw error;
+        if (data && data.length > 0) {
+          allData = [...allData, ...data];
+          from += PAGE_SIZE;
+          hasMore = data.length === PAGE_SIZE;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      setAccountDetails(allData);
     } catch (error) {
       console.error('Error fetching account details:', error);
       toast.error("Failed to load account details");

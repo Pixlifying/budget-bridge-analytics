@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { format } from 'date-fns';
-import { Calendar, Plus, Printer, Trash2, Edit2, Search } from 'lucide-react';
+import { Calendar, Plus, Printer, Trash2, Edit2, Search, Upload } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import * as XLSX from 'xlsx';
+import Papa from 'papaparse';
 import PageWrapper from '@/components/layout/PageWrapper';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,6 +47,8 @@ const SocialSecurity = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [schemeFilter, setSchemeFilter] = useState<string>('all');
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<SocialSecurityForm>({
     defaultValues: {
@@ -149,6 +153,84 @@ const SocialSecurity = () => {
         description: error.message,
         variant: 'destructive',
       });
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const fileName = file.name.toLowerCase();
+    const isCSV = fileName.endsWith('.csv');
+    const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
+
+    if (!isCSV && !isExcel) {
+      toast({ title: 'Error', description: 'Please upload a CSV or Excel file', variant: 'destructive' });
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      let data: Record<string, any>[];
+      if (isExcel) {
+        const buffer = await file.arrayBuffer();
+        const workbook = XLSX.read(buffer, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        data = XLSX.utils.sheet_to_json(sheet);
+      } else {
+        const content = await file.text();
+        const result = Papa.parse(content, { header: true, skipEmptyLines: true, transformHeader: (h: string) => h.trim() });
+        data = result.data as Record<string, any>[];
+      }
+
+      if (data.length === 0) {
+        toast({ title: 'Error', description: 'No data found in the file', variant: 'destructive' });
+        return;
+      }
+
+      // Map CSV/Excel columns to social_security fields
+      const mappedRecords = data.map((row) => {
+        const getValue = (keys: string[]) => {
+          for (const key of keys) {
+            const found = Object.keys(row).find(k => k.toLowerCase().includes(key.toLowerCase()));
+            if (found && row[found]) return String(row[found]).trim();
+          }
+          return '';
+        };
+
+        return {
+          name: getValue(['name']),
+          account_number: getValue(['account', 'acc']),
+          address: getValue(['address', 'ppo']) || null,
+          mobile_number: getValue(['mobile', 'phone', 'contact']) || null,
+          scheme_type: getValue(['scheme', 'type']) || 'APY',
+          remarks: getValue(['remark', 'note']) || null,
+          date: new Date().toISOString(),
+        };
+      }).filter(r => r.name && r.account_number);
+
+      if (mappedRecords.length === 0) {
+        toast({ title: 'Error', description: 'No valid records found. Ensure columns include Name and Account Number.', variant: 'destructive' });
+        return;
+      }
+
+      // Insert in batches of 500
+      const BATCH_SIZE = 500;
+      let insertedCount = 0;
+      for (let i = 0; i < mappedRecords.length; i += BATCH_SIZE) {
+        const batch = mappedRecords.slice(i, i + BATCH_SIZE);
+        const { error } = await supabase.from('social_security').insert(batch);
+        if (error) throw error;
+        insertedCount += batch.length;
+      }
+
+      toast({ title: 'Success', description: `${insertedCount} record(s) uploaded successfully` });
+      fetchRecords();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -265,6 +347,22 @@ const SocialSecurity = () => {
             filename="social-security"
             label="Download"
           />
+          <input
+            type="file"
+            ref={fileInputRef}
+            accept=".csv,.xlsx,.xls"
+            onChange={handleFileUpload}
+            className="hidden"
+          />
+          <Button
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className="gap-2"
+          >
+            <Upload className="h-4 w-4" />
+            {isUploading ? 'Uploading...' : 'Browse'}
+          </Button>
         </div>
 
         {/* Inline Form */}
