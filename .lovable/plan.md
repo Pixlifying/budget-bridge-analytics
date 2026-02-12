@@ -1,75 +1,65 @@
 
 
-## Free Tier Optimization Plan for High Traffic
+## Plan: Multiple Improvements Across Dashboard Pages
 
-### Phase 1: Database Optimizations (No Cost)
+This plan covers 5 changes requested:
 
-**1. Add Database Indexes**
-- Create indexes on frequently queried columns (customer names, dates, service types)
-- This dramatically speeds up queries, reducing connection time
+### 1. Prevent Duplicate Accounts in Account Details Upload
 
-**2. Implement Connection Pooling**
-- Supabase uses PgBouncer by default
-- Ensure queries are efficient and connections are released quickly
+Currently, the Account Details page already checks for duplicates during file upload (lines 211-218 in AccountDetails.tsx). However, the manual "Add" form also checks for duplicates (line 265-274). This logic is already in place and working.
 
-**3. Optimize Queries**
-- Review all database queries for efficiency
-- Avoid fetching unnecessary data (use `select` to pick specific columns)
-- Implement proper pagination (already done for Account Details)
+**Action:** Verify the existing duplicate prevention is solid. Add a unique constraint on `account_number` in the `account_details` table via a database migration so duplicates are enforced at the database level too.
 
-### Phase 2: Frontend Optimizations (No Cost)
+---
 
-**1. Add Data Caching**
-- Use React Query's caching (already installed) with longer stale times
-- Cache frequently accessed data to reduce API calls
-- Implement optimistic updates
+### 2. Auto-Save to Account Details from "Accounts Opened" (OtherBankingServices)
 
-**2. Lazy Loading**
-- Load components and data only when needed
-- Implement code splitting for routes
-- Defer loading of heavy components (charts, tables)
+The Accounts Opened page (OtherBankingServices.tsx) already has code to save to `account_details` using `upsert` with `onConflict: 'account_number'` (lines 171-188). However, there is **no unique constraint** on `account_number` in the `account_details` table, which means the upsert silently fails.
 
-**3. Reduce Bundle Size**
-- Analyze and remove unused dependencies
-- Tree-shake unused code
+**Actions:**
+- Create a database migration to add a **unique constraint** on `account_details.account_number`.
+- This will make the existing upsert code in OtherBankingServices work correctly, automatically saving customer data (name, account number, aadhar number) to Account Details whenever a new account is opened.
 
-### Phase 3: Smart Data Strategies (No Cost)
+---
 
-**1. Implement Local Storage Caching**
-- Cache static/semi-static data in browser localStorage
-- Only fetch updates, not full datasets
+### 3. Remove DLC Block from Non-Financial Services
 
-**2. Debounce and Throttle**
-- Reduce API calls during search/filter operations
-- Batch requests where possible
+The standalone DLC page (`/dlc`) will be removed since DLC functionality already exists within the Social Security page as a scheme option.
 
-**3. Real-time Subscriptions**
-- Use Supabase real-time only for critical updates
-- Avoid subscribing to large tables
+**Actions:**
+- Remove the DLC route from `App.tsx` (line 69).
+- Remove the DLC sidebar entry from `Sidebar.tsx` (line 174).
+- Delete the `src/pages/DLC.tsx` file.
+- Remove the DLC import from `App.tsx` (line 38).
 
-### Realistic Expectations
+---
 
-| User Pattern | Can Free Tier Handle? |
-|--------------|----------------------|
-| 1000 users/day (not concurrent) | Yes, with optimizations |
-| 100-200 concurrent active users | Probably yes |
-| 500+ concurrent heavy users | Likely issues |
-| 1000 simultaneous active users | No, will hit limits |
+### 4. Consistent Theme Colors for All Page Headings
 
-### When You WILL Need to Upgrade
+Some pages use `PageWrapper` (which has its own heading style) and some use `PageHeader` (which uses sidebar theme colors). The goal is to make all headings look consistent.
 
-- Database exceeds 500 MB
-- Monthly API requests exceed 500,000
-- You see "too many connections" errors
-- Response times become slow
+**Actions:**
+- Update `PageWrapper` component to use the same sidebar-themed styling (`bg-sidebar`, `text-sidebar-foreground`) for its header section, matching the `PageHeader` component's appearance.
+- This will automatically apply to all pages using `PageWrapper` (Banking, Social Security, Expenses, Applications, etc.).
 
-### Cost-Effective Upgrade Path
+---
 
-When needed, Supabase Pro is $25/month and includes:
-- 8 GB database
-- Unlimited API requests
-- 100 concurrent connections
-- Daily backups
+### 5. Align Print, Download, and Browse Inline in Banking Transaction
 
-This is the most affordable scaling option for your stack.
+Currently in Banking.tsx, the Print and Download buttons are in the page header area (action prop), while the Browse CSV/Excel button is inside the form section below. They need to be in one line.
+
+**Actions:**
+- Move the Browse CSV/Excel button from inside the form area up to the action bar alongside Print and Download buttons in the `PageWrapper` action prop.
+- All three buttons (Print, Download, Browse) will appear inline in the top action bar.
+
+---
+
+### Technical Summary
+
+| Change | Files Affected |
+|--------|---------------|
+| Unique constraint on account_number | Database migration |
+| Remove DLC block | App.tsx, Sidebar.tsx, DLC.tsx (delete) |
+| Consistent heading theme | PageWrapper.tsx |
+| Banking buttons inline | Banking.tsx |
 
