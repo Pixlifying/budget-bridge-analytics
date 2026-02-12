@@ -171,7 +171,7 @@ const Sidebar = () => {
     { icon: <Landmark size={16} />, label: 'Accounts Opened', to: '/banking-accounts' },
     { icon: <Users size={16} />, label: 'Account Details', to: '/account-details' },
     { icon: <Shield size={16} />, label: 'Social Security', to: '/social-security' },
-    { icon: <Shield size={16} />, label: 'Life Certificate (DLC)', to: '/dlc' },
+    
   ];
 
   // Customer Services submenu items

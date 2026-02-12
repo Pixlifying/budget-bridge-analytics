@@ -35,7 +35,7 @@ import { applyColorTheme, getColorTheme } from "@/lib/themeUtils";
 import Forms from "@/pages/Forms";
 import Milk from "@/pages/Milk";
 import SocialSecurity from "@/pages/SocialSecurity";
-import DLC from "@/pages/DLC";
+
 import Udhar from '@/pages/Udhar';
 import ODDetailRecords from "@/pages/ODDetailRecords";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
@@ -66,7 +66,7 @@ const App = () => {
                     
                     <Route path="/od-records" element={<ODDetailRecords />} />
                     <Route path="/social-security" element={<SocialSecurity />} />
-                    <Route path="/dlc" element={<DLC />} />
+                    
                     <Route path="/udhar" element={<Udhar />} />
                     <Route path="/online-services" element={<OnlineServices />} />
                     <Route path="/applications" element={<Applications />} />
