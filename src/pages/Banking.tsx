@@ -438,15 +438,6 @@ const Banking = () => {
               filename="banking-data"
               currentData={filteredEntries}
             />
-          </div>
-        </div>
-      }
-    >
-      {/* Add Banking Entry Form */}
-      <div className="mb-6 p-4 bg-card backdrop-blur-sm rounded-lg shadow-lg border border-border">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-foreground">Add Banking Entry</h3>
-          <div className="flex items-center gap-2">
             <input
               ref={fileInputRef}
               type="file"
@@ -457,14 +448,19 @@ const Banking = () => {
             />
             <Button 
               variant="outline" 
-              size="sm"
               onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-1"
             >
-              <Upload size={14} />
-              Browse CSV/Excel
+              <Upload size={16} className="mr-2" />
+              Browse
             </Button>
           </div>
+        </div>
+      }
+    >
+      {/* Add Banking Entry Form */}
+      <div className="mb-6 p-4 bg-card backdrop-blur-sm rounded-lg shadow-lg border border-border">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-foreground">Add Banking Entry</h3>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
           <div>
