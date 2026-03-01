@@ -17,6 +17,7 @@ interface Notification {
 const NotificationBox = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
+  // Fetch all data in parallel for faster loading
   const { data: odData, refetch: refetchOd } = useQuery({
     queryKey: ['od_notifications'],
     queryFn: async () => {
@@ -26,30 +27,51 @@ const NotificationBox = () => {
         .order('date', { ascending: false })
         .order('created_at', { ascending: false })
         .limit(1);
+      
       if (error) throw error;
       return data;
     },
     refetchInterval: 60000,
   });
 
+  // Real-time subscription for OD records
   useEffect(() => {
     const channel = supabase
       .channel('od-notifications-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'od_detail_records' }, () => { refetchOd(); })
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'od_detail_records'
+        },
+        () => {
+          refetchOd();
+        }
+      )
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [refetchOd]);
 
+  // Fetch all pending balances
   const { data: pendingData } = useQuery({
     queryKey: ['pending_notifications'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('pending_balances').select('*').order('date', { ascending: false });
+      const { data, error } = await supabase
+        .from('pending_balances')
+        .select('*')
+        .order('date', { ascending: false });
+      
       if (error) throw error;
       return data;
     },
     refetchInterval: 60000,
   });
 
+  // Fetch khata customers with transactions to calculate current balance
   const { data: khataData } = useQuery({
     queryKey: ['khata_notifications'],
     queryFn: async () => {
@@ -57,17 +79,27 @@ const NotificationBox = () => {
         supabase.from('khata_customers').select('*'),
         supabase.from('khata_transactions').select('*')
       ]);
+      
       if (customersResult.error) throw customersResult.error;
       if (transactionsResult.error) throw transactionsResult.error;
+      
       const customers = customersResult.data || [];
       const transactions = transactionsResult.data || [];
-      return customers.map(customer => {
+      
+      // Calculate current balance for each customer
+      const customersWithBalance = customers.map(customer => {
         const customerTransactions = transactions.filter(t => t.customer_id === customer.id);
         const transactionTotal = customerTransactions.reduce((sum, t) => {
           return sum + (t.type === 'credit' ? Number(t.amount) : -Number(t.amount));
         }, 0);
-        return { ...customer, current_balance: Number(customer.opening_balance) + transactionTotal };
+        
+        return {
+          ...customer,
+          current_balance: Number(customer.opening_balance) + transactionTotal
+        };
       });
+      
+      return customersWithBalance;
     },
     refetchInterval: 60000,
   });
@@ -75,37 +107,46 @@ const NotificationBox = () => {
   useEffect(() => {
     const newNotifications: Notification[] = [];
 
+    // Show all cash in hand (overdraft notifications)
     if (odData && odData.length > 0) {
       const latestOD = odData[0];
       newNotifications.push({
-        id: `od-${latestOD.id}`, type: 'overdraft', title: 'Cash in Hand',
-        message: `Current: ${formatCurrency(latestOD.cash_in_hand)}`,
+        id: `od-${latestOD.id}`,
+        type: 'overdraft',
+        title: 'Cash in Hand',
+        message: `Current cash in hand: ${formatCurrency(latestOD.cash_in_hand)}`,
         amount: latestOD.cash_in_hand,
-        icon: <Wallet className="h-3.5 w-3.5" />,
+        icon: <Wallet className="h-4 w-4" />,
         priority: latestOD.cash_in_hand < 5000 ? 'high' : latestOD.cash_in_hand < 10000 ? 'medium' : 'low',
       });
     }
 
+    // Show individual pending balance customers
     if (pendingData && pendingData.length > 0) {
       pendingData.forEach((pending) => {
         newNotifications.push({
-          id: `pending-${pending.id}`, type: 'pending_balance', title: 'Pending',
-          message: `${pending.name} - ${pending.service}`,
+          id: `pending-${pending.id}`,
+          type: 'pending_balance',
+          title: 'Pending Payment',
+          message: `${pending.name} - ${pending.service}${pending.custom_service ? ` (${pending.custom_service})` : ''}`,
           amount: pending.amount,
-          icon: <AlertCircle className="h-3.5 w-3.5" />,
+          icon: <AlertCircle className="h-4 w-4" />,
           priority: pending.amount > 1000 ? 'high' : pending.amount > 500 ? 'medium' : 'low',
         });
       });
     }
 
+    // Show all khata customers with current balance (including negative amounts)
     if (khataData && khataData.length > 0) {
       khataData.forEach((customer) => {
         const isNegative = customer.current_balance < 0;
         newNotifications.push({
-          id: `khata-${customer.id}`, type: 'khata', title: 'Khata',
-          message: `${customer.name}: ${isNegative ? 'Owes' : 'Bal'} ${formatCurrency(Math.abs(customer.current_balance))}`,
+          id: `khata-${customer.id}`,
+          type: 'khata',
+          title: 'Khata Customer',
+          message: `${customer.name}: ${isNegative ? 'Owes ' : 'Balance '} ${formatCurrency(Math.abs(customer.current_balance))}`,
           amount: customer.current_balance,
-          icon: <Users className="h-3.5 w-3.5" />,
+          icon: <Users className="h-4 w-4" />,
           priority: Math.abs(customer.current_balance) > 50000 ? 'high' : Math.abs(customer.current_balance) > 10000 ? 'medium' : 'low',
         });
       });
@@ -116,45 +157,87 @@ const NotificationBox = () => {
 
   if (notifications.length === 0) {
     return (
-      <div className="flex items-center gap-2 text-sm text-muted-foreground py-1">
-        <CreditCard className="h-4 w-4" />
-        <span>No urgent notifications</span>
+      <div className="w-80 max-w-[90vw] h-96 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl border border-white/20 dark:border-white/10 shadow-xl p-4 md:w-80">
+        <div className="flex items-center gap-2 mb-4">
+          <CreditCard className="h-5 w-5 text-primary" />
+          <h3 className="font-semibold text-lg">Live Notifications</h3>
+        </div>
+        <div className="flex items-center justify-center h-64 text-muted-foreground">
+          <div className="text-center">
+            <CreditCard className="h-12 w-12 mx-auto mb-2 opacity-50" />
+            <p>All clear! No urgent notifications.</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center gap-2 overflow-hidden">
-      <CreditCard className="h-4 w-4 text-primary flex-shrink-0" />
-      <span className="text-xs font-semibold text-primary flex-shrink-0">LIVE</span>
-      <div className="overflow-hidden flex-1">
-        <div className="animate-marquee flex gap-6 whitespace-nowrap">
-          {[...notifications, ...notifications].map((notification, idx) => (
-            <span
-              key={`${notification.id}-${idx}`}
-              className="inline-flex items-center gap-1.5 text-sm"
-            >
-              <span className={`${
-                notification.type === 'overdraft' ? 'text-emerald-600 dark:text-emerald-400'
-                : notification.type === 'pending_balance' ? 'text-orange-600 dark:text-orange-400'
-                : 'text-purple-600 dark:text-purple-400'
-              }`}>
-                {notification.icon}
-              </span>
-              <span className="text-foreground font-medium">{notification.title}:</span>
-              <span className="text-muted-foreground">{notification.message}</span>
-              {notification.amount !== undefined && (
-                <span className={`font-semibold ${
-                  notification.type === 'overdraft' ? 'text-emerald-600 dark:text-emerald-400'
-                  : notification.type === 'pending_balance' ? 'text-orange-600 dark:text-orange-400'
-                  : 'text-purple-600 dark:text-purple-400'
-                }`}>
-                  {formatCurrency(Math.abs(notification.amount))}
-                </span>
-              )}
-              <span className="text-border mx-2">•</span>
-            </span>
-          ))}
+    <div className="w-80 max-w-[90vw] h-96 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl border border-white/20 dark:border-white/10 shadow-xl overflow-hidden relative md:w-80">
+      {/* Header */}
+      <div className="p-4 border-b border-white/20 dark:border-white/10">
+        <div className="flex items-center gap-2">
+          <CreditCard className="h-5 w-5 text-primary" />
+          <h3 className="font-semibold text-lg">Live Notifications</h3>
+        </div>
+      </div>
+
+      {/* Scrolling Container */}
+      <div className="relative h-80 overflow-hidden">
+        {/* Top fade effect */}
+        <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-white/60 to-transparent dark:from-slate-800/60 z-10 pointer-events-none" />
+        
+        {/* Bottom fade effect */}
+        <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white/60 to-transparent dark:from-slate-800/60 z-10 pointer-events-none" />
+
+        {/* Animated notifications */}
+        <div className="h-full overflow-hidden group">
+          <div className="animate-scroll-up group-hover:pause">
+            {/* Single loop of notifications */}
+            {notifications.map((notification, index) => (
+              <div
+                key={`${notification.id}-${index}`}
+                className={`p-3 m-2 rounded-xl border transition-all duration-300 hover:scale-105 ${
+                  notification.type === 'overdraft'
+                    ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800'
+                    : notification.type === 'pending_balance'
+                    ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'
+                    : 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <div className={`p-2 rounded-lg ${
+                    notification.type === 'overdraft'
+                      ? 'bg-emerald-100 dark:bg-emerald-800/40 text-emerald-600 dark:text-emerald-400'
+                      : notification.type === 'pending_balance'
+                      ? 'bg-orange-100 dark:bg-orange-800/40 text-orange-600 dark:text-orange-400'
+                      : 'bg-purple-100 dark:bg-purple-800/40 text-purple-600 dark:text-purple-400'
+                  }`}>
+                    {notification.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-sm text-foreground truncate">
+                      {notification.title}
+                    </h4>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      {notification.message}
+                    </p>
+                    {notification.amount && (
+                      <div className={`text-xs font-medium mt-1 ${
+                        notification.type === 'overdraft'
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : notification.type === 'pending_balance'
+                          ? 'text-orange-600 dark:text-orange-400'
+                          : 'text-purple-600 dark:text-purple-400'
+                      }`}>
+                        {formatCurrency(notification.amount)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

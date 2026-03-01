@@ -587,7 +587,6 @@ const Dashboard = () => {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search..." className="pl-9 w-64 bg-background border-border" />
             </div>
-            <DigitalClock />
             <DateRangePicker date={date} onDateChange={handleDateChange} mode={viewMode} onModeChange={handleViewModeChange} />
             <button className="p-2 rounded-full bg-background border border-border hover:bg-muted transition-colors">
               <MessageSquare className="h-5 w-5 text-muted-foreground" />
@@ -604,7 +603,7 @@ const Dashboard = () => {
         <div className="flex gap-6">
           {/* Main Content */}
           <div className="flex-1 space-y-5">
-            {/* Cash in Hand Banner with Other Banking */}
+            {/* Cash in Hand Banner - Moved to Top */}
             <div className="bg-gradient-to-r from-primary via-primary/90 to-primary/80 rounded-2xl p-6 text-primary-foreground relative overflow-hidden">
               <div className="absolute right-0 top-0 w-40 h-40 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
               <div className="relative z-10 flex items-center justify-between">
@@ -640,22 +639,7 @@ const Dashboard = () => {
                     </div>
                     <span className="text-xs opacity-80">Applications</span>
                   </div>
-                  <div className="text-center border-l border-white/20 pl-4">
-                    <div className="flex items-center gap-1 mb-1 opacity-80">
-                      <BarChart3 className="h-3 w-3" />
-                      <span className="text-xs">Other Banking</span>
-                    </div>
-                    <p className="text-2xl font-bold">{formatCurrency(bankingAccountsMargin)}</p>
-                    <span className="text-xs opacity-80">{bankingAccountsData?.length || 0} entries</span>
-                  </div>
                 </div>
-              </div>
-            </div>
-
-            {/* Live Notification Marquee */}
-            <div className="bg-primary/10 border border-primary/20 rounded-xl overflow-hidden">
-              <div className="py-2 px-4 overflow-hidden">
-                <NotificationBox />
               </div>
             </div>
 
@@ -876,6 +860,34 @@ const Dashboard = () => {
               </DashCard>
             </div>
 
+            {/* Fourth Row - Other Banking & Summary */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Other Banking Services */}
+              <DashCard>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <BarChart3 className="h-4 w-4 text-primary" />
+                  </div>
+                  <h3 className="font-medium text-foreground">Other Banking</h3>
+                </div>
+                <p className="text-2xl font-bold text-foreground">{formatCurrency(bankingAccountsMargin)}</p>
+                <p className="text-xs text-muted-foreground mt-1">{bankingAccountsData?.length || 0} entries</p>
+              </DashCard>
+
+              {/* Total Revenue */}
+              <DashCard>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <TrendingUp className="h-4 w-4 text-primary" />
+                  </div>
+                  <h3 className="font-medium text-foreground">Total Revenue</h3>
+                </div>
+                <p className="text-2xl font-bold text-foreground">
+                  {formatCurrency(bankingServicesTotal + onlineServicesTotal + applicationsTotal + photostatTotal)}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">All services combined</p>
+              </DashCard>
+            </div>
           </div>
 
           {/* Right Sidebar */}
@@ -904,6 +916,8 @@ const Dashboard = () => {
               </div>
             </DashCard>
 
+            <DigitalClock />
+            <NotificationBox />
             <ReminderCalendar />
           </div>
         </div>
