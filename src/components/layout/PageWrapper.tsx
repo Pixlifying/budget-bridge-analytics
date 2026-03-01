@@ -21,7 +21,11 @@ const PageWrapper = ({ title, subtitle, action, children, icon }: PageWrapperPro
               {subtitle && <p className="text-sidebar-foreground/70">{subtitle}</p>}
             </div>
           </div>
-          {action && <div className="mt-4 md:mt-0 text-sidebar-foreground">{action}</div>}
+          {action && (
+            <div className="mt-4 md:mt-0 text-sidebar-foreground [&_button]:bg-sidebar-accent [&_button]:text-sidebar-accent-foreground [&_button]:border-sidebar-border [&_select]:bg-sidebar-accent [&_select]:text-sidebar-accent-foreground [&_select]:border-sidebar-border [&_[role=combobox]]:bg-sidebar-accent [&_[role=combobox]]:text-sidebar-accent-foreground [&_[role=combobox]]:border-sidebar-border">
+              {action}
+            </div>
+          )}
         </div>
       </header>
       <main className="px-6 md:px-8 pb-8">{children}</main>
