@@ -381,6 +381,45 @@ export type Database = {
         }
         Relationships: []
       }
+      documentation: {
+        Row: {
+          amount: number
+          created_at: string
+          custom_service: string | null
+          date: string
+          expense: number
+          id: string
+          mobile: string | null
+          name: string
+          service_type: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          custom_service?: string | null
+          date?: string
+          expense?: number
+          id?: string
+          mobile?: string | null
+          name: string
+          service_type: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          custom_service?: string | null
+          date?: string
+          expense?: number
+          id?: string
+          mobile?: string | null
+          name?: string
+          service_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       expenses: {
         Row: {
           amount: number
