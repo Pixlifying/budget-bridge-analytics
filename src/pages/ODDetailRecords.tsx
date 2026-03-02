@@ -743,20 +743,14 @@ const ODDetailRecords = () => {
           </CardContent>
         </Card>
 
-        {/* Print Controls */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Printer className="h-5 w-5" />
-              Print & Export
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap items-end gap-4">
-              <div className="space-y-2">
-                <Label>Mode</Label>
+        {/* Print & Export Section - Inline */}
+        <Card className="border-primary/20">
+          <CardContent className="py-4">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Label className="text-sm whitespace-nowrap">Mode:</Label>
                 <Select value={printMode} onValueChange={(v: 'range' | 'month') => setPrintMode(v)}>
-                  <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-28 h-9"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="range">Date Range</SelectItem>
                     <SelectItem value="month">Month</SelectItem>
@@ -765,23 +759,23 @@ const ODDetailRecords = () => {
               </div>
               {printMode === 'range' ? (
                 <>
-                  <div className="space-y-2">
-                    <Label>Start Date</Label>
-                    <Input type="date" value={printDateRange.startDate} onChange={(e) => setPrintDateRange({ ...printDateRange, startDate: e.target.value })} />
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm whitespace-nowrap">Start:</Label>
+                    <Input type="date" className="w-36 h-9" value={printDateRange.startDate} onChange={(e) => setPrintDateRange({ ...printDateRange, startDate: e.target.value })} />
                   </div>
-                  <div className="space-y-2">
-                    <Label>End Date</Label>
-                    <Input type="date" value={printDateRange.endDate} onChange={(e) => setPrintDateRange({ ...printDateRange, endDate: e.target.value })} />
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm whitespace-nowrap">End:</Label>
+                    <Input type="date" className="w-36 h-9" value={printDateRange.endDate} onChange={(e) => setPrintDateRange({ ...printDateRange, endDate: e.target.value })} />
                   </div>
                 </>
               ) : (
-                <div className="space-y-2">
-                  <Label>Month</Label>
-                  <Input type="month" value={printMonth} onChange={(e) => setPrintMonth(e.target.value)} />
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm whitespace-nowrap">Month:</Label>
+                  <Input type="month" className="w-36 h-9" value={printMonth} onChange={(e) => setPrintMonth(e.target.value)} />
                 </div>
               )}
-              <Button onClick={handlePrint} className="gap-2"><Printer className="h-4 w-4" />Print</Button>
-              <Button variant="outline" onClick={handleDownload} className="gap-2"><Download className="h-4 w-4" />Download Excel</Button>
+              <Button size="sm" onClick={handlePrint} className="gap-2"><Printer className="h-4 w-4" />Print</Button>
+              <Button size="sm" variant="outline" onClick={handleDownload} className="gap-2"><Download className="h-4 w-4" />Download Excel</Button>
             </div>
           </CardContent>
         </Card>
