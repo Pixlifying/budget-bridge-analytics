@@ -65,7 +65,7 @@ const PageHeader = ({
             </div>
           )}
           {children && (
-            <div className="flex items-center gap-2 animate-slide-in-right text-sidebar-foreground [&_button]:bg-sidebar-accent [&_button]:text-sidebar-accent-foreground [&_button]:border-sidebar-border [&_select]:bg-sidebar-accent [&_select]:text-sidebar-accent-foreground [&_select]:border-sidebar-border [&_[role=combobox]]:bg-sidebar-accent [&_[role=combobox]]:text-sidebar-accent-foreground [&_[role=combobox]]:border-sidebar-border">
+            <div className="flex items-center gap-2 animate-slide-in-right text-sidebar-foreground">
               {children}
             </div>
           )}

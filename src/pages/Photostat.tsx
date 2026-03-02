@@ -161,18 +161,11 @@ const Photostat = () => {
 
       if (error) throw error;
 
-      // Delete old expense and insert new one if expense > 0
-      await supabase
-        .from('expenses')
-        .delete()
-        .eq('name', 'Photostat Service')
-        .gte('date', new Date(editingEntry.date).toISOString().split('T')[0])
-        .lt('date', new Date(editingEntry.date).toISOString().split('T')[0] + 'T23:59:59.999');
-      
+      // Update or insert expense
       if (editForm.expense > 0) {
         await supabase
           .from('expenses')
-          .insert({
+          .upsert({
             date: new Date(editForm.date).toISOString(),
             name: 'Photostat Service',
             amount: editForm.expense,

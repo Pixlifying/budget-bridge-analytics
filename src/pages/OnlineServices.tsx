@@ -242,21 +242,11 @@ const OnlineServices = () => {
 
       if (error) throw error;
 
-      // Delete old expense and insert new one if expense > 0
-      const oldServiceName = editingEntry.service === 'Other' && editingEntry.custom_service
-        ? editingEntry.custom_service
-        : editingEntry.service;
-      await supabase
-        .from('expenses')
-        .delete()
-        .eq('name', `Online Service - ${oldServiceName}`)
-        .gte('date', new Date(editingEntry.date).toISOString().split('T')[0])
-        .lt('date', new Date(editingEntry.date).toISOString().split('T')[0] + 'T23:59:59.999');
-      
+      // Update or insert expense
       if (editForm.expense > 0) {
         await supabase
           .from('expenses')
-          .insert({
+          .upsert({
             date: new Date(editForm.date).toISOString(),
             name: `Online Service - ${serviceName}`,
             amount: editForm.expense,
