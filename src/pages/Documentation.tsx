@@ -201,6 +201,34 @@ const Documentation = () => {
 
       if (error) throw error;
 
+      // Update or insert expense (avoid double entry)
+      if (editForm.expense > 0) {
+        const { data: existingExpense } = await supabase
+          .from('expenses')
+          .select('id')
+          .eq('name', `Documentation - ${editingEntry.name}`)
+          .limit(1);
+
+        if (existingExpense && existingExpense.length > 0) {
+          await supabase
+            .from('expenses')
+            .update({
+              date: new Date(editForm.date).toISOString(),
+              name: `Documentation - ${editForm.name}`,
+              amount: editForm.expense,
+            })
+            .eq('id', existingExpense[0].id);
+        } else {
+          await supabase
+            .from('expenses')
+            .insert({
+              date: new Date(editForm.date).toISOString(),
+              name: `Documentation - ${editForm.name}`,
+              amount: editForm.expense,
+            });
+        }
+      }
+
       const updatedEntry: DocumentationEntry = {
         ...editingEntry,
         date: new Date(editForm.date),

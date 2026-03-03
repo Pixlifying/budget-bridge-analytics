@@ -242,15 +242,35 @@ const OnlineServices = () => {
 
       if (error) throw error;
 
-      // Update or insert expense
+      // Update or insert expense (avoid double entry)
       if (editForm.expense > 0) {
-        await supabase
+        const oldServiceName = editingEntry.service === 'Other' && editingEntry.custom_service
+          ? editingEntry.custom_service
+          : editingEntry.service;
+        const { data: existingExpense } = await supabase
           .from('expenses')
-          .upsert({
-            date: new Date(editForm.date).toISOString(),
-            name: `Online Service - ${serviceName}`,
-            amount: editForm.expense,
-          });
+          .select('id')
+          .eq('name', `Online Service - ${oldServiceName}`)
+          .limit(1);
+
+        if (existingExpense && existingExpense.length > 0) {
+          await supabase
+            .from('expenses')
+            .update({
+              date: new Date(editForm.date).toISOString(),
+              name: `Online Service - ${serviceName}`,
+              amount: editForm.expense,
+            })
+            .eq('id', existingExpense[0].id);
+        } else {
+          await supabase
+            .from('expenses')
+            .insert({
+              date: new Date(editForm.date).toISOString(),
+              name: `Online Service - ${serviceName}`,
+              amount: editForm.expense,
+            });
+        }
       }
 
       const updatedEntry: OnlineServiceEntry = {
