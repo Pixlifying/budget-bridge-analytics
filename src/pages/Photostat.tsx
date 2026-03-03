@@ -161,15 +161,32 @@ const Photostat = () => {
 
       if (error) throw error;
 
-      // Update or insert expense
+      // Update or insert expense (avoid double entry)
       if (editForm.expense > 0) {
-        await supabase
+        const { data: existingExpense } = await supabase
           .from('expenses')
-          .upsert({
-            date: new Date(editForm.date).toISOString(),
-            name: 'Photostat Service',
-            amount: editForm.expense,
-          });
+          .select('id')
+          .eq('name', 'Photostat Service')
+          .limit(1);
+
+        if (existingExpense && existingExpense.length > 0) {
+          await supabase
+            .from('expenses')
+            .update({
+              date: new Date(editForm.date).toISOString(),
+              name: 'Photostat Service',
+              amount: editForm.expense,
+            })
+            .eq('id', existingExpense[0].id);
+        } else {
+          await supabase
+            .from('expenses')
+            .insert({
+              date: new Date(editForm.date).toISOString(),
+              name: 'Photostat Service',
+              amount: editForm.expense,
+            });
+        }
       }
 
       setPhotostats(prev => 
