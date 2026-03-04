@@ -188,32 +188,15 @@ const Applications = () => {
 
       if (error) throw error;
 
-      // Update or insert expense (avoid double entry)
+      // Update or insert expense
       if (editForm.expense > 0) {
-        const { data: existingExpense } = await supabase
+        await supabase
           .from('expenses')
-          .select('id')
-          .eq('name', `Application - ${editingEntry.customer_name}`)
-          .limit(1);
-
-        if (existingExpense && existingExpense.length > 0) {
-          await supabase
-            .from('expenses')
-            .update({
-              date: new Date(editForm.date).toISOString(),
-              name: `Application - ${editForm.customer_name}`,
-              amount: editForm.expense,
-            })
-            .eq('id', existingExpense[0].id);
-        } else {
-          await supabase
-            .from('expenses')
-            .insert({
-              date: new Date(editForm.date).toISOString(),
-              name: `Application - ${editForm.customer_name}`,
-              amount: editForm.expense,
-            });
-        }
+          .upsert({
+            date: new Date(editForm.date).toISOString(),
+            name: `Application - ${editForm.customer_name}`,
+            amount: editForm.expense,
+          });
       }
 
       const updatedEntry: ApplicationEntry = {

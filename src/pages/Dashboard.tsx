@@ -5,12 +5,13 @@ import { useQuery } from '@tanstack/react-query';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import DateRangePicker from '@/components/ui/DateRangePicker';
+import NotificationBox from '@/components/ui/NotificationBox';
 import ReminderCalendar from '@/components/ui/ReminderCalendar';
+import DigitalClock from '@/components/ui/DigitalClock';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatCurrency } from '@/utils/calculateUtils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 
 const Dashboard = () => {
   const [date, setDate] = useState<Date>(new Date());
@@ -19,13 +20,6 @@ const Dashboard = () => {
   const [pendingDialogOpen, setPendingDialogOpen] = useState(false);
   const [applicationsDialogOpen, setApplicationsDialogOpen] = useState(false);
   const [onlineServicesDialogOpen, setOnlineServicesDialogOpen] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
-
-  // Update clock every second
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   // Previous month for comparison
   const previousMonth = subMonths(date, 1);
@@ -609,24 +603,16 @@ const Dashboard = () => {
         <div className="flex gap-6">
           {/* Main Content */}
           <div className="flex-1 space-y-5">
-            {/* Cash in Hand Banner with Current Time & Other Banking */}
+            {/* Cash in Hand Banner - Moved to Top */}
             <div className="bg-gradient-to-r from-primary via-primary/90 to-primary/80 rounded-2xl p-6 text-primary-foreground relative overflow-hidden">
               <div className="absolute right-0 top-0 w-40 h-40 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
-              <div className="relative z-10">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <Wallet className="h-5 w-5 opacity-80" />
-                      <h3 className="text-sm opacity-80">Cash in Hand</h3>
-                    </div>
-                    <p className="text-4xl font-bold">{formatCurrency(latestCashInHand)}</p>
+              <div className="relative z-10 flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Wallet className="h-5 w-5 opacity-80" />
+                    <h3 className="text-sm opacity-80">Cash in Hand</h3>
                   </div>
-                  <div className="text-right">
-                    <p className="text-3xl font-bold tracking-wider font-mono">
-                      {format(currentTime, 'HH:mm:ss')}
-                    </p>
-                    <p className="text-xs opacity-70 mt-1">{format(currentTime, 'EEEE, dd MMM yyyy')}</p>
-                  </div>
+                  <p className="text-4xl font-bold">{formatCurrency(latestCashInHand)}</p>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-center">
@@ -653,34 +639,9 @@ const Dashboard = () => {
                     </div>
                     <span className="text-xs opacity-80">Applications</span>
                   </div>
-                  <div className="border-l border-white/30 pl-4 text-center">
-                    <div className="bg-white/20 rounded-xl p-3 backdrop-blur-sm mb-1">
-                      <span className="text-2xl font-bold">{formatCurrency(bankingAccountsMargin)}</span>
-                    </div>
-                    <span className="text-xs opacity-80">Other Banking</span>
-                  </div>
                 </div>
               </div>
             </div>
-
-            {/* Live Activity Marquee */}
-            {recentActivitiesData && recentActivitiesData.length > 0 && (
-              <div className="bg-primary/10 rounded-xl overflow-hidden">
-                <div className="flex items-center overflow-hidden whitespace-nowrap">
-                  <div className="animate-marquee flex items-center gap-6 py-2 px-4">
-                    {[...recentActivitiesData, ...recentActivitiesData].map((activity, idx) => (
-                      <span key={`${activity.id}-${idx}`} className="inline-flex items-center gap-2 text-sm">
-                        <span className={`font-medium ${activity.amount < 0 ? 'text-destructive' : 'text-primary'}`}>
-                          {activity.amount < 0 ? '-' : '+'}{formatCurrency(Math.abs(activity.amount))}
-                        </span>
-                        <span className="text-muted-foreground">{activity.description}</span>
-                        <span className="text-muted-foreground/50">•</span>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Top Stats Row */}
             <div className="grid grid-cols-4 gap-4">
@@ -811,51 +772,64 @@ const Dashboard = () => {
                 <p className="text-xs text-muted-foreground mt-1">Margin: {formatCurrency(photostatMarginTotal)}</p>
               </DashCard>
 
-              {/* Pending Balance with Hover */}
-              <HoverCard>
-                <HoverCardTrigger asChild>
-                  <div>
-                    <DashCard 
-                      className="cursor-pointer hover:shadow-lg transition-shadow"
-                      onClick={() => setPendingDialogOpen(true)}
-                    >
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 rounded-lg bg-destructive/10">
-                          <AlertCircle className="h-4 w-4 text-destructive" />
-                        </div>
-                        <h3 className="font-medium text-foreground">Pending Balance</h3>
-                      </div>
-                      <p className="text-2xl font-bold text-foreground">{formatCurrency(pendingBalanceTotal)}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{pendingBalanceData?.length || 0} pending entries • Hover for details</p>
-                    </DashCard>
+              {/* Pending Balance */}
+              <DashCard 
+                className="cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => setPendingDialogOpen(true)}
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 rounded-lg bg-destructive/10">
+                    <AlertCircle className="h-4 w-4 text-destructive" />
                   </div>
-                </HoverCardTrigger>
-                <HoverCardContent className="w-80 max-h-64 overflow-y-auto" side="top">
-                  <h4 className="font-semibold text-sm mb-2">Pending Balance Details</h4>
-                  {pendingBalanceData && pendingBalanceData.length > 0 ? (
-                    <div className="space-y-2">
-                      {pendingBalanceData.slice(0, 5).map((item) => (
-                        <div key={item.id} className="flex justify-between items-start text-xs border-b border-border/50 pb-1.5">
-                          <div>
-                            <p className="font-medium text-foreground">{item.name}</p>
-                            <p className="text-muted-foreground">{format(new Date(item.date), 'dd MMM yyyy')} • {item.service === 'Other' ? item.custom_service : item.service}</p>
-                          </div>
-                          <span className="font-semibold text-destructive">{formatCurrency(item.amount)}</span>
-                        </div>
-                      ))}
-                      {pendingBalanceData.length > 5 && (
-                        <p className="text-xs text-muted-foreground text-center">+{pendingBalanceData.length - 5} more • Click to view all</p>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">No pending balances</p>
-                  )}
-                </HoverCardContent>
-              </HoverCard>
+                  <h3 className="font-medium text-foreground">Pending Balance</h3>
+                </div>
+                <p className="text-2xl font-bold text-foreground">{formatCurrency(pendingBalanceTotal)}</p>
+                <p className="text-xs text-muted-foreground mt-1">{pendingBalanceData?.length || 0} pending entries • Click to view</p>
+              </DashCard>
             </div>
 
-            {/* Third Row - Summary Stats */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* Third Row - Recent Activities (Vertical Ticker) */}
+            <div className="grid grid-cols-4 gap-4">
+              <DashCard className="col-span-3">
+                <h3 className="font-medium text-foreground mb-3">Recent Activities {viewMode === 'day' ? '(Today)' : '(This Month)'}</h3>
+                <div className="relative overflow-hidden h-48">
+                  {recentActivitiesData && recentActivitiesData.length > 0 ? (
+                    <div className="animate-vertical-ticker">
+                      {[...recentActivitiesData, ...recentActivitiesData].map((activity, idx) => (
+                        <div key={`${activity.id}-${idx}`} className="flex items-center gap-3 py-2.5 border-b border-border/20 hover:bg-muted/30 transition-colors rounded-lg px-2">
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm ${
+                            activity.color === 'destructive' 
+                              ? 'bg-gradient-to-br from-destructive/20 to-destructive/5' 
+                              : activity.color === 'accent'
+                              ? 'bg-gradient-to-br from-accent/30 to-accent/10'
+                              : 'bg-gradient-to-br from-primary/20 to-primary/5'
+                          }`}>
+                            {activity.icon === 'banking' && <CreditCard className={`h-4 w-4 ${activity.color === 'destructive' ? 'text-destructive' : activity.color === 'accent' ? 'text-accent-foreground' : 'text-primary'}`} />}
+                            {activity.icon === 'online' && <Globe className={`h-4 w-4 ${activity.color === 'destructive' ? 'text-destructive' : 'text-primary'}`} />}
+                            {activity.icon === 'expense' && <Receipt className="h-4 w-4 text-destructive" />}
+                            {activity.icon === 'application' && <FileText className="h-4 w-4 text-primary" />}
+                            {activity.icon === 'photostat' && <Printer className="h-4 w-4 text-primary" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <span className="text-sm font-medium text-foreground block truncate">{activity.description}</span>
+                            <span className="text-xs text-muted-foreground/70">{activity.type}</span>
+                          </div>
+                          <span className={`text-sm font-semibold flex-shrink-0 px-2 py-1 rounded-md ${
+                            activity.amount < 0 
+                              ? 'text-destructive bg-destructive/10' 
+                              : 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
+                          }`}>
+                            {activity.amount < 0 ? '-' : '+'}{formatCurrency(Math.abs(activity.amount))}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-8">No activities {viewMode === 'day' ? 'today' : 'this month'}</p>
+                  )}
+                </div>
+              </DashCard>
+              
               {/* Quick Stats */}
               <DashCard>
                 <h3 className="font-medium text-foreground mb-3">Today's Summary</h3>
@@ -883,6 +857,21 @@ const Dashboard = () => {
                     <span className="text-sm font-semibold text-destructive">{formatCurrency(expensesTotal)}</span>
                   </div>
                 </div>
+              </DashCard>
+            </div>
+
+            {/* Fourth Row - Other Banking & Summary */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Other Banking Services */}
+              <DashCard>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <BarChart3 className="h-4 w-4 text-primary" />
+                  </div>
+                  <h3 className="font-medium text-foreground">Other Banking</h3>
+                </div>
+                <p className="text-2xl font-bold text-foreground">{formatCurrency(bankingAccountsMargin)}</p>
+                <p className="text-xs text-muted-foreground mt-1">{bankingAccountsData?.length || 0} entries</p>
               </DashCard>
 
               {/* Total Revenue */}
@@ -927,6 +916,8 @@ const Dashboard = () => {
               </div>
             </DashCard>
 
+            <DigitalClock />
+            <NotificationBox />
             <ReminderCalendar />
           </div>
         </div>
