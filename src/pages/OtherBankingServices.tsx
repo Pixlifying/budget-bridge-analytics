@@ -257,6 +257,35 @@ const OtherBankingServices = () => {
 
       if (error) throw error;
 
+      // Update or insert expense - prevent double entry
+      if (editForm.expense > 0) {
+        const expenseName = `${editForm.account_type}${editForm.insurance_type ? ' - ' + editForm.insurance_type : ''}`;
+        const oldExpenseName = `${editingEntry.account_type}${editingEntry.insurance_type ? ' - ' + editingEntry.insurance_type : ''}`;
+        
+        const { data: existingExpense } = await supabase
+          .from('expenses')
+          .select('id')
+          .eq('name', oldExpenseName)
+          .gte('date', format(editingEntry.date, 'yyyy-MM-dd'))
+          .lt('date', format(editingEntry.date, 'yyyy-MM-dd') + 'T23:59:59.999')
+          .limit(1);
+        
+        if (existingExpense && existingExpense.length > 0) {
+          await supabase
+            .from('expenses')
+            .update({ name: expenseName, amount: editForm.expense, date: new Date(editForm.date).toISOString() })
+            .eq('id', existingExpense[0].id);
+        } else {
+          await supabase
+            .from('expenses')
+            .insert({
+              date: new Date(editForm.date).toISOString(),
+              name: expenseName,
+              amount: editForm.expense,
+            });
+        }
+      }
+
       // Update account_details if account number and aadhar number are provided
       if (editForm.account_number && editForm.account_number.trim() && 
           editForm.aadhar_number && editForm.aadhar_number.trim()) {

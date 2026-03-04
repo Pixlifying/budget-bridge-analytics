@@ -242,15 +242,37 @@ const OnlineServices = () => {
 
       if (error) throw error;
 
-      // Update or insert expense
+      // Update or insert expense - check for existing entry first
       if (editForm.expense > 0) {
-        await supabase
+        const oldServiceName = editingEntry.service === 'Other' && editingEntry.custom_service 
+          ? editingEntry.custom_service 
+          : editingEntry.service;
+        const oldExpenseName = `Online Service - ${oldServiceName}`;
+        const newExpenseName = `Online Service - ${serviceName}`;
+        
+        // Try to find existing expense entry
+        const { data: existingExpense } = await supabase
           .from('expenses')
-          .upsert({
-            date: new Date(editForm.date).toISOString(),
-            name: `Online Service - ${serviceName}`,
-            amount: editForm.expense,
-          });
+          .select('id')
+          .eq('name', oldExpenseName)
+          .gte('date', new Date(editForm.date).toISOString().split('T')[0])
+          .lt('date', new Date(editForm.date).toISOString().split('T')[0] + 'T23:59:59.999')
+          .limit(1);
+        
+        if (existingExpense && existingExpense.length > 0) {
+          await supabase
+            .from('expenses')
+            .update({ name: newExpenseName, amount: editForm.expense })
+            .eq('id', existingExpense[0].id);
+        } else {
+          await supabase
+            .from('expenses')
+            .insert({
+              date: new Date(editForm.date).toISOString(),
+              name: newExpenseName,
+              amount: editForm.expense,
+            });
+        }
       }
 
       const updatedEntry: OnlineServiceEntry = {

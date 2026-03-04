@@ -1,25 +1,34 @@
 import { useEffect, useState } from 'react';
-import { CreditCard, FileText, Globe, BarChart3, AlertCircle, Wallet, Printer, Receipt, TrendingUp, Search, Bell, MessageSquare, Users, ArrowUpRight, ArrowDownRight, Upload } from 'lucide-react';
+import { CreditCard, FileText, Globe, BarChart3, AlertCircle, Wallet, Printer, Receipt, TrendingUp, Search, Bell, MessageSquare, Users, ArrowUpRight, ArrowDownRight, Upload, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
-import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { format, startOfMonth, endOfMonth, subMonths, startOfQuarter, endOfQuarter } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import NotificationBox from '@/components/ui/NotificationBox';
 import ReminderCalendar from '@/components/ui/ReminderCalendar';
-import DigitalClock from '@/components/ui/DigitalClock';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatCurrency } from '@/utils/calculateUtils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [date, setDate] = useState<Date>(new Date());
-  const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
+  const [viewMode, setViewMode] = useState<'day' | 'month' | 'quarter'>('day');
+  const [currentTime, setCurrentTime] = useState(new Date());
   const [marginDialogOpen, setMarginDialogOpen] = useState(false);
   const [pendingDialogOpen, setPendingDialogOpen] = useState(false);
   const [applicationsDialogOpen, setApplicationsDialogOpen] = useState(false);
   const [onlineServicesDialogOpen, setOnlineServicesDialogOpen] = useState(false);
+  const [documentationDialogOpen, setDocumentationDialogOpen] = useState(false);
+
+  // Clock timer
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Previous month for comparison
   const previousMonth = subMonths(date, 1);
@@ -39,6 +48,10 @@ const Dashboard = () => {
       } else if (viewMode === 'month') {
         const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
         const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
+        query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59.999');
+      } else if (viewMode === 'quarter') {
+        const startDate = format(startOfQuarter(date), 'yyyy-MM-dd');
+        const endDate = format(endOfQuarter(date), 'yyyy-MM-dd');
         query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59.999');
       }
       const { data, error } = await query.order('date', { ascending: false });
@@ -77,6 +90,10 @@ const Dashboard = () => {
         const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
         const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
         query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59.999');
+      } else if (viewMode === 'quarter') {
+        const startDate = format(startOfQuarter(date), 'yyyy-MM-dd');
+        const endDate = format(endOfQuarter(date), 'yyyy-MM-dd');
+        query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59.999');
       }
       const { data, error } = await query.order('date', { ascending: false });
       if (error) throw error;
@@ -114,6 +131,10 @@ const Dashboard = () => {
         const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
         const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
         query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59.999');
+      } else if (viewMode === 'quarter') {
+        const startDate = format(startOfQuarter(date), 'yyyy-MM-dd');
+        const endDate = format(endOfQuarter(date), 'yyyy-MM-dd');
+        query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59.999');
       }
       const { data, error } = await query.order('date', { ascending: false });
       if (error) throw error;
@@ -134,6 +155,10 @@ const Dashboard = () => {
       } else if (viewMode === 'month') {
         const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
         const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
+        query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59.999');
+      } else if (viewMode === 'quarter') {
+        const startDate = format(startOfQuarter(date), 'yyyy-MM-dd');
+        const endDate = format(endOfQuarter(date), 'yyyy-MM-dd');
         query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59.999');
       }
       const { data, error } = await query.order('date', { ascending: false });
@@ -156,6 +181,10 @@ const Dashboard = () => {
         const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
         const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
         query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59.999');
+      } else if (viewMode === 'quarter') {
+        const startDate = format(startOfQuarter(date), 'yyyy-MM-dd');
+        const endDate = format(endOfQuarter(date), 'yyyy-MM-dd');
+        query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59.999');
       }
       const { data, error } = await query.order('date', { ascending: false });
       if (error) throw error;
@@ -177,6 +206,10 @@ const Dashboard = () => {
         const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
         const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
         query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59.999');
+      } else if (viewMode === 'quarter') {
+        const startDate = format(startOfQuarter(date), 'yyyy-MM-dd');
+        const endDate = format(endOfQuarter(date), 'yyyy-MM-dd');
+        query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59.999');
       }
       const { data, error } = await query.order('date', { ascending: false });
       if (error) throw error;
@@ -197,6 +230,10 @@ const Dashboard = () => {
       } else if (viewMode === 'month') {
         const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
         const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
+        query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59.999');
+      } else if (viewMode === 'quarter') {
+        const startDate = format(startOfQuarter(date), 'yyyy-MM-dd');
+        const endDate = format(endOfQuarter(date), 'yyyy-MM-dd');
         query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59.999');
       }
       const { data, error } = await query.order('date', { ascending: false });
@@ -238,6 +275,29 @@ const Dashboard = () => {
     }
   });
 
+  // Documentation data
+  const { data: documentationData } = useQuery({
+    queryKey: ['documentation', viewMode, date],
+    queryFn: async () => {
+      let query = supabase.from('documentation').select('*');
+      if (viewMode === 'day') {
+        const dateStr = format(date, 'yyyy-MM-dd');
+        query = query.gte('date', dateStr).lt('date', dateStr + 'T23:59:59.999');
+      } else if (viewMode === 'month') {
+        const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
+        const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
+        query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59.999');
+      } else if (viewMode === 'quarter') {
+        const startDate = format(startOfQuarter(date), 'yyyy-MM-dd');
+        const endDate = format(endOfQuarter(date), 'yyyy-MM-dd');
+        query = query.gte('date', startDate).lte('date', endDate + 'T23:59:59.999');
+      }
+      const { data, error } = await query.order('date', { ascending: false });
+      if (error) throw error;
+      return data;
+    }
+  });
+
   // Recent activities - fetch today's data for day mode, or filtered data for month mode
   const { data: recentActivitiesData } = useQuery({
     queryKey: ['recentActivities', viewMode, date],
@@ -253,8 +313,10 @@ const Dashboard = () => {
       }> = [];
 
       const filterDate = viewMode === 'day' ? format(date, 'yyyy-MM-dd') : null;
-      const startDate = viewMode === 'month' ? format(startOfMonth(date), 'yyyy-MM-dd') : null;
-      const endDate = viewMode === 'month' ? format(endOfMonth(date), 'yyyy-MM-dd') : null;
+      const startDate = viewMode === 'month' ? format(startOfMonth(date), 'yyyy-MM-dd') 
+        : viewMode === 'quarter' ? format(startOfQuarter(date), 'yyyy-MM-dd') : null;
+      const endDate = viewMode === 'month' ? format(endOfMonth(date), 'yyyy-MM-dd')
+        : viewMode === 'quarter' ? format(endOfQuarter(date), 'yyyy-MM-dd') : null;
 
       // Fetch banking services
       let bankingQuery = supabase.from('banking_services').select('*');
@@ -484,7 +546,7 @@ const Dashboard = () => {
   }];
 
   const handleDateChange = (newDate: Date) => setDate(newDate);
-  const handleViewModeChange = (mode: 'day' | 'month') => setViewMode(mode);
+  const handleViewModeChange = (mode: 'day' | 'month' | 'quarter') => setViewMode(mode);
 
   // Generate real chart data from daily margin
   const generateChartData = (): number[] => {
@@ -606,38 +668,44 @@ const Dashboard = () => {
             {/* Cash in Hand Banner - Moved to Top */}
             <div className="bg-gradient-to-r from-primary via-primary/90 to-primary/80 rounded-2xl p-6 text-primary-foreground relative overflow-hidden">
               <div className="absolute right-0 top-0 w-40 h-40 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
-              <div className="relative z-10 flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <Wallet className="h-5 w-5 opacity-80" />
-                    <h3 className="text-sm opacity-80">Cash in Hand</h3>
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Wallet className="h-5 w-5 opacity-80" />
+                      <h3 className="text-sm opacity-80">Cash in Hand</h3>
+                    </div>
+                    <p className="text-4xl font-bold">{formatCurrency(latestCashInHand)}</p>
                   </div>
-                  <p className="text-4xl font-bold">{formatCurrency(latestCashInHand)}</p>
+                  <div className="text-right">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Clock className="h-4 w-4 opacity-80" />
+                      <span className="text-xs opacity-80">Current Time</span>
+                    </div>
+                    <p className="text-3xl font-bold font-mono tracking-wider">{format(currentTime, 'HH:mm:ss')}</p>
+                    <p className="text-xs opacity-70 mt-0.5">{format(currentTime, 'EEEE, MMM d')}</p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-center">
-                    <div className="bg-white/20 rounded-xl p-3 backdrop-blur-sm mb-1">
-                      <span className="text-2xl font-bold">{bankingData?.length || 0}</span>
-                    </div>
-                    <span className="text-xs opacity-80">Txn Days</span>
+                <div className="flex items-center gap-3 mt-3 pt-3 border-t border-white/20">
+                  <div className="flex-1 bg-white/15 rounded-xl p-2.5 text-center backdrop-blur-sm">
+                    <span className="text-lg font-bold block">{bankingData?.length || 0}</span>
+                    <span className="text-[10px] opacity-80">Txn Days</span>
                   </div>
-                  <div className="text-center">
-                    <div className="bg-white/20 rounded-xl p-3 backdrop-blur-sm mb-1">
-                      <span className="text-2xl font-bold">{bankingServicesCount}</span>
-                    </div>
-                    <span className="text-xs opacity-80">Banking Txn</span>
+                  <div className="flex-1 bg-white/15 rounded-xl p-2.5 text-center backdrop-blur-sm">
+                    <span className="text-lg font-bold block">{bankingServicesCount}</span>
+                    <span className="text-[10px] opacity-80">Banking Txn</span>
                   </div>
-                  <div className="text-center">
-                    <div className="bg-white/20 rounded-xl p-3 backdrop-blur-sm mb-1">
-                      <span className="text-2xl font-bold">{onlineServicesCount}</span>
-                    </div>
-                    <span className="text-xs opacity-80">Online</span>
+                  <div className="flex-1 bg-white/15 rounded-xl p-2.5 text-center backdrop-blur-sm">
+                    <span className="text-lg font-bold block">{onlineServicesCount}</span>
+                    <span className="text-[10px] opacity-80">Online</span>
                   </div>
-                  <div className="text-center">
-                    <div className="bg-white/20 rounded-xl p-3 backdrop-blur-sm mb-1">
-                      <span className="text-2xl font-bold">{applicationsCount}</span>
-                    </div>
-                    <span className="text-xs opacity-80">Applications</span>
+                  <div className="flex-1 bg-white/15 rounded-xl p-2.5 text-center backdrop-blur-sm">
+                    <span className="text-lg font-bold block">{applicationsCount}</span>
+                    <span className="text-[10px] opacity-80">Applications</span>
+                  </div>
+                  <div className="flex-1 bg-white/15 rounded-xl p-2.5 text-center backdrop-blur-sm">
+                    <span className="text-lg font-bold block">{formatCurrency(bankingAccountsMargin)}</span>
+                    <span className="text-[10px] opacity-80">Other Banking</span>
                   </div>
                 </div>
               </div>
@@ -825,36 +893,26 @@ const Dashboard = () => {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground text-center py-8">No activities {viewMode === 'day' ? 'today' : 'this month'}</p>
+                    <p className="text-sm text-muted-foreground text-center py-8">No activities {viewMode === 'day' ? 'today' : viewMode === 'month' ? 'this month' : 'this quarter'}</p>
                   )}
                 </div>
               </DashCard>
               
-              {/* Quick Stats */}
-              <DashCard>
-                <h3 className="font-medium text-foreground mb-3">Today's Summary</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Total Entries</span>
-                    <span className="text-sm font-semibold text-foreground">
-                      {(bankingData?.length || 0) + (onlineData?.length || 0) + (applicationsData?.length || 0)}
-                    </span>
+              {/* Documentation */}
+              <DashCard onClick={() => setDocumentationDialogOpen(true)} className="cursor-pointer">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <FileText className="h-4 w-4 text-primary" />
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Banking Margin</span>
-                    <span className="text-sm font-semibold text-primary">{formatCurrency(bankingMargin)}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Other Banking</span>
-                    <span className="text-sm font-semibold text-primary">{formatCurrency(bankingAccountsMargin)}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Online Services</span>
-                    <span className="text-sm font-semibold text-primary">{formatCurrency(onlineMargin)}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Total Expenses</span>
-                    <span className="text-sm font-semibold text-destructive">{formatCurrency(expensesTotal)}</span>
+                  <h3 className="font-medium text-foreground">Documentation</h3>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-lg font-bold text-foreground">
+                    {documentationData?.length || 0} entries
+                  </p>
+                  <p className="text-xs text-muted-foreground">Click to view customer summary</p>
+                  <div className="flex justify-between text-xs mt-2">
+                    <span className="text-muted-foreground">Amount: <span className="text-primary font-medium">{formatCurrency(documentationData?.reduce((sum, d) => sum + Number(d.amount), 0) || 0)}</span></span>
                   </div>
                 </div>
               </DashCard>
@@ -916,7 +974,6 @@ const Dashboard = () => {
               </div>
             </DashCard>
 
-            <DigitalClock />
             <NotificationBox />
             <ReminderCalendar />
           </div>
@@ -1097,6 +1154,65 @@ const Dashboard = () => {
               </div>
             ) : (
               <p className="text-center text-muted-foreground py-8">No online services found</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Documentation Dialog */}
+      <Dialog open={documentationDialogOpen} onOpenChange={setDocumentationDialogOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[70vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              Documentation Summary
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            {documentationData && documentationData.length > 0 ? (
+              <div className="space-y-3">
+                {documentationData.map((item) => (
+                  <div 
+                    key={item.id} 
+                    className="p-4 rounded-xl border border-border/50 bg-gradient-to-br from-muted/30 to-muted/10 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-foreground text-lg">{item.name}</h4>
+                        <div className="flex items-center gap-4 mt-2 text-sm">
+                          <span className="text-muted-foreground">📅 {format(new Date(item.date), 'dd MMM yyyy')}</span>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                            {item.service_type === 'Other' ? item.custom_service : item.service_type}
+                          </span>
+                        </div>
+                        {item.mobile && (
+                          <p className="text-xs text-muted-foreground mt-1">📞 {item.mobile}</p>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xl font-bold text-primary">{formatCurrency(item.amount)}</p>
+                        {item.expense > 0 && (
+                          <p className="text-xs text-destructive">Exp: {formatCurrency(item.expense)}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <div className="border-t pt-4 mt-4">
+                  <div className="flex items-center justify-between font-bold text-lg">
+                    <span className="text-foreground">Total Amount</span>
+                    <span className="text-primary">{formatCurrency(documentationData.reduce((sum, d) => sum + Number(d.amount), 0))}</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => { setDocumentationDialogOpen(false); navigate('/documentation'); }}
+                  className="w-full mt-2 text-sm text-primary hover:underline text-center"
+                >
+                  View full Documentation page →
+                </button>
+              </div>
+            ) : (
+              <p className="text-center text-muted-foreground py-8">No documentation entries found</p>
             )}
           </div>
         </DialogContent>
