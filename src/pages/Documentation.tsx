@@ -201,6 +201,35 @@ const Documentation = () => {
 
       if (error) throw error;
 
+      // Update or insert expense - prevent double entry
+      if (editForm.expense > 0) {
+        const oldExpenseName = `Documentation - ${editingEntry.name}`;
+        const newExpenseName = `Documentation - ${editForm.name}`;
+        
+        const { data: existingExpense } = await supabase
+          .from('expenses')
+          .select('id')
+          .eq('name', oldExpenseName)
+          .gte('date', format(editingEntry.date, 'yyyy-MM-dd'))
+          .lt('date', format(editingEntry.date, 'yyyy-MM-dd') + 'T23:59:59.999')
+          .limit(1);
+        
+        if (existingExpense && existingExpense.length > 0) {
+          await supabase
+            .from('expenses')
+            .update({ name: newExpenseName, amount: editForm.expense, date: new Date(editForm.date).toISOString() })
+            .eq('id', existingExpense[0].id);
+        } else {
+          await supabase
+            .from('expenses')
+            .insert({
+              date: new Date(editForm.date).toISOString(),
+              name: newExpenseName,
+              amount: editForm.expense,
+            });
+        }
+      }
+
       const updatedEntry: DocumentationEntry = {
         ...editingEntry,
         date: new Date(editForm.date),
