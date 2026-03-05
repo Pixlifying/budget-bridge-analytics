@@ -12,6 +12,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatCurrency } from '@/utils/calculateUtils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
+import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -23,6 +25,8 @@ const Dashboard = () => {
   const [applicationsDialogOpen, setApplicationsDialogOpen] = useState(false);
   const [onlineServicesDialogOpen, setOnlineServicesDialogOpen] = useState(false);
   const [documentationDialogOpen, setDocumentationDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
 
   // Clock timer
   useEffect(() => {
@@ -469,6 +473,51 @@ const Dashboard = () => {
     }
   });
 
+  // Global search query
+  const { data: searchResults } = useQuery({
+    queryKey: ['globalSearch', searchQuery],
+    queryFn: async () => {
+      if (!searchQuery || searchQuery.length < 2) return [];
+      const q = searchQuery.toLowerCase();
+      const results: Array<{ type: string; title: string; subtitle: string; route: string }> = [];
+
+      // Search online services
+      const { data: osData } = await supabase.from('online_services').select('*').or(`service.ilike.%${q}%,customer_name.ilike.%${q}%`).limit(5);
+      osData?.forEach(item => results.push({ type: 'Online Service', title: item.customer_name || item.service, subtitle: `${item.service} - ₹${item.total}`, route: '/online-services' }));
+
+      // Search applications
+      const { data: appData } = await supabase.from('applications').select('*').ilike('customer_name', `%${q}%`).limit(5);
+      appData?.forEach(item => results.push({ type: 'Application', title: item.customer_name, subtitle: `₹${item.amount}`, route: '/applications' }));
+
+      // Search banking accounts
+      const { data: baData } = await supabase.from('banking_accounts').select('*').or(`customer_name.ilike.%${q}%,account_type.ilike.%${q}%`).limit(5);
+      baData?.forEach(item => results.push({ type: 'Banking Account', title: item.customer_name, subtitle: `${item.account_type} - ₹${item.amount}`, route: '/banking-accounts' }));
+
+      // Search documentation
+      const { data: docData } = await supabase.from('documentation').select('*').or(`name.ilike.%${q}%,service_type.ilike.%${q}%`).limit(5);
+      docData?.forEach(item => results.push({ type: 'Documentation', title: item.name, subtitle: `${item.service_type} - ₹${item.amount}`, route: '/documentation' }));
+
+      // Search expenses
+      const { data: expData } = await supabase.from('expenses').select('*').ilike('name', `%${q}%`).limit(5);
+      expData?.forEach(item => results.push({ type: 'Expense', title: item.name, subtitle: `₹${item.amount}`, route: '/expenses' }));
+
+      // Search pending balances
+      const { data: pbData } = await supabase.from('pending_balances').select('*').or(`name.ilike.%${q}%,phone.ilike.%${q}%`).limit(5);
+      pbData?.forEach(item => results.push({ type: 'Pending Balance', title: item.name, subtitle: `${item.service} - ₹${item.amount}`, route: '/pending-balance' }));
+
+      // Search forms
+      const { data: fData } = await supabase.from('forms').select('*').or(`name.ilike.%${q}%,mobile.ilike.%${q}%`).limit(5);
+      fData?.forEach(item => results.push({ type: 'Form', title: item.name, subtitle: `${item.department} - ${item.mobile}`, route: '/forms' }));
+
+      // Search customers
+      const { data: custData } = await supabase.from('customers').select('*').or(`name.ilike.%${q}%,phone.ilike.%${q}%`).limit(5);
+      custData?.forEach(item => results.push({ type: 'Customer', title: item.name, subtitle: `${item.phone}`, route: '/customers' }));
+
+      return results;
+    },
+    enabled: searchQuery.length >= 2,
+  });
+
   useEffect(() => {
     const channel = supabase.channel('od-records-realtime').on('postgres_changes', {
       event: '*',
@@ -505,7 +554,8 @@ const Dashboard = () => {
   const expensesTotal = expensesData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
   const expensesCount = expensesData?.length || 0;
   const latestCashInHand = odRecordsData?.[0]?.cash_in_hand || 0;
-  const totalMargin = bankingMargin + bankingAccountsMargin + onlineMargin + applicationsMargin + photostatMarginTotal;
+  const documentationMargin = documentationData?.reduce((sum, d) => sum + (Number(d.amount) - Number(d.expense)), 0) || 0;
+  const totalMargin = bankingMargin + bankingAccountsMargin + onlineMargin + applicationsMargin + photostatMarginTotal + documentationMargin;
 
   // Previous month calculations for comparison
   const prevBankingMargin = prevBankingData?.reduce((sum, entry) => sum + entry.margin, 0) || 0;
@@ -543,6 +593,10 @@ const Dashboard = () => {
     name: 'Printout & Photostat',
     value: photostatMarginTotal,
     color: 'hsl(var(--chart-5))'
+  }, {
+    name: 'Documentation',
+    value: documentationMargin,
+    color: 'hsl(220, 70%, 50%)'
   }];
 
   const handleDateChange = (newDate: Date) => setDate(newDate);
@@ -645,10 +699,49 @@ const Dashboard = () => {
             <p className="text-sm text-muted-foreground mt-0.5">Explore information</p>
           </div>
           <div className="flex items-center gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search..." className="pl-9 w-64 bg-background border-border" />
-            </div>
+            <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+              <PopoverTrigger asChild>
+                <div className="relative cursor-pointer">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    placeholder="Search across all pages..." 
+                    className="pl-9 w-72 bg-background border-border" 
+                    value={searchQuery}
+                    onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true); }}
+                    onFocus={() => searchQuery.length >= 2 && setSearchOpen(true)}
+                  />
+                </div>
+              </PopoverTrigger>
+              {searchQuery.length >= 2 && (
+                <PopoverContent className="w-80 p-0" align="start">
+                  <Command>
+                    <CommandList>
+                      {(!searchResults || searchResults.length === 0) ? (
+                        <CommandEmpty>No results found.</CommandEmpty>
+                      ) : (
+                        <CommandGroup heading={`${searchResults.length} results found`}>
+                          {searchResults.map((result, idx) => (
+                            <CommandItem 
+                              key={idx} 
+                              onSelect={() => { navigate(result.route); setSearchOpen(false); setSearchQuery(''); }}
+                              className="cursor-pointer"
+                            >
+                              <div className="flex flex-col">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">{result.type}</span>
+                                  <span className="font-medium text-foreground">{result.title}</span>
+                                </div>
+                                <span className="text-xs text-muted-foreground">{result.subtitle}</span>
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      )}
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              )}
+            </Popover>
             <DateRangePicker date={date} onDateChange={handleDateChange} mode={viewMode} onModeChange={handleViewModeChange} />
             <button className="p-2 rounded-full bg-background border border-border hover:bg-muted transition-colors">
               <MessageSquare className="h-5 w-5 text-muted-foreground" />
