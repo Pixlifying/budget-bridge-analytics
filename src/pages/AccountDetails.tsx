@@ -138,16 +138,32 @@ const AccountDetails = () => {
         const keyLower = key.toLowerCase();
         const val = String(value || '').trim();
         
-        if (val && /^\d{9,18}$/.test(val.replace(/\s/g, ''))) {
-          const cleanAccount = val.replace(/\s/g, '');
+        // Clean the value: remove spaces, hyphens, dots
+        const cleanVal = val.replace(/[\s\-\.]/g, '');
+        
+        // Match account numbers: 5-18 digits (more lenient)
+        if (cleanVal && /^\d{5,18}$/.test(cleanVal)) {
           if (keyLower.includes('from') || keyLower.includes('source') || keyLower.includes('debit')) {
-            if (!accountSet.has(cleanAccount)) accountSet.set(cleanAccount, 'from');
-            else if (accountSet.get(cleanAccount) === 'to') accountSet.set(cleanAccount, 'both');
+            if (!accountSet.has(cleanVal)) accountSet.set(cleanVal, 'from');
+            else if (accountSet.get(cleanVal) === 'to') accountSet.set(cleanVal, 'both');
           } else if (keyLower.includes('to') || keyLower.includes('dest') || keyLower.includes('credit') || keyLower.includes('beneficiary')) {
-            if (!accountSet.has(cleanAccount)) accountSet.set(cleanAccount, 'to');
-            else if (accountSet.get(cleanAccount) === 'from') accountSet.set(cleanAccount, 'both');
-          } else if (keyLower.includes('account')) {
-            if (!accountSet.has(cleanAccount)) accountSet.set(cleanAccount, 'unknown');
+            if (!accountSet.has(cleanVal)) accountSet.set(cleanVal, 'to');
+            else if (accountSet.get(cleanVal) === 'from') accountSet.set(cleanVal, 'both');
+          } else if (keyLower.includes('account') || keyLower.includes('a/c') || keyLower.includes('acc')) {
+            if (!accountSet.has(cleanVal)) accountSet.set(cleanVal, 'unknown');
+          }
+        }
+      }
+    }
+    
+    // If no accounts found via column name matching, try extracting any numeric values that look like account numbers
+    if (accountSet.size === 0) {
+      for (const row of data) {
+        for (const [, value] of Object.entries(row)) {
+          const val = String(value || '').trim();
+          const cleanVal = val.replace(/[\s\-\.]/g, '');
+          if (cleanVal && /^\d{9,18}$/.test(cleanVal)) {
+            if (!accountSet.has(cleanVal)) accountSet.set(cleanVal, 'unknown');
           }
         }
       }
@@ -249,9 +265,9 @@ const AccountDetails = () => {
 
       toast.success(`${newAccounts.length} account(s) added successfully`);
       await fetchAccountDetails();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error processing file:', error);
-      toast.error("Failed to process file");
+      toast.error(error?.message || "Failed to process file");
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
