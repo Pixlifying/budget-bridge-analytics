@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { FileText, Plus, Edit, Printer } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import PageWrapper from '@/components/layout/PageWrapper';
@@ -43,6 +44,8 @@ const Applications = () => {
     customer_name: '',
     expense: 0,
     amount: 0,
+    service_type: '',
+    custom_service: '',
   });
 
   const [editForm, setEditForm] = useState({
@@ -122,11 +125,14 @@ const Applications = () => {
     try {
       const total = newEntry.amount - newEntry.expense;
       
+      const serviceName = newEntry.service_type === 'Other' ? newEntry.custom_service : newEntry.service_type;
+      const displayName = serviceName ? `${serviceName} - ${newEntry.customer_name}` : newEntry.customer_name;
+      
       const { data, error } = await supabase
         .from('applications')
         .insert({
           date: new Date(newEntry.date).toISOString(),
-          customer_name: newEntry.customer_name,
+          customer_name: displayName,
           expense: newEntry.expense,
           amount: total,
         })
@@ -161,6 +167,8 @@ const Applications = () => {
           customer_name: '',
           expense: 0,
           amount: 0,
+          service_type: '',
+          custom_service: '',
         });
         toast.success('Application added successfully');
       }
@@ -349,7 +357,7 @@ const Applications = () => {
       {/* Add Application Form */}
       <div className="mb-6 p-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg shadow-lg">
         <h3 className="text-lg font-semibold mb-4">Add Application</h3>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
           <div>
             <Label htmlFor="date">Date</Label>
             <Input
@@ -359,6 +367,37 @@ const Applications = () => {
               onChange={(e) => setNewEntry(prev => ({ ...prev, date: e.target.value }))}
             />
           </div>
+          <div>
+            <Label htmlFor="service_type">Service</Label>
+            <Select
+              value={newEntry.service_type}
+              onValueChange={(value) => setNewEntry(prev => ({ ...prev, service_type: value, custom_service: value === 'Other' ? prev.custom_service : '' }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select service" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Adhar">Adhar</SelectItem>
+                <SelectItem value="Application">Application</SelectItem>
+                <SelectItem value="Printout">Printout</SelectItem>
+                <SelectItem value="Forms">Forms</SelectItem>
+                <SelectItem value="Pension Forms">Pension Forms</SelectItem>
+                <SelectItem value="Affidavit">Affidavit</SelectItem>
+                <SelectItem value="Other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {newEntry.service_type === 'Other' && (
+            <div>
+              <Label htmlFor="custom_service">Custom Service</Label>
+              <Input
+                id="custom_service"
+                value={newEntry.custom_service}
+                onChange={(e) => setNewEntry(prev => ({ ...prev, custom_service: e.target.value }))}
+                placeholder="Enter service name"
+              />
+            </div>
+          )}
           <div>
             <Label htmlFor="customer">Customer Name</Label>
             <Input
