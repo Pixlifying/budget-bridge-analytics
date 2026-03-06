@@ -13,6 +13,7 @@ import DateRangePicker from '@/components/ui/DateRangePicker';
 import DownloadButton from '@/components/ui/DownloadButton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -45,6 +46,7 @@ const BankingAccounts = () => {
     date: new Date().toISOString().split('T')[0],
     customer_name: '',
     account_type: '',
+    custom_account_type: '',
     amount: 0,
     account_number: '',
     insurance_type: '',
@@ -110,12 +112,14 @@ const BankingAccounts = () => {
     }
 
     try {
+      const accountTypeName = newEntry.account_type === 'Other' ? newEntry.custom_account_type : newEntry.account_type;
+      
       const { data, error } = await supabase
         .from('banking_accounts')
         .insert({
           date: new Date(newEntry.date).toISOString(),
           customer_name: newEntry.customer_name,
-          account_type: newEntry.account_type,
+          account_type: accountTypeName,
           amount: newEntry.amount,
           account_number: newEntry.account_number || null,
           insurance_type: newEntry.insurance_type || null,
@@ -141,6 +145,7 @@ const BankingAccounts = () => {
           date: new Date().toISOString().split('T')[0],
           customer_name: '',
           account_type: '',
+          custom_account_type: '',
           amount: 0,
           account_number: '',
           insurance_type: '',
@@ -330,13 +335,32 @@ const BankingAccounts = () => {
           </div>
           <div>
             <Label htmlFor="account_type">Account Type</Label>
-            <Input
-              id="account_type"
+            <Select
               value={newEntry.account_type}
-              onChange={(e) => setNewEntry(prev => ({ ...prev, account_type: e.target.value }))}
-              placeholder="Account type"
-            />
+              onValueChange={(value) => setNewEntry(prev => ({ ...prev, account_type: value, custom_account_type: value === 'Other' ? prev.custom_account_type : '' }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Saving Account">Saving Account</SelectItem>
+                <SelectItem value="FDR">FDR</SelectItem>
+                <SelectItem value="CCR">CCR</SelectItem>
+                <SelectItem value="Other">Other</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+          {newEntry.account_type === 'Other' && (
+            <div>
+              <Label htmlFor="custom_account_type">Custom Type</Label>
+              <Input
+                id="custom_account_type"
+                value={newEntry.custom_account_type}
+                onChange={(e) => setNewEntry(prev => ({ ...prev, custom_account_type: e.target.value }))}
+                placeholder="Enter account type"
+              />
+            </div>
+          )}
           <div>
             <Label htmlFor="amount">Amount</Label>
             <Input
