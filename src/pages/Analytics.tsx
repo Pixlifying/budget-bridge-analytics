@@ -156,6 +156,10 @@ const Analytics = () => {
       const { data: expenseData } = await supabase.from('expenses').select('*').order('date', { ascending: false });
       const { data: applicationsData } = await supabase.from('applications').select('*').order('date', { ascending: false });
       const { data: miscExpensesData } = await supabase.from('misc_expenses').select('*').order('date', { ascending: false });
+      const { data: photostatData } = await supabase.from('photostats').select('*').order('date', { ascending: false });
+      const { data: documentationData } = await supabase.from('documentation').select('*').order('date', { ascending: false });
+      const { data: bankingAccountsData } = await supabase.from('banking_accounts').select('*').order('date', { ascending: false });
+      const { data: feeExpensesData } = await supabase.from('fee_expenses').select('*').order('date', { ascending: false });
 
       setOdRecords(odData?.map(e => ({ ...e, date: new Date(e.date), amount_received: Number(e.amount_received), amount_given: Number(e.amount_given), cash_in_hand: Number(e.cash_in_hand), od_from_bank: Number(e.od_from_bank) })) || []);
       setPanCards(panCardData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount), total: Number(e.total), margin: Number(e.margin) })) || []);
@@ -165,6 +169,10 @@ const Analytics = () => {
       setExpenses(expenseData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount) })) || []);
       setApplications(applicationsData?.map(e => ({ ...e, date: new Date(e.date), expense: Number(e.expense || 0), amount: Number(e.amount) })) || []);
       setMiscExpenses(miscExpensesData?.map(e => ({ ...e, date: new Date(e.date), fee: Number(e.fee) })) || []);
+      setPhotostats(photostatData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount), margin: Number(e.margin) })) || []);
+      setDocumentation(documentationData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount), expense: Number(e.expense) })) || []);
+      setBankingAccounts(bankingAccountsData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount) })) || []);
+      setFeeExpenses(feeExpensesData?.map(e => ({ ...e, date: new Date(e.date), fee: Number(e.fee) })) || []);
     } catch (error) {
       console.error('Error fetching analytics data:', error);
     } finally {
