@@ -144,7 +144,7 @@ const CustomerCard = ({ customer, onClick, onEdit, onDelete, isHighlighted = fal
                 <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center shrink-0">
                   <User size={14} className="text-purple-500" />
                 </div>
-                <span className="text-sm text-slate-500 line-clamp-2">{customer.description}</span>
+                <span className="text-sm text-muted-foreground/80 line-clamp-2">{customer.description}</span>
               </div>
             )}
           </div>
