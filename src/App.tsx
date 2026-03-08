@@ -19,7 +19,7 @@ import AccountDetails from "@/pages/AccountDetails";
 import Khata from "@/pages/Khata";
 import Papers from "@/pages/Papers";
 import CustomerDetails from "@/pages/CustomerDetails";
-import AgeCalculator from "@/pages/AgeCalculator";
+
 import Calculator from "@/pages/Calculator";
 import MiscExpenses from "@/pages/MiscExpenses";
 import Query from "@/pages/Query";
