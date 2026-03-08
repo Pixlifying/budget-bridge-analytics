@@ -79,6 +79,32 @@ interface MiscExpenseEntry {
   fee: number;
 }
 
+interface PhotostatEntry {
+  id: string;
+  date: Date;
+  amount: number;
+  margin: number;
+}
+
+interface DocumentationEntry {
+  id: string;
+  date: Date;
+  amount: number;
+  expense: number;
+}
+
+interface BankingAccountEntry {
+  id: string;
+  date: Date;
+  amount: number;
+}
+
+interface FeeExpenseEntry {
+  id: string;
+  date: Date;
+  fee: number;
+}
+
 const COLORS = [
   'hsl(var(--primary))',
   'hsl(220, 90%, 56%)',
@@ -101,6 +127,10 @@ const Analytics = () => {
   const [expenses, setExpenses] = useState<ExpenseEntry[]>([]);
   const [applications, setApplications] = useState<ApplicationEntry[]>([]);
   const [miscExpenses, setMiscExpenses] = useState<MiscExpenseEntry[]>([]);
+  const [photostats, setPhotostats] = useState<PhotostatEntry[]>([]);
+  const [documentation, setDocumentation] = useState<DocumentationEntry[]>([]);
+  const [bankingAccounts, setBankingAccounts] = useState<BankingAccountEntry[]>([]);
+  const [feeExpenses, setFeeExpenses] = useState<FeeExpenseEntry[]>([]);
 
   const [filteredOdRecords, setFilteredOdRecords] = useState<ODRecord[]>([]);
   const [filteredPanCards, setFilteredPanCards] = useState<PanCardEntry[]>([]);
@@ -110,6 +140,10 @@ const Analytics = () => {
   const [filteredExpenses, setFilteredExpenses] = useState<ExpenseEntry[]>([]);
   const [filteredApplications, setFilteredApplications] = useState<ApplicationEntry[]>([]);
   const [filteredMiscExpenses, setFilteredMiscExpenses] = useState<MiscExpenseEntry[]>([]);
+  const [filteredPhotostats, setFilteredPhotostats] = useState<PhotostatEntry[]>([]);
+  const [filteredDocumentation, setFilteredDocumentation] = useState<DocumentationEntry[]>([]);
+  const [filteredBankingAccounts, setFilteredBankingAccounts] = useState<BankingAccountEntry[]>([]);
+  const [filteredFeeExpenses, setFilteredFeeExpenses] = useState<FeeExpenseEntry[]>([]);
   
   const fetchAllData = async () => {
     setIsLoading(true);
@@ -122,6 +156,10 @@ const Analytics = () => {
       const { data: expenseData } = await supabase.from('expenses').select('*').order('date', { ascending: false });
       const { data: applicationsData } = await supabase.from('applications').select('*').order('date', { ascending: false });
       const { data: miscExpensesData } = await supabase.from('misc_expenses').select('*').order('date', { ascending: false });
+      const { data: photostatData } = await supabase.from('photostats').select('*').order('date', { ascending: false });
+      const { data: documentationData } = await supabase.from('documentation').select('*').order('date', { ascending: false });
+      const { data: bankingAccountsData } = await supabase.from('banking_accounts').select('*').order('date', { ascending: false });
+      const { data: feeExpensesData } = await supabase.from('fee_expenses').select('*').order('date', { ascending: false });
 
       setOdRecords(odData?.map(e => ({ ...e, date: new Date(e.date), amount_received: Number(e.amount_received), amount_given: Number(e.amount_given), cash_in_hand: Number(e.cash_in_hand), od_from_bank: Number(e.od_from_bank) })) || []);
       setPanCards(panCardData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount), total: Number(e.total), margin: Number(e.margin) })) || []);
@@ -131,6 +169,10 @@ const Analytics = () => {
       setExpenses(expenseData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount) })) || []);
       setApplications(applicationsData?.map(e => ({ ...e, date: new Date(e.date), expense: Number(e.expense || 0), amount: Number(e.amount) })) || []);
       setMiscExpenses(miscExpensesData?.map(e => ({ ...e, date: new Date(e.date), fee: Number(e.fee) })) || []);
+      setPhotostats(photostatData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount), margin: Number(e.margin) })) || []);
+      setDocumentation(documentationData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount), expense: Number(e.expense) })) || []);
+      setBankingAccounts(bankingAccountsData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount) })) || []);
+      setFeeExpenses(feeExpensesData?.map(e => ({ ...e, date: new Date(e.date), fee: Number(e.fee) })) || []);
     } catch (error) {
       console.error('Error fetching analytics data:', error);
     } finally {
@@ -152,6 +194,10 @@ const Analytics = () => {
       setFilteredExpenses(filterByDate(expenses, date));
       setFilteredApplications(filterByDate(applications, date));
       setFilteredMiscExpenses(filterByDate(miscExpenses, date));
+      setFilteredPhotostats(filterByDate(photostats, date));
+      setFilteredDocumentation(filterByDate(documentation, date));
+      setFilteredBankingAccounts(filterByDate(bankingAccounts, date));
+      setFilteredFeeExpenses(filterByDate(feeExpenses, date));
     } else {
       setFilteredOdRecords(filterByMonth(odRecords, date));
       setFilteredPanCards(filterByMonth(panCards, date));
@@ -161,8 +207,12 @@ const Analytics = () => {
       setFilteredExpenses(filterByMonth(expenses, date));
       setFilteredApplications(filterByMonth(applications, date));
       setFilteredMiscExpenses(filterByMonth(miscExpenses, date));
+      setFilteredPhotostats(filterByMonth(photostats, date));
+      setFilteredDocumentation(filterByMonth(documentation, date));
+      setFilteredBankingAccounts(filterByMonth(bankingAccounts, date));
+      setFilteredFeeExpenses(filterByMonth(feeExpenses, date));
     }
-  }, [date, viewMode, odRecords, panCards, passports, bankingServices, onlineServices, expenses, applications, miscExpenses]);
+  }, [date, viewMode, odRecords, panCards, passports, bankingServices, onlineServices, expenses, applications, miscExpenses, photostats, documentation, bankingAccounts, feeExpenses]);
 
   const latestOdRecord = odRecords.length > 0 ? odRecords[0] : null;
   const latestCashInHand = latestOdRecord ? latestOdRecord.cash_in_hand : 0;
@@ -173,9 +223,14 @@ const Analytics = () => {
   const totalPassportMargin = filteredPassports.reduce((sum, entry) => sum + entry.margin, 0);
   const totalBankingMargin = filteredBankingServices.reduce((sum, entry) => sum + entry.margin, 0);
   const totalMiscExpenses = filteredMiscExpenses.reduce((sum, entry) => sum + entry.fee, 0);
+  const totalPhotostatMargin = filteredPhotostats.reduce((sum, entry) => sum + entry.margin, 0);
+  const totalDocumentationMargin = filteredDocumentation.reduce((sum, entry) => sum + (entry.amount - entry.expense), 0);
+  const totalBankingAccountsMargin = filteredBankingAccounts.reduce((sum, entry) => sum + entry.amount, 0);
+  const totalFeeExpenses = filteredFeeExpenses.reduce((sum, entry) => sum + entry.fee, 0);
 
-  const totalRevenue = totalOnlineServices + totalApplications + totalPanMargin + totalPassportMargin + totalBankingMargin;
-  const netProfit = totalRevenue - totalExpenses;
+  const totalRevenue = totalPanMargin + totalPassportMargin + totalBankingMargin + totalBankingAccountsMargin + totalOnlineServices + totalApplications + totalPhotostatMargin + totalDocumentationMargin;
+  const totalAllExpenses = totalExpenses + totalMiscExpenses + totalFeeExpenses;
+  const netProfit = totalRevenue - totalAllExpenses;
 
   const odTrendData = filteredOdRecords.slice().reverse().map((record) => ({
     date: format(new Date(record.date), 'MMM dd'),
@@ -189,16 +244,22 @@ const Analytics = () => {
     { name: 'PAN Cards', value: totalPanMargin, color: COLORS[0] },
     { name: 'Passports', value: totalPassportMargin, color: COLORS[1] },
     { name: 'Banking', value: totalBankingMargin, color: COLORS[2] },
+    { name: 'Other Banking', value: totalBankingAccountsMargin, color: 'hsl(200, 80%, 50%)' },
     { name: 'Online', value: totalOnlineServices, color: COLORS[3] },
-    { name: 'Forms', value: totalApplications, color: COLORS[4] }
+    { name: 'Forms', value: totalApplications, color: COLORS[4] },
+    { name: 'Print', value: totalPhotostatMargin, color: COLORS[5] },
+    { name: 'Documentation', value: totalDocumentationMargin, color: 'hsl(260, 70%, 55%)' }
   ].filter(item => item.value > 0);
 
   const serviceBreakdownData = [
     { service: 'PAN Cards', margin: totalPanMargin },
     { service: 'Passports', margin: totalPassportMargin },
     { service: 'Banking', margin: totalBankingMargin },
+    { service: 'Other Banking', margin: totalBankingAccountsMargin },
     { service: 'Online', margin: totalOnlineServices },
-    { service: 'Forms', margin: totalApplications }
+    { service: 'Forms', margin: totalApplications },
+    { service: 'Print', margin: totalPhotostatMargin },
+    { service: 'Documentation', margin: totalDocumentationMargin }
   ].filter(item => item.margin > 0);
 
   const monthlyTrendData: { month: string; revenue: number; expenses: number }[] = [];
@@ -247,11 +308,21 @@ const Analytics = () => {
       iconColor: 'text-emerald-600',
     },
     {
+      title: 'Total Expenses',
+      value: totalAllExpenses,
+      icon: Activity,
+      trend: '+5%',
+      trendUp: true,
+      gradient: 'from-rose-500/15 to-rose-500/5',
+      iconBg: 'bg-rose-500/15',
+      iconColor: 'text-rose-600',
+    },
+    {
       title: 'Net Profit',
       value: netProfit,
       icon: TrendingUp,
       trend: '+8%',
-      trendUp: true,
+      trendUp: netProfit >= 0,
       gradient: 'from-blue-500/15 to-blue-500/5',
       iconBg: 'bg-blue-500/15',
       iconColor: 'text-blue-600',
@@ -265,16 +336,6 @@ const Analytics = () => {
       gradient: 'from-amber-500/15 to-amber-500/5',
       iconBg: 'bg-amber-500/15',
       iconColor: 'text-amber-600',
-    },
-    {
-      title: 'Total Expenses',
-      value: totalExpenses,
-      icon: Activity,
-      trend: '+5%',
-      trendUp: true,
-      gradient: 'from-rose-500/15 to-rose-500/5',
-      iconBg: 'bg-rose-500/15',
-      iconColor: 'text-rose-600',
     },
   ];
 
@@ -421,7 +482,9 @@ const Analytics = () => {
                 { label: 'Banking', value: totalBankingMargin, color: 'bg-pink-500/10 text-pink-600' },
                 { label: 'Online', value: totalOnlineServices, color: 'bg-teal-500/10 text-teal-600' },
                 { label: 'Forms', value: totalApplications, color: 'bg-purple-500/10 text-purple-600' },
-                { label: 'Misc Exp.', value: totalMiscExpenses, color: 'bg-orange-500/10 text-orange-600' },
+              { label: 'Print', value: totalPhotostatMargin, color: 'bg-cyan-500/10 text-cyan-600' },
+              { label: 'Docs', value: totalDocumentationMargin, color: 'bg-indigo-500/10 text-indigo-600' },
+              { label: 'Misc Exp.', value: totalMiscExpenses, color: 'bg-orange-500/10 text-orange-600' },
               ].map((item) => (
                 <div key={item.label} className="text-center p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors duration-200">
                   <p className="text-xs text-muted-foreground mb-1">{item.label}</p>
