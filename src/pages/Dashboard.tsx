@@ -985,7 +985,7 @@ const Dashboard = () => {
             </div>
 
             {/* Second Row - More Stats */}
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               {/* Expenses */}
               <DashCard onClick={() => setExpensesDialogOpen(true)} className="cursor-pointer">
                 <div className="flex items-center gap-3 mb-2">
