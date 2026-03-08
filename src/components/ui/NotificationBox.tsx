@@ -71,39 +71,6 @@ const NotificationBox = () => {
     refetchInterval: 60000,
   });
 
-  // Fetch khata customers with transactions to calculate current balance
-  const { data: khataData } = useQuery({
-    queryKey: ['khata_notifications'],
-    queryFn: async () => {
-      const [customersResult, transactionsResult] = await Promise.all([
-        supabase.from('khata_customers').select('*'),
-        supabase.from('khata_transactions').select('*')
-      ]);
-      
-      if (customersResult.error) throw customersResult.error;
-      if (transactionsResult.error) throw transactionsResult.error;
-      
-      const customers = customersResult.data || [];
-      const transactions = transactionsResult.data || [];
-      
-      // Calculate current balance for each customer
-      const customersWithBalance = customers.map(customer => {
-        const customerTransactions = transactions.filter(t => t.customer_id === customer.id);
-        const transactionTotal = customerTransactions.reduce((sum, t) => {
-          return sum + (t.type === 'credit' ? Number(t.amount) : -Number(t.amount));
-        }, 0);
-        
-        return {
-          ...customer,
-          current_balance: Number(customer.opening_balance) + transactionTotal
-        };
-      });
-      
-      return customersWithBalance;
-    },
-    refetchInterval: 60000,
-  });
-
   useEffect(() => {
     const newNotifications: Notification[] = [];
 
