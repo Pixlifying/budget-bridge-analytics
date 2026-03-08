@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, Wallet, Users, CreditCard } from 'lucide-react';
+import { AlertCircle, Wallet, CreditCard } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/utils/calculateUtils';
 
 interface Notification {
   id: string;
-  type: 'overdraft' | 'pending_balance' | 'khata';
+  type: 'overdraft' | 'pending_balance';
   title: string;
   message: string;
   amount?: number;
