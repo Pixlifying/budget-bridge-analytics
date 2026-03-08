@@ -220,6 +220,7 @@ const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: Sid
     { icon: <IconGlobe size={16} />, label: 'Digital Services', to: '/online-services' },
     { icon: <IconPen size={16} />, label: 'Offline Services', to: '/applications' },
     { icon: <IconPrint size={16} />, label: 'Print / Photostat', to: '/photostat' },
+    { icon: <IconPaper size={16} />, label: 'Papers', to: '/papers' },
   ];
 
   const appsItems = [
