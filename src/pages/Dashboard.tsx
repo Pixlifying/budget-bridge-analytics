@@ -950,8 +950,8 @@ const Dashboard = () => {
             </div>
 
             {/* Third Row - Recent Activities (Vertical Ticker) */}
-            <div className="grid grid-cols-4 gap-4">
-              <DashCard className="col-span-3">
+            <div className="grid grid-cols-2 gap-4">
+              <DashCard>
                 <h3 className="font-medium text-foreground mb-3">Recent Activities {viewMode === 'day' ? '(Today)' : '(This Month)'}</h3>
                 <div className="relative overflow-hidden h-48">
                   {recentActivitiesData && recentActivitiesData.length > 0 ? (
