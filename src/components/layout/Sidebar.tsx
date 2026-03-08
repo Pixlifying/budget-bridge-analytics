@@ -167,58 +167,58 @@ const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
   };
 
   const adminItems = [
-    { icon: <UserCog size={16} />, label: 'User Admin', to: '/user-admin' },
-    { icon: <Palette size={16} />, label: 'Theme Settings', to: '/theme-settings' },
-    { icon: <Printer size={16} />, label: 'Print', to: '/downloads' },
+    { icon: <IconUserAdmin size={16} />, label: 'User Admin', to: '/user-admin' },
+    { icon: <IconPalette size={16} />, label: 'Theme Settings', to: '/theme-settings' },
+    { icon: <IconPrint size={16} />, label: 'Print', to: '/downloads' },
   ];
 
   const householdItems = [
-    { icon: <FileText size={16} />, label: 'Milk', to: '/milk' },
-    { icon: <FileText size={16} />, label: 'Misc Expenses', to: '/misc-expenses' },
-    { icon: <PiggyBank size={16} />, label: 'Money (Udhar)', to: '/udhar' },
+    { icon: <IconMilk size={16} />, label: 'Milk', to: '/milk' },
+    { icon: <IconExpense size={16} />, label: 'Misc Expenses', to: '/misc-expenses' },
+    { icon: <IconMoney size={16} />, label: 'Money (Udhar)', to: '/udhar' },
   ];
 
   const financialServiceItems = [
-    { icon: <CreditCard size={16} />, label: 'Banking Transaction', to: '/banking' },
-    { icon: <PiggyBank size={16} />, label: 'OD Records', to: '/od-records' },
+    { icon: <IconBankingTransaction size={16} />, label: 'Banking Transaction', to: '/banking' },
+    { icon: <IconPiggy size={16} />, label: 'OD Records', to: '/od-records' },
   ];
 
   const nonFinancialServiceItems = [
-    { icon: <Landmark size={16} />, label: 'Accounts Opened', to: '/banking-accounts' },
-    { icon: <Users size={16} />, label: 'Account Details', to: '/account-details' },
-    { icon: <Shield size={16} />, label: 'Social Security', to: '/social-security' },
-    { icon: <FileText size={16} />, label: 'Documentation', to: '/documentation' },
+    { icon: <IconBankAccounts size={16} />, label: 'Accounts Opened', to: '/banking-accounts' },
+    { icon: <IconUsers size={16} />, label: 'Account Details', to: '/account-details' },
+    { icon: <IconShield size={16} />, label: 'Social Security', to: '/social-security' },
+    { icon: <IconDocument size={16} />, label: 'Documentation', to: '/documentation' },
   ];
 
   const customerServiceItems = [
-    { icon: <Globe size={16} />, label: 'Digital Services', to: '/online-services' },
-    { icon: <FilePen size={16} />, label: 'Offline Services', to: '/applications' },
-    { icon: <Copy size={16} />, label: 'Print / Photostat', to: '/photostat' },
+    { icon: <IconGlobe size={16} />, label: 'Digital Services', to: '/online-services' },
+    { icon: <IconPen size={16} />, label: 'Offline Services', to: '/applications' },
+    { icon: <IconPrint size={16} />, label: 'Print / Photostat', to: '/photostat' },
   ];
 
   const appsItems = [
-    { icon: <Calculator size={16} />, label: 'Calculator', to: '/calculator' },
-    { icon: <Calculator size={16} />, label: 'Age Calculator', to: '/age-calculator' },
-    { icon: <FileText size={16} />, label: 'Forms', to: '/forms' },
+    { icon: <IconCalculator size={16} />, label: 'Calculator', to: '/calculator' },
+    { icon: <IconAgeCalc size={16} />, label: 'Age Calculator', to: '/age-calculator' },
+    { icon: <IconForms size={16} />, label: 'Forms', to: '/forms' },
   ];
 
   const ledgerItems = [
-    { icon: <BookOpen size={16} />, label: 'Khata', to: '/khata' },
-    { icon: <FileText size={16} />, label: 'Papers', to: '/papers' },
-    { icon: <AlertCircle size={16} />, label: 'Pending Balance', to: '/pending-balance' },
-    { icon: <PiggyBank size={16} />, label: 'Expenses', to: '/expenses' },
+    { icon: <IconBook size={16} />, label: 'Khata', to: '/khata' },
+    { icon: <IconPaper size={16} />, label: 'Papers', to: '/papers' },
+    { icon: <IconWarning size={16} />, label: 'Pending Balance', to: '/pending-balance' },
+    { icon: <IconExpense size={16} />, label: 'Expenses', to: '/expenses' },
   ];
 
   const sidebarItems = [
-    { icon: <LayoutDashboard size={18} />, label: 'Dashboard', to: '/', hasChildren: false },
-    { icon: <CreditCard size={18} />, label: 'Financial Services', to: '#', hasChildren: true, menuKey: 'financialServices', children: financialServiceItems },
-    { icon: <Landmark size={18} />, label: 'Non Financial Services', to: '#', hasChildren: true, menuKey: 'nonFinancialServices', children: nonFinancialServiceItems },
-    { icon: <HeadphonesIcon size={18} />, label: 'Customer Services', to: '#', hasChildren: true, menuKey: 'customerServices', children: customerServiceItems },
-    { icon: <BookOpen size={18} />, label: 'Ledger', to: '#', hasChildren: true, menuKey: 'ledger', children: ledgerItems },
-    { icon: <Calculator size={18} />, label: 'Apps', to: '#', hasChildren: true, menuKey: 'apps', children: appsItems },
-    { icon: <BarChart3 size={18} />, label: 'Analytics', to: '/analytics', hasChildren: false },
-    { icon: <Home size={18} />, label: 'Household', to: '#', hasChildren: true, menuKey: 'household', children: householdItems },
-    { icon: <Settings size={18} />, label: 'Admin', to: '#', hasChildren: true, menuKey: 'admin', children: adminItems },
+    { icon: <IconDashboard size={18} />, label: 'Dashboard', to: '/', hasChildren: false },
+    { icon: <IconWallet size={18} />, label: 'Financial Services', to: '#', hasChildren: true, menuKey: 'financialServices', children: financialServiceItems },
+    { icon: <IconBank size={18} />, label: 'Non Financial Services', to: '#', hasChildren: true, menuKey: 'nonFinancialServices', children: nonFinancialServiceItems },
+    { icon: <IconFingerprint size={18} />, label: 'Customer Services', to: '#', hasChildren: true, menuKey: 'customerServices', children: customerServiceItems },
+    { icon: <IconBook size={18} />, label: 'Ledger', to: '#', hasChildren: true, menuKey: 'ledger', children: ledgerItems },
+    { icon: <IconCalculator size={18} />, label: 'Apps', to: '#', hasChildren: true, menuKey: 'apps', children: appsItems },
+    { icon: <IconChart size={18} />, label: 'Analytics', to: '/analytics', hasChildren: false },
+    { icon: <IconHome size={18} />, label: 'Household', to: '#', hasChildren: true, menuKey: 'household', children: householdItems },
+    { icon: <IconSettings size={18} />, label: 'Admin', to: '#', hasChildren: true, menuKey: 'admin', children: adminItems },
   ];
 
   const sidebarContent = (
