@@ -222,15 +222,15 @@ const Customers = () => {
             onDateChange={setSelectedDate}
           />
           <div className="flex gap-2">
-            <Button onClick={() => setShowPrintDialog(true)} variant="outline">
+            <Button onClick={() => setShowPrintDialog(true)} variant="outline" className="bg-sidebar-accent text-sidebar-accent-foreground border-sidebar-accent hover:bg-sidebar-accent/80">
               <Printer size={16} className="mr-2" />
               Print
             </Button>
-            <Button onClick={handleDownload} variant="outline">
+            <Button onClick={handleDownload} variant="outline" className="bg-sidebar-accent text-sidebar-accent-foreground border-sidebar-accent hover:bg-sidebar-accent/80">
               <Download size={16} className="mr-2" />
               Download
             </Button>
-            <Button onClick={() => setShowForm(true)}>
+            <Button onClick={() => setShowForm(true)} className="bg-primary text-primary-foreground">
               <Plus size={16} className="mr-2" />
               Add Customer
             </Button>

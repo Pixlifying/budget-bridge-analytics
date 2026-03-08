@@ -998,10 +998,10 @@ const Khata = () => {
 
       <div className="flex gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sidebar-accent-foreground/50" size={16} />
           <Input
             placeholder="Search by name or phone..."
-            className="pl-9"
+            className="pl-9 bg-sidebar-accent text-sidebar-accent-foreground placeholder:text-sidebar-accent-foreground/50 border-sidebar-accent"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
