@@ -1270,6 +1270,113 @@ const Dashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Expenses Dialog */}
+      <Dialog open={expensesDialogOpen} onOpenChange={setExpensesDialogOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[70vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Receipt className="h-5 w-5 text-destructive" />
+              Expenses Details
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            {expensesData && expensesData.length > 0 ? (
+              <div className="space-y-3">
+                {expensesData.map((item) => (
+                  <div 
+                    key={item.id} 
+                    className="p-4 rounded-xl border border-border/50 bg-gradient-to-br from-muted/30 to-muted/10 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-foreground text-lg">{item.name}</h4>
+                        <div className="flex items-center gap-4 mt-2 text-sm">
+                          <span className="text-muted-foreground">📅 {format(new Date(item.date), 'dd MMM yyyy')}</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-destructive">{formatCurrency(item.amount)}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <div className="border-t pt-4 mt-4">
+                  <div className="flex items-center justify-between font-bold text-lg">
+                    <span className="text-foreground">Total Expenses</span>
+                    <span className="text-destructive">{formatCurrency(expensesTotal)}</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => { setExpensesDialogOpen(false); navigate('/expenses'); }}
+                  className="w-full mt-2 text-sm text-primary hover:underline text-center"
+                >
+                  View full Expenses page →
+                </button>
+              </div>
+            ) : (
+              <p className="text-center text-muted-foreground py-8">No expenses found</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Photostat Dialog */}
+      <Dialog open={photostatDialogOpen} onOpenChange={setPhotostatDialogOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[70vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Printer className="h-5 w-5 text-primary" />
+              Photostat Details
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            {photostatData && photostatData.length > 0 ? (
+              <div className="space-y-3">
+                {photostatData.map((item) => (
+                  <div 
+                    key={item.id} 
+                    className="p-4 rounded-xl border border-border/50 bg-gradient-to-br from-muted/30 to-muted/10 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-4 mt-1 text-sm">
+                          <span className="text-muted-foreground">📅 {format(new Date(item.date), 'dd MMM yyyy')}</span>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                            {item.is_double_sided ? 'Double Sided' : 'Single Sided'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xl font-bold text-primary">{formatCurrency(item.amount)}</p>
+                        <p className="text-xs text-muted-foreground">Margin: {formatCurrency(item.margin)}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <div className="border-t pt-4 mt-4">
+                  <div className="flex items-center justify-between font-bold text-lg">
+                    <span className="text-foreground">Total Photostat</span>
+                    <span className="text-primary">{formatCurrency(photostatTotal)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm mt-1">
+                    <span className="text-muted-foreground">Total Margin</span>
+                    <span className="text-primary">{formatCurrency(photostatMarginTotal)}</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => { setPhotostatDialogOpen(false); navigate('/photostat'); }}
+                  className="w-full mt-2 text-sm text-primary hover:underline text-center"
+                >
+                  View full Photostat page →
+                </button>
+              </div>
+            ) : (
+              <p className="text-center text-muted-foreground py-8">No photostat entries found</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
