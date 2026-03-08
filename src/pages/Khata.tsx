@@ -688,31 +688,8 @@ const Khata = () => {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Account Summary</h3>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">Opening Balance</p>
-                <p className="text-lg font-semibold">{formatCurrency(selectedCustomer.opening_balance)}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">Opening Date</p>
-                <p className="text-lg font-semibold">{format(new Date(selectedCustomer.opening_date), 'dd/MM/yyyy')}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">Current Balance</p>
-                <p className={`text-lg font-semibold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatCurrency(balance)}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+
+
 
         <Card>
           <CardHeader>
