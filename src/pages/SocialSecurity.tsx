@@ -566,7 +566,7 @@ const SocialSecurity = () => {
           </div>
         </div>
       </div>
-    </PageWrapper>
+    </div>
   );
 };
 
