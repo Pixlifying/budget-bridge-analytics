@@ -158,9 +158,7 @@ const NotificationBox = () => {
                   <div className={`p-2 rounded-lg ${
                     notification.type === 'overdraft'
                       ? 'bg-emerald-100 dark:bg-emerald-800/40 text-emerald-600 dark:text-emerald-400'
-                      : notification.type === 'pending_balance'
-                      ? 'bg-orange-100 dark:bg-orange-800/40 text-orange-600 dark:text-orange-400'
-                      : 'bg-purple-100 dark:bg-purple-800/40 text-purple-600 dark:text-purple-400'
+                      : 'bg-orange-100 dark:bg-orange-800/40 text-orange-600 dark:text-orange-400'
                   }`}>
                     {notification.icon}
                   </div>
