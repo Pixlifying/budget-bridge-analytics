@@ -167,14 +167,14 @@ const Analytics = () => {
       setOdRecords(odData?.map(e => ({ ...e, date: new Date(e.date), amount_received: Number(e.amount_received), amount_given: Number(e.amount_given), cash_in_hand: Number(e.cash_in_hand), od_from_bank: Number(e.od_from_bank) })) || []);
       setPanCards(panCardData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount), total: Number(e.total), margin: Number(e.margin) })) || []);
       setPassports(passportData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount), total: Number(e.total), margin: Number(e.margin) })) || []);
-      setBankingServices(bankingData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount), margin: Number(e.margin) })) || []);
+      setBankingServices(bankingData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount), expense: Number(e.extra_amount || 0), margin: Number(e.margin) })) || []);
       setOnlineServices(onlineData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount), expense: Number(e.expense || 0), total: Number(e.total) })) || []);
       setExpenses(expenseData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount) })) || []);
       setApplications(applicationsData?.map(e => ({ ...e, date: new Date(e.date), expense: Number(e.expense || 0), amount: Number(e.amount) })) || []);
       setMiscExpenses(miscExpensesData?.map(e => ({ ...e, date: new Date(e.date), fee: Number(e.fee) })) || []);
-      setPhotostats(photostatData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount), margin: Number(e.margin) })) || []);
+      setPhotostats(photostatData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount), expense: Number(e.expense || 0), margin: Number(e.margin) })) || []);
       setDocumentation(documentationData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount), expense: Number(e.expense) })) || []);
-      setBankingAccounts(bankingAccountsData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount) })) || []);
+      setBankingAccounts(bankingAccountsData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount), expense: Number(e.expense || 0) })) || []);
       setFeeExpenses(feeExpensesData?.map(e => ({ ...e, date: new Date(e.date), fee: Number(e.fee) })) || []);
     } catch (error) {
       console.error('Error fetching analytics data:', error);
