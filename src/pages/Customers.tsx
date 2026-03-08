@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { useHighlight } from '@/hooks/useHighlight';
 import { Plus, Search, Download, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,6 +48,14 @@ const Customers = () => {
   const [viewMode, setViewMode] = useState<'day' | 'month' | 'year'>('month');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedCustomerForPrint, setSelectedCustomerForPrint] = useState<string>('all');
+  const { isHighlighted, dateParam } = useHighlight();
+
+  useEffect(() => {
+    if (dateParam) {
+      const navDate = new Date(dateParam);
+      if (!isNaN(navDate.getTime())) { setSelectedDate(navDate); setViewMode('month'); }
+    }
+  }, [dateParam]);
   const [showPrintDialog, setShowPrintDialog] = useState(false);
 
   const fetchCustomers = async () => {
@@ -261,6 +270,7 @@ const Customers = () => {
               customer={customer}
               onEdit={setEditingCustomer}
               onDelete={setCustomerToDelete}
+              isHighlighted={isHighlighted(customer.id)}
             />
           ))}
         </div>
