@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,8 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import PageHeader from '@/components/layout/PageHeader';
 import PageWrapper from '@/components/layout/PageWrapper';
-import { User, Mail, Calendar, Shield, LogOut } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { User, Mail, Calendar, Shield, LogOut, Camera, Trash2 } from 'lucide-react';
 
 interface UserAdminData {
   id: string;
@@ -18,6 +19,7 @@ interface UserAdminData {
   updated_at: string;
   last_login: string | null;
   is_active: boolean;
+  profile_image_url: string | null;
 }
 
 const UserAdmin = () => {
@@ -29,6 +31,8 @@ const UserAdmin = () => {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchUserData();
@@ -47,7 +51,7 @@ const UserAdmin = () => {
         return;
       }
 
-      setUserData(data);
+      setUserData(data as UserAdminData);
       setFormData({
         username: data.username,
         email: data.email
@@ -80,7 +84,6 @@ const UserAdmin = () => {
         return;
       }
 
-      // Update localStorage with new credentials
       localStorage.setItem('site_username', formData.username);
       localStorage.setItem('site_email', formData.email);
 
@@ -92,6 +95,88 @@ const UserAdmin = () => {
       toast.error('Failed to update user data');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !userData) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB');
+      return;
+    }
+
+    setIsUploadingImage(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `profile-${userData.id}-${Date.now()}.${fileExt}`;
+
+      // Delete old image if exists
+      if (userData.profile_image_url) {
+        const oldPath = userData.profile_image_url.split('/profile-images/')[1];
+        if (oldPath) {
+          await supabase.storage.from('profile-images').remove([oldPath]);
+        }
+      }
+
+      const { error: uploadError } = await supabase.storage
+        .from('profile-images')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('profile-images')
+        .getPublicUrl(fileName);
+
+      const { error: updateError } = await supabase
+        .from('user_admin')
+        .update({ profile_image_url: urlData.publicUrl, updated_at: new Date().toISOString() })
+        .eq('id', userData.id);
+
+      if (updateError) throw updateError;
+
+      toast.success('Profile image updated');
+      await fetchUserData();
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast.error('Failed to upload image');
+    } finally {
+      setIsUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDeleteImage = async () => {
+    if (!userData?.profile_image_url) return;
+
+    setIsUploadingImage(true);
+    try {
+      const oldPath = userData.profile_image_url.split('/profile-images/')[1];
+      if (oldPath) {
+        await supabase.storage.from('profile-images').remove([oldPath]);
+      }
+
+      const { error } = await supabase
+        .from('user_admin')
+        .update({ profile_image_url: null, updated_at: new Date().toISOString() })
+        .eq('id', userData.id);
+
+      if (error) throw error;
+
+      toast.success('Profile image removed');
+      await fetchUserData();
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      toast.error('Failed to remove image');
+    } finally {
+      setIsUploadingImage(false);
     }
   };
 
@@ -125,7 +210,7 @@ const UserAdmin = () => {
     return (
       <PageWrapper title="User Admin">
         <div className="flex items-center justify-center min-h-64">
-          <div className="text-lg text-red-600">Failed to load user data</div>
+          <div className="text-lg text-destructive">Failed to load user data</div>
         </div>
       </PageWrapper>
     );
@@ -133,11 +218,62 @@ const UserAdmin = () => {
 
   return (
     <PageWrapper title="User Admin" subtitle="Manage your account settings and information">
-      <PageHeader
-        title="User Admin"
-      />
+      <PageHeader title="User Admin" />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+        {/* Profile Image Card */}
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Camera className="h-5 w-5" />
+              Profile Image
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col sm:flex-row items-center gap-6">
+              <Avatar className="h-24 w-24 border-2 border-border">
+                <AvatarImage src={userData.profile_image_url || undefined} alt={userData.username} />
+                <AvatarFallback className="text-2xl bg-primary/10 text-primary">
+                  {userData.username?.charAt(0)?.toUpperCase() || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex flex-col gap-3">
+                <p className="text-sm text-muted-foreground text-center sm:text-left">
+                  Upload a profile picture. Max size 5MB. JPG, PNG or WebP.
+                </p>
+                <div className="flex gap-2 justify-center sm:justify-start">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                  />
+                  <Button
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploadingImage}
+                  >
+                    <Camera size={16} className="mr-1" />
+                    {isUploadingImage ? 'Uploading...' : userData.profile_image_url ? 'Change' : 'Upload'}
+                  </Button>
+                  {userData.profile_image_url && (
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={handleDeleteImage}
+                      disabled={isUploadingImage}
+                    >
+                      <Trash2 size={16} className="mr-1" />
+                      Remove
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Account Information Card */}
         <Card>
           <CardHeader>
