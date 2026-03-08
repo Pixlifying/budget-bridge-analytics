@@ -860,20 +860,20 @@ const Dashboard = () => {
             <div className="bg-gradient-to-r from-primary via-primary/90 to-primary/80 rounded-2xl p-6 text-primary-foreground relative overflow-hidden">
               <div className="absolute right-0 top-0 w-40 h-40 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
               <div className="relative z-10">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <Wallet className="h-5 w-5 opacity-80" />
                       <h3 className="text-sm opacity-80">Cash in Hand</h3>
                     </div>
-                    <p className="text-4xl font-bold">{formatCurrency(latestCashInHand)}</p>
+                    <p className="text-3xl sm:text-4xl font-bold">{formatCurrency(latestCashInHand)}</p>
                   </div>
-                  <div className="text-right">
+                  <div className="text-left sm:text-right">
                     <div className="flex items-center gap-2 mb-1">
                       <Clock className="h-4 w-4 opacity-80" />
                       <span className="text-xs opacity-80">Current Time</span>
                     </div>
-                    <p className="text-3xl font-bold font-mono tracking-wider">{format(currentTime, 'HH:mm:ss')}</p>
+                    <p className="text-2xl sm:text-3xl font-bold font-mono tracking-wider">{format(currentTime, 'HH:mm:ss')}</p>
                     <p className="text-xs opacity-70 mt-0.5">{format(currentTime, 'EEEE, MMM d')}</p>
                   </div>
                 </div>
