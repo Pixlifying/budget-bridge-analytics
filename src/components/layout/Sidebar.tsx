@@ -161,8 +161,8 @@ const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: Sid
     const menuMap: Record<string, { menuKey: string; paths: string[] }[]> = {
       financialServices: [{ menuKey: 'financialServices', paths: ['/banking', '/od-records'] }],
       nonFinancialServices: [{ menuKey: 'nonFinancialServices', paths: ['/banking-accounts', '/account-details', '/social-security', '/documentation'] }],
-      customerServices: [{ menuKey: 'customerServices', paths: ['/online-services', '/applications', '/photostat'] }],
-      ledger: [{ menuKey: 'ledger', paths: ['/khata', '/papers', '/pending-balance', '/expenses'] }],
+      customerServices: [{ menuKey: 'customerServices', paths: ['/online-services', '/applications', '/photostat', '/papers'] }],
+      ledger: [{ menuKey: 'ledger', paths: ['/khata', '/pending-balance', '/expenses'] }],
       apps: [{ menuKey: 'apps', paths: ['/calculator', '/age-calculator', '/forms'] }],
       household: [{ menuKey: 'household', paths: ['/milk', '/misc-expenses', '/udhar'] }],
       admin: [{ menuKey: 'admin', paths: ['/user-admin', '/theme-settings', '/downloads'] }],
