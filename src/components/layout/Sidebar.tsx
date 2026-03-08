@@ -231,7 +231,6 @@ const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: Sid
 
   const ledgerItems = [
     { icon: <IconBook size={16} />, label: 'Khata', to: '/khata' },
-    { icon: <IconPaper size={16} />, label: 'Papers', to: '/papers' },
     { icon: <IconWarning size={16} />, label: 'Pending Balance', to: '/pending-balance' },
     { icon: <IconExpense size={16} />, label: 'Expenses', to: '/expenses' },
   ];
