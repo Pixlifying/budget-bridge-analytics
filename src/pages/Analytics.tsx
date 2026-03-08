@@ -99,6 +99,7 @@ interface BankingAccountEntry {
   id: string;
   date: Date;
   amount: number;
+  expense: number;
 }
 
 interface FeeExpenseEntry {
