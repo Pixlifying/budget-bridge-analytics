@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { useHighlight } from '@/hooks/useHighlight';
 import { Edit, Trash2, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from '@/lib/utils';
@@ -422,7 +423,7 @@ const PendingBalance = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredBalances.map((entry, index) => (
-            <Card key={entry.id} className="overflow-hidden">
+            <Card key={entry.id} data-record-id={entry.id} className={`overflow-hidden ${isHighlighted(entry.id) ? 'search-highlight' : ''}`}>
               <CardHeader className="bg-blue-50 pb-2">
                 <div className="flex justify-between items-start">
                   <CardTitle className="text-lg">{entry.name}</CardTitle>
