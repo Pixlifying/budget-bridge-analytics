@@ -288,6 +288,11 @@ const ThemeSettings = () => {
     }
   ];
 
+  const handleGlassmorphismChange = (enabled: boolean) => {
+    setGlassmorphism(enabled);
+    setGlassEnabled(enabled);
+  };
+
   const handleColorThemeChange = (colorTheme: string) => {
     setColorTheme(colorTheme);
     setCurrentColorTheme(colorTheme);
