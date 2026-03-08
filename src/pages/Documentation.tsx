@@ -378,7 +378,7 @@ const Documentation = () => {
               placeholder="Search by name, service..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-[180px] h-9"
+              className="w-[180px] h-9 bg-sidebar-accent text-sidebar-accent-foreground placeholder:text-sidebar-accent-foreground/50 border-sidebar-border"
             />
             <Select value={serviceFilter} onValueChange={setServiceFilter}>
               <SelectTrigger className="w-[130px] h-9">

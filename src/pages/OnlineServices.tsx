@@ -421,7 +421,7 @@ const OnlineServices = () => {
               placeholder="Search by customer, service..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-[180px] h-9"
+              className="w-[180px] h-9 bg-sidebar-accent text-sidebar-accent-foreground placeholder:text-sidebar-accent-foreground/50 border-sidebar-border"
             />
             <Button onClick={handlePrint} variant="outline">
               <Printer size={16} className="mr-2" />
