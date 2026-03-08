@@ -65,7 +65,7 @@ const CustomerCard = ({ customer, onClick, onEdit, onDelete, isHighlighted = fal
     >
       {/* 3D Card Container */}
       <div 
-        className="relative bg-white rounded-2xl overflow-hidden shadow-lg shadow-slate-200/50 border border-slate-100 transition-all duration-300 group-hover:shadow-xl group-hover:shadow-slate-300/50"
+        className="relative bg-card rounded-2xl overflow-hidden shadow-lg shadow-muted/50 border border-border transition-all duration-300 group-hover:shadow-xl group-hover:shadow-muted/70"
         style={{
           transformStyle: 'preserve-3d',
         }}
