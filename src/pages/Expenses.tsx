@@ -46,6 +46,8 @@ const Expenses = () => {
     }
   }, [dateParam]);
 
+  const [searchQuery, setSearchQuery] = useState('');
+
   // Form state for inline entry
   const [newEntry, setNewEntry] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -90,14 +92,24 @@ const Expenses = () => {
   }, []);
   
   useEffect(() => {
+    let filtered: ExpenseEntry[];
     if (viewMode === 'day') {
-      setFilteredExpenses(filterByDate(expenses, date));
+      filtered = filterByDate(expenses, date);
     } else if (viewMode === 'month') {
-      setFilteredExpenses(filterByMonth(expenses, date));
+      filtered = filterByMonth(expenses, date);
     } else {
-      setFilteredExpenses(filterByQuarter(expenses, date));
+      filtered = filterByQuarter(expenses, date);
     }
-  }, [date, viewMode, expenses]);
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(e =>
+        e.name.toLowerCase().includes(q) ||
+        String(e.amount).includes(q) ||
+        e.type.toLowerCase().includes(q)
+      );
+    }
+    setFilteredExpenses(filtered);
+  }, [date, viewMode, expenses, searchQuery]);
 
   const handleAddEntry = async () => {
     if (!newEntry.name || !newEntry.amount) {
@@ -223,12 +235,18 @@ const Expenses = () => {
       title="Expenses"
       subtitle={`Manage your expenses for ${viewMode === 'day' ? 'today' : 'this month'}`}
       action={
-        <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+        <div className="flex flex-wrap gap-2 items-center">
           <DateRangePicker 
             date={date} 
             onDateChange={setDate} 
             mode={viewMode} 
             onModeChange={setViewMode} 
+          />
+          <Input
+            placeholder="Search..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-[180px] h-9 bg-sidebar-accent text-sidebar-accent-foreground placeholder:text-sidebar-accent-foreground/50 border-sidebar-border"
           />
           <Button onClick={handlePrint} variant="outline">
             <Printer size={16} className="mr-2" />
