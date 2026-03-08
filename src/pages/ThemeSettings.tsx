@@ -2,11 +2,11 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Palette, Check, Sparkles, Sun, Moon, Monitor } from 'lucide-react';
+import { Palette, Check, Sparkles, Sun, Moon, Monitor, Droplets } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import PageWrapper from '@/components/layout/PageWrapper';
 import PageHeader from '@/components/layout/PageHeader';
-import { setColorTheme, getColorTheme } from '@/lib/themeUtils';
+import { setColorTheme, getColorTheme, setGlassmorphism, getGlassmorphism } from '@/lib/themeUtils';
 import { Switch } from '@/components/ui/switch';
 
 interface ColorTheme {
