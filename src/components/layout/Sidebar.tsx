@@ -1,31 +1,35 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  CreditCard,
-  Globe, 
-  BarChart3, 
-  ChevronDown,
-  ChevronRight,
-  PiggyBank,
-  AlertCircle,
-  FilePen,
-  Copy,
-  FileText,
-  Users,
-  Calculator,
-  Landmark,
-  BookOpen,
-  Printer,
-  HeadphonesIcon,
-  Settings,
-  UserCog,
-  Palette,
-  Shield,
-  Home,
-  Wallet,
-  X
-} from 'lucide-react';
+import { ChevronDown, ChevronRight, X } from 'lucide-react';
+import {
+  IconDashboard,
+  IconWallet,
+  IconBank,
+  IconPiggy,
+  IconShield,
+  IconUsers,
+  IconDocument,
+  IconFingerprint,
+  IconGlobe,
+  IconPrint,
+  IconPaper,
+  IconBook,
+  IconPalette,
+  IconChart,
+  IconHome,
+  IconSettings,
+  IconUserAdmin,
+  IconCalculator,
+  IconPen,
+  IconWarning,
+  IconMoney,
+  IconExpense,
+  IconForms,
+  IconMilk,
+  IconBankingTransaction,
+  IconBankAccounts,
+  IconAgeCalc,
+} from '@/components/icons/IconoirIcons';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
