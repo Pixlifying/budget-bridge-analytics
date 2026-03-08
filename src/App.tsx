@@ -49,6 +49,7 @@ const App = () => {
   useEffect(() => {
     const savedTheme = getColorTheme();
     applyColorTheme(savedTheme);
+    applyGlassmorphism(getGlassmorphism());
   }, []);
 
   return (
