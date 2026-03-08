@@ -935,9 +935,9 @@ const Khata = () => {
   }
 
   return (
-    <div className="container px-4 py-6 space-y-6 max-w-4xl mx-auto">
+    <div className="container px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Khata Management</h1>
+        <h1 className="text-xl sm:text-2xl font-bold">Khata Management</h1>
       </div>
 
       {/* Inline Add Customer Form */}
