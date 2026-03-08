@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { useHighlight } from '@/hooks/useHighlight';
 import { FileText, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from '@/lib/utils';
@@ -32,6 +33,14 @@ const PanCard = () => {
   const [viewMode, setViewMode] = useState<'day' | 'month' | 'quarter'>('day');
   const [panCards, setPanCards] = useState<PanCardEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { isHighlighted, dateParam } = useHighlight();
+
+  useEffect(() => {
+    if (dateParam) {
+      const navDate = new Date(dateParam);
+      if (!isNaN(navDate.getTime())) { setDate(navDate); setViewMode('month'); }
+    }
+  }, [dateParam]);
   const [filteredPanCards, setFilteredPanCards] = useState<PanCardEntry[]>([]);
   const [editingEntry, setEditingEntry] = useState<PanCardEntry | null>(null);
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
@@ -355,6 +364,7 @@ const PanCard = () => {
                 setIsEditFormOpen(true);
               }}
               onDelete={() => handleDeleteEntry(entry.id)}
+              isHighlighted={isHighlighted(entry.id)}
               showActions={true}
             />
           ))}
