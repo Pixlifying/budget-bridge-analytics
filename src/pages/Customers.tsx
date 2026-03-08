@@ -222,15 +222,15 @@ const Customers = () => {
             onDateChange={setSelectedDate}
           />
           <div className="flex gap-2">
-            <Button onClick={() => setShowPrintDialog(true)} variant="outline">
+            <Button onClick={() => setShowPrintDialog(true)} variant="outline" className="bg-sidebar-accent text-sidebar-accent-foreground border-sidebar-accent hover:bg-sidebar-accent/80">
               <Printer size={16} className="mr-2" />
               Print
             </Button>
-            <Button onClick={handleDownload} variant="outline">
+            <Button onClick={handleDownload} variant="outline" className="bg-sidebar-accent text-sidebar-accent-foreground border-sidebar-accent hover:bg-sidebar-accent/80">
               <Download size={16} className="mr-2" />
               Download
             </Button>
-            <Button onClick={() => setShowForm(true)}>
+            <Button onClick={() => setShowForm(true)} className="bg-primary text-primary-foreground">
               <Plus size={16} className="mr-2" />
               Add Customer
             </Button>
@@ -241,10 +241,10 @@ const Customers = () => {
       {/* Search Bar */}
       <div className="mb-6">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sidebar-accent-foreground/50" size={16} />
           <Input
             placeholder="Search customers by name, phone, or address..."
-            className="pl-9"
+            className="pl-9 bg-sidebar-accent text-sidebar-accent-foreground placeholder:text-sidebar-accent-foreground/50 border-sidebar-accent"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />

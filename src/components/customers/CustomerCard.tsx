@@ -65,7 +65,7 @@ const CustomerCard = ({ customer, onClick, onEdit, onDelete, isHighlighted = fal
     >
       {/* 3D Card Container */}
       <div 
-        className="relative bg-white rounded-2xl overflow-hidden shadow-lg shadow-slate-200/50 border border-slate-100 transition-all duration-300 group-hover:shadow-xl group-hover:shadow-slate-300/50"
+        className="relative bg-card rounded-2xl overflow-hidden shadow-lg shadow-muted/50 border border-border transition-all duration-300 group-hover:shadow-xl group-hover:shadow-muted/70"
         style={{
           transformStyle: 'preserve-3d',
         }}
@@ -85,7 +85,7 @@ const CustomerCard = ({ customer, onClick, onEdit, onDelete, isHighlighted = fal
 
         {/* Avatar with 3D pop effect */}
         <div 
-          className="absolute left-4 top-12 w-16 h-16 rounded-2xl bg-white shadow-lg flex items-center justify-center border-4 border-white"
+          className="absolute left-4 top-12 w-16 h-16 rounded-2xl bg-card shadow-lg flex items-center justify-center border-4 border-card"
           style={{
             transform: 'translateZ(20px)',
           }}
@@ -119,7 +119,7 @@ const CustomerCard = ({ customer, onClick, onEdit, onDelete, isHighlighted = fal
         {/* Content */}
         <div className="pt-10 pb-5 px-5">
           {/* Name */}
-          <h3 className="font-bold text-lg text-slate-800 mb-3">{customer.name}</h3>
+          <h3 className="font-bold text-lg text-card-foreground mb-3">{customer.name}</h3>
           
           {/* Details with icons */}
           <div className="space-y-2">
@@ -127,7 +127,7 @@ const CustomerCard = ({ customer, onClick, onEdit, onDelete, isHighlighted = fal
               <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
                 <Phone size={14} className="text-blue-500" />
               </div>
-              <span className="text-sm text-slate-600">{customer.phone}</span>
+              <span className="text-sm text-muted-foreground">{customer.phone}</span>
             </div>
 
             {customer.address && (
@@ -135,7 +135,7 @@ const CustomerCard = ({ customer, onClick, onEdit, onDelete, isHighlighted = fal
                 <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
                   <MapPin size={14} className="text-green-500" />
                 </div>
-                <span className="text-sm text-slate-600 line-clamp-1">{customer.address}</span>
+                <span className="text-sm text-muted-foreground line-clamp-1">{customer.address}</span>
               </div>
             )}
 
@@ -144,7 +144,7 @@ const CustomerCard = ({ customer, onClick, onEdit, onDelete, isHighlighted = fal
                 <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center shrink-0">
                   <User size={14} className="text-purple-500" />
                 </div>
-                <span className="text-sm text-slate-500 line-clamp-2">{customer.description}</span>
+                <span className="text-sm text-muted-foreground/80 line-clamp-2">{customer.description}</span>
               </div>
             )}
           </div>
@@ -152,7 +152,7 @@ const CustomerCard = ({ customer, onClick, onEdit, onDelete, isHighlighted = fal
 
         {/* Bottom 3D shadow effect */}
         <div 
-          className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-slate-200 to-transparent opacity-50"
+          className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-border to-transparent opacity-50"
           style={{
             transform: 'translateZ(-5px)',
           }}
