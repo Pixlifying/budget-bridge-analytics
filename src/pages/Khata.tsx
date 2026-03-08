@@ -564,37 +564,37 @@ const Khata = () => {
     const transactionsWithBalance = calculateRunningBalance(filteredTransactions, selectedCustomer.opening_balance);
     
     return (
-      <div className="container px-4 py-6 space-y-6 max-w-4xl mx-auto">
-        <div className="flex items-center gap-4">
+      <div className="container px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6 max-w-6xl mx-auto">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setSelectedCustomer(null)}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 self-start"
           >
             <ArrowLeft size={16} />
-            Back to Customers
+            Back
           </Button>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold">{selectedCustomer.name}</h1>
-            <p className="text-muted-foreground">{selectedCustomer.phone}</p>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold truncate">{selectedCustomer.name}</h1>
+            <p className="text-sm text-muted-foreground">{selectedCustomer.phone}</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button
               variant="outline"
               size="sm"
               onClick={handlePrintCustomer}
             >
-              <Printer size={16} className="mr-2" />
-              Print Report
+              <Printer size={16} className="mr-1" />
+              Print
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => openEditCustomer(selectedCustomer)}
             >
-              <Edit size={16} className="mr-2" />
-              Edit Customer
+              <Edit size={16} className="mr-1" />
+              Edit
             </Button>
           </div>
         </div>
