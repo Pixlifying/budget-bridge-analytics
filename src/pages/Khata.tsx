@@ -718,7 +718,7 @@ const Khata = () => {
               <h3 className="text-lg font-semibold">Transactions</h3>
               <div className="flex items-center gap-2">
                 <Filter size={16} className="text-muted-foreground" />
-                <Select value={transactionFilter} onValueChange={(value: 'all' | 'credit' | 'debit') => setTransactionFilter(value)}>
+                <Select value={transactionFilter} onValueChange={(value: 'all' | 'credit' | 'debit') => { setTransactionFilter(value); setCurrentPage(1); }}>
                   <SelectTrigger className="w-32">
                     <SelectValue />
                   </SelectTrigger>
