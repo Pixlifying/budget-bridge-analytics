@@ -1008,6 +1008,25 @@ const Dashboard = () => {
                 </div>
               </DashCard>
               
+              {/* Khata */}
+              <DashCard onClick={() => setKhataDialogOpen(true)} className="cursor-pointer">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <BookOpen className="h-4 w-4 text-primary" />
+                  </div>
+                  <h3 className="font-medium text-foreground">Khata</h3>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-lg font-bold text-foreground">
+                    {khataCustomersData?.length || 0} customers
+                  </p>
+                  <p className="text-xs text-muted-foreground">Click to view details</p>
+                  <div className="flex justify-between text-xs mt-2">
+                    <span className="text-muted-foreground">Net Balance: <span className={`font-medium ${khataTotal >= 0 ? 'text-primary' : 'text-destructive'}`}>{formatCurrency(khataTotal)}</span></span>
+                  </div>
+                </div>
+              </DashCard>
+
               {/* Documentation */}
               <DashCard onClick={() => setDocumentationDialogOpen(true)} className="cursor-pointer">
                 <div className="flex items-center gap-3 mb-3">
