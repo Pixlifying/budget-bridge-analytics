@@ -45,6 +45,7 @@ interface BankingServiceEntry {
   id: string;
   date: Date;
   amount: number;
+  expense: number;
   margin: number;
 }
 
@@ -83,6 +84,7 @@ interface PhotostatEntry {
   id: string;
   date: Date;
   amount: number;
+  expense: number;
   margin: number;
 }
 
@@ -97,6 +99,7 @@ interface BankingAccountEntry {
   id: string;
   date: Date;
   amount: number;
+  expense: number;
 }
 
 interface FeeExpenseEntry {
@@ -164,14 +167,14 @@ const Analytics = () => {
       setOdRecords(odData?.map(e => ({ ...e, date: new Date(e.date), amount_received: Number(e.amount_received), amount_given: Number(e.amount_given), cash_in_hand: Number(e.cash_in_hand), od_from_bank: Number(e.od_from_bank) })) || []);
       setPanCards(panCardData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount), total: Number(e.total), margin: Number(e.margin) })) || []);
       setPassports(passportData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount), total: Number(e.total), margin: Number(e.margin) })) || []);
-      setBankingServices(bankingData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount), margin: Number(e.margin) })) || []);
+      setBankingServices(bankingData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount), expense: Number(e.extra_amount || 0), margin: Number(e.margin) })) || []);
       setOnlineServices(onlineData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount), expense: Number(e.expense || 0), total: Number(e.total) })) || []);
       setExpenses(expenseData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount) })) || []);
       setApplications(applicationsData?.map(e => ({ ...e, date: new Date(e.date), expense: Number(e.expense || 0), amount: Number(e.amount) })) || []);
       setMiscExpenses(miscExpensesData?.map(e => ({ ...e, date: new Date(e.date), fee: Number(e.fee) })) || []);
-      setPhotostats(photostatData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount), margin: Number(e.margin) })) || []);
+      setPhotostats(photostatData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount), expense: Number(e.expense || 0), margin: Number(e.margin) })) || []);
       setDocumentation(documentationData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount), expense: Number(e.expense) })) || []);
-      setBankingAccounts(bankingAccountsData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount) })) || []);
+      setBankingAccounts(bankingAccountsData?.map(e => ({ ...e, date: new Date(e.date), amount: Number(e.amount), expense: Number(e.expense || 0) })) || []);
       setFeeExpenses(feeExpensesData?.map(e => ({ ...e, date: new Date(e.date), fee: Number(e.fee) })) || []);
     } catch (error) {
       console.error('Error fetching analytics data:', error);
@@ -217,18 +220,43 @@ const Analytics = () => {
   const latestOdRecord = odRecords.length > 0 ? odRecords[0] : null;
   const latestCashInHand = latestOdRecord ? latestOdRecord.cash_in_hand : 0;
   const totalExpenses = filteredExpenses.reduce((sum, entry) => sum + entry.amount, 0);
-  const totalOnlineServices = filteredOnlineServices.reduce((sum, entry) => sum + entry.total, 0);
-  const totalApplications = filteredApplications.reduce((sum, entry) => sum + entry.amount, 0);
-  const totalPanMargin = filteredPanCards.reduce((sum, entry) => sum + entry.margin, 0);
-  const totalPassportMargin = filteredPassports.reduce((sum, entry) => sum + entry.margin, 0);
-  const totalBankingMargin = filteredBankingServices.reduce((sum, entry) => sum + entry.margin, 0);
   const totalMiscExpenses = filteredMiscExpenses.reduce((sum, entry) => sum + entry.fee, 0);
-  const totalPhotostatMargin = filteredPhotostats.reduce((sum, entry) => sum + entry.margin, 0);
-  const totalDocumentationMargin = filteredDocumentation.reduce((sum, entry) => sum + (entry.amount - entry.expense), 0);
-  const totalBankingAccountsMargin = filteredBankingAccounts.reduce((sum, entry) => sum + entry.amount, 0);
   const totalFeeExpenses = filteredFeeExpenses.reduce((sum, entry) => sum + entry.fee, 0);
 
-  const totalRevenue = totalPanMargin + totalPassportMargin + totalBankingMargin + totalBankingAccountsMargin + totalOnlineServices + totalApplications + totalPhotostatMargin + totalDocumentationMargin;
+  // Calculate amount and expense for each service, then derive margin
+  const panCardAmount = filteredPanCards.reduce((sum, entry) => sum + entry.total, 0);
+  const panCardExpense = filteredPanCards.reduce((sum, entry) => sum + (entry.total - entry.margin), 0);
+  const totalPanMargin = panCardAmount - panCardExpense;
+
+  const passportAmount = filteredPassports.reduce((sum, entry) => sum + entry.total, 0);
+  const passportExpense = filteredPassports.reduce((sum, entry) => sum + (entry.total - entry.margin), 0);
+  const totalPassportMargin = passportAmount - passportExpense;
+
+  const bankingAmount = filteredBankingServices.reduce((sum, entry) => sum + entry.amount, 0);
+  const bankingExpense = filteredBankingServices.reduce((sum, entry) => sum + entry.expense, 0);
+  const totalBankingMargin = bankingAmount - bankingExpense;
+
+  const onlineAmount = filteredOnlineServices.reduce((sum, entry) => sum + entry.amount, 0);
+  const onlineExpense = filteredOnlineServices.reduce((sum, entry) => sum + entry.expense, 0);
+  const totalOnlineServices_margin = onlineAmount - onlineExpense;
+
+  const applicationsAmount = filteredApplications.reduce((sum, entry) => sum + entry.amount, 0);
+  const applicationsExpense = filteredApplications.reduce((sum, entry) => sum + entry.expense, 0);
+  const totalApplicationsMargin = applicationsAmount - applicationsExpense;
+
+  const photostatAmount = filteredPhotostats.reduce((sum, entry) => sum + entry.amount, 0);
+  const photostatExpense = filteredPhotostats.reduce((sum, entry) => sum + entry.expense, 0);
+  const totalPhotostatMargin = photostatAmount - photostatExpense;
+
+  const documentationAmount = filteredDocumentation.reduce((sum, entry) => sum + entry.amount, 0);
+  const documentationExpense = filteredDocumentation.reduce((sum, entry) => sum + entry.expense, 0);
+  const totalDocumentationMargin = documentationAmount - documentationExpense;
+
+  const bankingAccountsAmount = filteredBankingAccounts.reduce((sum, entry) => sum + entry.amount, 0);
+  const bankingAccountsExpense = filteredBankingAccounts.reduce((sum, entry) => sum + entry.expense, 0);
+  const totalBankingAccountsMargin = bankingAccountsAmount - bankingAccountsExpense;
+
+  const totalRevenue = totalPanMargin + totalPassportMargin + totalBankingMargin + totalBankingAccountsMargin + totalOnlineServices_margin + totalApplicationsMargin + totalPhotostatMargin + totalDocumentationMargin;
   const totalAllExpenses = totalExpenses;
   const netProfit = totalRevenue - totalAllExpenses;
 
@@ -245,8 +273,8 @@ const Analytics = () => {
     { name: 'Passports', value: totalPassportMargin, color: COLORS[1] },
     { name: 'Banking', value: totalBankingMargin, color: COLORS[2] },
     { name: 'Other Banking', value: totalBankingAccountsMargin, color: 'hsl(200, 80%, 50%)' },
-    { name: 'Online', value: totalOnlineServices, color: COLORS[3] },
-    { name: 'Forms', value: totalApplications, color: COLORS[4] },
+    { name: 'Online', value: totalOnlineServices_margin, color: COLORS[3] },
+    { name: 'Forms', value: totalApplicationsMargin, color: COLORS[4] },
     { name: 'Print', value: totalPhotostatMargin, color: COLORS[5] },
     { name: 'Documentation', value: totalDocumentationMargin, color: 'hsl(260, 70%, 55%)' }
   ].filter(item => item.value > 0);
@@ -256,8 +284,8 @@ const Analytics = () => {
     { service: 'Passports', margin: totalPassportMargin },
     { service: 'Banking', margin: totalBankingMargin },
     { service: 'Other Banking', margin: totalBankingAccountsMargin },
-    { service: 'Online', margin: totalOnlineServices },
-    { service: 'Forms', margin: totalApplications },
+    { service: 'Online', margin: totalOnlineServices_margin },
+    { service: 'Forms', margin: totalApplicationsMargin },
     { service: 'Print', margin: totalPhotostatMargin },
     { service: 'Documentation', margin: totalDocumentationMargin }
   ].filter(item => item.margin > 0);
@@ -283,13 +311,19 @@ const Analytics = () => {
     const monthlyOnline = filterByMonth(onlineServices, monthDate);
     const monthlyApplications = filterByMonth(applications, monthDate);
     const monthlyExpenses = filterByMonth(expenses, monthDate);
+    const monthlyPhotostats = filterByMonth(photostats, monthDate);
+    const monthlyDocumentation = filterByMonth(documentation, monthDate);
+    const monthlyBankingAccounts = filterByMonth(bankingAccounts, monthDate);
 
     monthData.revenue = 
-      monthlyPanCards.reduce((sum, entry) => sum + entry.margin, 0) +
-      monthlyPassports.reduce((sum, entry) => sum + entry.margin, 0) +
-      monthlyBanking.reduce((sum, entry) => sum + entry.margin, 0) +
-      monthlyOnline.reduce((sum, entry) => sum + entry.total, 0) +
-      monthlyApplications.reduce((sum, entry) => sum + entry.amount, 0);
+      monthlyPanCards.reduce((sum, entry) => sum + (entry.total - (entry.total - entry.margin)), 0) +
+      monthlyPassports.reduce((sum, entry) => sum + (entry.total - (entry.total - entry.margin)), 0) +
+      monthlyBanking.reduce((sum, entry) => sum + (entry.amount - entry.expense), 0) +
+      monthlyOnline.reduce((sum, entry) => sum + (entry.amount - entry.expense), 0) +
+      monthlyApplications.reduce((sum, entry) => sum + (entry.amount - entry.expense), 0) +
+      monthlyPhotostats.reduce((sum, entry) => sum + (entry.amount - entry.expense), 0) +
+      monthlyDocumentation.reduce((sum, entry) => sum + (entry.amount - entry.expense), 0) +
+      monthlyBankingAccounts.reduce((sum, entry) => sum + (entry.amount - entry.expense), 0);
 
     monthData.expenses = monthlyExpenses.reduce((sum, entry) => sum + entry.amount, 0);
 
@@ -480,8 +514,8 @@ const Analytics = () => {
                 { label: 'PAN Cards', value: totalPanMargin, color: 'bg-primary/10 text-primary' },
                 { label: 'Passports', value: totalPassportMargin, color: 'bg-blue-500/10 text-blue-600' },
                 { label: 'Banking', value: totalBankingMargin, color: 'bg-pink-500/10 text-pink-600' },
-                { label: 'Online', value: totalOnlineServices, color: 'bg-teal-500/10 text-teal-600' },
-                { label: 'Forms', value: totalApplications, color: 'bg-purple-500/10 text-purple-600' },
+                { label: 'Online', value: totalOnlineServices_margin, color: 'bg-teal-500/10 text-teal-600' },
+                { label: 'Forms', value: totalApplicationsMargin, color: 'bg-purple-500/10 text-purple-600' },
               { label: 'Print', value: totalPhotostatMargin, color: 'bg-cyan-500/10 text-cyan-600' },
               { label: 'Docs', value: totalDocumentationMargin, color: 'bg-indigo-500/10 text-indigo-600' },
               { label: 'Misc Exp.', value: totalMiscExpenses, color: 'bg-orange-500/10 text-orange-600' },
