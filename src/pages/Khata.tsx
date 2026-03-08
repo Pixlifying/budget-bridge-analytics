@@ -607,6 +607,15 @@ const Khata = () => {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
               <div>
+                <Label htmlFor="transaction_date">Date</Label>
+                <Input
+                  id="transaction_date"
+                  type="date"
+                  value={transactionForm.date}
+                  onChange={(e) => setTransactionForm(prev => ({ ...prev, date: e.target.value }))}
+                />
+              </div>
+              <div>
                 <Label htmlFor="transaction_type">Type</Label>
                 <Select
                   value={transactionForm.type}
@@ -631,15 +640,6 @@ const Khata = () => {
                   value={transactionForm.amount}
                   onChange={(e) => setTransactionForm(prev => ({ ...prev, amount: Number(e.target.value) }))}
                   placeholder="Enter amount"
-                />
-              </div>
-              <div>
-                <Label htmlFor="transaction_date">Date</Label>
-                <Input
-                  id="transaction_date"
-                  type="date"
-                  value={transactionForm.date}
-                  onChange={(e) => setTransactionForm(prev => ({ ...prev, date: e.target.value }))}
                 />
               </div>
               <div>
