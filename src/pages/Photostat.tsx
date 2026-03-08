@@ -324,7 +324,13 @@ const Photostat = () => {
             mode={viewMode} 
             onModeChange={setViewMode} 
           />
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 items-center">
+            <Input
+              placeholder="Search by amount..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-[180px] h-9"
+            />
             <Button onClick={handlePrint} variant="outline">
               <Printer size={16} className="mr-2" />
               Print

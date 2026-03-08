@@ -361,7 +361,13 @@ const Applications = () => {
             mode={filterMode}
             onModeChange={handleModeChange}
           />
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 items-center">
+            <Input
+              placeholder="Search by customer..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-[180px] h-9"
+            />
             <Button onClick={handlePrint} variant="outline">
               <Printer size={16} className="mr-2" />
               Print

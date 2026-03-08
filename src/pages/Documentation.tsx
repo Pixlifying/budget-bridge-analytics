@@ -373,7 +373,13 @@ const Documentation = () => {
             mode={viewMode}
             onModeChange={setViewMode}
           />
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 items-center">
+            <Input
+              placeholder="Search by name, service..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-[180px] h-9"
+            />
             <Select value={serviceFilter} onValueChange={setServiceFilter}>
               <SelectTrigger className="w-[130px] h-9">
                 <SelectValue placeholder="Filter" />
