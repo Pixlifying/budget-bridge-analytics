@@ -17,6 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useMobileMenu } from '@/contexts/MobileMenuContext';
 
 const Dashboard = () => {
+  const { setOpen: setMobileMenuOpen } = useMobileMenu();
   const navigate = useNavigate();
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month' | 'quarter'>('day');
