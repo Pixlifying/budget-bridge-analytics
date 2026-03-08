@@ -418,6 +418,7 @@ const Khata = () => {
       description: transaction.description || '',
     });
     setShowEditTransaction(true);
+    setShowAddTransaction(false);
   };
 
   const initiateDelete = (id: string, type: 'customer' | 'transaction') => {
@@ -596,10 +597,20 @@ const Khata = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowAddTransaction(true)}
+              onClick={() => {
+                setShowAddTransaction(!showAddTransaction);
+                setShowEditTransaction(false);
+                setEditingTransaction(null);
+                setTransactionForm({
+                  type: 'credit',
+                  amount: 0,
+                  date: new Date().toISOString().split('T')[0],
+                  description: '',
+                });
+              }}
             >
               <Plus size={16} className="mr-2" />
-              Add Transaction
+              {showAddTransaction ? 'Cancel' : 'Add Transaction'}
             </Button>
           </div>
         </div>
@@ -751,119 +762,131 @@ const Khata = () => {
           </CardContent>
         </Card>
 
-        {/* Add Transaction Dialog */}
-        <Dialog open={showAddTransaction} onOpenChange={setShowAddTransaction}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add Transaction</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="transaction_type">Type</Label>
-                <Select
-                  value={transactionForm.type}
-                  onValueChange={(value: 'credit' | 'debit') => 
-                    setTransactionForm(prev => ({ ...prev, type: value }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="credit">Credit</SelectItem>
-                    <SelectItem value="debit">Debit</SelectItem>
-                  </SelectContent>
-                </Select>
+        {/* Inline Add Transaction Form */}
+        {showAddTransaction && (
+          <Card>
+            <CardHeader>
+              <h3 className="text-lg font-semibold">Add Transaction</h3>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                <div>
+                  <Label htmlFor="transaction_type">Type</Label>
+                  <Select
+                    value={transactionForm.type}
+                    onValueChange={(value: 'credit' | 'debit') => 
+                      setTransactionForm(prev => ({ ...prev, type: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="credit">Credit</SelectItem>
+                      <SelectItem value="debit">Debit</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="transaction_amount">Amount</Label>
+                  <Input
+                    id="transaction_amount"
+                    type="number"
+                    value={transactionForm.amount}
+                    onChange={(e) => setTransactionForm(prev => ({ ...prev, amount: Number(e.target.value) }))}
+                    placeholder="Enter amount"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="transaction_date">Date</Label>
+                  <Input
+                    id="transaction_date"
+                    type="date"
+                    value={transactionForm.date}
+                    onChange={(e) => setTransactionForm(prev => ({ ...prev, date: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="transaction_description">Description</Label>
+                  <Input
+                    id="transaction_description"
+                    value={transactionForm.description}
+                    onChange={(e) => setTransactionForm(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Optional"
+                  />
+                </div>
+                <Button onClick={handleAddTransaction}>
+                  <Plus size={16} className="mr-2" />
+                  Add
+                </Button>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="transaction_amount">Amount</Label>
-                <Input
-                  id="transaction_amount"
-                  type="number"
-                  value={transactionForm.amount}
-                  onChange={(e) => setTransactionForm(prev => ({ ...prev, amount: Number(e.target.value) }))}
-                  placeholder="Enter amount"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="transaction_date">Date</Label>
-                <Input
-                  id="transaction_date"
-                  type="date"
-                  value={transactionForm.date}
-                  onChange={(e) => setTransactionForm(prev => ({ ...prev, date: e.target.value }))}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="transaction_description">Description</Label>
-                <Input
-                  id="transaction_description"
-                  value={transactionForm.description}
-                  onChange={(e) => setTransactionForm(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Enter description (optional)"
-                />
-              </div>
-              <Button onClick={handleAddTransaction}>Add Transaction</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </CardContent>
+          </Card>
+        )}
 
-        {/* Edit Transaction Dialog */}
-        <Dialog open={showEditTransaction} onOpenChange={setShowEditTransaction}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Edit Transaction</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="edit_transaction_type">Type</Label>
-                <Select
-                  value={transactionForm.type}
-                  onValueChange={(value: 'credit' | 'debit') => 
-                    setTransactionForm(prev => ({ ...prev, type: value }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="credit">Credit</SelectItem>
-                    <SelectItem value="debit">Debit</SelectItem>
-                  </SelectContent>
-                </Select>
+        {/* Inline Edit Transaction Form */}
+        {showEditTransaction && editingTransaction && (
+          <Card className="border-primary">
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Edit Transaction</h3>
+                <Button variant="ghost" size="sm" onClick={() => { setShowEditTransaction(false); setEditingTransaction(null); }}>
+                  Cancel
+                </Button>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="edit_transaction_amount">Amount</Label>
-                <Input
-                  id="edit_transaction_amount"
-                  type="number"
-                  value={transactionForm.amount}
-                  onChange={(e) => setTransactionForm(prev => ({ ...prev, amount: Number(e.target.value) }))}
-                  placeholder="Enter amount"
-                />
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                <div>
+                  <Label htmlFor="edit_transaction_type">Type</Label>
+                  <Select
+                    value={transactionForm.type}
+                    onValueChange={(value: 'credit' | 'debit') => 
+                      setTransactionForm(prev => ({ ...prev, type: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="credit">Credit</SelectItem>
+                      <SelectItem value="debit">Debit</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="edit_transaction_amount">Amount</Label>
+                  <Input
+                    id="edit_transaction_amount"
+                    type="number"
+                    value={transactionForm.amount}
+                    onChange={(e) => setTransactionForm(prev => ({ ...prev, amount: Number(e.target.value) }))}
+                    placeholder="Enter amount"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit_transaction_date">Date</Label>
+                  <Input
+                    id="edit_transaction_date"
+                    type="date"
+                    value={transactionForm.date}
+                    onChange={(e) => setTransactionForm(prev => ({ ...prev, date: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit_transaction_description">Description</Label>
+                  <Input
+                    id="edit_transaction_description"
+                    value={transactionForm.description}
+                    onChange={(e) => setTransactionForm(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Optional"
+                  />
+                </div>
+                <Button onClick={handleEditTransaction}>Update</Button>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="edit_transaction_date">Date</Label>
-                <Input
-                  id="edit_transaction_date"
-                  type="date"
-                  value={transactionForm.date}
-                  onChange={(e) => setTransactionForm(prev => ({ ...prev, date: e.target.value }))}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="edit_transaction_description">Description</Label>
-                <Input
-                  id="edit_transaction_description"
-                  value={transactionForm.description}
-                  onChange={(e) => setTransactionForm(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Enter description (optional)"
-                />
-              </div>
-              <Button onClick={handleEditTransaction}>Update Transaction</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Edit Customer Dialog */}
         <Dialog open={showEditCustomer} onOpenChange={setShowEditCustomer}>
