@@ -30,7 +30,7 @@ import NotFound from "@/pages/NotFound";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
-import { applyColorTheme, getColorTheme } from "@/lib/themeUtils";
+import { applyColorTheme, getColorTheme, applyGlassmorphism, getGlassmorphism } from "@/lib/themeUtils";
 import { MobileMenuContext } from "@/contexts/MobileMenuContext";
 
 import Forms from "@/pages/Forms";
@@ -49,6 +49,7 @@ const App = () => {
   useEffect(() => {
     const savedTheme = getColorTheme();
     applyColorTheme(savedTheme);
+    applyGlassmorphism(getGlassmorphism());
   }, []);
 
   return (
