@@ -670,7 +670,7 @@ const Dashboard = () => {
     value: onlineMargin,
     color: 'hsl(var(--chart-3))'
   }, {
-    name: 'Applications',
+    name: 'Forms',
     value: applicationsMargin,
     color: 'hsl(var(--chart-4))'
   }, {
