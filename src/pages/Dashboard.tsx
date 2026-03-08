@@ -853,10 +853,9 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="p-6">
-        <div className="flex gap-6">
-          {/* Main Content */}
-          <div className="flex-1 space-y-5">
+      <div className="p-3 sm:p-6">
+        <div className="flex flex-col lg:flex-row gap-6">
+          <div className="flex-1 space-y-5 min-w-0">
             {/* Cash in Hand Banner - Moved to Top */}
             <div className="bg-gradient-to-r from-primary via-primary/90 to-primary/80 rounded-2xl p-6 text-primary-foreground relative overflow-hidden">
               <div className="absolute right-0 top-0 w-40 h-40 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
