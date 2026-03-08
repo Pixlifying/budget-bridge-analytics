@@ -107,14 +107,26 @@ const [searchQuery, setSearchQuery] = useState('');
   }, []);
   
   useEffect(() => {
+    let filtered: PendingBalanceEntry[];
     if (viewMode === 'day') {
-      setFilteredBalances(filterByDate(pendingBalances, date));
+      filtered = filterByDate(pendingBalances, date);
     } else if (viewMode === 'month') {
-      setFilteredBalances(filterByMonth(pendingBalances, date));
+      filtered = filterByMonth(pendingBalances, date);
     } else {
-      setFilteredBalances(filterByQuarter(pendingBalances, date));
+      filtered = filterByQuarter(pendingBalances, date);
     }
-  }, [date, viewMode, pendingBalances]);
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(e =>
+        e.name.toLowerCase().includes(q) ||
+        e.address.toLowerCase().includes(q) ||
+        e.phone.toLowerCase().includes(q) ||
+        e.service.toLowerCase().includes(q) ||
+        String(e.amount).includes(q)
+      );
+    }
+    setFilteredBalances(filtered);
+  }, [date, viewMode, pendingBalances, searchQuery]);
 
   const handleAddEntry = async () => {
     if (!newEntry.name || !newEntry.address || !newEntry.phone || !newEntry.service || !newEntry.amount) {
