@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { Search } from 'lucide-react';
+import { Search, Menu } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import NotificationDropdown from '@/components/ui/NotificationDropdown';
 import { cn } from '@/lib/utils';
+import { useMobileMenu } from '@/contexts/MobileMenuContext';
 
 interface PageHeaderProps {
   title: string;
@@ -24,6 +25,7 @@ const PageHeader = ({
   showThemeToggle = false
 }: PageHeaderProps) => {
   const [isScrolled, setIsScrolled] = useState(false);
+  const { setOpen } = useMobileMenu();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -41,18 +43,26 @@ const PageHeader = ({
         ? "bg-sidebar/95 backdrop-blur-md shadow-md" 
         : "bg-sidebar"
     )}>
-      <div className="px-4 py-3">
+      <div className="px-3 sm:px-4 py-3">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold text-sidebar-foreground animate-fade-in">
-            {title}
-          </h1>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setOpen(true)} 
+              className="md:hidden p-2 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground"
+            >
+              <Menu size={20} />
+            </button>
+            <h1 className="text-lg sm:text-2xl font-bold text-sidebar-foreground animate-fade-in truncate">
+              {title}
+            </h1>
+          </div>
           <div className="flex items-center gap-2">
             {showThemeToggle && <ThemeToggle />}
             <NotificationDropdown />
           </div>
         </div>
         
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
           {onSearchChange && (
             <div className="relative flex-1 max-w-md group">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sidebar-foreground/60 transition-colors duration-200 group-focus-within:text-sidebar-foreground" size={16} />
@@ -65,7 +75,7 @@ const PageHeader = ({
             </div>
           )}
           {children && (
-            <div className="flex items-center gap-2 animate-slide-in-right text-sidebar-foreground [&_button]:bg-sidebar-accent [&_button]:text-sidebar-accent-foreground [&_button]:border-sidebar-border [&_select]:bg-sidebar-accent [&_select]:text-sidebar-accent-foreground [&_select]:border-sidebar-border [&_[role=combobox]]:bg-sidebar-accent [&_[role=combobox]]:text-sidebar-accent-foreground [&_[role=combobox]]:border-sidebar-border">
+            <div className="flex flex-wrap items-center gap-2 animate-slide-in-right text-sidebar-foreground [&_button]:bg-sidebar-accent [&_button]:text-sidebar-accent-foreground [&_button]:border-sidebar-border [&_select]:bg-sidebar-accent [&_select]:text-sidebar-accent-foreground [&_select]:border-sidebar-border [&_[role=combobox]]:bg-sidebar-accent [&_[role=combobox]]:text-sidebar-accent-foreground [&_[role=combobox]]:border-sidebar-border">
               {children}
             </div>
           )}
