@@ -596,24 +596,24 @@ const Khata = () => {
             <div className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${balance >= 0 ? 'bg-green-500/20 text-green-200' : 'bg-red-500/20 text-red-200'}`}>
               Balance: {formatCurrency(balance)}
             </div>
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2 flex-shrink-0">
               <Button
                 variant="outline"
-                size="sm"
+                size="icon"
                 onClick={handlePrintCustomer}
-                className="bg-sidebar-accent text-sidebar-accent-foreground border-sidebar-accent hover:bg-sidebar-accent/80"
+                className="bg-sidebar-accent text-sidebar-accent-foreground border-sidebar-accent hover:bg-sidebar-accent/80 h-8 w-8 sm:h-9 sm:w-auto sm:px-3"
               >
-                <Printer size={16} className="mr-1" />
-                Print
+                <Printer size={16} />
+                <span className="hidden sm:inline ml-1">Print</span>
               </Button>
               <Button
                 variant="outline"
-                size="sm"
+                size="icon"
                 onClick={() => openEditCustomer(selectedCustomer)}
-                className="bg-sidebar-accent text-sidebar-accent-foreground border-sidebar-accent hover:bg-sidebar-accent/80"
+                className="bg-sidebar-accent text-sidebar-accent-foreground border-sidebar-accent hover:bg-sidebar-accent/80 h-8 w-8 sm:h-9 sm:w-auto sm:px-3"
               >
-                <Edit size={16} className="mr-1" />
-                Edit
+                <Edit size={16} />
+                <span className="hidden sm:inline ml-1">Edit</span>
               </Button>
             </div>
           </div>
