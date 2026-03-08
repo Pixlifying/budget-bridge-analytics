@@ -596,10 +596,20 @@ const Khata = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowAddTransaction(true)}
+              onClick={() => {
+                setShowAddTransaction(!showAddTransaction);
+                setShowEditTransaction(false);
+                setEditingTransaction(null);
+                setTransactionForm({
+                  type: 'credit',
+                  amount: 0,
+                  date: new Date().toISOString().split('T')[0],
+                  description: '',
+                });
+              }}
             >
               <Plus size={16} className="mr-2" />
-              Add Transaction
+              {showAddTransaction ? 'Cancel' : 'Add Transaction'}
             </Button>
           </div>
         </div>
