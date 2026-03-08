@@ -1115,6 +1115,7 @@ export type Database = {
           id: string
           is_active: boolean
           last_login: string | null
+          profile_image_url: string | null
           updated_at: string
           username: string
         }
@@ -1124,6 +1125,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           last_login?: string | null
+          profile_image_url?: string | null
           updated_at?: string
           username: string
         }
@@ -1133,6 +1135,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           last_login?: string | null
+          profile_image_url?: string | null
           updated_at?: string
           username?: string
         }
