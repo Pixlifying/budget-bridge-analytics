@@ -96,6 +96,8 @@ const App = () => {
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </main>
+                  <HouseholdSidebar />
+                  </main>
                 </div>
               </ProtectedRoute>
             </MobileMenuContext.Provider>
