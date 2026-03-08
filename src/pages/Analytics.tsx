@@ -284,8 +284,8 @@ const Analytics = () => {
     { service: 'Passports', margin: totalPassportMargin },
     { service: 'Banking', margin: totalBankingMargin },
     { service: 'Other Banking', margin: totalBankingAccountsMargin },
-    { service: 'Online', margin: totalOnlineServices },
-    { service: 'Forms', margin: totalApplications },
+    { service: 'Online', margin: totalOnlineServices_margin },
+    { service: 'Forms', margin: totalApplicationsMargin },
     { service: 'Print', margin: totalPhotostatMargin },
     { service: 'Documentation', margin: totalDocumentationMargin }
   ].filter(item => item.margin > 0);
