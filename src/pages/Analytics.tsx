@@ -223,9 +223,14 @@ const Analytics = () => {
   const totalPassportMargin = filteredPassports.reduce((sum, entry) => sum + entry.margin, 0);
   const totalBankingMargin = filteredBankingServices.reduce((sum, entry) => sum + entry.margin, 0);
   const totalMiscExpenses = filteredMiscExpenses.reduce((sum, entry) => sum + entry.fee, 0);
+  const totalPhotostatMargin = filteredPhotostats.reduce((sum, entry) => sum + entry.margin, 0);
+  const totalDocumentationMargin = filteredDocumentation.reduce((sum, entry) => sum + (entry.amount - entry.expense), 0);
+  const totalBankingAccountsMargin = filteredBankingAccounts.reduce((sum, entry) => sum + entry.amount, 0);
+  const totalFeeExpenses = filteredFeeExpenses.reduce((sum, entry) => sum + entry.fee, 0);
 
-  const totalRevenue = totalOnlineServices + totalApplications + totalPanMargin + totalPassportMargin + totalBankingMargin;
-  const netProfit = totalRevenue - totalExpenses;
+  const totalRevenue = totalPanMargin + totalPassportMargin + totalBankingMargin + totalBankingAccountsMargin + totalOnlineServices + totalApplications + totalPhotostatMargin + totalDocumentationMargin;
+  const totalAllExpenses = totalExpenses + totalMiscExpenses + totalFeeExpenses;
+  const netProfit = totalRevenue - totalAllExpenses;
 
   const odTrendData = filteredOdRecords.slice().reverse().map((record) => ({
     date: format(new Date(record.date), 'MMM dd'),
