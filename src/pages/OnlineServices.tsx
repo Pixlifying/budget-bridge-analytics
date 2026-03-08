@@ -152,6 +152,16 @@ const OnlineServices = () => {
     applyDateFilter(onlineServices, selectedDate, filterMode);
   }, [selectedDate, filterMode, onlineServices]);
 
+  useEffect(() => {
+    if (!searchQuery.trim()) return;
+    const q = searchQuery.toLowerCase();
+    setFilteredServices(prev => prev.filter(e =>
+      (e.customer_name && e.customer_name.toLowerCase().includes(q)) ||
+      e.service.toLowerCase().includes(q) ||
+      (e.custom_service && e.custom_service.toLowerCase().includes(q))
+    ));
+  }, [searchQuery, selectedDate, filterMode, onlineServices]);
+
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
   };
