@@ -173,9 +173,7 @@ const NotificationBox = () => {
                       <div className={`text-xs font-medium mt-1 ${
                         notification.type === 'overdraft'
                           ? 'text-emerald-600 dark:text-emerald-400'
-                          : notification.type === 'pending_balance'
-                          ? 'text-orange-600 dark:text-orange-400'
-                          : 'text-purple-600 dark:text-purple-400'
+                          : 'text-orange-600 dark:text-orange-400'
                       }`}>
                         {formatCurrency(notification.amount)}
                       </div>
