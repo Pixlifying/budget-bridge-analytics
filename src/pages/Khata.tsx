@@ -61,7 +61,6 @@ const Khata = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<KhataCustomer | null>(null);
   const [showEditCustomer, setShowEditCustomer] = useState(false);
   const [showAddTransaction, setShowAddTransaction] = useState(false);
-  const [showEditTransaction, setShowEditTransaction] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteType, setDeleteType] = useState<'customer' | 'transaction'>('customer');
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
