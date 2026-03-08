@@ -482,7 +482,9 @@ const Analytics = () => {
                 { label: 'Banking', value: totalBankingMargin, color: 'bg-pink-500/10 text-pink-600' },
                 { label: 'Online', value: totalOnlineServices, color: 'bg-teal-500/10 text-teal-600' },
                 { label: 'Forms', value: totalApplications, color: 'bg-purple-500/10 text-purple-600' },
-                { label: 'Misc Exp.', value: totalMiscExpenses, color: 'bg-orange-500/10 text-orange-600' },
+              { label: 'Print', value: totalPhotostatMargin, color: 'bg-cyan-500/10 text-cyan-600' },
+              { label: 'Docs', value: totalDocumentationMargin, color: 'bg-indigo-500/10 text-indigo-600' },
+              { label: 'Misc Exp.', value: totalMiscExpenses, color: 'bg-orange-500/10 text-orange-600' },
               ].map((item) => (
                 <div key={item.label} className="text-center p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors duration-200">
                   <p className="text-xs text-muted-foreground mb-1">{item.label}</p>
