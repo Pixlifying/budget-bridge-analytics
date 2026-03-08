@@ -420,8 +420,8 @@ const Khata = () => {
       date: transaction.date,
       description: transaction.description || '',
     });
-    setShowEditTransaction(true);
-    setShowAddTransaction(false);
+    // Scroll to top to show the unified form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const initiateDelete = (id: string, type: 'customer' | 'transaction') => {
