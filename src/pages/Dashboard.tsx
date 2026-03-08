@@ -776,20 +776,25 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-card/80 backdrop-blur-sm border-b border-border px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-foreground">Hello, Harry</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">Explore information</p>
+      <div className="bg-card/80 backdrop-blur-sm border-b border-border px-3 sm:px-6 py-4">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <button onClick={() => setMobileMenuOpen(true)} className="md:hidden p-2 rounded-lg hover:bg-muted text-foreground shrink-0">
+              <Menu size={20} />
+            </button>
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-2xl font-semibold text-foreground truncate">Hello, Harry</h1>
+              <p className="text-sm text-muted-foreground mt-0.5 hidden sm:block">Explore information</p>
+            </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             <Popover open={searchOpen} onOpenChange={setSearchOpen}>
               <PopoverTrigger asChild>
                 <div className="relative cursor-pointer">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input 
-                    placeholder="Search across all pages..." 
-                    className="pl-9 w-72 bg-background border-border" 
+                    placeholder="Search..." 
+                    className="pl-9 w-36 sm:w-72 bg-background border-border" 
                     value={searchQuery}
                     onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true); }}
                     onFocus={() => searchQuery.length >= 2 && setSearchOpen(true)}
@@ -826,10 +831,9 @@ const Dashboard = () => {
                 </PopoverContent>
               )}
             </Popover>
-            <DateRangePicker date={date} onDateChange={handleDateChange} mode={viewMode} onModeChange={handleViewModeChange} />
-            <button className="p-2 rounded-full bg-background border border-border hover:bg-muted transition-colors">
-              <MessageSquare className="h-5 w-5 text-muted-foreground" />
-            </button>
+            <div className="hidden sm:block">
+              <DateRangePicker date={date} onDateChange={handleDateChange} mode={viewMode} onModeChange={handleViewModeChange} />
+            </div>
             <Popover open={notificationOpen} onOpenChange={setNotificationOpen}>
               <PopoverTrigger asChild>
                 <button className="p-2 rounded-full bg-background border border-border hover:bg-muted transition-colors relative">
@@ -842,6 +846,10 @@ const Dashboard = () => {
               </PopoverContent>
             </Popover>
           </div>
+        </div>
+        {/* Mobile date picker */}
+        <div className="sm:hidden mt-3">
+          <DateRangePicker date={date} onDateChange={handleDateChange} mode={viewMode} onModeChange={handleViewModeChange} />
         </div>
       </div>
 
