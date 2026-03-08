@@ -161,8 +161,8 @@ const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: Sid
     const menuMap: Record<string, { menuKey: string; paths: string[] }[]> = {
       financialServices: [{ menuKey: 'financialServices', paths: ['/banking', '/od-records'] }],
       nonFinancialServices: [{ menuKey: 'nonFinancialServices', paths: ['/banking-accounts', '/account-details', '/social-security', '/documentation'] }],
-      customerServices: [{ menuKey: 'customerServices', paths: ['/online-services', '/applications', '/photostat'] }],
-      ledger: [{ menuKey: 'ledger', paths: ['/khata', '/papers', '/pending-balance', '/expenses'] }],
+      customerServices: [{ menuKey: 'customerServices', paths: ['/online-services', '/applications', '/photostat', '/papers'] }],
+      ledger: [{ menuKey: 'ledger', paths: ['/khata', '/pending-balance', '/expenses'] }],
       apps: [{ menuKey: 'apps', paths: ['/calculator', '/age-calculator', '/forms'] }],
       household: [{ menuKey: 'household', paths: ['/milk', '/misc-expenses', '/udhar'] }],
       admin: [{ menuKey: 'admin', paths: ['/user-admin', '/theme-settings', '/downloads'] }],
@@ -220,6 +220,7 @@ const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: Sid
     { icon: <IconGlobe size={16} />, label: 'Digital Services', to: '/online-services' },
     { icon: <IconPen size={16} />, label: 'Offline Services', to: '/applications' },
     { icon: <IconPrint size={16} />, label: 'Print / Photostat', to: '/photostat' },
+    { icon: <IconPaper size={16} />, label: 'Papers', to: '/papers' },
   ];
 
   const appsItems = [
@@ -230,7 +231,6 @@ const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: Sid
 
   const ledgerItems = [
     { icon: <IconBook size={16} />, label: 'Khata', to: '/khata' },
-    { icon: <IconPaper size={16} />, label: 'Papers', to: '/papers' },
     { icon: <IconWarning size={16} />, label: 'Pending Balance', to: '/pending-balance' },
     { icon: <IconExpense size={16} />, label: 'Expenses', to: '/expenses' },
   ];
