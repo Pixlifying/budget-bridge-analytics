@@ -772,10 +772,17 @@ const Dashboard = () => {
             <button className="p-2 rounded-full bg-background border border-border hover:bg-muted transition-colors">
               <MessageSquare className="h-5 w-5 text-muted-foreground" />
             </button>
-            <button className="p-2 rounded-full bg-background border border-border hover:bg-muted transition-colors relative">
-              <Bell className="h-5 w-5 text-muted-foreground" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full"></span>
-            </button>
+            <Popover open={notificationOpen} onOpenChange={setNotificationOpen}>
+              <PopoverTrigger asChild>
+                <button className="p-2 rounded-full bg-background border border-border hover:bg-muted transition-colors relative">
+                  <Bell className="h-5 w-5 text-muted-foreground" />
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full"></span>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <NotificationBox />
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
       </div>
@@ -1416,6 +1423,60 @@ const Dashboard = () => {
               </div>
             ) : (
               <p className="text-center text-muted-foreground py-8">No photostat entries found</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Khata Dialog */}
+      <Dialog open={khataDialogOpen} onOpenChange={setKhataDialogOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[70vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-primary" />
+              Khata Summary
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            {khataCustomersData && khataCustomersData.length > 0 ? (
+              <div className="space-y-3">
+                {khataCustomersData.map((customer) => (
+                  <div 
+                    key={customer.id} 
+                    className="p-4 rounded-xl border border-border/50 bg-gradient-to-br from-muted/30 to-muted/10 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-foreground text-lg">{customer.name}</h4>
+                        <div className="flex items-center gap-4 mt-2 text-sm">
+                          <span className="text-muted-foreground">📞 {customer.phone}</span>
+                          <span className="text-muted-foreground">📅 {format(new Date(customer.opening_date), 'dd MMM yyyy')}</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-2xl font-bold ${customer.current_balance >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                          {formatCurrency(customer.current_balance)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Balance</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <div className="border-t pt-4 mt-4">
+                  <div className="flex items-center justify-between font-bold text-lg">
+                    <span className="text-foreground">Net Balance</span>
+                    <span className={khataTotal >= 0 ? 'text-primary' : 'text-destructive'}>{formatCurrency(khataTotal)}</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => { setKhataDialogOpen(false); navigate('/khata'); }}
+                  className="w-full mt-2 text-sm text-primary hover:underline text-center"
+                >
+                  View full Khata page →
+                </button>
+              </div>
+            ) : (
+              <p className="text-center text-muted-foreground py-8">No khata customers found</p>
             )}
           </div>
         </DialogContent>
