@@ -67,6 +67,8 @@ const Khata = () => {
   const [editingTransaction, setEditingTransaction] = useState<KhataTransaction | null>(null);
   const [transactionFilter, setTransactionFilter] = useState<'all' | 'credit' | 'debit'>('all');
   const [transactionSearch, setTransactionSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const TRANSACTIONS_PER_PAGE = 20;
 
   const [customerForm, setCustomerForm] = useState({
     name: '',
