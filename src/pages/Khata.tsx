@@ -67,6 +67,7 @@ const Khata = () => {
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [editingTransaction, setEditingTransaction] = useState<KhataTransaction | null>(null);
   const [transactionFilter, setTransactionFilter] = useState<'all' | 'credit' | 'debit'>('all');
+  const [transactionSearch, setTransactionSearch] = useState('');
 
   const [customerForm, setCustomerForm] = useState({
     name: '',
