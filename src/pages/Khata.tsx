@@ -946,7 +946,7 @@ const Khata = () => {
           <h3 className="text-lg font-semibold">Add New Customer</h3>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleAddCustomer} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+          <form onSubmit={handleAddCustomer} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 items-end">
             <div>
               <Label htmlFor="customer_name">Name</Label>
               <Input
