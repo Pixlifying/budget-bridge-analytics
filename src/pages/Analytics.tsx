@@ -127,6 +127,10 @@ const Analytics = () => {
   const [expenses, setExpenses] = useState<ExpenseEntry[]>([]);
   const [applications, setApplications] = useState<ApplicationEntry[]>([]);
   const [miscExpenses, setMiscExpenses] = useState<MiscExpenseEntry[]>([]);
+  const [photostats, setPhotostats] = useState<PhotostatEntry[]>([]);
+  const [documentation, setDocumentation] = useState<DocumentationEntry[]>([]);
+  const [bankingAccounts, setBankingAccounts] = useState<BankingAccountEntry[]>([]);
+  const [feeExpenses, setFeeExpenses] = useState<FeeExpenseEntry[]>([]);
 
   const [filteredOdRecords, setFilteredOdRecords] = useState<ODRecord[]>([]);
   const [filteredPanCards, setFilteredPanCards] = useState<PanCardEntry[]>([]);
@@ -136,6 +140,10 @@ const Analytics = () => {
   const [filteredExpenses, setFilteredExpenses] = useState<ExpenseEntry[]>([]);
   const [filteredApplications, setFilteredApplications] = useState<ApplicationEntry[]>([]);
   const [filteredMiscExpenses, setFilteredMiscExpenses] = useState<MiscExpenseEntry[]>([]);
+  const [filteredPhotostats, setFilteredPhotostats] = useState<PhotostatEntry[]>([]);
+  const [filteredDocumentation, setFilteredDocumentation] = useState<DocumentationEntry[]>([]);
+  const [filteredBankingAccounts, setFilteredBankingAccounts] = useState<BankingAccountEntry[]>([]);
+  const [filteredFeeExpenses, setFilteredFeeExpenses] = useState<FeeExpenseEntry[]>([]);
   
   const fetchAllData = async () => {
     setIsLoading(true);
