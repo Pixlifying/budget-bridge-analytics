@@ -1140,6 +1140,13 @@ const Dashboard = () => {
                   </div>
                 </div>
               </div>
+                <button
+                  onClick={() => { setApplicationsDialogOpen(false); navigate('/applications'); }}
+                  className="w-full mt-2 text-sm text-primary hover:underline text-center"
+                >
+                  View full Applications page →
+                </button>
+              </div>
             ) : (
               <p className="text-center text-muted-foreground py-8">No applications found</p>
             )}
@@ -1192,6 +1199,12 @@ const Dashboard = () => {
                     <span className="text-primary">{formatCurrency(onlineServicesTotal)}</span>
                   </div>
                 </div>
+                <button
+                  onClick={() => { setOnlineServicesDialogOpen(false); navigate('/online-services'); }}
+                  className="w-full mt-2 text-sm text-primary hover:underline text-center"
+                >
+                  View full Online Services page →
+                </button>
               </div>
             ) : (
               <p className="text-center text-muted-foreground py-8">No online services found</p>
