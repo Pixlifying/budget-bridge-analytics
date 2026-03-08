@@ -25,6 +25,15 @@ const ThemeSettings = () => {
   
   const colorThemes: ColorTheme[] = [
     {
+      name: 'Indian Flag 🇮🇳',
+      value: 'indianflag',
+      primary: '#E45826',
+      secondary: '#1A8F3C',
+      accent: '#138808',
+      background: '#FFF8F0',
+      description: 'Saffron, white & green — the spirit of India'
+    },
+    {
       name: 'Light Green',
       value: 'green',
       primary: '#10B981',
