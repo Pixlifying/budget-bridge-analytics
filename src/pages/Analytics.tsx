@@ -79,6 +79,32 @@ interface MiscExpenseEntry {
   fee: number;
 }
 
+interface PhotostatEntry {
+  id: string;
+  date: Date;
+  amount: number;
+  margin: number;
+}
+
+interface DocumentationEntry {
+  id: string;
+  date: Date;
+  amount: number;
+  expense: number;
+}
+
+interface BankingAccountEntry {
+  id: string;
+  date: Date;
+  amount: number;
+}
+
+interface FeeExpenseEntry {
+  id: string;
+  date: Date;
+  fee: number;
+}
+
 const COLORS = [
   'hsl(var(--primary))',
   'hsl(220, 90%, 56%)',
