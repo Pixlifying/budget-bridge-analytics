@@ -57,6 +57,7 @@ interface KhataTransaction {
 const Khata = () => {
   const [customers, setCustomers] = useState<KhataCustomer[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const { highlightId } = useHighlight();
   const [selectedCustomer, setSelectedCustomer] = useState<KhataCustomer | null>(null);
   const [showEditCustomer, setShowEditCustomer] = useState(false);
   const [showAddTransaction, setShowAddTransaction] = useState(false);
@@ -1017,7 +1018,7 @@ const Khata = () => {
             const balance = calculateBalance(customer);
             const latestTransaction = customer.transactions[0]; // Already sorted by date desc
             return (
-              <Card key={customer.id} className="cursor-pointer hover:shadow-md transition-shadow">
+              <Card key={customer.id} data-record-id={customer.id} className={`cursor-pointer hover:shadow-md transition-shadow ${highlightId === customer.id ? 'search-highlight' : ''}`}>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex-1" onClick={() => setSelectedCustomer(customer)}>
