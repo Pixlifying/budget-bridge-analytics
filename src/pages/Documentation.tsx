@@ -131,8 +131,18 @@ const Documentation = () => {
       filtered = filtered.filter(e => e.service_type === serviceFilter);
     }
 
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(e =>
+        e.name.toLowerCase().includes(q) ||
+        e.service_type.toLowerCase().includes(q) ||
+        (e.custom_service && e.custom_service.toLowerCase().includes(q)) ||
+        (e.mobile && e.mobile.includes(q))
+      );
+    }
+
     setFilteredEntries(filtered);
-  }, [date, viewMode, entries, serviceFilter]);
+  }, [date, viewMode, entries, serviceFilter, searchQuery]);
 
   const handleAddEntry = async () => {
     if (!newEntry.name || !newEntry.service_type) {
