@@ -594,26 +594,68 @@ const Khata = () => {
               <Edit size={16} className="mr-2" />
               Edit Customer
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setShowAddTransaction(!showAddTransaction);
-                setShowEditTransaction(false);
-                setEditingTransaction(null);
-                setTransactionForm({
-                  type: 'credit',
-                  amount: 0,
-                  date: new Date().toISOString().split('T')[0],
-                  description: '',
-                });
-              }}
-            >
-              <Plus size={16} className="mr-2" />
-              {showAddTransaction ? 'Cancel' : 'Add Transaction'}
-            </Button>
           </div>
         </div>
+
+        {/* Inline Add Transaction Form - Always visible */}
+        <Card>
+          <CardHeader>
+            <h3 className="text-lg font-semibold">Add Transaction</h3>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+              <div>
+                <Label htmlFor="transaction_type">Type</Label>
+                <Select
+                  value={transactionForm.type}
+                  onValueChange={(value: 'credit' | 'debit') => 
+                    setTransactionForm(prev => ({ ...prev, type: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="credit">Credit</SelectItem>
+                    <SelectItem value="debit">Debit</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="transaction_amount">Amount</Label>
+                <Input
+                  id="transaction_amount"
+                  type="number"
+                  value={transactionForm.amount}
+                  onChange={(e) => setTransactionForm(prev => ({ ...prev, amount: Number(e.target.value) }))}
+                  placeholder="Enter amount"
+                />
+              </div>
+              <div>
+                <Label htmlFor="transaction_date">Date</Label>
+                <Input
+                  id="transaction_date"
+                  type="date"
+                  value={transactionForm.date}
+                  onChange={(e) => setTransactionForm(prev => ({ ...prev, date: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="transaction_description">Description</Label>
+                <Input
+                  id="transaction_description"
+                  value={transactionForm.description}
+                  onChange={(e) => setTransactionForm(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Optional"
+                />
+              </div>
+              <Button onClick={handleAddTransaction}>
+                <Plus size={16} className="mr-2" />
+                Add
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
