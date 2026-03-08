@@ -1011,61 +1011,10 @@ const Dashboard = () => {
               </DashCard>
             </div>
 
-            {/* Fourth Row - Other Banking & Summary */}
-            <div className="grid grid-cols-2 gap-4">
-              {/* Other Banking Services */}
-              <DashCard>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 rounded-lg bg-primary/10">
-                    <BarChart3 className="h-4 w-4 text-primary" />
-                  </div>
-                  <h3 className="font-medium text-foreground">Other Banking</h3>
-                </div>
-                <p className="text-2xl font-bold text-foreground">{formatCurrency(bankingAccountsMargin)}</p>
-                <p className="text-xs text-muted-foreground mt-1">{bankingAccountsData?.length || 0} entries</p>
-              </DashCard>
-
-              {/* Total Revenue */}
-              <DashCard>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 rounded-lg bg-primary/10">
-                    <TrendingUp className="h-4 w-4 text-primary" />
-                  </div>
-                  <h3 className="font-medium text-foreground">Total Revenue</h3>
-                </div>
-                <p className="text-2xl font-bold text-foreground">
-                  {formatCurrency(bankingServicesTotal + onlineServicesTotal + applicationsTotal + photostatTotal)}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">All services combined</p>
-              </DashCard>
-            </div>
           </div>
 
           {/* Right Sidebar */}
           <div className="hidden lg:block w-80 space-y-5">
-            {/* User Profile Card */}
-            <DashCard className="text-center">
-              <Avatar className="w-16 h-16 mx-auto mb-3">
-                <AvatarImage src="" />
-                <AvatarFallback className="bg-primary/10 text-primary text-lg">U</AvatarFallback>
-              </Avatar>
-              <h3 className="font-semibold text-foreground">User Name</h3>
-              <p className="text-xs text-muted-foreground">user@example.com</p>
-              <div className="flex justify-center gap-6 mt-4 text-center">
-                <div>
-                  <p className="text-lg font-bold text-foreground">{applicationsCount}</p>
-                  <p className="text-xs text-muted-foreground">Applications</p>
-                </div>
-                <div>
-                  <p className="text-lg font-bold text-foreground">{bankingServicesCount}</p>
-                  <p className="text-xs text-muted-foreground">Banking</p>
-                </div>
-                <div>
-                  <p className="text-lg font-bold text-foreground">{onlineServicesCount}</p>
-                  <p className="text-xs text-muted-foreground">Online</p>
-                </div>
-              </div>
-            </DashCard>
 
             <NotificationBox />
             <ReminderCalendar />
