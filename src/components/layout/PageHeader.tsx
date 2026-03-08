@@ -38,12 +38,12 @@ const PageHeader = ({
 
   return (
     <div className={cn(
-      "sticky top-0 z-40 transition-all duration-300",
+      "sticky top-0 z-40 transition-all duration-300 mx-2 sm:mx-4 mt-2 rounded-2xl",
       isScrolled 
-        ? "bg-sidebar/95 backdrop-blur-md shadow-md" 
-        : "bg-sidebar"
+        ? "bg-sidebar/95 backdrop-blur-md shadow-lg" 
+        : "bg-sidebar shadow-md"
     )}>
-      <div className="px-3 sm:px-4 py-3">
+      <div className="px-4 sm:px-5 py-3">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <button 
