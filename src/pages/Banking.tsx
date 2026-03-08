@@ -103,14 +103,26 @@ const Banking = () => {
   }, []);
 
   useEffect(() => {
+    let filtered: BankingEntry[];
     if (viewMode === 'day') {
-      setFilteredEntries(filterByDate(bankingEntries, date));
+      filtered = filterByDate(bankingEntries, date);
     } else if (viewMode === 'month') {
-      setFilteredEntries(filterByMonth(bankingEntries, date));
+      filtered = filterByMonth(bankingEntries, date);
     } else {
-      setFilteredEntries(filterByQuarter(bankingEntries, date));
+      filtered = filterByQuarter(bankingEntries, date);
     }
-  }, [date, viewMode, bankingEntries]);
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(e =>
+        String(e.amount).includes(q) ||
+        String(e.transaction_count).includes(q) ||
+        String(e.margin).includes(q)
+      );
+    }
+
+    setFilteredEntries(filtered);
+  }, [date, viewMode, bankingEntries, searchQuery]);
 
   // Process CSV/Excel file using PapaParse
   const processFile = async (file: File) => {
