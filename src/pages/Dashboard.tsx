@@ -772,7 +772,16 @@ const Dashboard = () => {
       <div className="bg-card/80 backdrop-blur-sm border-b border-border px-3 sm:px-6 py-4">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <button onClick={() => setMobileMenuOpen(true)} className="md:hidden p-2 rounded-lg hover:bg-muted text-foreground shrink-0">
+            <button 
+              onClick={() => {
+                if (window.innerWidth < 768) {
+                  setMobileMenuOpen(true);
+                } else {
+                  setSidebarCollapsed(!sidebarCollapsed);
+                }
+              }} 
+              className="p-2 rounded-lg hover:bg-muted text-foreground shrink-0"
+            >
               <Menu size={20} />
             </button>
             <Avatar className="h-9 w-9 sm:h-10 sm:w-10 border border-border shrink-0">

@@ -795,10 +795,38 @@ const Khata = () => {
                 )}
               </TableBody>
             </Table>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between pt-4 border-t mt-4">
+                <p className="text-sm text-muted-foreground">
+                  Showing {((currentPage - 1) * TRANSACTIONS_PER_PAGE) + 1}–{Math.min(currentPage * TRANSACTIONS_PER_PAGE, filteredTransactions.length)} of {filteredTransactions.length}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(p => p - 1)}
+                  >
+                    <ArrowLeft size={14} className="mr-1" /> Previous
+                  </Button>
+                  <span className="text-sm font-medium px-2">
+                    {currentPage} / {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(p => p + 1)}
+                  >
+                    Next <ArrowRight size={14} className="ml-1" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
-
-
 
         {/* Edit Customer Dialog */}
         <Dialog open={showEditCustomer} onOpenChange={setShowEditCustomer}>
