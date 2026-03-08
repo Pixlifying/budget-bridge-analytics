@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ChevronDown, ChevronRight, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, X, PanelLeft } from 'lucide-react';
 import {
   IconDashboard,
   IconWallet,
@@ -139,9 +139,11 @@ const SidebarItem = ({
 interface SidebarProps {
   mobileOpen?: boolean;
   onMobileClose?: () => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
-const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
+const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: SidebarProps) => {
   const location = useLocation();
   
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
@@ -153,6 +155,30 @@ const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
     apps: false,
     household: false
   });
+
+  // Auto-expand parent menu when navigating to a child route
+  useEffect(() => {
+    const menuMap: Record<string, { menuKey: string; paths: string[] }[]> = {
+      financialServices: [{ menuKey: 'financialServices', paths: ['/banking', '/od-records'] }],
+      nonFinancialServices: [{ menuKey: 'nonFinancialServices', paths: ['/banking-accounts', '/account-details', '/social-security', '/documentation'] }],
+      customerServices: [{ menuKey: 'customerServices', paths: ['/online-services', '/applications', '/photostat'] }],
+      ledger: [{ menuKey: 'ledger', paths: ['/khata', '/papers', '/pending-balance', '/expenses'] }],
+      apps: [{ menuKey: 'apps', paths: ['/calculator', '/age-calculator', '/forms'] }],
+      household: [{ menuKey: 'household', paths: ['/milk', '/misc-expenses', '/udhar'] }],
+      admin: [{ menuKey: 'admin', paths: ['/user-admin', '/theme-settings', '/downloads'] }],
+    };
+
+    const updates: Record<string, boolean> = {};
+    Object.values(menuMap).flat().forEach(({ menuKey, paths }) => {
+      if (paths.some(p => location.pathname === p || location.pathname.startsWith(p))) {
+        updates[menuKey] = true;
+      }
+    });
+
+    if (Object.keys(updates).length > 0) {
+      setExpandedMenus(prev => ({ ...prev, ...updates }));
+    }
+  }, [location.pathname]);
 
   // Close mobile sidebar on route change
   useEffect(() => {
@@ -237,10 +263,13 @@ const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
               <h2 className="font-semibold text-sidebar-foreground">Hisab Kitab</h2>
             </div>
           </div>
-          {/* Close button only on mobile */}
+          {/* Close button - works on both mobile and desktop */}
           <button 
-            onClick={onMobileClose} 
-            className="md:hidden p-2 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground"
+            onClick={() => {
+              onMobileClose?.();
+              onToggleCollapse?.();
+            }}
+            className="p-2 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground"
           >
             <X size={20} />
           </button>
@@ -290,8 +319,11 @@ const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
 
   return (
     <>
-      {/* Desktop sidebar */}
-      <aside className="hidden md:flex h-screen w-72 flex-col sticky top-0 p-3">
+      {/* Desktop sidebar - hidden when collapsed */}
+      <aside className={cn(
+        "hidden md:flex h-screen flex-col sticky top-0 p-3 transition-all duration-300",
+        collapsed ? "w-0 p-0 overflow-hidden" : "w-72"
+      )}>
         {sidebarContent}
       </aside>
 
