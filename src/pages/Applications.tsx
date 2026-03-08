@@ -121,6 +121,14 @@ const Applications = () => {
     applyDateFilter(applications, selectedDate, filterMode);
   }, [selectedDate, filterMode, applications]);
 
+  useEffect(() => {
+    if (!searchQuery.trim()) return;
+    const q = searchQuery.toLowerCase();
+    setFilteredApplications(prev => prev.filter(e =>
+      e.customer_name.toLowerCase().includes(q)
+    ));
+  }, [searchQuery, selectedDate, filterMode, applications]);
+
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
   };
