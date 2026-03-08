@@ -553,10 +553,22 @@ const Khata = () => {
     customer.phone.includes(searchTerm)
   );
 
-  // Filter transactions based on the selected filter
+  // Filter transactions based on the selected filter and search
   const getFilteredTransactions = (transactions: KhataTransaction[]) => {
-    if (transactionFilter === 'all') return transactions;
-    return transactions.filter(t => t.type === transactionFilter);
+    let filtered = transactions;
+    if (transactionFilter !== 'all') {
+      filtered = filtered.filter(t => t.type === transactionFilter);
+    }
+    if (transactionSearch.trim()) {
+      const q = transactionSearch.toLowerCase();
+      filtered = filtered.filter(t =>
+        (t.description?.toLowerCase().includes(q)) ||
+        String(t.amount).includes(q) ||
+        t.type.toLowerCase().includes(q) ||
+        format(new Date(t.date), 'dd/MM/yyyy').includes(q)
+      );
+    }
+    return filtered;
   };
 
   if (selectedCustomer) {
