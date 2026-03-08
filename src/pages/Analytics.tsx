@@ -220,18 +220,43 @@ const Analytics = () => {
   const latestOdRecord = odRecords.length > 0 ? odRecords[0] : null;
   const latestCashInHand = latestOdRecord ? latestOdRecord.cash_in_hand : 0;
   const totalExpenses = filteredExpenses.reduce((sum, entry) => sum + entry.amount, 0);
-  const totalOnlineServices = filteredOnlineServices.reduce((sum, entry) => sum + entry.total, 0);
-  const totalApplications = filteredApplications.reduce((sum, entry) => sum + entry.amount, 0);
-  const totalPanMargin = filteredPanCards.reduce((sum, entry) => sum + entry.margin, 0);
-  const totalPassportMargin = filteredPassports.reduce((sum, entry) => sum + entry.margin, 0);
-  const totalBankingMargin = filteredBankingServices.reduce((sum, entry) => sum + entry.margin, 0);
   const totalMiscExpenses = filteredMiscExpenses.reduce((sum, entry) => sum + entry.fee, 0);
-  const totalPhotostatMargin = filteredPhotostats.reduce((sum, entry) => sum + entry.margin, 0);
-  const totalDocumentationMargin = filteredDocumentation.reduce((sum, entry) => sum + (entry.amount - entry.expense), 0);
-  const totalBankingAccountsMargin = filteredBankingAccounts.reduce((sum, entry) => sum + entry.amount, 0);
   const totalFeeExpenses = filteredFeeExpenses.reduce((sum, entry) => sum + entry.fee, 0);
 
-  const totalRevenue = totalPanMargin + totalPassportMargin + totalBankingMargin + totalBankingAccountsMargin + totalOnlineServices + totalApplications + totalPhotostatMargin + totalDocumentationMargin;
+  // Calculate amount and expense for each service, then derive margin
+  const panCardAmount = filteredPanCards.reduce((sum, entry) => sum + entry.total, 0);
+  const panCardExpense = filteredPanCards.reduce((sum, entry) => sum + (entry.total - entry.margin), 0);
+  const totalPanMargin = panCardAmount - panCardExpense;
+
+  const passportAmount = filteredPassports.reduce((sum, entry) => sum + entry.total, 0);
+  const passportExpense = filteredPassports.reduce((sum, entry) => sum + (entry.total - entry.margin), 0);
+  const totalPassportMargin = passportAmount - passportExpense;
+
+  const bankingAmount = filteredBankingServices.reduce((sum, entry) => sum + entry.amount, 0);
+  const bankingExpense = filteredBankingServices.reduce((sum, entry) => sum + entry.expense, 0);
+  const totalBankingMargin = bankingAmount - bankingExpense;
+
+  const onlineAmount = filteredOnlineServices.reduce((sum, entry) => sum + entry.amount, 0);
+  const onlineExpense = filteredOnlineServices.reduce((sum, entry) => sum + entry.expense, 0);
+  const totalOnlineServices_margin = onlineAmount - onlineExpense;
+
+  const applicationsAmount = filteredApplications.reduce((sum, entry) => sum + entry.amount, 0);
+  const applicationsExpense = filteredApplications.reduce((sum, entry) => sum + entry.expense, 0);
+  const totalApplicationsMargin = applicationsAmount - applicationsExpense;
+
+  const photostatAmount = filteredPhotostats.reduce((sum, entry) => sum + entry.amount, 0);
+  const photostatExpense = filteredPhotostats.reduce((sum, entry) => sum + entry.expense, 0);
+  const totalPhotostatMargin = photostatAmount - photostatExpense;
+
+  const documentationAmount = filteredDocumentation.reduce((sum, entry) => sum + entry.amount, 0);
+  const documentationExpense = filteredDocumentation.reduce((sum, entry) => sum + entry.expense, 0);
+  const totalDocumentationMargin = documentationAmount - documentationExpense;
+
+  const bankingAccountsAmount = filteredBankingAccounts.reduce((sum, entry) => sum + entry.amount, 0);
+  const bankingAccountsExpense = filteredBankingAccounts.reduce((sum, entry) => sum + entry.expense, 0);
+  const totalBankingAccountsMargin = bankingAccountsAmount - bankingAccountsExpense;
+
+  const totalRevenue = totalPanMargin + totalPassportMargin + totalBankingMargin + totalBankingAccountsMargin + totalOnlineServices_margin + totalApplicationsMargin + totalPhotostatMargin + totalDocumentationMargin;
   const totalAllExpenses = totalExpenses;
   const netProfit = totalRevenue - totalAllExpenses;
 
