@@ -418,6 +418,7 @@ const Khata = () => {
       description: transaction.description || '',
     });
     setShowEditTransaction(true);
+    setShowAddTransaction(false);
   };
 
   const initiateDelete = (id: string, type: 'customer' | 'transaction') => {
