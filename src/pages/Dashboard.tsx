@@ -76,11 +76,11 @@ const Dashboard = () => {
     queryFn: async () => {
       const startDate = format(startOfMonth(previousMonth), 'yyyy-MM-dd');
       const endDate = format(endOfMonth(previousMonth), 'yyyy-MM-dd');
-      const { data, error } = await supabase
-        .from('banking_services')
-        .select('*')
-        .gte('date', startDate)
-        .lte('date', endDate);
+      const { data, error } = await supabase.
+      from('banking_services').
+      select('*').
+      gte('date', startDate).
+      lte('date', endDate);
       if (error) throw error;
       return data;
     }
@@ -117,11 +117,11 @@ const Dashboard = () => {
     queryFn: async () => {
       const startDate = format(startOfMonth(previousMonth), 'yyyy-MM-dd');
       const endDate = format(endOfMonth(previousMonth), 'yyyy-MM-dd');
-      const { data, error } = await supabase
-        .from('online_services')
-        .select('*')
-        .gte('date', startDate)
-        .lte('date', endDate + 'T23:59:59.999');
+      const { data, error } = await supabase.
+      from('online_services').
+      select('*').
+      gte('date', startDate).
+      lte('date', endDate + 'T23:59:59.999');
       if (error) throw error;
       return data;
     }
@@ -258,11 +258,11 @@ const Dashboard = () => {
     queryFn: async () => {
       const startDate = format(startOfMonth(previousMonth), 'yyyy-MM-dd');
       const endDate = format(endOfMonth(previousMonth), 'yyyy-MM-dd');
-      const { data, error } = await supabase
-        .from('expenses')
-        .select('*')
-        .gte('date', startDate)
-        .lte('date', endDate + 'T23:59:59');
+      const { data, error } = await supabase.
+      from('expenses').
+      select('*').
+      gte('date', startDate).
+      lte('date', endDate + 'T23:59:59');
       if (error) throw error;
       return data;
     }
@@ -274,12 +274,12 @@ const Dashboard = () => {
   } = useQuery({
     queryKey: ['odRecords'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('od_detail_records')
-        .select('*')
-        .order('date', { ascending: false })
-        .order('created_at', { ascending: false })
-        .limit(1);
+      const { data, error } = await supabase.
+      from('od_detail_records').
+      select('*').
+      order('date', { ascending: false }).
+      order('created_at', { ascending: false }).
+      limit(1);
       if (error) throw error;
       return data;
     }
@@ -313,15 +313,15 @@ const Dashboard = () => {
     queryKey: ['khataCustomers'],
     queryFn: async () => {
       const [customersResult, transactionsResult] = await Promise.all([
-        supabase.from('khata_customers').select('*'),
-        supabase.from('khata_transactions').select('*')
-      ]);
+      supabase.from('khata_customers').select('*'),
+      supabase.from('khata_transactions').select('*')]
+      );
       if (customersResult.error) throw customersResult.error;
       if (transactionsResult.error) throw transactionsResult.error;
       const customers = customersResult.data || [];
       const transactions = transactionsResult.data || [];
-      return customers.map(customer => {
-        const customerTxns = transactions.filter(t => t.customer_id === customer.id);
+      return customers.map((customer) => {
+        const customerTxns = transactions.filter((t) => t.customer_id === customer.id);
         const txnTotal = customerTxns.reduce((sum, t) => sum + (t.type === 'credit' ? Number(t.amount) : -Number(t.amount)), 0);
         return { ...customer, current_balance: Number(customer.opening_balance) + txnTotal };
       });
@@ -345,10 +345,10 @@ const Dashboard = () => {
       }> = [];
 
       const filterDate = viewMode === 'day' ? format(date, 'yyyy-MM-dd') : null;
-      const startDate = viewMode === 'month' ? format(startOfMonth(date), 'yyyy-MM-dd') 
-        : viewMode === 'quarter' ? format(startOfQuarter(date), 'yyyy-MM-dd') : null;
-      const endDate = viewMode === 'month' ? format(endOfMonth(date), 'yyyy-MM-dd')
-        : viewMode === 'quarter' ? format(endOfQuarter(date), 'yyyy-MM-dd') : null;
+      const startDate = viewMode === 'month' ? format(startOfMonth(date), 'yyyy-MM-dd') :
+      viewMode === 'quarter' ? format(startOfQuarter(date), 'yyyy-MM-dd') : null;
+      const endDate = viewMode === 'month' ? format(endOfMonth(date), 'yyyy-MM-dd') :
+      viewMode === 'quarter' ? format(endOfQuarter(date), 'yyyy-MM-dd') : null;
 
       // Fetch banking services
       let bankingQuery = supabase.from('banking_services').select('*');
@@ -358,8 +358,8 @@ const Dashboard = () => {
         bankingQuery = bankingQuery.gte('date', startDate).lte('date', endDate + 'T23:59:59.999');
       }
       const { data: banking } = await bankingQuery.order('created_at', { ascending: false }).limit(10);
-      
-      banking?.forEach(item => {
+
+      banking?.forEach((item) => {
         activities.push({
           id: `banking-${item.id}`,
           type: 'Banking',
@@ -380,7 +380,7 @@ const Dashboard = () => {
       }
       const { data: online } = await onlineQuery.order('created_at', { ascending: false }).limit(10);
 
-      online?.forEach(item => {
+      online?.forEach((item) => {
         activities.push({
           id: `online-${item.id}`,
           type: 'Online',
@@ -401,7 +401,7 @@ const Dashboard = () => {
       }
       const { data: apps } = await appsQuery.order('created_at', { ascending: false }).limit(10);
 
-      apps?.forEach(item => {
+      apps?.forEach((item) => {
         activities.push({
           id: `app-${item.id}`,
           type: 'Application',
@@ -422,7 +422,7 @@ const Dashboard = () => {
       }
       const { data: photos } = await photoQuery.order('created_at', { ascending: false }).limit(5);
 
-      photos?.forEach(item => {
+      photos?.forEach((item) => {
         activities.push({
           id: `photo-${item.id}`,
           type: 'Photostat',
@@ -443,7 +443,7 @@ const Dashboard = () => {
       }
       const { data: expenses } = await expenseQuery.order('created_at', { ascending: false }).limit(5);
 
-      expenses?.forEach(item => {
+      expenses?.forEach((item) => {
         activities.push({
           id: `expense-${item.id}`,
           type: 'Expense',
@@ -464,7 +464,7 @@ const Dashboard = () => {
       }
       const { data: bankingAccounts } = await bankingAccQuery.order('created_at', { ascending: false }).limit(5);
 
-      bankingAccounts?.forEach(item => {
+      bankingAccounts?.forEach((item) => {
         activities.push({
           id: `bankingAcc-${item.id}`,
           type: 'Other Banking',
@@ -477,8 +477,8 @@ const Dashboard = () => {
       });
 
       // Sort by date and created_at
-      return activities
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      return activities.
+      sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }
   });
 
@@ -488,14 +488,14 @@ const Dashboard = () => {
     queryFn: async () => {
       const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
       const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
-      
-      const { data, error } = await supabase
-        .from('banking_services')
-        .select('date, margin')
-        .gte('date', startDate)
-        .lte('date', endDate)
-        .order('date', { ascending: true });
-      
+
+      const { data, error } = await supabase.
+      from('banking_services').
+      select('date, margin').
+      gte('date', startDate).
+      lte('date', endDate).
+      order('date', { ascending: true });
+
       if (error) throw error;
       return data || [];
     }
@@ -507,43 +507,43 @@ const Dashboard = () => {
     queryFn: async () => {
       if (!searchQuery || searchQuery.length < 2) return [];
       const q = searchQuery.toLowerCase();
-      const results: Array<{ type: string; title: string; subtitle: string; route: string; id: string; date: string }> = [];
+      const results: Array<{type: string;title: string;subtitle: string;route: string;id: string;date: string;}> = [];
 
       // Search online services
       const { data: osData } = await supabase.from('online_services').select('*').or(`service.ilike.%${q}%,customer_name.ilike.%${q}%`).limit(5);
-      osData?.forEach(item => results.push({ type: 'Online Service', title: item.customer_name || item.service, subtitle: `${item.service} - ₹${item.total}`, route: '/online-services', id: item.id, date: item.date }));
+      osData?.forEach((item) => results.push({ type: 'Online Service', title: item.customer_name || item.service, subtitle: `${item.service} - ₹${item.total}`, route: '/online-services', id: item.id, date: item.date }));
 
       // Search applications
       const { data: appData } = await supabase.from('applications').select('*').ilike('customer_name', `%${q}%`).limit(5);
-      appData?.forEach(item => results.push({ type: 'Application', title: item.customer_name, subtitle: `₹${item.amount}`, route: '/applications', id: item.id, date: item.date }));
+      appData?.forEach((item) => results.push({ type: 'Application', title: item.customer_name, subtitle: `₹${item.amount}`, route: '/applications', id: item.id, date: item.date }));
 
       // Search banking accounts
       const { data: baData } = await supabase.from('banking_accounts').select('*').or(`customer_name.ilike.%${q}%,account_type.ilike.%${q}%`).limit(5);
-      baData?.forEach(item => results.push({ type: 'Banking Account', title: item.customer_name, subtitle: `${item.account_type} - ₹${item.amount}`, route: '/banking-accounts', id: item.id, date: item.date }));
+      baData?.forEach((item) => results.push({ type: 'Banking Account', title: item.customer_name, subtitle: `${item.account_type} - ₹${item.amount}`, route: '/banking-accounts', id: item.id, date: item.date }));
 
       // Search documentation
       const { data: docData } = await supabase.from('documentation').select('*').or(`name.ilike.%${q}%,service_type.ilike.%${q}%`).limit(5);
-      docData?.forEach(item => results.push({ type: 'Documentation', title: item.name, subtitle: `${item.service_type} - ₹${item.amount}`, route: '/documentation', id: item.id, date: item.date }));
+      docData?.forEach((item) => results.push({ type: 'Documentation', title: item.name, subtitle: `${item.service_type} - ₹${item.amount}`, route: '/documentation', id: item.id, date: item.date }));
 
       // Search expenses
       const { data: expData } = await supabase.from('expenses').select('*').ilike('name', `%${q}%`).limit(5);
-      expData?.forEach(item => results.push({ type: 'Expense', title: item.name, subtitle: `₹${item.amount}`, route: '/expenses', id: item.id, date: item.date }));
+      expData?.forEach((item) => results.push({ type: 'Expense', title: item.name, subtitle: `₹${item.amount}`, route: '/expenses', id: item.id, date: item.date }));
 
       // Search pending balances
       const { data: pbData } = await supabase.from('pending_balances').select('*').or(`name.ilike.%${q}%,phone.ilike.%${q}%`).limit(5);
-      pbData?.forEach(item => results.push({ type: 'Pending Balance', title: item.name, subtitle: `${item.service} - ₹${item.amount}`, route: '/pending-balance', id: item.id, date: item.date }));
+      pbData?.forEach((item) => results.push({ type: 'Pending Balance', title: item.name, subtitle: `${item.service} - ₹${item.amount}`, route: '/pending-balance', id: item.id, date: item.date }));
 
       // Search forms
       const { data: fData } = await supabase.from('forms').select('*').or(`name.ilike.%${q}%,mobile.ilike.%${q}%`).limit(5);
-      fData?.forEach(item => results.push({ type: 'Form', title: item.name, subtitle: `${item.department} - ${item.mobile}`, route: '/forms', id: item.id, date: item.date }));
+      fData?.forEach((item) => results.push({ type: 'Form', title: item.name, subtitle: `${item.department} - ${item.mobile}`, route: '/forms', id: item.id, date: item.date }));
 
       // Search customers
       const { data: custData } = await supabase.from('customers').select('*').or(`name.ilike.%${q}%,phone.ilike.%${q}%`).limit(5);
-      custData?.forEach(item => results.push({ type: 'Customer', title: item.name, subtitle: `${item.phone}`, route: '/customers', id: item.id, date: item.created_at || '' }));
+      custData?.forEach((item) => results.push({ type: 'Customer', title: item.name, subtitle: `${item.phone}`, route: '/customers', id: item.id, date: item.created_at || '' }));
 
       // Search banking services
       const { data: bsData } = await supabase.from('banking_services').select('*').limit(5);
-      bsData?.forEach(item => {
+      bsData?.forEach((item) => {
         if (`banking ${item.transaction_count} transactions`.includes(q) || `₹${item.amount}`.includes(q) || item.date.includes(q)) {
           results.push({ type: 'Banking', title: `Banking - ${item.transaction_count} txns`, subtitle: `₹${item.amount} | Margin: ₹${item.margin}`, route: '/banking', id: item.id, date: item.date });
         }
@@ -551,7 +551,7 @@ const Dashboard = () => {
 
       // Search photostats
       const { data: photoData } = await supabase.from('photostats').select('*').limit(5);
-      photoData?.forEach(item => {
+      photoData?.forEach((item) => {
         if (item.date.includes(q) || `₹${item.amount}`.includes(q)) {
           results.push({ type: 'Photostat', title: `Photostat - ${item.is_double_sided ? 'Double' : 'Single'} Sided`, subtitle: `₹${item.amount} | Margin: ₹${item.margin}`, route: '/photostat', id: item.id, date: item.date });
         }
@@ -559,23 +559,23 @@ const Dashboard = () => {
 
       // Search khata customers
       const { data: khataData } = await supabase.from('khata_customers').select('*').or(`name.ilike.%${q}%,phone.ilike.%${q}%`).limit(5);
-      khataData?.forEach(item => results.push({ type: 'Khata', title: item.name, subtitle: `${item.phone}`, route: '/khata', id: item.id, date: item.opening_date }));
+      khataData?.forEach((item) => results.push({ type: 'Khata', title: item.name, subtitle: `${item.phone}`, route: '/khata', id: item.id, date: item.opening_date }));
 
       // Search social security
       const { data: ssData } = await supabase.from('social_security').select('*').or(`name.ilike.%${q}%,account_number.ilike.%${q}%,scheme_type.ilike.%${q}%`).limit(5);
-      ssData?.forEach(item => results.push({ type: 'Social Security', title: item.name, subtitle: `${item.scheme_type} - ${item.account_number}`, route: '/social-security', id: item.id, date: item.date }));
+      ssData?.forEach((item) => results.push({ type: 'Social Security', title: item.name, subtitle: `${item.scheme_type} - ${item.account_number}`, route: '/social-security', id: item.id, date: item.date }));
 
       // Search fee expenses
       const { data: feeData } = await supabase.from('fee_expenses').select('*').ilike('customer_name', `%${q}%`).limit(5);
-      feeData?.forEach(item => results.push({ type: 'Fee Expense', title: item.customer_name, subtitle: `₹${item.fee}`, route: '/fee-expenses', id: item.id, date: item.date }));
+      feeData?.forEach((item) => results.push({ type: 'Fee Expense', title: item.customer_name, subtitle: `₹${item.fee}`, route: '/fee-expenses', id: item.id, date: item.date }));
 
       // Search misc expenses
       const { data: miscData } = await supabase.from('misc_expenses').select('*').ilike('name', `%${q}%`).limit(5);
-      miscData?.forEach(item => results.push({ type: 'Misc Expense', title: item.name, subtitle: `₹${item.fee}`, route: '/misc-expenses', id: item.id, date: item.date }));
+      miscData?.forEach((item) => results.push({ type: 'Misc Expense', title: item.name, subtitle: `₹${item.fee}`, route: '/misc-expenses', id: item.id, date: item.date }));
 
       // Search pan cards
       const { data: panData } = await supabase.from('pan_cards').select('*').limit(5);
-      panData?.forEach(item => {
+      panData?.forEach((item) => {
         if (item.date.includes(q) || `₹${item.amount}`.includes(q)) {
           results.push({ type: 'PAN Card', title: `PAN Card - ${item.count} cards`, subtitle: `₹${item.amount} | Margin: ₹${item.margin}`, route: '/pan-card', id: item.id, date: item.date });
         }
@@ -583,7 +583,7 @@ const Dashboard = () => {
 
       // Search passports
       const { data: passData } = await supabase.from('passports').select('*').limit(5);
-      passData?.forEach(item => {
+      passData?.forEach((item) => {
         if (item.date.includes(q) || `₹${item.amount}`.includes(q)) {
           results.push({ type: 'Passport', title: `Passport - ${item.count} entries`, subtitle: `₹${item.amount} | Margin: ₹${item.margin}`, route: '/passport', id: item.id, date: item.date });
         }
@@ -591,15 +591,15 @@ const Dashboard = () => {
 
       // Search account records (Other Banking Services)
       const { data: arData } = await supabase.from('account_records').select('*').or(`name.ilike.%${q}%,account_number.ilike.%${q}%,account_type.ilike.%${q}%`).limit(5);
-      arData?.forEach(item => results.push({ type: 'Account Record', title: item.name || item.account_number, subtitle: `${item.account_type}`, route: '/other-banking-services', id: item.id, date: item.created_at }));
+      arData?.forEach((item) => results.push({ type: 'Account Record', title: item.name || item.account_number, subtitle: `${item.account_type}`, route: '/other-banking-services', id: item.id, date: item.created_at }));
 
       // Search ledger customers
       const { data: ledgerData } = await supabase.from('ledger_customers').select('*').or(`name.ilike.%${q}%,account_number.ilike.%${q}%,adhar_number.ilike.%${q}%`).limit(5);
-      ledgerData?.forEach(item => results.push({ type: 'Ledger', title: item.name, subtitle: `A/C: ${item.account_number}`, route: '/ledger', id: item.id, date: item.created_at }));
+      ledgerData?.forEach((item) => results.push({ type: 'Ledger', title: item.name, subtitle: `A/C: ${item.account_number}`, route: '/ledger', id: item.id, date: item.created_at }));
 
       return results;
     },
-    enabled: searchQuery.length >= 2,
+    enabled: searchQuery.length >= 2
   });
 
   useEffect(() => {
@@ -650,7 +650,7 @@ const Dashboard = () => {
   // Calculate percentage changes
   const calculateChange = (current: number, previous: number): number => {
     if (previous === 0) return current > 0 ? 100 : 0;
-    return ((current - previous) / previous) * 100;
+    return (current - previous) / previous * 100;
   };
 
   const marginChange = calculateChange(totalMargin, prevBankingMargin + prevOnlineMargin);
@@ -692,8 +692,8 @@ const Dashboard = () => {
       return [0, 0, 0, 0, 0, 0, 0];
     }
     // Group by date and sum margins
-    const marginByDate: { [key: string]: number } = {};
-    dailyMarginData.forEach(item => {
+    const marginByDate: {[key: string]: number;} = {};
+    dailyMarginData.forEach((item) => {
       const dateKey = item.date;
       marginByDate[dateKey] = (marginByDate[dateKey] || 0) + item.margin;
     });
@@ -707,45 +707,45 @@ const Dashboard = () => {
   const MiniLineChart = ({
     data,
     color = 'primary'
-  }: {
-    data: number[];
-    color?: string;
-  }) => {
+
+
+
+  }: {data: number[];color?: string;}) => {
     const max = Math.max(...data, 1);
     const min = Math.min(...data, 0);
     const range = max - min || 1;
     const height = 40;
     const width = 80;
     const points = data.map((value, index) => {
-      const x = (index / (data.length - 1)) * width;
-      const y = height - ((value - min) / range) * height;
+      const x = index / (data.length - 1) * width;
+      const y = height - (value - min) / range * height;
       return `${x},${y}`;
     }).join(' ');
     return (
       <svg width={width} height={height} className="overflow-hidden">
         <polyline points={points} fill="none" stroke="hsl(var(--primary))" strokeWidth="2" strokeLinecap="round" />
-      </svg>
-    );
+      </svg>);
+
   };
 
   // Mini bar chart with real data
   const MiniBarChart = ({
     data
-  }: {
-    data: number[];
-  }) => {
+
+
+  }: {data: number[];}) => {
     const max = Math.max(...data, 1);
     return (
       <div className="flex items-end gap-1 h-10 overflow-hidden">
-        {data.map((value, i) => (
-          <div 
-            key={i} 
-            className="w-2 bg-primary rounded-t flex-shrink-0" 
-            style={{ height: `${Math.max((value / max) * 100, 5)}%` }} 
-          />
-        ))}
-      </div>
-    );
+        {data.map((value, i) =>
+        <div
+          key={i}
+          className="w-2 bg-primary rounded-t flex-shrink-0"
+          style={{ height: `${Math.max(value / max * 100, 5)}%` }} />
+
+        )}
+      </div>);
+
   };
 
   // Dashboard Card component matching reference image style
@@ -753,23 +753,23 @@ const Dashboard = () => {
     children,
     className = '',
     onClick
-  }: {
-    children: React.ReactNode;
-    className?: string;
-    onClick?: () => void;
-  }) => (
-    <div 
-      onClick={onClick} 
-      className={`
+
+
+
+
+  }: {children: React.ReactNode;className?: string;onClick?: () => void;}) =>
+  <div
+    onClick={onClick}
+    className={`
         bg-card rounded-2xl p-5 border border-border/50
         transition-all duration-200 hover:shadow-lg
         ${onClick ? 'cursor-pointer hover:-translate-y-0.5' : ''} 
         ${className}
-      `}
-    >
+      `}>
+    
       {children}
-    </div>
-  );
+    </div>;
+
 
   const chartData = generateChartData();
 
@@ -792,29 +792,29 @@ const Dashboard = () => {
               <PopoverTrigger asChild>
                 <div className="relative cursor-pointer">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    placeholder="Search..." 
-                    className="pl-9 w-36 sm:w-72 bg-background border-border" 
+                  <Input
+                    placeholder="Search..."
+                    className="pl-9 w-36 sm:w-72 bg-background border-border"
                     value={searchQuery}
-                    onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true); }}
-                    onFocus={() => searchQuery.length >= 2 && setSearchOpen(true)}
-                  />
+                    onChange={(e) => {setSearchQuery(e.target.value);setSearchOpen(true);}}
+                    onFocus={() => searchQuery.length >= 2 && setSearchOpen(true)} />
+                  
                 </div>
               </PopoverTrigger>
-              {searchQuery.length >= 2 && (
-                <PopoverContent className="w-80 p-0" align="start">
+              {searchQuery.length >= 2 &&
+              <PopoverContent className="w-80 p-0" align="start">
                   <Command>
                     <CommandList>
-                      {(!searchResults || searchResults.length === 0) ? (
-                        <CommandEmpty>No results found.</CommandEmpty>
-                      ) : (
-                        <CommandGroup heading={`${searchResults.length} results found`}>
-                          {searchResults.map((result, idx) => (
-                            <CommandItem 
-                              key={idx} 
-                              onSelect={() => { navigate(`${result.route}?highlight=${result.id}&date=${result.date}`); setSearchOpen(false); setSearchQuery(''); }}
-                              className="cursor-pointer"
-                            >
+                      {!searchResults || searchResults.length === 0 ?
+                    <CommandEmpty>No results found.</CommandEmpty> :
+
+                    <CommandGroup heading={`${searchResults.length} results found`}>
+                          {searchResults.map((result, idx) =>
+                      <CommandItem
+                        key={idx}
+                        onSelect={() => {navigate(`${result.route}?highlight=${result.id}&date=${result.date}`);setSearchOpen(false);setSearchQuery('');}}
+                        className="cursor-pointer">
+                        
                               <div className="flex flex-col">
                                 <div className="flex items-center gap-2">
                                   <span className="text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">{result.type}</span>
@@ -823,13 +823,13 @@ const Dashboard = () => {
                                 <span className="text-xs text-muted-foreground">{result.subtitle}</span>
                               </div>
                             </CommandItem>
-                          ))}
-                        </CommandGroup>
                       )}
+                        </CommandGroup>
+                    }
                     </CommandList>
                   </Command>
                 </PopoverContent>
-              )}
+              }
             </Popover>
             <div className="hidden sm:block">
               <DateRangePicker date={date} onDateChange={handleDateChange} mode={viewMode} onModeChange={handleViewModeChange} />
@@ -911,11 +911,11 @@ const Dashboard = () => {
                     <p className="text-sm text-muted-foreground">Total Margin</p>
                     <p className="text-2xl font-bold text-foreground mt-1">{formatCurrency(totalMargin)}</p>
                     <div className="flex items-center gap-1 mt-1">
-                      {marginChange >= 0 ? (
-                        <ArrowUpRight className="h-3 w-3 text-green-500" />
-                      ) : (
-                        <ArrowDownRight className="h-3 w-3 text-destructive" />
-                      )}
+                      {marginChange >= 0 ?
+                      <ArrowUpRight className="h-3 w-3 text-green-500" /> :
+
+                      <ArrowDownRight className="h-3 w-3 text-destructive" />
+                      }
                       <span className={`text-xs ${marginChange >= 0 ? 'text-green-500' : 'text-destructive'}`}>
                         {Math.abs(marginChange).toFixed(1)}% vs last month
                       </span>
@@ -936,11 +936,11 @@ const Dashboard = () => {
                       <p className="text-sm text-muted-foreground">Banking Txn</p>
                       <p className="text-xl font-bold text-foreground">{bankingServicesCount}</p>
                       <div className="flex items-center gap-1">
-                        {bankingChange >= 0 ? (
-                          <ArrowUpRight className="h-3 w-3 text-green-500" />
-                        ) : (
-                          <ArrowDownRight className="h-3 w-3 text-destructive" />
-                        )}
+                        {bankingChange >= 0 ?
+                        <ArrowUpRight className="h-3 w-3 text-green-500" /> :
+
+                        <ArrowDownRight className="h-3 w-3 text-destructive" />
+                        }
                         <span className={`text-xs ${bankingChange >= 0 ? 'text-green-500' : 'text-destructive'}`}>
                           {Math.abs(bankingChange).toFixed(1)}%
                         </span>
@@ -1004,7 +1004,7 @@ const Dashboard = () => {
                   <div className="p-2 rounded-lg bg-primary/10">
                     <FileText className="h-4 w-4 text-primary" />
                   </div>
-                  <h3 className="font-medium text-foreground">Applications</h3>
+                  <h3 className="font-medium text-foreground">Forms</h3>
                 </div>
                 <p className="text-2xl font-bold text-foreground">{formatCurrency(applicationsTotal)}</p>
                 <p className="text-xs text-muted-foreground mt-1">{applicationsCount} applications • Click to view</p>
@@ -1016,17 +1016,17 @@ const Dashboard = () => {
                   <div className="p-2 rounded-lg bg-primary/10">
                     <Printer className="h-4 w-4 text-primary" />
                   </div>
-                  <h3 className="font-medium text-foreground">Photostat</h3>
+                  <h3 className="font-medium text-foreground">​Print</h3>
                 </div>
                 <p className="text-2xl font-bold text-foreground">{formatCurrency(photostatTotal)}</p>
                 <p className="text-xs text-muted-foreground mt-1">Margin: {formatCurrency(photostatMarginTotal)} • Click to view</p>
               </DashCard>
 
               {/* Pending Balance */}
-              <DashCard 
+              <DashCard
                 className="cursor-pointer hover:shadow-lg transition-shadow"
-                onClick={() => setPendingDialogOpen(true)}
-              >
+                onClick={() => setPendingDialogOpen(true)}>
+                
                 <div className="flex items-center gap-3 mb-2">
                   <div className="p-2 rounded-lg bg-destructive/10">
                     <AlertCircle className="h-4 w-4 text-destructive" />
@@ -1043,17 +1043,17 @@ const Dashboard = () => {
               <DashCard>
                 <h3 className="font-medium text-foreground mb-3">Recent Activities {viewMode === 'day' ? '(Today)' : '(This Month)'}</h3>
                 <div className="relative overflow-hidden h-48">
-                  {recentActivitiesData && recentActivitiesData.length > 0 ? (
-                    <div className="animate-vertical-ticker">
-                      {[...recentActivitiesData, ...recentActivitiesData].map((activity, idx) => (
-                        <div key={`${activity.id}-${idx}`} className="flex items-center gap-3 py-2.5 border-b border-border/20 hover:bg-muted/30 transition-colors rounded-lg px-2">
+                  {recentActivitiesData && recentActivitiesData.length > 0 ?
+                  <div className="animate-vertical-ticker">
+                      {[...recentActivitiesData, ...recentActivitiesData].map((activity, idx) =>
+                    <div key={`${activity.id}-${idx}`} className="flex items-center gap-3 py-2.5 border-b border-border/20 hover:bg-muted/30 transition-colors rounded-lg px-2">
                           <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm ${
-                            activity.color === 'destructive' 
-                              ? 'bg-gradient-to-br from-destructive/20 to-destructive/5' 
-                              : activity.color === 'accent'
-                              ? 'bg-gradient-to-br from-accent/30 to-accent/10'
-                              : 'bg-gradient-to-br from-primary/20 to-primary/5'
-                          }`}>
+                      activity.color === 'destructive' ?
+                      'bg-gradient-to-br from-destructive/20 to-destructive/5' :
+                      activity.color === 'accent' ?
+                      'bg-gradient-to-br from-accent/30 to-accent/10' :
+                      'bg-gradient-to-br from-primary/20 to-primary/5'}`
+                      }>
                             {activity.icon === 'banking' && <CreditCard className={`h-4 w-4 ${activity.color === 'destructive' ? 'text-destructive' : activity.color === 'accent' ? 'text-accent-foreground' : 'text-primary'}`} />}
                             {activity.icon === 'online' && <Globe className={`h-4 w-4 ${activity.color === 'destructive' ? 'text-destructive' : 'text-primary'}`} />}
                             {activity.icon === 'expense' && <Receipt className="h-4 w-4 text-destructive" />}
@@ -1065,18 +1065,18 @@ const Dashboard = () => {
                             <span className="text-xs text-muted-foreground/70">{activity.type}</span>
                           </div>
                           <span className={`text-sm font-semibold flex-shrink-0 px-2 py-1 rounded-md ${
-                            activity.amount < 0 
-                              ? 'text-destructive bg-destructive/10' 
-                              : 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
-                          }`}>
+                      activity.amount < 0 ?
+                      'text-destructive bg-destructive/10' :
+                      'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'}`
+                      }>
                             {activity.amount < 0 ? '-' : '+'}{formatCurrency(Math.abs(activity.amount))}
                           </span>
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground text-center py-8">No activities {viewMode === 'day' ? 'today' : viewMode === 'month' ? 'this month' : 'this quarter'}</p>
-                  )}
+                    )}
+                    </div> :
+
+                  <p className="text-sm text-muted-foreground text-center py-8">No activities {viewMode === 'day' ? 'today' : viewMode === 'month' ? 'this month' : 'this quarter'}</p>
+                  }
                 </div>
               </DashCard>
               
@@ -1137,15 +1137,15 @@ const Dashboard = () => {
             <DialogTitle>Margin Breakdown</DialogTitle>
           </DialogHeader>
           <div className="py-4 space-y-4">
-            {marginDetails.map(item => (
-              <div key={item.name} className="flex items-center justify-between">
+            {marginDetails.map((item) =>
+            <div key={item.name} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
                   <span className="text-foreground">{item.name}</span>
                 </div>
                 <span className="font-semibold text-foreground">{formatCurrency(item.value)}</span>
               </div>
-            ))}
+            )}
             <div className="border-t pt-2 mt-2">
               <div className="flex items-center justify-between font-bold">
                 <span className="text-foreground">Total Margin</span>
@@ -1166,13 +1166,13 @@ const Dashboard = () => {
             </DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            {pendingBalanceData && pendingBalanceData.length > 0 ? (
-              <div className="space-y-3">
-                {pendingBalanceData.map((item) => (
-                  <div 
-                    key={item.id} 
-                    className="p-4 rounded-xl border border-border/50 bg-gradient-to-br from-muted/30 to-muted/10 hover:shadow-md transition-shadow"
-                  >
+            {pendingBalanceData && pendingBalanceData.length > 0 ?
+            <div className="space-y-3">
+                {pendingBalanceData.map((item) =>
+              <div
+                key={item.id}
+                className="p-4 rounded-xl border border-border/50 bg-gradient-to-br from-muted/30 to-muted/10 hover:shadow-md transition-shadow">
+                
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <h4 className="font-semibold text-foreground text-lg">{item.name}</h4>
@@ -1193,7 +1193,7 @@ const Dashboard = () => {
                       </div>
                     </div>
                   </div>
-                ))}
+              )}
                 <div className="border-t pt-4 mt-4">
                   <div className="flex items-center justify-between font-bold text-lg">
                     <span className="text-foreground">Total Pending</span>
@@ -1201,15 +1201,15 @@ const Dashboard = () => {
                   </div>
                 </div>
                 <button
-                  onClick={() => { setPendingDialogOpen(false); navigate('/pending-balance'); }}
-                  className="w-full mt-2 text-sm text-primary hover:underline text-center"
-                >
+                onClick={() => {setPendingDialogOpen(false);navigate('/pending-balance');}}
+                className="w-full mt-2 text-sm text-primary hover:underline text-center">
+                
                   View full Pending Balance page →
                 </button>
-              </div>
-            ) : (
-              <p className="text-center text-muted-foreground py-8">No pending balances found</p>
-            )}
+              </div> :
+
+            <p className="text-center text-muted-foreground py-8">No pending balances found</p>
+            }
           </div>
         </DialogContent>
       </Dialog>
@@ -1224,21 +1224,21 @@ const Dashboard = () => {
             </DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            {applicationsData && applicationsData.length > 0 ? (
-              <div className="space-y-3">
-                {applicationsData.map((item) => (
-                  <div 
-                    key={item.id} 
-                    className="p-4 rounded-xl border border-border/50 bg-gradient-to-br from-muted/30 to-muted/10 hover:shadow-md transition-shadow"
-                  >
+            {applicationsData && applicationsData.length > 0 ?
+            <div className="space-y-3">
+                {applicationsData.map((item) =>
+              <div
+                key={item.id}
+                className="p-4 rounded-xl border border-border/50 bg-gradient-to-br from-muted/30 to-muted/10 hover:shadow-md transition-shadow">
+                
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <h4 className="font-semibold text-foreground text-lg">{item.customer_name}</h4>
                         <div className="flex items-center gap-4 mt-2 text-sm">
                           <span className="text-muted-foreground">📅 {format(new Date(item.date), 'dd MMM yyyy')}</span>
-                          {item.expense && (
-                            <span className="text-destructive">Expense: {formatCurrency(item.expense)}</span>
-                          )}
+                          {item.expense &&
+                      <span className="text-destructive">Expense: {formatCurrency(item.expense)}</span>
+                      }
                         </div>
                       </div>
                       <div className="text-right">
@@ -1247,7 +1247,7 @@ const Dashboard = () => {
                       </div>
                     </div>
                   </div>
-                ))}
+              )}
                 <div className="border-t pt-4 mt-4">
                   <div className="flex items-center justify-between font-bold text-lg">
                     <span className="text-foreground">Total Applications</span>
@@ -1255,15 +1255,15 @@ const Dashboard = () => {
                   </div>
                 </div>
                 <button
-                  onClick={() => { setApplicationsDialogOpen(false); navigate('/applications'); }}
-                  className="w-full mt-2 text-sm text-primary hover:underline text-center"
-                >
+                onClick={() => {setApplicationsDialogOpen(false);navigate('/applications');}}
+                className="w-full mt-2 text-sm text-primary hover:underline text-center">
+                
                   View full Applications page →
                 </button>
-              </div>
-            ) : (
-              <p className="text-center text-muted-foreground py-8">No applications found</p>
-            )}
+              </div> :
+
+            <p className="text-center text-muted-foreground py-8">No applications found</p>
+            }
           </div>
         </DialogContent>
       </Dialog>
@@ -1278,26 +1278,26 @@ const Dashboard = () => {
             </DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            {onlineData && onlineData.length > 0 ? (
-              <div className="space-y-3">
-                {onlineData.map((item) => (
-                  <div 
-                    key={item.id} 
-                    className="p-4 rounded-xl border border-border/50 bg-gradient-to-br from-muted/30 to-muted/10 hover:shadow-md transition-shadow"
-                  >
+            {onlineData && onlineData.length > 0 ?
+            <div className="space-y-3">
+                {onlineData.map((item) =>
+              <div
+                key={item.id}
+                className="p-4 rounded-xl border border-border/50 bg-gradient-to-br from-muted/30 to-muted/10 hover:shadow-md transition-shadow">
+                
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <h4 className="font-semibold text-foreground text-lg">
                           {item.service === 'Other' ? item.custom_service : item.service}
                         </h4>
-                        {item.customer_name && (
-                          <p className="text-sm text-muted-foreground mt-1">{item.customer_name}</p>
-                        )}
+                        {item.customer_name &&
+                    <p className="text-sm text-muted-foreground mt-1">{item.customer_name}</p>
+                    }
                         <div className="flex items-center gap-4 mt-2 text-sm">
                           <span className="text-muted-foreground">📅 {format(new Date(item.date), 'dd MMM yyyy')}</span>
-                          {item.expense && (
-                            <span className="text-destructive">Expense: {formatCurrency(item.expense)}</span>
-                          )}
+                          {item.expense &&
+                      <span className="text-destructive">Expense: {formatCurrency(item.expense)}</span>
+                      }
                         </div>
                       </div>
                       <div className="text-right">
@@ -1306,7 +1306,7 @@ const Dashboard = () => {
                       </div>
                     </div>
                   </div>
-                ))}
+              )}
                 <div className="border-t pt-4 mt-4">
                   <div className="flex items-center justify-between font-bold text-lg">
                     <span className="text-foreground">Total Online Services</span>
@@ -1314,15 +1314,15 @@ const Dashboard = () => {
                   </div>
                 </div>
                 <button
-                  onClick={() => { setOnlineServicesDialogOpen(false); navigate('/online-services'); }}
-                  className="w-full mt-2 text-sm text-primary hover:underline text-center"
-                >
+                onClick={() => {setOnlineServicesDialogOpen(false);navigate('/online-services');}}
+                className="w-full mt-2 text-sm text-primary hover:underline text-center">
+                
                   View full Online Services page →
                 </button>
-              </div>
-            ) : (
-              <p className="text-center text-muted-foreground py-8">No online services found</p>
-            )}
+              </div> :
+
+            <p className="text-center text-muted-foreground py-8">No online services found</p>
+            }
           </div>
         </DialogContent>
       </Dialog>
@@ -1337,13 +1337,13 @@ const Dashboard = () => {
             </DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            {documentationData && documentationData.length > 0 ? (
-              <div className="space-y-3">
-                {documentationData.map((item) => (
-                  <div 
-                    key={item.id} 
-                    className="p-4 rounded-xl border border-border/50 bg-gradient-to-br from-muted/30 to-muted/10 hover:shadow-md transition-shadow"
-                  >
+            {documentationData && documentationData.length > 0 ?
+            <div className="space-y-3">
+                {documentationData.map((item) =>
+              <div
+                key={item.id}
+                className="p-4 rounded-xl border border-border/50 bg-gradient-to-br from-muted/30 to-muted/10 hover:shadow-md transition-shadow">
+                
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <h4 className="font-semibold text-foreground text-lg">{item.name}</h4>
@@ -1353,19 +1353,19 @@ const Dashboard = () => {
                             {item.service_type === 'Other' ? item.custom_service : item.service_type}
                           </span>
                         </div>
-                        {item.mobile && (
-                          <p className="text-xs text-muted-foreground mt-1">📞 {item.mobile}</p>
-                        )}
+                        {item.mobile &&
+                    <p className="text-xs text-muted-foreground mt-1">📞 {item.mobile}</p>
+                    }
                       </div>
                       <div className="text-right">
                         <p className="text-xl font-bold text-primary">{formatCurrency(item.amount)}</p>
-                        {item.expense > 0 && (
-                          <p className="text-xs text-destructive">Exp: {formatCurrency(item.expense)}</p>
-                        )}
+                        {item.expense > 0 &&
+                    <p className="text-xs text-destructive">Exp: {formatCurrency(item.expense)}</p>
+                    }
                       </div>
                     </div>
                   </div>
-                ))}
+              )}
                 <div className="border-t pt-4 mt-4">
                   <div className="flex items-center justify-between font-bold text-lg">
                     <span className="text-foreground">Total Amount</span>
@@ -1373,15 +1373,15 @@ const Dashboard = () => {
                   </div>
                 </div>
                 <button
-                  onClick={() => { setDocumentationDialogOpen(false); navigate('/documentation'); }}
-                  className="w-full mt-2 text-sm text-primary hover:underline text-center"
-                >
+                onClick={() => {setDocumentationDialogOpen(false);navigate('/documentation');}}
+                className="w-full mt-2 text-sm text-primary hover:underline text-center">
+                
                   View full Documentation page →
                 </button>
-              </div>
-            ) : (
-              <p className="text-center text-muted-foreground py-8">No documentation entries found</p>
-            )}
+              </div> :
+
+            <p className="text-center text-muted-foreground py-8">No documentation entries found</p>
+            }
           </div>
         </DialogContent>
       </Dialog>
@@ -1396,13 +1396,13 @@ const Dashboard = () => {
             </DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            {expensesData && expensesData.length > 0 ? (
-              <div className="space-y-3">
-                {expensesData.map((item) => (
-                  <div 
-                    key={item.id} 
-                    className="p-4 rounded-xl border border-border/50 bg-gradient-to-br from-muted/30 to-muted/10 hover:shadow-md transition-shadow"
-                  >
+            {expensesData && expensesData.length > 0 ?
+            <div className="space-y-3">
+                {expensesData.map((item) =>
+              <div
+                key={item.id}
+                className="p-4 rounded-xl border border-border/50 bg-gradient-to-br from-muted/30 to-muted/10 hover:shadow-md transition-shadow">
+                
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <h4 className="font-semibold text-foreground text-lg">{item.name}</h4>
@@ -1415,7 +1415,7 @@ const Dashboard = () => {
                       </div>
                     </div>
                   </div>
-                ))}
+              )}
                 <div className="border-t pt-4 mt-4">
                   <div className="flex items-center justify-between font-bold text-lg">
                     <span className="text-foreground">Total Expenses</span>
@@ -1423,15 +1423,15 @@ const Dashboard = () => {
                   </div>
                 </div>
                 <button
-                  onClick={() => { setExpensesDialogOpen(false); navigate('/expenses'); }}
-                  className="w-full mt-2 text-sm text-primary hover:underline text-center"
-                >
+                onClick={() => {setExpensesDialogOpen(false);navigate('/expenses');}}
+                className="w-full mt-2 text-sm text-primary hover:underline text-center">
+                
                   View full Expenses page →
                 </button>
-              </div>
-            ) : (
-              <p className="text-center text-muted-foreground py-8">No expenses found</p>
-            )}
+              </div> :
+
+            <p className="text-center text-muted-foreground py-8">No expenses found</p>
+            }
           </div>
         </DialogContent>
       </Dialog>
@@ -1446,13 +1446,13 @@ const Dashboard = () => {
             </DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            {photostatData && photostatData.length > 0 ? (
-              <div className="space-y-3">
-                {photostatData.map((item) => (
-                  <div 
-                    key={item.id} 
-                    className="p-4 rounded-xl border border-border/50 bg-gradient-to-br from-muted/30 to-muted/10 hover:shadow-md transition-shadow"
-                  >
+            {photostatData && photostatData.length > 0 ?
+            <div className="space-y-3">
+                {photostatData.map((item) =>
+              <div
+                key={item.id}
+                className="p-4 rounded-xl border border-border/50 bg-gradient-to-br from-muted/30 to-muted/10 hover:shadow-md transition-shadow">
+                
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-4 mt-1 text-sm">
@@ -1468,7 +1468,7 @@ const Dashboard = () => {
                       </div>
                     </div>
                   </div>
-                ))}
+              )}
                 <div className="border-t pt-4 mt-4">
                   <div className="flex items-center justify-between font-bold text-lg">
                     <span className="text-foreground">Total Photostat</span>
@@ -1480,15 +1480,15 @@ const Dashboard = () => {
                   </div>
                 </div>
                 <button
-                  onClick={() => { setPhotostatDialogOpen(false); navigate('/photostat'); }}
-                  className="w-full mt-2 text-sm text-primary hover:underline text-center"
-                >
+                onClick={() => {setPhotostatDialogOpen(false);navigate('/photostat');}}
+                className="w-full mt-2 text-sm text-primary hover:underline text-center">
+                
                   View full Photostat page →
                 </button>
-              </div>
-            ) : (
-              <p className="text-center text-muted-foreground py-8">No photostat entries found</p>
-            )}
+              </div> :
+
+            <p className="text-center text-muted-foreground py-8">No photostat entries found</p>
+            }
           </div>
         </DialogContent>
       </Dialog>
@@ -1503,13 +1503,13 @@ const Dashboard = () => {
             </DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            {khataCustomersData && khataCustomersData.length > 0 ? (
-              <div className="space-y-3">
-                {khataCustomersData.map((customer) => (
-                  <div 
-                    key={customer.id} 
-                    className="p-4 rounded-xl border border-border/50 bg-gradient-to-br from-muted/30 to-muted/10 hover:shadow-md transition-shadow"
-                  >
+            {khataCustomersData && khataCustomersData.length > 0 ?
+            <div className="space-y-3">
+                {khataCustomersData.map((customer) =>
+              <div
+                key={customer.id}
+                className="p-4 rounded-xl border border-border/50 bg-gradient-to-br from-muted/30 to-muted/10 hover:shadow-md transition-shadow">
+                
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <h4 className="font-semibold text-foreground text-lg">{customer.name}</h4>
@@ -1526,7 +1526,7 @@ const Dashboard = () => {
                       </div>
                     </div>
                   </div>
-                ))}
+              )}
                 <div className="border-t pt-4 mt-4">
                   <div className="flex items-center justify-between font-bold text-lg">
                     <span className="text-foreground">Net Balance</span>
@@ -1534,20 +1534,20 @@ const Dashboard = () => {
                   </div>
                 </div>
                 <button
-                  onClick={() => { setKhataDialogOpen(false); navigate('/khata'); }}
-                  className="w-full mt-2 text-sm text-primary hover:underline text-center"
-                >
+                onClick={() => {setKhataDialogOpen(false);navigate('/khata');}}
+                className="w-full mt-2 text-sm text-primary hover:underline text-center">
+                
                   View full Khata page →
                 </button>
-              </div>
-            ) : (
-              <p className="text-center text-muted-foreground py-8">No khata customers found</p>
-            )}
+              </div> :
+
+            <p className="text-center text-muted-foreground py-8">No khata customers found</p>
+            }
           </div>
         </DialogContent>
       </Dialog>
-    </div>
-  );
+    </div>);
+
 };
 
 export default Dashboard;
