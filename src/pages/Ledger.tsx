@@ -178,9 +178,7 @@ const Ledger = () => {
       <div className="flex-1 p-6">
         <div className="grid gap-4">
           {loading ? (
-            <div className="text-center py-8">
-              <div className="text-gray-500">Loading customers...</div>
-            </div>
+            <PageSkeleton type="cards" />
           ) : (
             <CustomerList
               customers={filteredCustomers}
