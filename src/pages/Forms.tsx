@@ -1,5 +1,6 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useHighlight } from '@/hooks/useHighlight';
 import { Plus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,6 +41,7 @@ const Forms = () => {
   const [forms, setForms] = useState<FormEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const { highlightId } = useHighlight();
   const [selectedDepartment, setSelectedDepartment] = useState<string>('all');
   const [customDepartmentSearch, setCustomDepartmentSearch] = useState('');
   const [showCustomDepartmentDialog, setShowCustomDepartmentDialog] = useState(false);
@@ -394,6 +396,7 @@ const Forms = () => {
             onDelete={initiateDelete}
             loading={loading}
             selectedDepartment={selectedDepartment}
+            highlightId={highlightId}
           />
         </div>
       </div>

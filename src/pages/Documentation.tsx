@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useHighlight } from '@/hooks/useHighlight';
 import { FileText, Printer, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -48,6 +49,17 @@ const Documentation = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month' | 'quarter'>('day');
   const [serviceFilter, setServiceFilter] = useState<string>('all');
+  const { isHighlighted, dateParam } = useHighlight();
+
+  useEffect(() => {
+    if (dateParam) {
+      const navDate = new Date(dateParam);
+      if (!isNaN(navDate.getTime())) {
+        setDate(navDate);
+        setViewMode('month');
+      }
+    }
+  }, [dateParam]);
 
   const [newEntry, setNewEntry] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -485,7 +497,7 @@ const Documentation = () => {
               <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">No entries found for this {viewMode === 'day' ? 'day' : viewMode === 'month' ? 'month' : 'quarter'}.</td></tr>
             ) : (
               filteredEntries.map(entry => (
-                <tr key={entry.id} className="border-b border-border hover:bg-muted/30">
+                <tr key={entry.id} data-record-id={entry.id} className={`border-b border-border hover:bg-muted/30 ${isHighlighted(entry.id) ? 'search-highlight' : ''}`}>
                   <td className="px-4 py-3">{format(entry.date, 'dd/MM/yyyy')}</td>
                   <td className="px-4 py-3">{entry.name}</td>
                   <td className="px-4 py-3">{entry.service_type === 'Other' ? (entry.custom_service || 'Other') : entry.service_type}</td>

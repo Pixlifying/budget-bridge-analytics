@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useHighlight } from '@/hooks/useHighlight';
 import { useForm } from 'react-hook-form';
 import { format } from 'date-fns';
 import { Calendar, Plus, Printer, Trash2, Edit2, Search, Upload } from 'lucide-react';
@@ -45,6 +46,7 @@ const SocialSecurity = () => {
   const [records, setRecords] = useState<SocialSecurityRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const { highlightId } = useHighlight();
   const [searchQuery, setSearchQuery] = useState('');
   const [schemeFilter, setSchemeFilter] = useState<string>('all');
   const [isUploading, setIsUploading] = useState(false);
@@ -534,7 +536,7 @@ const SocialSecurity = () => {
                   </TableRow>
                 ) : (
                   filteredRecords.map((record) => (
-                    <TableRow key={record.id}>
+                    <TableRow key={record.id} data-record-id={record.id} className={highlightId === record.id ? 'search-highlight' : ''}>
                       <TableCell>{format(new Date(record.date), 'dd/MM/yyyy')}</TableCell>
                       <TableCell>{record.name}</TableCell>
                       <TableCell>{record.account_number}</TableCell>

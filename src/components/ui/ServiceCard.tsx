@@ -23,6 +23,7 @@ interface ServiceCardProps {
   onDelete: () => void;
   className?: string;
   showActions?: boolean;
+  isHighlighted?: boolean;
 }
 
 const ServiceCard = ({
@@ -35,6 +36,7 @@ const ServiceCard = ({
   onDelete,
   className,
   showActions = true,
+  isHighlighted = false,
 }: ServiceCardProps) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
@@ -48,7 +50,7 @@ const ServiceCard = ({
   };
 
   return (
-    <Card className={cn("bg-card shadow-sm rounded-xl overflow-hidden card-hover", className)}>
+    <Card data-record-id={id} className={cn("bg-card shadow-sm rounded-xl overflow-hidden card-hover", isHighlighted && "search-highlight", className)}>
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-semibold flex justify-between items-center">
           <span>{title}</span>

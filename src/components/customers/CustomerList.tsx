@@ -8,9 +8,10 @@ interface CustomerListProps {
   onEdit: (customer: Customer) => void;
   onDelete: (customer: Customer) => void;
   onCustomerClick?: (id: string, e: React.MouseEvent) => void;
+  highlightId?: string | null;
 }
 
-const CustomerList = ({ customers, onEdit, onDelete, onCustomerClick }: CustomerListProps) => {
+const CustomerList = ({ customers, onEdit, onDelete, onCustomerClick, highlightId }: CustomerListProps) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {customers.length === 0 ? (
@@ -25,6 +26,7 @@ const CustomerList = ({ customers, onEdit, onDelete, onCustomerClick }: Customer
             onClick={onCustomerClick}
             onEdit={onEdit}
             onDelete={onDelete}
+            isHighlighted={highlightId === customer.id}
           />
         ))
       )}

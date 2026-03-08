@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useHighlight } from '@/hooks/useHighlight';
 import { Globe, Plus, Edit, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -45,6 +46,18 @@ const OnlineServices = () => {
   const [editingEntry, setEditingEntry] = useState<OnlineServiceEntry | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [filterMode, setFilterMode] = useState<'day' | 'month' | 'quarter'>('day');
+  const { isHighlighted, dateParam } = useHighlight();
+
+  // Set date from search navigation
+  useEffect(() => {
+    if (dateParam) {
+      const navDate = new Date(dateParam);
+      if (!isNaN(navDate.getTime())) {
+        setSelectedDate(navDate);
+        setFilterMode('month');
+      }
+    }
+  }, [dateParam]);
 
   // Form state for inline entry
   const [newEntry, setNewEntry] = useState({
@@ -555,6 +568,7 @@ const OnlineServices = () => {
               }}
               onEdit={() => openEditEntry(entry)}
               onDelete={() => handleDeleteEntry(entry.id)}
+              isHighlighted={isHighlighted(entry.id)}
             />
           ))}
         </div>

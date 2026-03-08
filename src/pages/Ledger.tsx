@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { useHighlight } from '@/hooks/useHighlight';
 import { useNavigate } from 'react-router-dom';
 import { Search, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,7 @@ const Ledger = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const { highlightId } = useHighlight();
   const [dateFilter, setDateFilter] = useState<Date | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
@@ -186,6 +188,7 @@ const Ledger = () => {
                 initiateDelete(customer.id);
               }}
               onCustomerClick={(id) => handleViewCustomer(id)}
+              highlightId={highlightId}
             />
           )}
         </div>

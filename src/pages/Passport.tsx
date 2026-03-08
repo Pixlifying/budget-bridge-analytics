@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { useHighlight } from '@/hooks/useHighlight';
 import { Receipt, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from '@/lib/utils';
@@ -32,6 +33,14 @@ const Passport = () => {
   const [viewMode, setViewMode] = useState<'day' | 'month' | 'quarter'>('day');
   const [passports, setPassports] = useState<PassportEntry[]>([]);
   const [filteredPassports, setFilteredPassports] = useState<PassportEntry[]>([]);
+  const { isHighlighted, dateParam } = useHighlight();
+
+  useEffect(() => {
+    if (dateParam) {
+      const navDate = new Date(dateParam);
+      if (!isNaN(navDate.getTime())) { setDate(navDate); setViewMode('month'); }
+    }
+  }, [dateParam]);
   const [editingEntry, setEditingEntry] = useState<PassportEntry | null>(null);
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -354,6 +363,7 @@ const Passport = () => {
                 setIsEditFormOpen(true);
               }}
               onDelete={() => handleDeleteEntry(entry.id)}
+              isHighlighted={isHighlighted(entry.id)}
               showActions={true}
             />
           ))}

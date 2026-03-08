@@ -31,9 +31,10 @@ interface FormsTableProps {
   onDelete: (id: string) => void;
   loading: boolean;
   selectedDepartment: string;
+  highlightId?: string | null;
 }
 
-const FormsTable = ({ forms, onEdit, onDelete, loading, selectedDepartment }: FormsTableProps) => {
+const FormsTable = ({ forms, onEdit, onDelete, loading, selectedDepartment, highlightId }: FormsTableProps) => {
   if (loading) {
     return (
       <div className="p-8 text-center">
@@ -70,7 +71,7 @@ const FormsTable = ({ forms, onEdit, onDelete, loading, selectedDepartment }: Fo
         </TableHeader>
         <TableBody>
           {forms.map((form, index) => (
-            <TableRow key={form.id}>
+            <TableRow key={form.id} data-record-id={form.id} className={highlightId === form.id ? 'search-highlight' : ''}>
               <TableCell>{index + 1}</TableCell>
               <TableCell>{format(new Date(form.date), 'dd/MM/yyyy')}</TableCell>
               <TableCell className="font-medium">{form.name}</TableCell>

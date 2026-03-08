@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { useHighlight } from '@/hooks/useHighlight';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
@@ -31,6 +32,14 @@ const FeeExpenses = () => {
   const [viewMode, setViewMode] = useState<'day' | 'month' | 'quarter'>('day');
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [expenseToDelete, setExpenseToDelete] = useState<string | null>(null);
+  const { isHighlighted, dateParam } = useHighlight();
+
+  useEffect(() => {
+    if (dateParam) {
+      const navDate = new Date(dateParam);
+      if (!isNaN(navDate.getTime())) { setDate(navDate); setViewMode('month'); }
+    }
+  }, [dateParam]);
 
   // Form state for inline entry
   const [newEntry, setNewEntry] = useState({
@@ -315,7 +324,7 @@ const FeeExpenses = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredExpenses.map((expense, index) => (
-            <Card key={expense.id} className="overflow-hidden">
+            <Card key={expense.id} data-record-id={expense.id} className={`overflow-hidden ${isHighlighted(expense.id) ? 'search-highlight' : ''}`}>
               <CardHeader className="bg-blue-50 pb-2">
                 <div className="flex justify-between items-start">
                   <CardTitle className="text-lg">{expense.customer_name}</CardTitle>

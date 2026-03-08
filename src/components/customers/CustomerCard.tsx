@@ -21,9 +21,10 @@ interface CustomerCardProps {
   onClick?: (id: string, e: React.MouseEvent) => void;
   onEdit: (customer: Customer) => void;
   onDelete: (customer: Customer) => void;
+  isHighlighted?: boolean;
 }
 
-const CustomerCard = ({ customer, onClick, onEdit, onDelete }: CustomerCardProps) => {
+const CustomerCard = ({ customer, onClick, onEdit, onDelete, isHighlighted = false }: CustomerCardProps) => {
   const handleCardClick = (e: React.MouseEvent) => {
     e.preventDefault();
     if (onClick) {
@@ -55,7 +56,8 @@ const CustomerCard = ({ customer, onClick, onEdit, onDelete }: CustomerCardProps
 
   return (
     <div 
-      className="group cursor-pointer transition-all duration-300 hover:-translate-y-2"
+      data-record-id={customer.id}
+      className={`group cursor-pointer transition-all duration-300 hover:-translate-y-2 ${isHighlighted ? 'search-highlight' : ''}`}
       onClick={handleCardClick}
       style={{
         perspective: '1000px',

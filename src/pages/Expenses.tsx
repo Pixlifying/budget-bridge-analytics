@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { useHighlight } from '@/hooks/useHighlight';
 import { Receipt, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,7 +34,18 @@ const Expenses = () => {
   const [expenses, setExpenses] = useState<ExpenseEntry[]>([]);
   const [filteredExpenses, setFilteredExpenses] = useState<ExpenseEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+  const { isHighlighted, dateParam } = useHighlight();
+
+  useEffect(() => {
+    if (dateParam) {
+      const navDate = new Date(dateParam);
+      if (!isNaN(navDate.getTime())) {
+        setDate(navDate);
+        setViewMode('month');
+      }
+    }
+  }, [dateParam]);
+
   // Form state for inline entry
   const [newEntry, setNewEntry] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -322,6 +334,7 @@ const Expenses = () => {
                 toast.info("Edit functionality coming soon");
               }}
               onDelete={() => handleDeleteEntry(entry.id)}
+              isHighlighted={isHighlighted(entry.id)}
             />
           ))}
         </div>
