@@ -605,9 +605,9 @@ const Khata = () => {
             <h3 className="text-lg font-semibold">Add Transaction</h3>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 items-end">
               <div>
-                <Label htmlFor="transaction_date">Date</Label>
+                <Label htmlFor="transaction_date" className="text-xs">Date</Label>
                 <Input
                   id="transaction_date"
                   type="date"
@@ -616,7 +616,7 @@ const Khata = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="transaction_type">Type</Label>
+                <Label htmlFor="transaction_type" className="text-xs">Type</Label>
                 <Select
                   value={transactionForm.type}
                   onValueChange={(value: 'credit' | 'debit') => 
@@ -633,26 +633,26 @@ const Khata = () => {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="transaction_amount">Amount</Label>
+                <Label htmlFor="transaction_amount" className="text-xs">Amount</Label>
                 <Input
                   id="transaction_amount"
                   type="number"
                   value={transactionForm.amount}
                   onChange={(e) => setTransactionForm(prev => ({ ...prev, amount: Number(e.target.value) }))}
-                  placeholder="Enter amount"
+                  placeholder="Amount"
                 />
               </div>
-              <div>
-                <Label htmlFor="transaction_description">Description</Label>
+              <div className="col-span-2 sm:col-span-1 lg:col-span-2">
+                <Label htmlFor="transaction_description" className="text-xs">Description</Label>
                 <Input
                   id="transaction_description"
                   value={transactionForm.description}
                   onChange={(e) => setTransactionForm(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Optional"
+                  placeholder="Optional description"
                 />
               </div>
-              <Button onClick={handleAddTransaction}>
-                <Plus size={16} className="mr-2" />
+              <Button onClick={handleAddTransaction} className="w-full">
+                <Plus size={16} className="mr-1" />
                 Add
               </Button>
             </div>
