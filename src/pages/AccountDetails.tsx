@@ -557,7 +557,7 @@ const AccountDetails = () => {
         {/* Compact Upload Section */}
         <Card className="border-primary/20">
           <CardContent className="py-4">
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <input
                 ref={fileInputRef}
                 type="file"
