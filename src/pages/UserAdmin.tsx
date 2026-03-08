@@ -137,7 +137,7 @@ const UserAdmin = () => {
         title="User Admin"
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
         {/* Account Information Card */}
         <Card>
           <CardHeader>
@@ -147,7 +147,7 @@ const UserAdmin = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-4">
               <div>
                 <Label htmlFor="username">Username</Label>
                 {isEditing ? (
@@ -159,8 +159,8 @@ const UserAdmin = () => {
                   />
                 ) : (
                   <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
-                    <User className="h-4 w-4" />
-                    <span>{userData.username}</span>
+                    <User className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">{userData.username}</span>
                   </div>
                 )}
               </div>
@@ -176,9 +176,9 @@ const UserAdmin = () => {
                     placeholder="Enter email"
                   />
                 ) : (
-                  <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
-                    <Mail className="h-4 w-4" />
-                    <span>{userData.email}</span>
+                  <div className="flex items-center gap-2 p-2 bg-muted rounded-md overflow-hidden">
+                    <Mail className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">{userData.email}</span>
                   </div>
                 )}
               </div>
@@ -212,22 +212,22 @@ const UserAdmin = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
-                <Calendar className="h-4 w-4" />
-                <div>
+                <Calendar className="h-4 w-4 flex-shrink-0" />
+                <div className="min-w-0">
                   <div className="text-sm font-medium">Created</div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-sm text-muted-foreground truncate">
                     {new Date(userData.created_at).toLocaleDateString()}
                   </div>
                 </div>
               </div>
 
               <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
-                <Calendar className="h-4 w-4" />
-                <div>
+                <Calendar className="h-4 w-4 flex-shrink-0" />
+                <div className="min-w-0">
                   <div className="text-sm font-medium">Last Updated</div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-sm text-muted-foreground truncate">
                     {new Date(userData.updated_at).toLocaleDateString()}
                   </div>
                 </div>
@@ -235,7 +235,7 @@ const UserAdmin = () => {
             </div>
 
             <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
-              <Shield className="h-4 w-4" />
+              <Shield className="h-4 w-4 flex-shrink-0" />
               <div>
                 <div className="text-sm font-medium">Account Status</div>
                 <div className={`text-sm ${userData.is_active ? 'text-green-600' : 'text-red-600'}`}>
@@ -246,32 +246,26 @@ const UserAdmin = () => {
 
             {userData.last_login && (
               <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
-                <Calendar className="h-4 w-4" />
-                <div>
+                <Calendar className="h-4 w-4 flex-shrink-0" />
+                <div className="min-w-0">
                   <div className="text-sm font-medium">Last Login</div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-sm text-muted-foreground truncate">
                     {new Date(userData.last_login).toLocaleString()}
                   </div>
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
 
-        {/* Actions Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Account Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Button 
-              variant="destructive" 
-              onClick={handleLogout}
-              className="flex items-center gap-2"
-            >
-              <LogOut className="h-4 w-4" />
-              Logout
-            </Button>
+            <div className="pt-4 border-t">
+              <Button 
+                variant="destructive" 
+                onClick={handleLogout}
+                className="flex items-center gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                Logout
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

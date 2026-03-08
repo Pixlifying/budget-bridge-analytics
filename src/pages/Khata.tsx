@@ -61,7 +61,6 @@ const Khata = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<KhataCustomer | null>(null);
   const [showEditCustomer, setShowEditCustomer] = useState(false);
   const [showAddTransaction, setShowAddTransaction] = useState(false);
-  const [showEditTransaction, setShowEditTransaction] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteType, setDeleteType] = useState<'customer' | 'transaction'>('customer');
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
@@ -357,8 +356,8 @@ const Khata = () => {
         } : null);
       }
 
-      setShowEditTransaction(false);
       setEditingTransaction(null);
+      setTransactionForm({ type: 'credit', amount: 0, date: new Date().toISOString().split('T')[0], description: '' });
       toast.success('Transaction updated successfully');
     } catch (error) {
       console.error('Error updating transaction:', error);
@@ -420,8 +419,8 @@ const Khata = () => {
       date: transaction.date,
       description: transaction.description || '',
     });
-    setShowEditTransaction(true);
-    setShowAddTransaction(false);
+    // Scroll to top to show the unified form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const initiateDelete = (id: string, type: 'customer' | 'transaction') => {
@@ -596,24 +595,24 @@ const Khata = () => {
             <div className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${balance >= 0 ? 'bg-green-500/20 text-green-200' : 'bg-red-500/20 text-red-200'}`}>
               Balance: {formatCurrency(balance)}
             </div>
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2 flex-shrink-0">
               <Button
                 variant="outline"
-                size="sm"
+                size="icon"
                 onClick={handlePrintCustomer}
-                className="bg-sidebar-accent text-sidebar-accent-foreground border-sidebar-accent hover:bg-sidebar-accent/80"
+                className="bg-sidebar-accent text-sidebar-accent-foreground border-sidebar-accent hover:bg-sidebar-accent/80 h-8 w-8 sm:h-9 sm:w-auto sm:px-3"
               >
-                <Printer size={16} className="mr-1" />
-                Print
+                <Printer size={16} />
+                <span className="hidden sm:inline ml-1">Print</span>
               </Button>
               <Button
                 variant="outline"
-                size="sm"
+                size="icon"
                 onClick={() => openEditCustomer(selectedCustomer)}
-                className="bg-sidebar-accent text-sidebar-accent-foreground border-sidebar-accent hover:bg-sidebar-accent/80"
+                className="bg-sidebar-accent text-sidebar-accent-foreground border-sidebar-accent hover:bg-sidebar-accent/80 h-8 w-8 sm:h-9 sm:w-auto sm:px-3"
               >
-                <Edit size={16} className="mr-1" />
-                Edit
+                <Edit size={16} />
+                <span className="hidden sm:inline ml-1">Edit</span>
               </Button>
             </div>
           </div>
@@ -628,10 +627,22 @@ const Khata = () => {
           </div>
         </div>
 
-        {/* Inline Add Transaction Form - Always visible */}
-        <Card>
+        {/* Unified Add/Edit Transaction Form */}
+        <Card className={editingTransaction ? 'border-primary' : ''}>
           <CardHeader>
-            <h3 className="text-lg font-semibold">Add Transaction</h3>
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">
+                {editingTransaction ? 'Edit Transaction' : 'Add Transaction'}
+              </h3>
+              {editingTransaction && (
+                <Button variant="ghost" size="sm" onClick={() => {
+                  setEditingTransaction(null);
+                  setTransactionForm({ type: 'credit', amount: 0, date: new Date().toISOString().split('T')[0], description: '' });
+                }}>
+                  Cancel Edit
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 items-end">
@@ -680,9 +691,12 @@ const Khata = () => {
                   placeholder="Optional description"
                 />
               </div>
-              <Button onClick={handleAddTransaction} className="w-full">
-                <Plus size={16} className="mr-1" />
-                Add
+              <Button onClick={editingTransaction ? handleEditTransaction : handleAddTransaction} className="w-full">
+                {editingTransaction ? (
+                  <><Edit size={16} className="mr-1" /> Update</>
+                ) : (
+                  <><Plus size={16} className="mr-1" /> Add</>
+                )}
               </Button>
             </div>
           </CardContent>
@@ -778,69 +792,6 @@ const Khata = () => {
         </Card>
 
 
-        {/* Inline Edit Transaction Form */}
-        {showEditTransaction && editingTransaction && (
-          <Card className="border-primary">
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Edit Transaction</h3>
-                <Button variant="ghost" size="sm" onClick={() => { setShowEditTransaction(false); setEditingTransaction(null); }}>
-                  Cancel
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 items-end">
-                <div>
-                  <Label htmlFor="edit_transaction_type" className="text-xs">Type</Label>
-                  <Select
-                    value={transactionForm.type}
-                    onValueChange={(value: 'credit' | 'debit') => 
-                      setTransactionForm(prev => ({ ...prev, type: value }))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="credit">Credit</SelectItem>
-                      <SelectItem value="debit">Debit</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="edit_transaction_amount">Amount</Label>
-                  <Input
-                    id="edit_transaction_amount"
-                    type="number"
-                    value={transactionForm.amount}
-                    onChange={(e) => setTransactionForm(prev => ({ ...prev, amount: Number(e.target.value) }))}
-                    placeholder="Enter amount"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit_transaction_date">Date</Label>
-                  <Input
-                    id="edit_transaction_date"
-                    type="date"
-                    value={transactionForm.date}
-                    onChange={(e) => setTransactionForm(prev => ({ ...prev, date: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit_transaction_description">Description</Label>
-                  <Input
-                    id="edit_transaction_description"
-                    value={transactionForm.description}
-                    onChange={(e) => setTransactionForm(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Optional"
-                  />
-                </div>
-                <Button onClick={handleEditTransaction}>Update</Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Edit Customer Dialog */}
         <Dialog open={showEditCustomer} onOpenChange={setShowEditCustomer}>
