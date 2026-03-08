@@ -877,7 +877,7 @@ const Dashboard = () => {
                     <p className="text-xs opacity-70 mt-0.5">{format(currentTime, 'EEEE, MMM d')}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 mt-3 pt-3 border-t border-white/20">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-3 pt-3 border-t border-white/20">
                   <div className="flex-1 bg-white/15 rounded-xl p-2.5 text-center backdrop-blur-sm">
                     <span className="text-lg font-bold block">{bankingData?.length || 0}</span>
                     <span className="text-[10px] opacity-80">Txn Days</span>
