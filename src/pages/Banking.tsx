@@ -443,6 +443,8 @@ const Banking = () => {
   const totalExtraAmount = filteredEntries.reduce((sum, entry) => sum + (entry.extra_amount || 0), 0);
   const totalMargin = filteredEntries.reduce((sum, entry) => sum + entry.margin, 0);
 
+  if (isLoading) return <PageSkeleton type="cards" />;
+
   return (
     <PageWrapper
       title="Banking"
