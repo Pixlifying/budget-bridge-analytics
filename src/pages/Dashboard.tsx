@@ -771,12 +771,18 @@ const Dashboard = () => {
       {/* Header */}
       <div className="bg-card/80 backdrop-blur-sm border-b border-border px-3 sm:px-6 py-4">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button onClick={() => setMobileMenuOpen(true)} className="md:hidden p-2 rounded-lg hover:bg-muted text-foreground shrink-0">
               <Menu size={20} />
             </button>
+            <Avatar className="h-9 w-9 sm:h-10 sm:w-10 border border-border shrink-0">
+              <AvatarImage src={userAdminData?.profile_image_url || undefined} alt={userAdminData?.username || 'User'} />
+              <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                {(userAdminData?.username || 'U').charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
             <div className="min-w-0">
-              <h1 className="text-lg sm:text-2xl font-semibold text-foreground truncate">Hello, Harry</h1>
+              <h1 className="text-lg sm:text-2xl font-semibold text-foreground truncate">Hello, {userAdminData?.username || 'User'}</h1>
               <p className="text-sm text-muted-foreground mt-0.5 hidden sm:block">Explore information</p>
             </div>
           </div>
