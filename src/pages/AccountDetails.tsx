@@ -551,43 +551,32 @@ const AccountDetails = () => {
           <Download size={16} className="mr-2" />
           Download CSV
         </Button>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".csv,.xlsx,.xls"
+          onChange={handleFileUpload}
+          className="hidden"
+          disabled={isUploading}
+        />
+        <Button
+          variant="outline"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isUploading}
+        >
+          <Upload size={16} className="mr-2" />
+          Browse
+        </Button>
+        {isUploading && (
+          <div className="flex items-center gap-2 text-primary">
+            <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <span className="text-sm">Processing...</span>
+          </div>
+        )}
       </PageHeader>
 
       <div className="flex-1 p-6 space-y-4">
-        {/* Compact Upload Section */}
-        <Card className="border-primary/20">
-          <CardContent className="py-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv,.xlsx,.xls"
-                onChange={handleFileUpload}
-                className="hidden"
-                disabled={isUploading}
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
-                className="gap-2"
-              >
-                <Upload className="h-4 w-4" />
-                Browse CSV/Excel
-              </Button>
-              <span className="text-sm text-muted-foreground hidden sm:inline">
-                Upload CSV or Excel file to extract account numbers (duplicates will be skipped)
-              </span>
-              {isUploading && (
-                <div className="flex items-center gap-2 text-primary">
-                  <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                  <span className="text-sm">Processing...</span>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Pagination Info and Controls */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
