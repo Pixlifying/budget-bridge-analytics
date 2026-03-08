@@ -229,7 +229,7 @@ const Analytics = () => {
   const totalFeeExpenses = filteredFeeExpenses.reduce((sum, entry) => sum + entry.fee, 0);
 
   const totalRevenue = totalPanMargin + totalPassportMargin + totalBankingMargin + totalBankingAccountsMargin + totalOnlineServices + totalApplications + totalPhotostatMargin + totalDocumentationMargin;
-  const totalAllExpenses = totalExpenses + totalMiscExpenses + totalFeeExpenses;
+  const totalAllExpenses = totalExpenses;
   const netProfit = totalRevenue - totalAllExpenses;
 
   const odTrendData = filteredOdRecords.slice().reverse().map((record) => ({
