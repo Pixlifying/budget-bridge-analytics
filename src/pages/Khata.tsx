@@ -356,8 +356,8 @@ const Khata = () => {
         } : null);
       }
 
-      setShowEditTransaction(false);
       setEditingTransaction(null);
+      setTransactionForm({ type: 'credit', amount: 0, date: new Date().toISOString().split('T')[0], description: '' });
       toast.success('Transaction updated successfully');
     } catch (error) {
       console.error('Error updating transaction:', error);
