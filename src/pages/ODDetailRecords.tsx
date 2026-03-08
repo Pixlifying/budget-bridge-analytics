@@ -755,36 +755,6 @@ const ODDetailRecords = () => {
           </CardContent>
         </Card>
 
-        {/* Print & Export - Inline aligned with Transaction Time row */}
-        <Card className="border-primary/20">
-          <CardContent className="py-4">
-            <div className="flex flex-wrap items-center gap-3">
-              <Label className="text-sm font-semibold whitespace-nowrap">Mode:</Label>
-              <Select value={printMode} onValueChange={(v: 'range' | 'month') => setPrintMode(v)}>
-                <SelectTrigger className="w-28 h-9"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="range">Date Range</SelectItem>
-                  <SelectItem value="month">Month</SelectItem>
-                </SelectContent>
-              </Select>
-              {printMode === 'range' ? (
-                <>
-                  <Label className="text-sm whitespace-nowrap">Start Date:</Label>
-                  <Input type="date" className="w-36 h-9" value={printDateRange.startDate} onChange={(e) => setPrintDateRange({ ...printDateRange, startDate: e.target.value })} />
-                  <Label className="text-sm whitespace-nowrap">End Date:</Label>
-                  <Input type="date" className="w-36 h-9" value={printDateRange.endDate} onChange={(e) => setPrintDateRange({ ...printDateRange, endDate: e.target.value })} />
-                </>
-              ) : (
-                <>
-                  <Label className="text-sm whitespace-nowrap">Month:</Label>
-                  <Input type="month" className="w-36 h-9" value={printMonth} onChange={(e) => setPrintMonth(e.target.value)} />
-                </>
-              )}
-              <Button size="sm" onClick={handlePrint} className="gap-2"><Printer className="h-4 w-4" />Print</Button>
-              <Button size="sm" variant="outline" onClick={handleDownload} className="gap-2"><Download className="h-4 w-4" />Download</Button>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Records Table with Inline Edit */}
         <Card>
