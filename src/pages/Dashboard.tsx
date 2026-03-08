@@ -1139,7 +1139,6 @@ const Dashboard = () => {
                     <span className="text-primary">{formatCurrency(applicationsTotal)}</span>
                   </div>
                 </div>
-              </div>
                 <button
                   onClick={() => { setApplicationsDialogOpen(false); navigate('/applications'); }}
                   className="w-full mt-2 text-sm text-primary hover:underline text-center"
