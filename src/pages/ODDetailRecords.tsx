@@ -624,16 +624,6 @@ const ODDetailRecords = () => {
                 )}
               </div>
               
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isLoading}
-                className="gap-2"
-              >
-                <Upload className="h-4 w-4" />
-                Browse CSV/Excel
-              </Button>
 
               <div className="w-px h-6 bg-border hidden sm:block" />
 
@@ -655,6 +645,16 @@ const ODDetailRecords = () => {
               )}
               <Button size="sm" onClick={handlePrint} className="gap-2"><Printer className="h-4 w-4" />Print</Button>
               <Button size="sm" variant="outline" onClick={handleDownload} className="gap-2"><Download className="h-4 w-4" />Download</Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isLoading}
+                className="gap-2"
+              >
+                <Upload className="h-4 w-4" />
+                Browse CSV/Excel
+              </Button>
               
               {isLoading && (
                 <div className="flex items-center gap-2 text-primary">
