@@ -263,11 +263,13 @@ const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: Sid
               <h2 className="font-semibold text-sidebar-foreground">Hisab Kitab</h2>
             </div>
           </div>
-          {/* Close button - works on both mobile and desktop */}
           <button 
             onClick={() => {
-              onMobileClose?.();
-              onToggleCollapse?.();
+              if (window.innerWidth < 768) {
+                onMobileClose?.();
+              } else {
+                onToggleCollapse?.();
+              }
             }}
             className="p-2 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground"
           >

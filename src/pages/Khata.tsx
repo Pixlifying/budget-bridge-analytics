@@ -67,6 +67,8 @@ const Khata = () => {
   const [editingTransaction, setEditingTransaction] = useState<KhataTransaction | null>(null);
   const [transactionFilter, setTransactionFilter] = useState<'all' | 'credit' | 'debit'>('all');
   const [transactionSearch, setTransactionSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const TRANSACTIONS_PER_PAGE = 20;
 
   const [customerForm, setCustomerForm] = useState({
     name: '',
@@ -573,7 +575,12 @@ const Khata = () => {
   if (selectedCustomer) {
     const balance = calculateBalance(selectedCustomer);
     const filteredTransactions = getFilteredTransactions(selectedCustomer.transactions);
-    const transactionsWithBalance = calculateRunningBalance(filteredTransactions, selectedCustomer.opening_balance);
+    const totalPages = Math.ceil(filteredTransactions.length / TRANSACTIONS_PER_PAGE);
+    const paginatedTransactions = filteredTransactions.slice(
+      (currentPage - 1) * TRANSACTIONS_PER_PAGE,
+      currentPage * TRANSACTIONS_PER_PAGE
+    );
+    const transactionsWithBalance = calculateRunningBalance(paginatedTransactions, selectedCustomer.opening_balance);
     
     return (
       <div className="container px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6 max-w-6xl mx-auto">
@@ -621,7 +628,7 @@ const Khata = () => {
             <Input
               placeholder="Search transactions..."
               value={transactionSearch}
-              onChange={(e) => setTransactionSearch(e.target.value)}
+              onChange={(e) => { setTransactionSearch(e.target.value); setCurrentPage(1); }}
               className="pl-9 bg-sidebar-accent/30 border-sidebar-border text-sidebar-foreground placeholder:text-sidebar-foreground/50 focus:bg-sidebar-accent/50"
             />
           </div>
@@ -711,7 +718,7 @@ const Khata = () => {
               <h3 className="text-lg font-semibold">Transactions</h3>
               <div className="flex items-center gap-2">
                 <Filter size={16} className="text-muted-foreground" />
-                <Select value={transactionFilter} onValueChange={(value: 'all' | 'credit' | 'debit') => setTransactionFilter(value)}>
+                <Select value={transactionFilter} onValueChange={(value: 'all' | 'credit' | 'debit') => { setTransactionFilter(value); setCurrentPage(1); }}>
                   <SelectTrigger className="w-32">
                     <SelectValue />
                   </SelectTrigger>
@@ -788,10 +795,38 @@ const Khata = () => {
                 )}
               </TableBody>
             </Table>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between pt-4 border-t mt-4">
+                <p className="text-sm text-muted-foreground">
+                  Showing {((currentPage - 1) * TRANSACTIONS_PER_PAGE) + 1}–{Math.min(currentPage * TRANSACTIONS_PER_PAGE, filteredTransactions.length)} of {filteredTransactions.length}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(p => p - 1)}
+                  >
+                    <ArrowLeft size={14} className="mr-1" /> Previous
+                  </Button>
+                  <span className="text-sm font-medium px-2">
+                    {currentPage} / {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(p => p + 1)}
+                  >
+                    Next <ArrowRight size={14} className="ml-1" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
-
-
 
         {/* Edit Customer Dialog */}
         <Dialog open={showEditCustomer} onOpenChange={setShowEditCustomer}>
