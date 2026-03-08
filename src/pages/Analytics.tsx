@@ -311,13 +311,19 @@ const Analytics = () => {
     const monthlyOnline = filterByMonth(onlineServices, monthDate);
     const monthlyApplications = filterByMonth(applications, monthDate);
     const monthlyExpenses = filterByMonth(expenses, monthDate);
+    const monthlyPhotostats = filterByMonth(photostats, monthDate);
+    const monthlyDocumentation = filterByMonth(documentation, monthDate);
+    const monthlyBankingAccounts = filterByMonth(bankingAccounts, monthDate);
 
     monthData.revenue = 
-      monthlyPanCards.reduce((sum, entry) => sum + entry.margin, 0) +
-      monthlyPassports.reduce((sum, entry) => sum + entry.margin, 0) +
-      monthlyBanking.reduce((sum, entry) => sum + entry.margin, 0) +
-      monthlyOnline.reduce((sum, entry) => sum + entry.total, 0) +
-      monthlyApplications.reduce((sum, entry) => sum + entry.amount, 0);
+      monthlyPanCards.reduce((sum, entry) => sum + (entry.total - (entry.total - entry.margin)), 0) +
+      monthlyPassports.reduce((sum, entry) => sum + (entry.total - (entry.total - entry.margin)), 0) +
+      monthlyBanking.reduce((sum, entry) => sum + (entry.amount - entry.expense), 0) +
+      monthlyOnline.reduce((sum, entry) => sum + (entry.amount - entry.expense), 0) +
+      monthlyApplications.reduce((sum, entry) => sum + (entry.amount - entry.expense), 0) +
+      monthlyPhotostats.reduce((sum, entry) => sum + (entry.amount - entry.expense), 0) +
+      monthlyDocumentation.reduce((sum, entry) => sum + (entry.amount - entry.expense), 0) +
+      monthlyBankingAccounts.reduce((sum, entry) => sum + (entry.amount - entry.expense), 0);
 
     monthData.expenses = monthlyExpenses.reduce((sum, entry) => sum + entry.amount, 0);
 
