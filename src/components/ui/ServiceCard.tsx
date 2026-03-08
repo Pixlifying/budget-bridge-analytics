@@ -23,6 +23,7 @@ interface ServiceCardProps {
   onDelete: () => void;
   className?: string;
   showActions?: boolean;
+  isHighlighted?: boolean;
 }
 
 const ServiceCard = ({
