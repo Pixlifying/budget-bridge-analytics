@@ -25,6 +25,8 @@ const Dashboard = () => {
   const [applicationsDialogOpen, setApplicationsDialogOpen] = useState(false);
   const [onlineServicesDialogOpen, setOnlineServicesDialogOpen] = useState(false);
   const [documentationDialogOpen, setDocumentationDialogOpen] = useState(false);
+  const [expensesDialogOpen, setExpensesDialogOpen] = useState(false);
+  const [photostatDialogOpen, setPhotostatDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -889,7 +891,7 @@ const Dashboard = () => {
             {/* Second Row - More Stats */}
             <div className="grid grid-cols-4 gap-4">
               {/* Expenses */}
-              <DashCard>
+              <DashCard onClick={() => setExpensesDialogOpen(true)} className="cursor-pointer">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="p-2 rounded-lg bg-destructive/10">
                     <Receipt className="h-4 w-4 text-destructive" />
@@ -897,16 +899,7 @@ const Dashboard = () => {
                   <h3 className="font-medium text-foreground">Expenses</h3>
                 </div>
                 <p className="text-2xl font-bold text-foreground">{formatCurrency(expensesTotal)}</p>
-                <div className="flex items-center gap-1 mt-1">
-                  {expenseChange >= 0 ? (
-                    <ArrowUpRight className="h-3 w-3 text-destructive" />
-                  ) : (
-                    <ArrowDownRight className="h-3 w-3 text-green-500" />
-                  )}
-                  <span className={`text-xs ${expenseChange >= 0 ? 'text-destructive' : 'text-green-500'}`}>
-                    {Math.abs(expenseChange).toFixed(1)}% vs last month
-                  </span>
-                </div>
+                <p className="text-xs text-muted-foreground mt-1">{expensesCount} entries • Click to view</p>
               </DashCard>
 
               {/* Applications */}
@@ -922,7 +915,7 @@ const Dashboard = () => {
               </DashCard>
 
               {/* Photostat */}
-              <DashCard>
+              <DashCard onClick={() => setPhotostatDialogOpen(true)} className="cursor-pointer">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="p-2 rounded-lg bg-primary/10">
                     <Printer className="h-4 w-4 text-primary" />
@@ -930,7 +923,7 @@ const Dashboard = () => {
                   <h3 className="font-medium text-foreground">Photostat</h3>
                 </div>
                 <p className="text-2xl font-bold text-foreground">{formatCurrency(photostatTotal)}</p>
-                <p className="text-xs text-muted-foreground mt-1">Margin: {formatCurrency(photostatMarginTotal)}</p>
+                <p className="text-xs text-muted-foreground mt-1">Margin: {formatCurrency(photostatMarginTotal)} • Click to view</p>
               </DashCard>
 
               {/* Pending Balance */}
@@ -1092,6 +1085,12 @@ const Dashboard = () => {
                     <span className="text-destructive">{formatCurrency(pendingBalanceTotal)}</span>
                   </div>
                 </div>
+                <button
+                  onClick={() => { setPendingDialogOpen(false); navigate('/pending-balance'); }}
+                  className="w-full mt-2 text-sm text-primary hover:underline text-center"
+                >
+                  View full Pending Balance page →
+                </button>
               </div>
             ) : (
               <p className="text-center text-muted-foreground py-8">No pending balances found</p>
@@ -1140,6 +1139,12 @@ const Dashboard = () => {
                     <span className="text-primary">{formatCurrency(applicationsTotal)}</span>
                   </div>
                 </div>
+                <button
+                  onClick={() => { setApplicationsDialogOpen(false); navigate('/applications'); }}
+                  className="w-full mt-2 text-sm text-primary hover:underline text-center"
+                >
+                  View full Applications page →
+                </button>
               </div>
             ) : (
               <p className="text-center text-muted-foreground py-8">No applications found</p>
@@ -1193,6 +1198,12 @@ const Dashboard = () => {
                     <span className="text-primary">{formatCurrency(onlineServicesTotal)}</span>
                   </div>
                 </div>
+                <button
+                  onClick={() => { setOnlineServicesDialogOpen(false); navigate('/online-services'); }}
+                  className="w-full mt-2 text-sm text-primary hover:underline text-center"
+                >
+                  View full Online Services page →
+                </button>
               </div>
             ) : (
               <p className="text-center text-muted-foreground py-8">No online services found</p>
@@ -1255,6 +1266,113 @@ const Dashboard = () => {
               </div>
             ) : (
               <p className="text-center text-muted-foreground py-8">No documentation entries found</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Expenses Dialog */}
+      <Dialog open={expensesDialogOpen} onOpenChange={setExpensesDialogOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[70vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Receipt className="h-5 w-5 text-destructive" />
+              Expenses Details
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            {expensesData && expensesData.length > 0 ? (
+              <div className="space-y-3">
+                {expensesData.map((item) => (
+                  <div 
+                    key={item.id} 
+                    className="p-4 rounded-xl border border-border/50 bg-gradient-to-br from-muted/30 to-muted/10 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-foreground text-lg">{item.name}</h4>
+                        <div className="flex items-center gap-4 mt-2 text-sm">
+                          <span className="text-muted-foreground">📅 {format(new Date(item.date), 'dd MMM yyyy')}</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-destructive">{formatCurrency(item.amount)}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <div className="border-t pt-4 mt-4">
+                  <div className="flex items-center justify-between font-bold text-lg">
+                    <span className="text-foreground">Total Expenses</span>
+                    <span className="text-destructive">{formatCurrency(expensesTotal)}</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => { setExpensesDialogOpen(false); navigate('/expenses'); }}
+                  className="w-full mt-2 text-sm text-primary hover:underline text-center"
+                >
+                  View full Expenses page →
+                </button>
+              </div>
+            ) : (
+              <p className="text-center text-muted-foreground py-8">No expenses found</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Photostat Dialog */}
+      <Dialog open={photostatDialogOpen} onOpenChange={setPhotostatDialogOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[70vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Printer className="h-5 w-5 text-primary" />
+              Photostat Details
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            {photostatData && photostatData.length > 0 ? (
+              <div className="space-y-3">
+                {photostatData.map((item) => (
+                  <div 
+                    key={item.id} 
+                    className="p-4 rounded-xl border border-border/50 bg-gradient-to-br from-muted/30 to-muted/10 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-4 mt-1 text-sm">
+                          <span className="text-muted-foreground">📅 {format(new Date(item.date), 'dd MMM yyyy')}</span>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                            {item.is_double_sided ? 'Double Sided' : 'Single Sided'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xl font-bold text-primary">{formatCurrency(item.amount)}</p>
+                        <p className="text-xs text-muted-foreground">Margin: {formatCurrency(item.margin)}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <div className="border-t pt-4 mt-4">
+                  <div className="flex items-center justify-between font-bold text-lg">
+                    <span className="text-foreground">Total Photostat</span>
+                    <span className="text-primary">{formatCurrency(photostatTotal)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm mt-1">
+                    <span className="text-muted-foreground">Total Margin</span>
+                    <span className="text-primary">{formatCurrency(photostatMarginTotal)}</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => { setPhotostatDialogOpen(false); navigate('/photostat'); }}
+                  className="w-full mt-2 text-sm text-primary hover:underline text-center"
+                >
+                  View full Photostat page →
+                </button>
+              </div>
+            ) : (
+              <p className="text-center text-muted-foreground py-8">No photostat entries found</p>
             )}
           </div>
         </DialogContent>
