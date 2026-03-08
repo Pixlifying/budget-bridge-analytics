@@ -628,10 +628,22 @@ const Khata = () => {
           </div>
         </div>
 
-        {/* Inline Add Transaction Form - Always visible */}
-        <Card>
+        {/* Unified Add/Edit Transaction Form */}
+        <Card className={editingTransaction ? 'border-primary' : ''}>
           <CardHeader>
-            <h3 className="text-lg font-semibold">Add Transaction</h3>
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">
+                {editingTransaction ? 'Edit Transaction' : 'Add Transaction'}
+              </h3>
+              {editingTransaction && (
+                <Button variant="ghost" size="sm" onClick={() => {
+                  setEditingTransaction(null);
+                  setTransactionForm({ type: 'credit', amount: 0, date: new Date().toISOString().split('T')[0], description: '' });
+                }}>
+                  Cancel Edit
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 items-end">
@@ -680,9 +692,12 @@ const Khata = () => {
                   placeholder="Optional description"
                 />
               </div>
-              <Button onClick={handleAddTransaction} className="w-full">
-                <Plus size={16} className="mr-1" />
-                Add
+              <Button onClick={editingTransaction ? handleEditTransaction : handleAddTransaction} className="w-full">
+                {editingTransaction ? (
+                  <><Edit size={16} className="mr-1" /> Update</>
+                ) : (
+                  <><Plus size={16} className="mr-1" /> Add</>
+                )}
               </Button>
             </div>
           </CardContent>
