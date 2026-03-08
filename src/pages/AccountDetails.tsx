@@ -576,7 +576,7 @@ const AccountDetails = () => {
                 <Upload className="h-4 w-4" />
                 Browse CSV/Excel
               </Button>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-sm text-muted-foreground hidden sm:inline">
                 Upload CSV or Excel file to extract account numbers (duplicates will be skipped)
               </span>
               {isUploading && (
