@@ -335,6 +335,7 @@ const Expenses = () => {
               }}
               onDelete={() => handleDeleteEntry(entry.id)}
               isHighlighted={isHighlighted(entry.id)}
+            />
           ))}
         </div>
       )}
