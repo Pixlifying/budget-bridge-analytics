@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CreditCard, FileText, Globe, BarChart3, AlertCircle, Wallet, Printer, Receipt, TrendingUp, Search, Bell, MessageSquare, Users, ArrowUpRight, ArrowDownRight, Upload, Clock, BookOpen } from 'lucide-react';
+import { CreditCard, FileText, Globe, BarChart3, AlertCircle, Wallet, Printer, Receipt, TrendingUp, Search, Bell, MessageSquare, Users, ArrowUpRight, ArrowDownRight, Upload, Clock, BookOpen, Menu } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
 import { format, startOfMonth, endOfMonth, subMonths, startOfQuarter, endOfQuarter } from 'date-fns';
@@ -14,8 +14,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useNavigate } from 'react-router-dom';
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useMobileMenu } from '@/contexts/MobileMenuContext';
 
 const Dashboard = () => {
+  const { setOpen: setMobileMenuOpen } = useMobileMenu();
   const navigate = useNavigate();
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month' | 'quarter'>('day');
@@ -774,20 +776,25 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-card/80 backdrop-blur-sm border-b border-border px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-foreground">Hello, Harry</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">Explore information</p>
+      <div className="bg-card/80 backdrop-blur-sm border-b border-border px-3 sm:px-6 py-4">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <button onClick={() => setMobileMenuOpen(true)} className="md:hidden p-2 rounded-lg hover:bg-muted text-foreground shrink-0">
+              <Menu size={20} />
+            </button>
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-2xl font-semibold text-foreground truncate">Hello, Harry</h1>
+              <p className="text-sm text-muted-foreground mt-0.5 hidden sm:block">Explore information</p>
+            </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             <Popover open={searchOpen} onOpenChange={setSearchOpen}>
               <PopoverTrigger asChild>
                 <div className="relative cursor-pointer">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input 
-                    placeholder="Search across all pages..." 
-                    className="pl-9 w-72 bg-background border-border" 
+                    placeholder="Search..." 
+                    className="pl-9 w-36 sm:w-72 bg-background border-border" 
                     value={searchQuery}
                     onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true); }}
                     onFocus={() => searchQuery.length >= 2 && setSearchOpen(true)}
@@ -824,10 +831,9 @@ const Dashboard = () => {
                 </PopoverContent>
               )}
             </Popover>
-            <DateRangePicker date={date} onDateChange={handleDateChange} mode={viewMode} onModeChange={handleViewModeChange} />
-            <button className="p-2 rounded-full bg-background border border-border hover:bg-muted transition-colors">
-              <MessageSquare className="h-5 w-5 text-muted-foreground" />
-            </button>
+            <div className="hidden sm:block">
+              <DateRangePicker date={date} onDateChange={handleDateChange} mode={viewMode} onModeChange={handleViewModeChange} />
+            </div>
             <Popover open={notificationOpen} onOpenChange={setNotificationOpen}>
               <PopoverTrigger asChild>
                 <button className="p-2 rounded-full bg-background border border-border hover:bg-muted transition-colors relative">
@@ -841,34 +847,37 @@ const Dashboard = () => {
             </Popover>
           </div>
         </div>
+        {/* Mobile date picker */}
+        <div className="sm:hidden mt-3">
+          <DateRangePicker date={date} onDateChange={handleDateChange} mode={viewMode} onModeChange={handleViewModeChange} />
+        </div>
       </div>
 
-      <div className="p-6">
-        <div className="flex gap-6">
-          {/* Main Content */}
-          <div className="flex-1 space-y-5">
+      <div className="p-3 sm:p-6">
+        <div className="flex flex-col lg:flex-row gap-6">
+          <div className="flex-1 space-y-5 min-w-0">
             {/* Cash in Hand Banner - Moved to Top */}
             <div className="bg-gradient-to-r from-primary via-primary/90 to-primary/80 rounded-2xl p-6 text-primary-foreground relative overflow-hidden">
               <div className="absolute right-0 top-0 w-40 h-40 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
               <div className="relative z-10">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <Wallet className="h-5 w-5 opacity-80" />
                       <h3 className="text-sm opacity-80">Cash in Hand</h3>
                     </div>
-                    <p className="text-4xl font-bold">{formatCurrency(latestCashInHand)}</p>
+                    <p className="text-3xl sm:text-4xl font-bold">{formatCurrency(latestCashInHand)}</p>
                   </div>
-                  <div className="text-right">
+                  <div className="text-left sm:text-right">
                     <div className="flex items-center gap-2 mb-1">
                       <Clock className="h-4 w-4 opacity-80" />
                       <span className="text-xs opacity-80">Current Time</span>
                     </div>
-                    <p className="text-3xl font-bold font-mono tracking-wider">{format(currentTime, 'HH:mm:ss')}</p>
+                    <p className="text-2xl sm:text-3xl font-bold font-mono tracking-wider">{format(currentTime, 'HH:mm:ss')}</p>
                     <p className="text-xs opacity-70 mt-0.5">{format(currentTime, 'EEEE, MMM d')}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 mt-3 pt-3 border-t border-white/20">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-3 pt-3 border-t border-white/20">
                   <div className="flex-1 bg-white/15 rounded-xl p-2.5 text-center backdrop-blur-sm">
                     <span className="text-lg font-bold block">{bankingData?.length || 0}</span>
                     <span className="text-[10px] opacity-80">Txn Days</span>
@@ -894,7 +903,7 @@ const Dashboard = () => {
             </div>
 
             {/* Top Stats Row */}
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               {/* Total Margin */}
               <DashCard onClick={() => setMarginDialogOpen(true)}>
                 <div className="flex items-center justify-between">
@@ -976,7 +985,7 @@ const Dashboard = () => {
             </div>
 
             {/* Second Row - More Stats */}
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               {/* Expenses */}
               <DashCard onClick={() => setExpensesDialogOpen(true)} className="cursor-pointer">
                 <div className="flex items-center gap-3 mb-2">
@@ -1030,7 +1039,7 @@ const Dashboard = () => {
             </div>
 
             {/* Third Row - Recent Activities, Khata, Documentation */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <DashCard>
                 <h3 className="font-medium text-foreground mb-3">Recent Activities {viewMode === 'day' ? '(Today)' : '(This Month)'}</h3>
                 <div className="relative overflow-hidden h-48">

@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -31,6 +31,7 @@ import { TooltipProvider } from "@radix-ui/react-tooltip";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { applyColorTheme, getColorTheme } from "@/lib/themeUtils";
+import { MobileMenuContext } from "@/contexts/MobileMenuContext";
 
 import Forms from "@/pages/Forms";
 import Milk from "@/pages/Milk";
@@ -43,7 +44,8 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 const queryClient = new QueryClient();
 
 const App = () => {
-  // Apply saved color theme on app load
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   useEffect(() => {
     const savedTheme = getColorTheme();
     applyColorTheme(savedTheme);
@@ -55,44 +57,46 @@ const App = () => {
       <NotificationProvider>
         <BrowserRouter>
           <TooltipProvider>
-            <ProtectedRoute>
-              <div className="flex h-screen bg-background">
-                <Sidebar />
-                <main className="flex-1 overflow-auto">
-                  <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/banking" element={<Banking />} />
-                    <Route path="/banking-accounts" element={<BankingAccounts />} />
-                    
-                    <Route path="/od-records" element={<ODDetailRecords />} />
-                    <Route path="/social-security" element={<SocialSecurity />} />
-                    <Route path="/documentation" element={<Documentation />} />
-                    <Route path="/udhar" element={<Udhar />} />
-                    <Route path="/online-services" element={<OnlineServices />} />
-                    <Route path="/applications" element={<Applications />} />
-                    <Route path="/photostat" element={<Photostat />} />
-                    <Route path="/analytics" element={<Analytics />} />
-                    <Route path="/expenses" element={<Expenses />} />
-                    <Route path="/misc-expenses" element={<MiscExpenses />} />
-                    <Route path="/pending-balance" element={<PendingBalance />} />
-                    <Route path="/ledger" element={<Ledger />} />
-                    <Route path="/ledger/:id" element={<CustomerDetails />} />
-                    <Route path="/account-details" element={<AccountDetails />} />
-                    <Route path="/khata" element={<Khata />} />
-                    <Route path="/papers" element={<Papers />} />
-                    <Route path="/calculator" element={<Calculator />} />
-                    <Route path="/age-calculator" element={<AgeCalculator />} />
-                    <Route path="/forms" element={<Forms />} />
-                    <Route path="/milk" element={<Milk />} />
-                    <Route path="/downloads" element={<Downloads />} />
-                    <Route path="/user-admin" element={<UserAdmin />} />
-                    <Route path="/theme-settings" element={<ThemeSettings />} />
-                    <Route path="/query" element={<Query />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </main>
-              </div>
-            </ProtectedRoute>
+            <MobileMenuContext.Provider value={{ open: mobileMenuOpen, setOpen: setMobileMenuOpen }}>
+              <ProtectedRoute>
+                <div className="flex h-screen bg-background">
+                  <Sidebar mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
+                  <main className="flex-1 overflow-auto w-0 min-w-0">
+                    <Routes>
+                      <Route path="/" element={<Dashboard />} />
+                      <Route path="/banking" element={<Banking />} />
+                      <Route path="/banking-accounts" element={<BankingAccounts />} />
+                      
+                      <Route path="/od-records" element={<ODDetailRecords />} />
+                      <Route path="/social-security" element={<SocialSecurity />} />
+                      <Route path="/documentation" element={<Documentation />} />
+                      <Route path="/udhar" element={<Udhar />} />
+                      <Route path="/online-services" element={<OnlineServices />} />
+                      <Route path="/applications" element={<Applications />} />
+                      <Route path="/photostat" element={<Photostat />} />
+                      <Route path="/analytics" element={<Analytics />} />
+                      <Route path="/expenses" element={<Expenses />} />
+                      <Route path="/misc-expenses" element={<MiscExpenses />} />
+                      <Route path="/pending-balance" element={<PendingBalance />} />
+                      <Route path="/ledger" element={<Ledger />} />
+                      <Route path="/ledger/:id" element={<CustomerDetails />} />
+                      <Route path="/account-details" element={<AccountDetails />} />
+                      <Route path="/khata" element={<Khata />} />
+                      <Route path="/papers" element={<Papers />} />
+                      <Route path="/calculator" element={<Calculator />} />
+                      <Route path="/age-calculator" element={<AgeCalculator />} />
+                      <Route path="/forms" element={<Forms />} />
+                      <Route path="/milk" element={<Milk />} />
+                      <Route path="/downloads" element={<Downloads />} />
+                      <Route path="/user-admin" element={<UserAdmin />} />
+                      <Route path="/theme-settings" element={<ThemeSettings />} />
+                      <Route path="/query" element={<Query />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </main>
+                </div>
+              </ProtectedRoute>
+            </MobileMenuContext.Provider>
             <Toaster />
             <Sonner />
           </TooltipProvider>

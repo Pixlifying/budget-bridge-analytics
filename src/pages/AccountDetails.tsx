@@ -557,7 +557,7 @@ const AccountDetails = () => {
         {/* Compact Upload Section */}
         <Card className="border-primary/20">
           <CardContent className="py-4">
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -576,7 +576,7 @@ const AccountDetails = () => {
                 <Upload className="h-4 w-4" />
                 Browse CSV/Excel
               </Button>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-sm text-muted-foreground hidden sm:inline">
                 Upload CSV or Excel file to extract account numbers (duplicates will be skipped)
               </span>
               {isUploading && (
@@ -590,7 +590,7 @@ const AccountDetails = () => {
         </Card>
 
         {/* Pagination Info and Controls */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <div className="text-sm text-muted-foreground">
             Showing {startIndex + 1} - {Math.min(endIndex, filteredAccountDetails.length)} of {filteredAccountDetails.length} entries
             {searchTerm && ` (filtered from ${accountDetails.length} total)`}
@@ -612,8 +612,8 @@ const AccountDetails = () => {
           </div>
         </div>
 
-        <div className="bg-card rounded-lg shadow-sm border overflow-hidden">
-          <Table>
+        <div className="bg-card rounded-lg shadow-sm border overflow-x-auto">
+          <Table className="min-w-[800px]">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-16">S.No</TableHead>
