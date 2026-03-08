@@ -612,8 +612,8 @@ const AccountDetails = () => {
           </div>
         </div>
 
-        <div className="bg-card rounded-lg shadow-sm border overflow-hidden">
-          <Table>
+        <div className="bg-card rounded-lg shadow-sm border overflow-x-auto">
+          <Table className="min-w-[800px]">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-16">S.No</TableHead>
