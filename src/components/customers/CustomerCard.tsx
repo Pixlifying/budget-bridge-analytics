@@ -127,7 +127,7 @@ const CustomerCard = ({ customer, onClick, onEdit, onDelete, isHighlighted = fal
               <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
                 <Phone size={14} className="text-blue-500" />
               </div>
-              <span className="text-sm text-slate-600">{customer.phone}</span>
+              <span className="text-sm text-muted-foreground">{customer.phone}</span>
             </div>
 
             {customer.address && (
