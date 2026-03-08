@@ -46,6 +46,8 @@ const Expenses = () => {
     }
   }, [dateParam]);
 
+  const [searchQuery, setSearchQuery] = useState('');
+
   // Form state for inline entry
   const [newEntry, setNewEntry] = useState({
     date: new Date().toISOString().split('T')[0],
