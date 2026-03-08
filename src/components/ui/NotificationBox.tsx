@@ -103,24 +103,8 @@ const NotificationBox = () => {
       });
     }
 
-    // Show all khata customers with current balance (including negative amounts)
-    if (khataData && khataData.length > 0) {
-      khataData.forEach((customer) => {
-        const isNegative = customer.current_balance < 0;
-        newNotifications.push({
-          id: `khata-${customer.id}`,
-          type: 'khata',
-          title: 'Khata Customer',
-          message: `${customer.name}: ${isNegative ? 'Owes ' : 'Balance '} ${formatCurrency(Math.abs(customer.current_balance))}`,
-          amount: customer.current_balance,
-          icon: <Users className="h-4 w-4" />,
-          priority: Math.abs(customer.current_balance) > 50000 ? 'high' : Math.abs(customer.current_balance) > 10000 ? 'medium' : 'low',
-        });
-      });
-    }
-
     setNotifications(newNotifications);
-  }, [odData, pendingData, khataData]);
+  }, [odData, pendingData]);
 
   if (notifications.length === 0) {
     return (
