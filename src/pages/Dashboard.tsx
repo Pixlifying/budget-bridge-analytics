@@ -306,6 +306,28 @@ const Dashboard = () => {
     }
   });
 
+  // Khata data
+  const { data: khataCustomersData } = useQuery({
+    queryKey: ['khataCustomers'],
+    queryFn: async () => {
+      const [customersResult, transactionsResult] = await Promise.all([
+        supabase.from('khata_customers').select('*'),
+        supabase.from('khata_transactions').select('*')
+      ]);
+      if (customersResult.error) throw customersResult.error;
+      if (transactionsResult.error) throw transactionsResult.error;
+      const customers = customersResult.data || [];
+      const transactions = transactionsResult.data || [];
+      return customers.map(customer => {
+        const customerTxns = transactions.filter(t => t.customer_id === customer.id);
+        const txnTotal = customerTxns.reduce((sum, t) => sum + (t.type === 'credit' ? Number(t.amount) : -Number(t.amount)), 0);
+        return { ...customer, current_balance: Number(customer.opening_balance) + txnTotal };
+      });
+    }
+  });
+
+  const khataTotal = khataCustomersData?.reduce((sum, c) => sum + c.current_balance, 0) || 0;
+
   // Recent activities - fetch today's data for day mode, or filtered data for month mode
   const { data: recentActivitiesData } = useQuery({
     queryKey: ['recentActivities', viewMode, date],
