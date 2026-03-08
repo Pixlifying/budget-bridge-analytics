@@ -666,7 +666,7 @@ const Khata = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">Opening Balance</p>
                 <p className="text-lg font-semibold">{formatCurrency(selectedCustomer.opening_balance)}</p>
