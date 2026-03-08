@@ -505,39 +505,95 @@ const Dashboard = () => {
     queryFn: async () => {
       if (!searchQuery || searchQuery.length < 2) return [];
       const q = searchQuery.toLowerCase();
-      const results: Array<{ type: string; title: string; subtitle: string; route: string }> = [];
+      const results: Array<{ type: string; title: string; subtitle: string; route: string; id: string; date: string }> = [];
 
       // Search online services
       const { data: osData } = await supabase.from('online_services').select('*').or(`service.ilike.%${q}%,customer_name.ilike.%${q}%`).limit(5);
-      osData?.forEach(item => results.push({ type: 'Online Service', title: item.customer_name || item.service, subtitle: `${item.service} - ₹${item.total}`, route: '/online-services' }));
+      osData?.forEach(item => results.push({ type: 'Online Service', title: item.customer_name || item.service, subtitle: `${item.service} - ₹${item.total}`, route: '/online-services', id: item.id, date: item.date }));
 
       // Search applications
       const { data: appData } = await supabase.from('applications').select('*').ilike('customer_name', `%${q}%`).limit(5);
-      appData?.forEach(item => results.push({ type: 'Application', title: item.customer_name, subtitle: `₹${item.amount}`, route: '/applications' }));
+      appData?.forEach(item => results.push({ type: 'Application', title: item.customer_name, subtitle: `₹${item.amount}`, route: '/applications', id: item.id, date: item.date }));
 
       // Search banking accounts
       const { data: baData } = await supabase.from('banking_accounts').select('*').or(`customer_name.ilike.%${q}%,account_type.ilike.%${q}%`).limit(5);
-      baData?.forEach(item => results.push({ type: 'Banking Account', title: item.customer_name, subtitle: `${item.account_type} - ₹${item.amount}`, route: '/banking-accounts' }));
+      baData?.forEach(item => results.push({ type: 'Banking Account', title: item.customer_name, subtitle: `${item.account_type} - ₹${item.amount}`, route: '/banking-accounts', id: item.id, date: item.date }));
 
       // Search documentation
       const { data: docData } = await supabase.from('documentation').select('*').or(`name.ilike.%${q}%,service_type.ilike.%${q}%`).limit(5);
-      docData?.forEach(item => results.push({ type: 'Documentation', title: item.name, subtitle: `${item.service_type} - ₹${item.amount}`, route: '/documentation' }));
+      docData?.forEach(item => results.push({ type: 'Documentation', title: item.name, subtitle: `${item.service_type} - ₹${item.amount}`, route: '/documentation', id: item.id, date: item.date }));
 
       // Search expenses
       const { data: expData } = await supabase.from('expenses').select('*').ilike('name', `%${q}%`).limit(5);
-      expData?.forEach(item => results.push({ type: 'Expense', title: item.name, subtitle: `₹${item.amount}`, route: '/expenses' }));
+      expData?.forEach(item => results.push({ type: 'Expense', title: item.name, subtitle: `₹${item.amount}`, route: '/expenses', id: item.id, date: item.date }));
 
       // Search pending balances
       const { data: pbData } = await supabase.from('pending_balances').select('*').or(`name.ilike.%${q}%,phone.ilike.%${q}%`).limit(5);
-      pbData?.forEach(item => results.push({ type: 'Pending Balance', title: item.name, subtitle: `${item.service} - ₹${item.amount}`, route: '/pending-balance' }));
+      pbData?.forEach(item => results.push({ type: 'Pending Balance', title: item.name, subtitle: `${item.service} - ₹${item.amount}`, route: '/pending-balance', id: item.id, date: item.date }));
 
       // Search forms
       const { data: fData } = await supabase.from('forms').select('*').or(`name.ilike.%${q}%,mobile.ilike.%${q}%`).limit(5);
-      fData?.forEach(item => results.push({ type: 'Form', title: item.name, subtitle: `${item.department} - ${item.mobile}`, route: '/forms' }));
+      fData?.forEach(item => results.push({ type: 'Form', title: item.name, subtitle: `${item.department} - ${item.mobile}`, route: '/forms', id: item.id, date: item.date }));
 
       // Search customers
       const { data: custData } = await supabase.from('customers').select('*').or(`name.ilike.%${q}%,phone.ilike.%${q}%`).limit(5);
-      custData?.forEach(item => results.push({ type: 'Customer', title: item.name, subtitle: `${item.phone}`, route: '/customers' }));
+      custData?.forEach(item => results.push({ type: 'Customer', title: item.name, subtitle: `${item.phone}`, route: '/customers', id: item.id, date: item.created_at || '' }));
+
+      // Search banking services
+      const { data: bsData } = await supabase.from('banking_services').select('*').limit(5);
+      bsData?.forEach(item => {
+        if (`banking ${item.transaction_count} transactions`.includes(q) || `₹${item.amount}`.includes(q) || item.date.includes(q)) {
+          results.push({ type: 'Banking', title: `Banking - ${item.transaction_count} txns`, subtitle: `₹${item.amount} | Margin: ₹${item.margin}`, route: '/banking', id: item.id, date: item.date });
+        }
+      });
+
+      // Search photostats
+      const { data: photoData } = await supabase.from('photostats').select('*').limit(5);
+      photoData?.forEach(item => {
+        if (item.date.includes(q) || `₹${item.amount}`.includes(q)) {
+          results.push({ type: 'Photostat', title: `Photostat - ${item.is_double_sided ? 'Double' : 'Single'} Sided`, subtitle: `₹${item.amount} | Margin: ₹${item.margin}`, route: '/photostat', id: item.id, date: item.date });
+        }
+      });
+
+      // Search khata customers
+      const { data: khataData } = await supabase.from('khata_customers').select('*').or(`name.ilike.%${q}%,phone.ilike.%${q}%`).limit(5);
+      khataData?.forEach(item => results.push({ type: 'Khata', title: item.name, subtitle: `${item.phone}`, route: '/khata', id: item.id, date: item.opening_date }));
+
+      // Search social security
+      const { data: ssData } = await supabase.from('social_security').select('*').or(`name.ilike.%${q}%,account_number.ilike.%${q}%,scheme_type.ilike.%${q}%`).limit(5);
+      ssData?.forEach(item => results.push({ type: 'Social Security', title: item.name, subtitle: `${item.scheme_type} - ${item.account_number}`, route: '/social-security', id: item.id, date: item.date }));
+
+      // Search fee expenses
+      const { data: feeData } = await supabase.from('fee_expenses').select('*').ilike('customer_name', `%${q}%`).limit(5);
+      feeData?.forEach(item => results.push({ type: 'Fee Expense', title: item.customer_name, subtitle: `₹${item.fee}`, route: '/fee-expenses', id: item.id, date: item.date }));
+
+      // Search misc expenses
+      const { data: miscData } = await supabase.from('misc_expenses').select('*').ilike('name', `%${q}%`).limit(5);
+      miscData?.forEach(item => results.push({ type: 'Misc Expense', title: item.name, subtitle: `₹${item.fee}`, route: '/misc-expenses', id: item.id, date: item.date }));
+
+      // Search pan cards
+      const { data: panData } = await supabase.from('pan_cards').select('*').limit(5);
+      panData?.forEach(item => {
+        if (item.date.includes(q) || `₹${item.amount}`.includes(q)) {
+          results.push({ type: 'PAN Card', title: `PAN Card - ${item.count} cards`, subtitle: `₹${item.amount} | Margin: ₹${item.margin}`, route: '/pan-card', id: item.id, date: item.date });
+        }
+      });
+
+      // Search passports
+      const { data: passData } = await supabase.from('passports').select('*').limit(5);
+      passData?.forEach(item => {
+        if (item.date.includes(q) || `₹${item.amount}`.includes(q)) {
+          results.push({ type: 'Passport', title: `Passport - ${item.count} entries`, subtitle: `₹${item.amount} | Margin: ₹${item.margin}`, route: '/passport', id: item.id, date: item.date });
+        }
+      });
+
+      // Search account records (Other Banking Services)
+      const { data: arData } = await supabase.from('account_records').select('*').or(`name.ilike.%${q}%,account_number.ilike.%${q}%,account_type.ilike.%${q}%`).limit(5);
+      arData?.forEach(item => results.push({ type: 'Account Record', title: item.name || item.account_number, subtitle: `${item.account_type}`, route: '/other-banking-services', id: item.id, date: item.created_at }));
+
+      // Search ledger customers
+      const { data: ledgerData } = await supabase.from('ledger_customers').select('*').or(`name.ilike.%${q}%,account_number.ilike.%${q}%,adhar_number.ilike.%${q}%`).limit(5);
+      ledgerData?.forEach(item => results.push({ type: 'Ledger', title: item.name, subtitle: `A/C: ${item.account_number}`, route: '/ledger', id: item.id, date: item.created_at }));
 
       return results;
     },
