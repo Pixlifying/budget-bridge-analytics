@@ -273,8 +273,8 @@ const Analytics = () => {
     { name: 'Passports', value: totalPassportMargin, color: COLORS[1] },
     { name: 'Banking', value: totalBankingMargin, color: COLORS[2] },
     { name: 'Other Banking', value: totalBankingAccountsMargin, color: 'hsl(200, 80%, 50%)' },
-    { name: 'Online', value: totalOnlineServices, color: COLORS[3] },
-    { name: 'Forms', value: totalApplications, color: COLORS[4] },
+    { name: 'Online', value: totalOnlineServices_margin, color: COLORS[3] },
+    { name: 'Forms', value: totalApplicationsMargin, color: COLORS[4] },
     { name: 'Print', value: totalPhotostatMargin, color: COLORS[5] },
     { name: 'Documentation', value: totalDocumentationMargin, color: 'hsl(260, 70%, 55%)' }
   ].filter(item => item.value > 0);
