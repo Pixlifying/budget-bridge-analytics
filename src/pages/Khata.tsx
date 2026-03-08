@@ -67,6 +67,7 @@ const Khata = () => {
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [editingTransaction, setEditingTransaction] = useState<KhataTransaction | null>(null);
   const [transactionFilter, setTransactionFilter] = useState<'all' | 'credit' | 'debit'>('all');
+  const [transactionSearch, setTransactionSearch] = useState('');
 
   const [customerForm, setCustomerForm] = useState({
     name: '',
@@ -552,10 +553,22 @@ const Khata = () => {
     customer.phone.includes(searchTerm)
   );
 
-  // Filter transactions based on the selected filter
+  // Filter transactions based on the selected filter and search
   const getFilteredTransactions = (transactions: KhataTransaction[]) => {
-    if (transactionFilter === 'all') return transactions;
-    return transactions.filter(t => t.type === transactionFilter);
+    let filtered = transactions;
+    if (transactionFilter !== 'all') {
+      filtered = filtered.filter(t => t.type === transactionFilter);
+    }
+    if (transactionSearch.trim()) {
+      const q = transactionSearch.toLowerCase();
+      filtered = filtered.filter(t =>
+        (t.description?.toLowerCase().includes(q)) ||
+        String(t.amount).includes(q) ||
+        t.type.toLowerCase().includes(q) ||
+        format(new Date(t.date), 'dd/MM/yyyy').includes(q)
+      );
+    }
+    return filtered;
   };
 
   if (selectedCustomer) {
@@ -565,39 +578,53 @@ const Khata = () => {
     
     return (
       <div className="container px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6 max-w-6xl mx-auto">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 bg-sidebar text-sidebar-foreground rounded-xl px-4 py-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSelectedCustomer(null)}
-            className="flex items-center gap-2 self-start bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80"
-          >
-            <ArrowLeft size={16} />
-            Back
-          </Button>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl sm:text-2xl font-bold truncate">{selectedCustomer.name}</h1>
-            <p className="text-sm opacity-70">{selectedCustomer.phone}</p>
+        <div className="bg-sidebar text-sidebar-foreground rounded-2xl px-4 py-3 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedCustomer(null)}
+              className="flex items-center gap-2 self-start bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80"
+            >
+              <ArrowLeft size={16} />
+              Back
+            </Button>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold truncate">{selectedCustomer.name}</h1>
+              <p className="text-sm opacity-70">{selectedCustomer.phone}</p>
+            </div>
+            <div className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${balance >= 0 ? 'bg-green-500/20 text-green-200' : 'bg-red-500/20 text-red-200'}`}>
+              Balance: {formatCurrency(balance)}
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrintCustomer}
+                className="bg-sidebar-accent text-sidebar-accent-foreground border-sidebar-accent hover:bg-sidebar-accent/80"
+              >
+                <Printer size={16} className="mr-1" />
+                Print
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => openEditCustomer(selectedCustomer)}
+                className="bg-sidebar-accent text-sidebar-accent-foreground border-sidebar-accent hover:bg-sidebar-accent/80"
+              >
+                <Edit size={16} className="mr-1" />
+                Edit
+              </Button>
+            </div>
           </div>
-          <div className="flex gap-2 flex-wrap">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handlePrintCustomer}
-              className="bg-sidebar-accent text-sidebar-accent-foreground border-sidebar-accent hover:bg-sidebar-accent/80"
-            >
-              <Printer size={16} className="mr-1" />
-              Print
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => openEditCustomer(selectedCustomer)}
-              className="bg-sidebar-accent text-sidebar-accent-foreground border-sidebar-accent hover:bg-sidebar-accent/80"
-            >
-              <Edit size={16} className="mr-1" />
-              Edit
-            </Button>
+          <div className="relative max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-sidebar-foreground/60" size={16} />
+            <Input
+              placeholder="Search transactions..."
+              value={transactionSearch}
+              onChange={(e) => setTransactionSearch(e.target.value)}
+              className="pl-9 bg-sidebar-accent/30 border-sidebar-border text-sidebar-foreground placeholder:text-sidebar-foreground/50 focus:bg-sidebar-accent/50"
+            />
           </div>
         </div>
 
@@ -661,31 +688,8 @@ const Khata = () => {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Account Summary</h3>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">Opening Balance</p>
-                <p className="text-lg font-semibold">{formatCurrency(selectedCustomer.opening_balance)}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">Opening Date</p>
-                <p className="text-lg font-semibold">{format(new Date(selectedCustomer.opening_date), 'dd/MM/yyyy')}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">Current Balance</p>
-                <p className={`text-lg font-semibold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatCurrency(balance)}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+
+
 
         <Card>
           <CardHeader>
