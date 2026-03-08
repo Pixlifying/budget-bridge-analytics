@@ -903,7 +903,7 @@ const Dashboard = () => {
             </div>
 
             {/* Top Stats Row */}
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               {/* Total Margin */}
               <DashCard onClick={() => setMarginDialogOpen(true)}>
                 <div className="flex items-center justify-between">
