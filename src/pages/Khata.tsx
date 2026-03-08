@@ -936,7 +936,7 @@ const Khata = () => {
 
   return (
     <div className="container px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between bg-sidebar text-sidebar-foreground rounded-xl px-4 py-3">
         <h1 className="text-xl sm:text-2xl font-bold">Khata Management</h1>
       </div>
 
