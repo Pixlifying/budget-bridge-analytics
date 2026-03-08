@@ -36,6 +36,7 @@ const Photostat = () => {
   const [editingEntry, setEditingEntry] = useState<PhotostatEntry | null>(null);
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month' | 'quarter'>('day');
+  const [searchQuery, setSearchQuery] = useState('');
   const { isHighlighted, dateParam } = useHighlight();
 
   useEffect(() => {
