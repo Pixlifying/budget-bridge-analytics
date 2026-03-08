@@ -590,7 +590,7 @@ const AccountDetails = () => {
         </Card>
 
         {/* Pagination Info and Controls */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <div className="text-sm text-muted-foreground">
             Showing {startIndex + 1} - {Math.min(endIndex, filteredAccountDetails.length)} of {filteredAccountDetails.length} entries
             {searchTerm && ` (filtered from ${accountDetails.length} total)`}
