@@ -85,7 +85,7 @@ const CustomerCard = ({ customer, onClick, onEdit, onDelete, isHighlighted = fal
 
         {/* Avatar with 3D pop effect */}
         <div 
-          className="absolute left-4 top-12 w-16 h-16 rounded-2xl bg-white shadow-lg flex items-center justify-center border-4 border-white"
+          className="absolute left-4 top-12 w-16 h-16 rounded-2xl bg-card shadow-lg flex items-center justify-center border-4 border-card"
           style={{
             transform: 'translateZ(20px)',
           }}
