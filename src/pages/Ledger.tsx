@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import DownloadButton from '@/components/ui/DownloadButton';
 import { toast } from "sonner";
 import PageHeader from '@/components/layout/PageHeader';
+import PageSkeleton from '@/components/ui/PageSkeleton';
 
 import CustomerList from '@/components/customers/CustomerList';
 import CustomerForm from '@/components/customers/CustomerForm';
