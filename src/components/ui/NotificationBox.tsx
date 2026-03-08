@@ -151,9 +151,7 @@ const NotificationBox = () => {
                 className={`p-3 m-2 rounded-xl border transition-all duration-300 hover:scale-105 ${
                   notification.type === 'overdraft'
                     ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800'
-                    : notification.type === 'pending_balance'
-                    ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'
-                    : 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800'
+                    : 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'
                 }`}
               >
                 <div className="flex items-start gap-3">
