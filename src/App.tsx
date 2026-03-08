@@ -45,6 +45,7 @@ const queryClient = new QueryClient();
 
 const App = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     const savedTheme = getColorTheme();
