@@ -41,6 +41,7 @@ const Forms = () => {
   const [forms, setForms] = useState<FormEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const { highlightId } = useHighlight();
   const [selectedDepartment, setSelectedDepartment] = useState<string>('all');
   const [customDepartmentSearch, setCustomDepartmentSearch] = useState('');
   const [showCustomDepartmentDialog, setShowCustomDepartmentDialog] = useState(false);
@@ -395,6 +396,7 @@ const Forms = () => {
             onDelete={initiateDelete}
             loading={loading}
             selectedDepartment={selectedDepartment}
+            highlightId={highlightId}
           />
         </div>
       </div>
