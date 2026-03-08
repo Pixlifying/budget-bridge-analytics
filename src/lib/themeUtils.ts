@@ -219,6 +219,14 @@ export const applyColorTheme = (colorTheme: string) => {
       root.style.setProperty('--sidebar-background', '172 66% 50%');
       root.style.setProperty('--sidebar-accent', '172 44% 37%');
       break;
+    case 'indianflag':
+      root.style.setProperty('--primary', '17 87% 53%');
+      root.style.setProperty('--primary-foreground', '0 0% 100%');
+      root.style.setProperty('--accent', '120 60% 35%');
+      root.style.setProperty('--accent-foreground', '0 0% 100%');
+      root.style.setProperty('--sidebar-background', '17 87% 53%');
+      root.style.setProperty('--sidebar-accent', '120 60% 35%');
+      break;
     default:
       root.style.setProperty('--primary', '221.2 83.2% 53.3%');
       root.style.setProperty('--primary-foreground', '210 40% 98%');
