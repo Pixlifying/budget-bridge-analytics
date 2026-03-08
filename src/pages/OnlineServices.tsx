@@ -118,7 +118,7 @@ const OnlineServices = () => {
 
       console.log('All online services:', formattedData.length);
       setOnlineServices(formattedData);
-      applyDateFilter(formattedData, selectedDate, filterMode);
+      applyDateFilter(formattedData, selectedDate, filterMode, searchQuery);
     } catch (error) {
       console.error('Error fetching online services:', error);
       toast.error('Failed to load online services data');
