@@ -217,7 +217,7 @@ const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
     { icon: <IconBook size={18} />, label: 'Ledger', to: '#', hasChildren: true, menuKey: 'ledger', children: ledgerItems },
     { icon: <IconCalculator size={18} />, label: 'Apps', to: '#', hasChildren: true, menuKey: 'apps', children: appsItems },
     { icon: <IconChart size={18} />, label: 'Analytics', to: '/analytics', hasChildren: false },
-    
+    { icon: <IconHome size={18} />, label: 'Household', to: '#', hasChildren: true, menuKey: 'household', children: householdItems },
     { icon: <IconSettings size={18} />, label: 'Admin', to: '#', hasChildren: true, menuKey: 'admin', children: adminItems },
   ];
 
@@ -247,9 +247,8 @@ const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
         </div>
       </div>
 
-
       {/* Menu Label */}
-      <div className="px-5 pt-3 pb-2">
+      <div className="px-5 pt-4 pb-2">
         <span className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider">Menu</span>
       </div>
       

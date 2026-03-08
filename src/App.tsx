@@ -5,7 +5,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Sidebar from "@/components/layout/Sidebar";
-import HouseholdSidebar from "@/components/layout/HouseholdSidebar";
 import Dashboard from "@/pages/Dashboard";
 import Banking from "@/pages/Banking";
 import BankingAccounts from "@/pages/BankingAccounts";
@@ -96,7 +95,6 @@ const App = () => {
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </main>
-                  <HouseholdSidebar />
                 </div>
               </ProtectedRoute>
             </MobileMenuContext.Provider>
