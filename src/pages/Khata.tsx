@@ -564,37 +564,37 @@ const Khata = () => {
     const transactionsWithBalance = calculateRunningBalance(filteredTransactions, selectedCustomer.opening_balance);
     
     return (
-      <div className="container px-4 py-6 space-y-6 max-w-4xl mx-auto">
-        <div className="flex items-center gap-4">
+      <div className="container px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6 max-w-6xl mx-auto">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setSelectedCustomer(null)}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 self-start"
           >
             <ArrowLeft size={16} />
-            Back to Customers
+            Back
           </Button>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold">{selectedCustomer.name}</h1>
-            <p className="text-muted-foreground">{selectedCustomer.phone}</p>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold truncate">{selectedCustomer.name}</h1>
+            <p className="text-sm text-muted-foreground">{selectedCustomer.phone}</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button
               variant="outline"
               size="sm"
               onClick={handlePrintCustomer}
             >
-              <Printer size={16} className="mr-2" />
-              Print Report
+              <Printer size={16} className="mr-1" />
+              Print
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => openEditCustomer(selectedCustomer)}
             >
-              <Edit size={16} className="mr-2" />
-              Edit Customer
+              <Edit size={16} className="mr-1" />
+              Edit
             </Button>
           </div>
         </div>
@@ -605,9 +605,9 @@ const Khata = () => {
             <h3 className="text-lg font-semibold">Add Transaction</h3>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 items-end">
               <div>
-                <Label htmlFor="transaction_date">Date</Label>
+                <Label htmlFor="transaction_date" className="text-xs">Date</Label>
                 <Input
                   id="transaction_date"
                   type="date"
@@ -616,7 +616,7 @@ const Khata = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="transaction_type">Type</Label>
+                <Label htmlFor="transaction_type" className="text-xs">Type</Label>
                 <Select
                   value={transactionForm.type}
                   onValueChange={(value: 'credit' | 'debit') => 
@@ -633,26 +633,26 @@ const Khata = () => {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="transaction_amount">Amount</Label>
+                <Label htmlFor="transaction_amount" className="text-xs">Amount</Label>
                 <Input
                   id="transaction_amount"
                   type="number"
                   value={transactionForm.amount}
                   onChange={(e) => setTransactionForm(prev => ({ ...prev, amount: Number(e.target.value) }))}
-                  placeholder="Enter amount"
+                  placeholder="Amount"
                 />
               </div>
-              <div>
-                <Label htmlFor="transaction_description">Description</Label>
+              <div className="col-span-2 sm:col-span-1 lg:col-span-2">
+                <Label htmlFor="transaction_description" className="text-xs">Description</Label>
                 <Input
                   id="transaction_description"
                   value={transactionForm.description}
                   onChange={(e) => setTransactionForm(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Optional"
+                  placeholder="Optional description"
                 />
               </div>
-              <Button onClick={handleAddTransaction}>
-                <Plus size={16} className="mr-2" />
+              <Button onClick={handleAddTransaction} className="w-full">
+                <Plus size={16} className="mr-1" />
                 Add
               </Button>
             </div>
@@ -666,7 +666,7 @@ const Khata = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">Opening Balance</p>
                 <p className="text-lg font-semibold">{formatCurrency(selectedCustomer.opening_balance)}</p>
@@ -692,9 +692,9 @@ const Khata = () => {
               <h3 className="text-lg font-semibold">Latest Transaction</h3>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground">Date</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                 <div className="text-center">
+                   <p className="text-sm text-muted-foreground">Date</p>
                   <p className="text-sm font-medium">{format(new Date(selectedCustomer.transactions[0].date), 'dd/MM/yyyy')}</p>
                 </div>
                 <div className="text-center">
@@ -819,9 +819,9 @@ const Khata = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 items-end">
                 <div>
-                  <Label htmlFor="edit_transaction_type">Type</Label>
+                  <Label htmlFor="edit_transaction_type" className="text-xs">Type</Label>
                   <Select
                     value={transactionForm.type}
                     onValueChange={(value: 'credit' | 'debit') => 
@@ -935,9 +935,9 @@ const Khata = () => {
   }
 
   return (
-    <div className="container px-4 py-6 space-y-6 max-w-4xl mx-auto">
+    <div className="container px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Khata Management</h1>
+        <h1 className="text-xl sm:text-2xl font-bold">Khata Management</h1>
       </div>
 
       {/* Inline Add Customer Form */}
@@ -946,7 +946,7 @@ const Khata = () => {
           <h3 className="text-lg font-semibold">Add New Customer</h3>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleAddCustomer} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+          <form onSubmit={handleAddCustomer} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 items-end">
             <div>
               <Label htmlFor="customer_name">Name</Label>
               <Input
