@@ -687,41 +687,6 @@ const Khata = () => {
           </CardContent>
         </Card>
 
-        {/* Latest Transactions Summary */}
-        {selectedCustomer.transactions.length > 0 && (
-          <Card>
-            <CardHeader>
-              <h3 className="text-lg font-semibold">Latest Transaction</h3>
-            </CardHeader>
-            <CardContent>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                 <div className="text-center">
-                   <p className="text-sm text-muted-foreground">Date</p>
-                  <p className="text-sm font-medium">{format(new Date(selectedCustomer.transactions[0].date), 'dd/MM/yyyy')}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground">Type</p>
-                  <span className={`px-2 py-1 rounded text-xs ${
-                    selectedCustomer.transactions[0].type === 'credit' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}>
-                    {selectedCustomer.transactions[0].type.toUpperCase()}
-                  </span>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground">Amount</p>
-                  <p className={`text-sm font-medium ${selectedCustomer.transactions[0].type === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
-                    {selectedCustomer.transactions[0].type === 'credit' ? '+' : '-'}{formatCurrency(selectedCustomer.transactions[0].amount)}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground">Description</p>
-                  <p className="text-sm font-medium">{selectedCustomer.transactions[0].description || 'No description'}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         <Card>
           <CardHeader>
             <div className="flex justify-between items-center">

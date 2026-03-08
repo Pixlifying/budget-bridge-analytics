@@ -16,7 +16,7 @@ const PageWrapper = ({ title, subtitle, action, children, icon }: PageWrapperPro
 
   return (
     <div className="page-transition">
-      <header className="sticky top-0 z-40 bg-sidebar px-3 sm:px-4 py-3 mb-6">
+      <header className="sticky top-0 z-40 bg-sidebar px-4 sm:px-5 py-3 mb-6 mx-2 sm:mx-4 mt-2 rounded-2xl shadow-md">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div className="flex items-center gap-3">
             <button 
