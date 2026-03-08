@@ -50,6 +50,8 @@ const PendingBalance = () => {
   }, [dateParam]);
 
   // Inline form state
+const [searchQuery, setSearchQuery] = useState('');
+
   const [newEntry, setNewEntry] = useState({
     date: new Date().toISOString().split('T')[0],
     name: '',
