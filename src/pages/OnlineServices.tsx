@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useHighlight } from '@/hooks/useHighlight';
 import { Globe, Plus, Edit, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
