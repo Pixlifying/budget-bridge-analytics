@@ -244,16 +244,22 @@ const Analytics = () => {
     { name: 'PAN Cards', value: totalPanMargin, color: COLORS[0] },
     { name: 'Passports', value: totalPassportMargin, color: COLORS[1] },
     { name: 'Banking', value: totalBankingMargin, color: COLORS[2] },
+    { name: 'Other Banking', value: totalBankingAccountsMargin, color: 'hsl(200, 80%, 50%)' },
     { name: 'Online', value: totalOnlineServices, color: COLORS[3] },
-    { name: 'Forms', value: totalApplications, color: COLORS[4] }
+    { name: 'Forms', value: totalApplications, color: COLORS[4] },
+    { name: 'Print', value: totalPhotostatMargin, color: COLORS[5] },
+    { name: 'Documentation', value: totalDocumentationMargin, color: 'hsl(260, 70%, 55%)' }
   ].filter(item => item.value > 0);
 
   const serviceBreakdownData = [
     { service: 'PAN Cards', margin: totalPanMargin },
     { service: 'Passports', margin: totalPassportMargin },
     { service: 'Banking', margin: totalBankingMargin },
+    { service: 'Other Banking', margin: totalBankingAccountsMargin },
     { service: 'Online', margin: totalOnlineServices },
-    { service: 'Forms', margin: totalApplications }
+    { service: 'Forms', margin: totalApplications },
+    { service: 'Print', margin: totalPhotostatMargin },
+    { service: 'Documentation', margin: totalDocumentationMargin }
   ].filter(item => item.margin > 0);
 
   const monthlyTrendData: { month: string; revenue: number; expenses: number }[] = [];
