@@ -740,11 +740,12 @@ const Dashboard = () => {
   <div
     onClick={onClick}
     className={`
-        bg-card rounded-2xl p-5 border border-border/50
-        transition-all duration-200 hover:shadow-lg
+        bg-card rounded-2xl p-5 border border-transparent
+        transition-all duration-200 hover:shadow-lg hover:border-primary
         ${onClick ? 'cursor-pointer hover:-translate-y-0.5' : ''} 
         ${className}
-      `}>
+      `}
+    style={{ borderWidth: '0.5px' }}>
     
       {children}
     </div>;
