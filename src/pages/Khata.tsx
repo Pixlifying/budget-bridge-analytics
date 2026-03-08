@@ -692,9 +692,9 @@ const Khata = () => {
               <h3 className="text-lg font-semibold">Latest Transaction</h3>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground">Date</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                 <div className="text-center">
+                   <p className="text-sm text-muted-foreground">Date</p>
                   <p className="text-sm font-medium">{format(new Date(selectedCustomer.transactions[0].date), 'dd/MM/yyyy')}</p>
                 </div>
                 <div className="text-center">
