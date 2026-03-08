@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import { useHighlight } from '@/hooks/useHighlight';
 import { Receipt, Printer } from 'lucide-react';
+import PageSkeleton from '@/components/ui/PageSkeleton';
+import EmptyState from '@/components/ui/EmptyState';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import PageWrapper from '@/components/layout/PageWrapper';
