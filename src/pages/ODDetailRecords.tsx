@@ -624,16 +624,6 @@ const ODDetailRecords = () => {
                 )}
               </div>
               
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isLoading}
-                className="gap-2"
-              >
-                <Upload className="h-4 w-4" />
-                Browse CSV/Excel
-              </Button>
 
               <div className="w-px h-6 bg-border hidden sm:block" />
 
