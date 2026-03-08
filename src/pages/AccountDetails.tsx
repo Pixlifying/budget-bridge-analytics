@@ -247,7 +247,7 @@ const AccountDetails = () => {
         }
       }
 
-      toast.success(`${newAccounts.length} account(s) added successfully`);
+      toast.success(`${accounts.length} account(s) processed successfully (duplicates skipped)`);
       await fetchAccountDetails();
     } catch (error: any) {
       console.error('Error processing file:', error);
