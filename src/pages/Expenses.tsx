@@ -92,14 +92,24 @@ const Expenses = () => {
   }, []);
   
   useEffect(() => {
+    let filtered: ExpenseEntry[];
     if (viewMode === 'day') {
-      setFilteredExpenses(filterByDate(expenses, date));
+      filtered = filterByDate(expenses, date);
     } else if (viewMode === 'month') {
-      setFilteredExpenses(filterByMonth(expenses, date));
+      filtered = filterByMonth(expenses, date);
     } else {
-      setFilteredExpenses(filterByQuarter(expenses, date));
+      filtered = filterByQuarter(expenses, date);
     }
-  }, [date, viewMode, expenses]);
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(e =>
+        e.name.toLowerCase().includes(q) ||
+        String(e.amount).includes(q) ||
+        e.type.toLowerCase().includes(q)
+      );
+    }
+    setFilteredExpenses(filtered);
+  }, [date, viewMode, expenses, searchQuery]);
 
   const handleAddEntry = async () => {
     if (!newEntry.name || !newEntry.amount) {
