@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { useHighlight } from '@/hooks/useHighlight';
 import { useNavigate } from 'react-router-dom';
 import { Search, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';

@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { useHighlight } from '@/hooks/useHighlight';
 import { CreditCard, Plus, Edit, Trash2, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -68,6 +69,14 @@ const OtherBankingServices = () => {
   const [editingEntry, setEditingEntry] = useState<BankingAccount | null>(null);
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month' | 'quarter'>('day');
+  const { isHighlighted, dateParam } = useHighlight();
+
+  useEffect(() => {
+    if (dateParam) {
+      const navDate = new Date(dateParam);
+      if (!isNaN(navDate.getTime())) { setDate(navDate); setViewMode('month'); }
+    }
+  }, [dateParam]);
 
   // Form state for inline entry
   const [newEntry, setNewEntry] = useState({
@@ -607,6 +616,7 @@ const OtherBankingServices = () => {
               }}
               onEdit={() => openEditEntry(entry)}
               onDelete={() => handleDeleteEntry(entry.id)}
+              isHighlighted={isHighlighted(entry.id)}
             />
           ))
         )}
