@@ -46,6 +46,18 @@ const OnlineServices = () => {
   const [editingEntry, setEditingEntry] = useState<OnlineServiceEntry | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [filterMode, setFilterMode] = useState<'day' | 'month' | 'quarter'>('day');
+  const { isHighlighted, dateParam } = useHighlight();
+
+  // Set date from search navigation
+  useEffect(() => {
+    if (dateParam) {
+      const navDate = new Date(dateParam);
+      if (!isNaN(navDate.getTime())) {
+        setSelectedDate(navDate);
+        setFilterMode('month');
+      }
+    }
+  }, [dateParam]);
 
   // Form state for inline entry
   const [newEntry, setNewEntry] = useState({
