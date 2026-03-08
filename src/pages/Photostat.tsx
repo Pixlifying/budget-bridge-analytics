@@ -91,14 +91,26 @@ const Photostat = () => {
   }, []);
 
   useEffect(() => {
+    let filtered: PhotostatEntry[];
     if (viewMode === 'day') {
-      setFilteredPhotostats(filterByDate(photostats, date));
+      filtered = filterByDate(photostats, date);
     } else if (viewMode === 'month') {
-      setFilteredPhotostats(filterByMonth(photostats, date));
+      filtered = filterByMonth(photostats, date);
     } else {
-      setFilteredPhotostats(filterByQuarter(photostats, date));
+      filtered = filterByQuarter(photostats, date);
     }
-  }, [date, viewMode, photostats]);
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(e =>
+        String(e.amount).includes(q) ||
+        String(e.expense).includes(q) ||
+        String(e.margin).includes(q)
+      );
+    }
+
+    setFilteredPhotostats(filtered);
+  }, [date, viewMode, photostats, searchQuery]);
 
   const handleAddPhotostat = async () => {
     if (!newEntry.amount) {
