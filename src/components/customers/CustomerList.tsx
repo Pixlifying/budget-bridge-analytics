@@ -1,7 +1,7 @@
 
-import { useState } from 'react';
 import { Customer } from './CustomerCard';
 import CustomerCard from './CustomerCard';
+import EmptyState from '@/components/ui/EmptyState';
 
 interface CustomerListProps {
   customers: Customer[];
@@ -15,9 +15,11 @@ const CustomerList = ({ customers, onEdit, onDelete, onCustomerClick, highlightI
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {customers.length === 0 ? (
-        <div className="col-span-full text-center py-8 text-muted-foreground">
-          No customers found. Add your first customer to get started.
-        </div>
+        <EmptyState
+          icon="data"
+          title="No Customers Found"
+          description="Add your first customer to start tracking transactions and records."
+        />
       ) : (
         customers.map((customer) => (
           <CustomerCard
