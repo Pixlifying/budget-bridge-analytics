@@ -49,6 +49,7 @@ const Documentation = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month' | 'quarter'>('day');
   const [serviceFilter, setServiceFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const { isHighlighted, dateParam } = useHighlight();
 
   useEffect(() => {
@@ -130,8 +131,18 @@ const Documentation = () => {
       filtered = filtered.filter(e => e.service_type === serviceFilter);
     }
 
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(e =>
+        e.name.toLowerCase().includes(q) ||
+        e.service_type.toLowerCase().includes(q) ||
+        (e.custom_service && e.custom_service.toLowerCase().includes(q)) ||
+        (e.mobile && e.mobile.includes(q))
+      );
+    }
+
     setFilteredEntries(filtered);
-  }, [date, viewMode, entries, serviceFilter]);
+  }, [date, viewMode, entries, serviceFilter, searchQuery]);
 
   const handleAddEntry = async () => {
     if (!newEntry.name || !newEntry.service_type) {
@@ -362,7 +373,13 @@ const Documentation = () => {
             mode={viewMode}
             onModeChange={setViewMode}
           />
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 items-center">
+            <Input
+              placeholder="Search by name, service..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-[180px] h-9"
+            />
             <Select value={serviceFilter} onValueChange={setServiceFilter}>
               <SelectTrigger className="w-[130px] h-9">
                 <SelectValue placeholder="Filter" />

@@ -46,6 +46,7 @@ const OnlineServices = () => {
   const [editingEntry, setEditingEntry] = useState<OnlineServiceEntry | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [filterMode, setFilterMode] = useState<'day' | 'month' | 'quarter'>('day');
+  const [searchQuery, setSearchQuery] = useState('');
   const { isHighlighted, dateParam } = useHighlight();
 
   // Set date from search navigation
@@ -117,7 +118,7 @@ const OnlineServices = () => {
 
       console.log('All online services:', formattedData.length);
       setOnlineServices(formattedData);
-      applyDateFilter(formattedData, selectedDate, filterMode);
+      applyDateFilter(formattedData, selectedDate, filterMode, searchQuery);
     } catch (error) {
       console.error('Error fetching online services:', error);
       toast.error('Failed to load online services data');
@@ -126,21 +127,26 @@ const OnlineServices = () => {
     }
   };
 
-  const applyDateFilter = (data: OnlineServiceEntry[], date: Date, mode: 'day' | 'month' | 'quarter') => {
-    console.log('Applying filter:', mode, 'for date:', date);
+  const applyDateFilter = (data: OnlineServiceEntry[], date: Date, mode: 'day' | 'month' | 'quarter', search: string = '') => {
+    let filtered: OnlineServiceEntry[];
     if (mode === 'day') {
-      const filtered = filterByDate(data, date);
-      console.log('Filtered services by day:', filtered.length);
-      setFilteredServices(filtered);
+      filtered = filterByDate(data, date);
     } else if (mode === 'month') {
-      const filtered = filterByMonth(data, date);
-      console.log('Filtered services by month:', filtered.length);
-      setFilteredServices(filtered);
+      filtered = filterByMonth(data, date);
     } else {
-      const filtered = filterByQuarter(data, date);
-      console.log('Filtered services by quarter:', filtered.length);
-      setFilteredServices(filtered);
+      filtered = filterByQuarter(data, date);
     }
+
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      filtered = filtered.filter(e =>
+        (e.customer_name && e.customer_name.toLowerCase().includes(q)) ||
+        e.service.toLowerCase().includes(q) ||
+        (e.custom_service && e.custom_service.toLowerCase().includes(q))
+      );
+    }
+
+    setFilteredServices(filtered);
   };
 
   useEffect(() => {
@@ -148,8 +154,8 @@ const OnlineServices = () => {
   }, []);
 
   useEffect(() => {
-    applyDateFilter(onlineServices, selectedDate, filterMode);
-  }, [selectedDate, filterMode, onlineServices]);
+    applyDateFilter(onlineServices, selectedDate, filterMode, searchQuery);
+  }, [selectedDate, filterMode, onlineServices, searchQuery]);
 
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
@@ -410,7 +416,13 @@ const OnlineServices = () => {
             mode={filterMode}
             onModeChange={handleModeChange}
           />
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 items-center">
+            <Input
+              placeholder="Search by customer, service..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-[180px] h-9"
+            />
             <Button onClick={handlePrint} variant="outline">
               <Printer size={16} className="mr-2" />
               Print

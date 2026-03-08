@@ -36,6 +36,7 @@ const Photostat = () => {
   const [editingEntry, setEditingEntry] = useState<PhotostatEntry | null>(null);
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month' | 'quarter'>('day');
+  const [searchQuery, setSearchQuery] = useState('');
   const { isHighlighted, dateParam } = useHighlight();
 
   useEffect(() => {
@@ -90,14 +91,26 @@ const Photostat = () => {
   }, []);
 
   useEffect(() => {
+    let filtered: PhotostatEntry[];
     if (viewMode === 'day') {
-      setFilteredPhotostats(filterByDate(photostats, date));
+      filtered = filterByDate(photostats, date);
     } else if (viewMode === 'month') {
-      setFilteredPhotostats(filterByMonth(photostats, date));
+      filtered = filterByMonth(photostats, date);
     } else {
-      setFilteredPhotostats(filterByQuarter(photostats, date));
+      filtered = filterByQuarter(photostats, date);
     }
-  }, [date, viewMode, photostats]);
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(e =>
+        String(e.amount).includes(q) ||
+        String(e.expense).includes(q) ||
+        String(e.margin).includes(q)
+      );
+    }
+
+    setFilteredPhotostats(filtered);
+  }, [date, viewMode, photostats, searchQuery]);
 
   const handleAddPhotostat = async () => {
     if (!newEntry.amount) {
@@ -311,7 +324,13 @@ const Photostat = () => {
             mode={viewMode} 
             onModeChange={setViewMode} 
           />
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 items-center">
+            <Input
+              placeholder="Search by amount..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-[180px] h-9"
+            />
             <Button onClick={handlePrint} variant="outline">
               <Printer size={16} className="mr-2" />
               Print

@@ -38,6 +38,7 @@ const Applications = () => {
   const [editingEntry, setEditingEntry] = useState<ApplicationEntry | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [filterMode, setFilterMode] = useState<'day' | 'month' | 'quarter'>('day');
+  const [searchQuery, setSearchQuery] = useState('');
   const { isHighlighted, dateParam } = useHighlight();
 
   useEffect(() => {
@@ -99,17 +100,24 @@ const Applications = () => {
     }
   };
 
-  const applyDateFilter = (data: ApplicationEntry[], date: Date, mode: 'day' | 'month' | 'quarter') => {
+  const applyDateFilter = (data: ApplicationEntry[], date: Date, mode: 'day' | 'month' | 'quarter', search: string = '') => {
+    let filtered: ApplicationEntry[];
     if (mode === 'day') {
-      const filtered = filterByDate(data, date);
-      setFilteredApplications(filtered);
+      filtered = filterByDate(data, date);
     } else if (mode === 'month') {
-      const filtered = filterByMonth(data, date);
-      setFilteredApplications(filtered);
+      filtered = filterByMonth(data, date);
     } else {
-      const filtered = filterByQuarter(data, date);
-      setFilteredApplications(filtered);
+      filtered = filterByQuarter(data, date);
     }
+
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      filtered = filtered.filter(e =>
+        e.customer_name.toLowerCase().includes(q)
+      );
+    }
+
+    setFilteredApplications(filtered);
   };
 
   useEffect(() => {
@@ -117,8 +125,8 @@ const Applications = () => {
   }, []);
 
   useEffect(() => {
-    applyDateFilter(applications, selectedDate, filterMode);
-  }, [selectedDate, filterMode, applications]);
+    applyDateFilter(applications, selectedDate, filterMode, searchQuery);
+  }, [selectedDate, filterMode, applications, searchQuery]);
 
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
@@ -352,7 +360,13 @@ const Applications = () => {
             mode={filterMode}
             onModeChange={handleModeChange}
           />
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 items-center">
+            <Input
+              placeholder="Search by customer..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-[180px] h-9"
+            />
             <Button onClick={handlePrint} variant="outline">
               <Printer size={16} className="mr-2" />
               Print
