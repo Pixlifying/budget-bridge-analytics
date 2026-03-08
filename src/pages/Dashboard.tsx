@@ -767,7 +767,7 @@ const Dashboard = () => {
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-            <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+            <Popover open={searchOpen} onOpenChange={(open) => { if (!open) setSearchOpen(false); }} modal={false}>
               <PopoverTrigger asChild>
                 <div className="relative cursor-pointer">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -775,9 +775,10 @@ const Dashboard = () => {
                     placeholder="Search..."
                     className="pl-9 w-36 sm:w-72 bg-background border-border"
                     value={searchQuery}
-                    onChange={(e) => {setSearchQuery(e.target.value);setSearchOpen(true);}}
-                    onFocus={() => searchQuery.length >= 2 && setSearchOpen(true)} />
-                  
+                    onChange={(e) => {setSearchQuery(e.target.value); if (e.target.value.length >= 2) setSearchOpen(true); else setSearchOpen(false);}}
+                    onFocus={() => searchQuery.length >= 2 && setSearchOpen(true)}
+                    onBlur={(e) => { if (!e.relatedTarget?.closest('[data-radix-popper-content-wrapper]')) { setTimeout(() => setSearchOpen(false), 200); }}}
+                  />
                 </div>
               </PopoverTrigger>
               {searchQuery.length >= 2 &&
