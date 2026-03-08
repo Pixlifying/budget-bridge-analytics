@@ -194,6 +194,10 @@ const Analytics = () => {
       setFilteredExpenses(filterByDate(expenses, date));
       setFilteredApplications(filterByDate(applications, date));
       setFilteredMiscExpenses(filterByDate(miscExpenses, date));
+      setFilteredPhotostats(filterByDate(photostats, date));
+      setFilteredDocumentation(filterByDate(documentation, date));
+      setFilteredBankingAccounts(filterByDate(bankingAccounts, date));
+      setFilteredFeeExpenses(filterByDate(feeExpenses, date));
     } else {
       setFilteredOdRecords(filterByMonth(odRecords, date));
       setFilteredPanCards(filterByMonth(panCards, date));
@@ -203,8 +207,12 @@ const Analytics = () => {
       setFilteredExpenses(filterByMonth(expenses, date));
       setFilteredApplications(filterByMonth(applications, date));
       setFilteredMiscExpenses(filterByMonth(miscExpenses, date));
+      setFilteredPhotostats(filterByMonth(photostats, date));
+      setFilteredDocumentation(filterByMonth(documentation, date));
+      setFilteredBankingAccounts(filterByMonth(bankingAccounts, date));
+      setFilteredFeeExpenses(filterByMonth(feeExpenses, date));
     }
-  }, [date, viewMode, odRecords, panCards, passports, bankingServices, onlineServices, expenses, applications, miscExpenses]);
+  }, [date, viewMode, odRecords, panCards, passports, bankingServices, onlineServices, expenses, applications, miscExpenses, photostats, documentation, bankingAccounts, feeExpenses]);
 
   const latestOdRecord = odRecords.length > 0 ? odRecords[0] : null;
   const latestCashInHand = latestOdRecord ? latestOdRecord.cash_in_hand : 0;
