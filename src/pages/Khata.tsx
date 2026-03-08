@@ -819,9 +819,9 @@ const Khata = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 items-end">
                 <div>
-                  <Label htmlFor="edit_transaction_type">Type</Label>
+                  <Label htmlFor="edit_transaction_type" className="text-xs">Type</Label>
                   <Select
                     value={transactionForm.type}
                     onValueChange={(value: 'credit' | 'debit') => 
