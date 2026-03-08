@@ -50,6 +50,8 @@ const PendingBalance = () => {
   }, [dateParam]);
 
   // Inline form state
+const [searchQuery, setSearchQuery] = useState('');
+
   const [newEntry, setNewEntry] = useState({
     date: new Date().toISOString().split('T')[0],
     name: '',
@@ -105,14 +107,26 @@ const PendingBalance = () => {
   }, []);
   
   useEffect(() => {
+    let filtered: PendingBalanceEntry[];
     if (viewMode === 'day') {
-      setFilteredBalances(filterByDate(pendingBalances, date));
+      filtered = filterByDate(pendingBalances, date);
     } else if (viewMode === 'month') {
-      setFilteredBalances(filterByMonth(pendingBalances, date));
+      filtered = filterByMonth(pendingBalances, date);
     } else {
-      setFilteredBalances(filterByQuarter(pendingBalances, date));
+      filtered = filterByQuarter(pendingBalances, date);
     }
-  }, [date, viewMode, pendingBalances]);
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(e =>
+        e.name.toLowerCase().includes(q) ||
+        e.address.toLowerCase().includes(q) ||
+        e.phone.toLowerCase().includes(q) ||
+        e.service.toLowerCase().includes(q) ||
+        String(e.amount).includes(q)
+      );
+    }
+    setFilteredBalances(filtered);
+  }, [date, viewMode, pendingBalances, searchQuery]);
 
   const handleAddEntry = async () => {
     if (!newEntry.name || !newEntry.address || !newEntry.phone || !newEntry.service || !newEntry.amount) {
@@ -318,7 +332,13 @@ const PendingBalance = () => {
             mode={viewMode} 
             onModeChange={setViewMode} 
           />
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 items-center">
+            <Input
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-[180px] h-9 bg-sidebar-accent text-sidebar-accent-foreground placeholder:text-sidebar-accent-foreground/50 border-sidebar-border"
+            />
             <Button onClick={handlePrint} variant="outline">
               <Printer size={16} className="mr-2" />
               Print
