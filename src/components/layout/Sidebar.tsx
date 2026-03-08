@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -23,7 +23,8 @@ import {
   Palette,
   Shield,
   Home,
-  Wallet
+  Wallet,
+  X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -37,6 +38,7 @@ interface SidebarItemProps {
   hasChildren?: boolean;
   isExpanded?: boolean;
   onClick?: () => void;
+  onNavigate?: () => void;
 }
 
 interface SidebarSubMenuProps {
@@ -46,9 +48,10 @@ interface SidebarSubMenuProps {
     to: string;
   }[];
   isExpanded: boolean;
+  onNavigate?: () => void;
 }
 
-const SidebarSubMenu = ({ items, isExpanded }: SidebarSubMenuProps) => {
+const SidebarSubMenu = ({ items, isExpanded, onNavigate }: SidebarSubMenuProps) => {
   const location = useLocation();
   
   if (!isExpanded) return null;
@@ -61,6 +64,7 @@ const SidebarSubMenu = ({ items, isExpanded }: SidebarSubMenuProps) => {
           <Link
             key={item.to}
             to={item.to}
+            onClick={onNavigate}
             className={cn(
               "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200",
               isActive 
@@ -86,7 +90,8 @@ const SidebarItem = ({
   isActive, 
   hasChildren, 
   isExpanded,
-  onClick 
+  onClick,
+  onNavigate
 }: SidebarItemProps) => {
   if (hasChildren) {
     return (
@@ -111,6 +116,7 @@ const SidebarItem = ({
   return (
     <Link
       to={to}
+      onClick={onNavigate}
       className={cn(
         "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
         isActive 
@@ -126,7 +132,12 @@ const SidebarItem = ({
   );
 };
 
-const Sidebar = () => {
+interface SidebarProps {
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
+}
+
+const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
   const location = useLocation();
   
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
@@ -139,6 +150,11 @@ const Sidebar = () => {
     household: false
   });
 
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    onMobileClose?.();
+  }, [location.pathname]);
+
   const toggleMenu = (menuKey: string) => {
     setExpandedMenus(prev => ({
       ...prev,
@@ -146,27 +162,23 @@ const Sidebar = () => {
     }));
   };
 
-  // Admin submenu items
   const adminItems = [
     { icon: <UserCog size={16} />, label: 'User Admin', to: '/user-admin' },
     { icon: <Palette size={16} />, label: 'Theme Settings', to: '/theme-settings' },
     { icon: <Printer size={16} />, label: 'Print', to: '/downloads' },
   ];
 
-  // Household submenu items
   const householdItems = [
     { icon: <FileText size={16} />, label: 'Milk', to: '/milk' },
     { icon: <FileText size={16} />, label: 'Misc Expenses', to: '/misc-expenses' },
     { icon: <PiggyBank size={16} />, label: 'Money (Udhar)', to: '/udhar' },
   ];
 
-  // Financial Services submenu items
   const financialServiceItems = [
     { icon: <CreditCard size={16} />, label: 'Banking Transaction', to: '/banking' },
     { icon: <PiggyBank size={16} />, label: 'OD Records', to: '/od-records' },
   ];
 
-  // Non Financial Services submenu items
   const nonFinancialServiceItems = [
     { icon: <Landmark size={16} />, label: 'Accounts Opened', to: '/banking-accounts' },
     { icon: <Users size={16} />, label: 'Account Details', to: '/account-details' },
@@ -174,21 +186,18 @@ const Sidebar = () => {
     { icon: <FileText size={16} />, label: 'Documentation', to: '/documentation' },
   ];
 
-  // Customer Services submenu items
   const customerServiceItems = [
     { icon: <Globe size={16} />, label: 'Digital Services', to: '/online-services' },
     { icon: <FilePen size={16} />, label: 'Offline Services', to: '/applications' },
     { icon: <Copy size={16} />, label: 'Print / Photostat', to: '/photostat' },
   ];
 
-  // Apps submenu items
   const appsItems = [
     { icon: <Calculator size={16} />, label: 'Calculator', to: '/calculator' },
     { icon: <Calculator size={16} />, label: 'Age Calculator', to: '/age-calculator' },
     { icon: <FileText size={16} />, label: 'Forms', to: '/forms' },
   ];
 
-  // Ledger submenu items
   const ledgerItems = [
     { icon: <BookOpen size={16} />, label: 'Khata', to: '/khata' },
     { icon: <FileText size={16} />, label: 'Papers', to: '/papers' },
@@ -196,7 +205,6 @@ const Sidebar = () => {
     { icon: <PiggyBank size={16} />, label: 'Expenses', to: '/expenses' },
   ];
 
-  // Main sidebar items
   const sidebarItems = [
     { icon: <LayoutDashboard size={18} />, label: 'Dashboard', to: '/', hasChildren: false },
     { icon: <CreditCard size={18} />, label: 'Financial Services', to: '#', hasChildren: true, menuKey: 'financialServices', children: financialServiceItems },
@@ -209,12 +217,11 @@ const Sidebar = () => {
     { icon: <Settings size={18} />, label: 'Admin', to: '#', hasChildren: true, menuKey: 'admin', children: adminItems },
   ];
 
-  return (
-    <aside className="h-screen w-72 flex flex-col sticky top-0 p-3">
-      {/* Main Sidebar Container with theme colors */}
-      <div className="flex-1 rounded-3xl shadow-xl flex flex-col overflow-hidden border transition-colors duration-300 bg-sidebar border-sidebar-border shadow-primary/20">
-        {/* Header with Avatar */}
-        <div className="p-5 border-b transition-colors duration-300 border-sidebar-border/50">
+  const sidebarContent = (
+    <div className="flex-1 rounded-3xl shadow-xl flex flex-col overflow-hidden border transition-colors duration-300 bg-sidebar border-sidebar-border shadow-primary/20">
+      {/* Header with Avatar */}
+      <div className="p-5 border-b transition-colors duration-300 border-sidebar-border/50">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Avatar className="h-12 w-12 ring-4 ring-sidebar-primary/30">
               <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground font-semibold">
@@ -226,46 +233,74 @@ const Sidebar = () => {
               <h2 className="font-semibold text-sidebar-foreground">Hisab Kitab</h2>
             </div>
           </div>
+          {/* Close button only on mobile */}
+          <button 
+            onClick={onMobileClose} 
+            className="md:hidden p-2 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground"
+          >
+            <X size={20} />
+          </button>
         </div>
-
-        {/* Menu Label */}
-        <div className="px-5 pt-4 pb-2">
-          <span className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider">Menu</span>
-        </div>
-        
-        {/* Navigation */}
-        <ScrollArea className="flex-1 px-3">
-          <nav className="space-y-1 pb-4">
-            {sidebarItems.map((item) => {
-              const isActive = item.hasChildren 
-                ? (item.children?.some(child => location.pathname === child.to || location.pathname.startsWith(child.to))) ?? false
-                : (item.to === '/' ? location.pathname === '/' : location.pathname.startsWith(item.to));
-              
-              return (
-                <div key={item.label}>
-                  <SidebarItem
-                    icon={item.icon}
-                    label={item.label}
-                    to={item.hasChildren ? '#' : item.to}
-                    isActive={isActive && !item.hasChildren}
-                    hasChildren={item.hasChildren}
-                    isExpanded={item.hasChildren ? expandedMenus[item.menuKey as string] : undefined}
-                    onClick={item.hasChildren ? () => toggleMenu(item.menuKey as string) : undefined}
-                  />
-                  
-                  {item.hasChildren && (
-                    <SidebarSubMenu
-                      items={item.children ?? []}
-                      isExpanded={expandedMenus[item.menuKey as string]}
-                    />
-                  )}
-                </div>
-              );
-            })}
-          </nav>
-        </ScrollArea>
       </div>
-    </aside>
+
+      {/* Menu Label */}
+      <div className="px-5 pt-4 pb-2">
+        <span className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider">Menu</span>
+      </div>
+      
+      {/* Navigation */}
+      <ScrollArea className="flex-1 px-3">
+        <nav className="space-y-1 pb-4">
+          {sidebarItems.map((item) => {
+            const isActive = item.hasChildren 
+              ? (item.children?.some(child => location.pathname === child.to || location.pathname.startsWith(child.to))) ?? false
+              : (item.to === '/' ? location.pathname === '/' : location.pathname.startsWith(item.to));
+            
+            return (
+              <div key={item.label}>
+                <SidebarItem
+                  icon={item.icon}
+                  label={item.label}
+                  to={item.hasChildren ? '#' : item.to}
+                  isActive={isActive && !item.hasChildren}
+                  hasChildren={item.hasChildren}
+                  isExpanded={item.hasChildren ? expandedMenus[item.menuKey as string] : undefined}
+                  onClick={item.hasChildren ? () => toggleMenu(item.menuKey as string) : undefined}
+                  onNavigate={onMobileClose}
+                />
+                
+                {item.hasChildren && (
+                  <SidebarSubMenu
+                    items={item.children ?? []}
+                    isExpanded={expandedMenus[item.menuKey as string]}
+                    onNavigate={onMobileClose}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </nav>
+      </ScrollArea>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <aside className="hidden md:flex h-screen w-72 flex-col sticky top-0 p-3">
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onMobileClose} />
+          <aside className="absolute left-0 top-0 h-full w-72 p-3 animate-in slide-in-from-left duration-300">
+            {sidebarContent}
+          </aside>
+        </div>
+      )}
+    </>
   );
 };
 
