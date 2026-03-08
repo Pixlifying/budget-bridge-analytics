@@ -223,23 +223,8 @@ const AccountDetails = () => {
         return;
       }
 
-      // Fetch ALL existing account numbers from database to check for duplicates
-      const { data: existingDbAccounts, error: fetchError } = await supabase
-        .from('account_details')
-        .select('account_number');
-      
-      if (fetchError) throw fetchError;
-
-      const existingNumbers = new Set(existingDbAccounts?.map(a => a.account_number) || []);
-      const newAccounts = accounts.filter(a => !existingNumbers.has(a.accountNumber));
-      
-      if (newAccounts.length === 0) {
-        toast.info("All accounts already exist in the system");
-        return;
-      }
-
-      // Prepare insert data
-      const insertData = newAccounts.map(a => ({
+      // Prepare upsert data - uses account_number unique constraint to skip duplicates
+      const insertData = accounts.map(a => ({
         account_number: a.accountNumber,
         name: '',
         aadhar_number: '',
@@ -247,23 +232,22 @@ const AccountDetails = () => {
         address: null,
       }));
 
-      // Insert in batches of 500 to handle large datasets
+      // Upsert in batches of 500 - ignoreDuplicates skips existing account_numbers
       const BATCH_SIZE = 500;
       let insertedCount = 0;
       
       for (let i = 0; i < insertData.length; i += BATCH_SIZE) {
         const batch = insertData.slice(i, i + BATCH_SIZE);
-        const { error } = await supabase.from('account_details').insert(batch);
+        const { error } = await supabase.from('account_details').upsert(batch, { onConflict: 'account_number', ignoreDuplicates: true });
         if (error) throw error;
         insertedCount += batch.length;
         
-        // Show progress for large uploads
         if (insertData.length > BATCH_SIZE) {
           toast.info(`Uploaded ${insertedCount} of ${insertData.length} accounts...`);
         }
       }
 
-      toast.success(`${newAccounts.length} account(s) added successfully`);
+      toast.success(`${accounts.length} account(s) processed successfully (duplicates skipped)`);
       await fetchAccountDetails();
     } catch (error: any) {
       console.error('Error processing file:', error);
