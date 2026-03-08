@@ -225,7 +225,6 @@ const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: Sid
 
   const appsItems = [
     { icon: <IconCalculator size={16} />, label: 'Calculator', to: '/calculator' },
-    { icon: <IconAgeCalc size={16} />, label: 'Age Calculator', to: '/age-calculator' },
     { icon: <IconForms size={16} />, label: 'Forms', to: '/forms' },
   ];
 

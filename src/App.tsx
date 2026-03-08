@@ -19,7 +19,7 @@ import AccountDetails from "@/pages/AccountDetails";
 import Khata from "@/pages/Khata";
 import Papers from "@/pages/Papers";
 import CustomerDetails from "@/pages/CustomerDetails";
-import AgeCalculator from "@/pages/AgeCalculator";
+
 import Calculator from "@/pages/Calculator";
 import MiscExpenses from "@/pages/MiscExpenses";
 import Query from "@/pages/Query";
@@ -86,7 +86,7 @@ const App = () => {
                       <Route path="/khata" element={<Khata />} />
                       <Route path="/papers" element={<Papers />} />
                       <Route path="/calculator" element={<Calculator />} />
-                      <Route path="/age-calculator" element={<AgeCalculator />} />
+                      <Route path="/age-calculator" element={<Calculator />} />
                       <Route path="/forms" element={<Forms />} />
                       <Route path="/milk" element={<Milk />} />
                       <Route path="/downloads" element={<Downloads />} />
