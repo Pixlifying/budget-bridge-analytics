@@ -41,6 +41,7 @@ const Banking = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month' | 'quarter'>('day');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const { isHighlighted, dateParam } = useHighlight();
 
   useEffect(() => {
@@ -102,14 +103,26 @@ const Banking = () => {
   }, []);
 
   useEffect(() => {
+    let filtered: BankingEntry[];
     if (viewMode === 'day') {
-      setFilteredEntries(filterByDate(bankingEntries, date));
+      filtered = filterByDate(bankingEntries, date);
     } else if (viewMode === 'month') {
-      setFilteredEntries(filterByMonth(bankingEntries, date));
+      filtered = filterByMonth(bankingEntries, date);
     } else {
-      setFilteredEntries(filterByQuarter(bankingEntries, date));
+      filtered = filterByQuarter(bankingEntries, date);
     }
-  }, [date, viewMode, bankingEntries]);
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(e =>
+        String(e.amount).includes(q) ||
+        String(e.transaction_count).includes(q) ||
+        String(e.margin).includes(q)
+      );
+    }
+
+    setFilteredEntries(filtered);
+  }, [date, viewMode, bankingEntries, searchQuery]);
 
   // Process CSV/Excel file using PapaParse
   const processFile = async (file: File) => {
@@ -440,7 +453,13 @@ const Banking = () => {
             mode={viewMode} 
             onModeChange={setViewMode} 
           />
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 items-center">
+            <Input
+              placeholder="Search by amount, count..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-[180px] h-9 bg-sidebar-accent text-sidebar-accent-foreground placeholder:text-sidebar-accent-foreground/50 border-sidebar-border"
+            />
             <Button onClick={handlePrint} variant="outline">
               <Printer size={16} className="mr-2" />
               Print
