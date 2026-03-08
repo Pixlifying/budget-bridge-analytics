@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
 import Papa from 'papaparse';
-import PageWrapper from '@/components/layout/PageWrapper';
+import PageHeader from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -310,62 +310,54 @@ const SocialSecurity = () => {
   });
 
   return (
-    <PageWrapper
-      title="Social Security"
-      subtitle="Manage APY, PMSBY & PMJJY records"
-      icon={<Calendar className="h-6 w-6" />}
-    >
-      <div className="space-y-6">
-        {/* Top Actions Bar */}
-        <div className="flex flex-wrap items-center gap-3 bg-sidebar p-4 rounded-lg border">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-sidebar-foreground/60" />
-            <Input
-              placeholder="Search by name, account, mobile..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 bg-sidebar-accent border-sidebar-border text-sidebar-foreground"
-            />
-          </div>
-          <Select value={schemeFilter} onValueChange={setSchemeFilter}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Filter by scheme" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Schemes</SelectItem>
-              <SelectItem value="APY">APY</SelectItem>
-              <SelectItem value="PMSBY">PMSBY</SelectItem>
-              <SelectItem value="PMJJY">PMJJY</SelectItem>
-              <SelectItem value="DLC">DLC (Life Certificate)</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button variant="outline" onClick={handlePrint} className="gap-2">
-            <Printer className="h-4 w-4" />
-            Print
-          </Button>
-          <DownloadButton
-            data={filteredRecords}
-            currentData={filteredRecords}
-            filename="social-security"
-            label="Download"
-          />
-          <input
-            type="file"
-            ref={fileInputRef}
-            accept=".csv,.xlsx,.xls"
-            onChange={handleFileUpload}
-            className="hidden"
-          />
-          <Button
-            variant="outline"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-            className="gap-2"
-          >
-            <Upload className="h-4 w-4" />
-            {isUploading ? 'Uploading...' : 'Browse'}
-          </Button>
-        </div>
+    <div className="min-h-screen bg-background">
+      <PageHeader
+        title="Social Security"
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search by name, account, mobile..."
+      >
+        <Select value={schemeFilter} onValueChange={setSchemeFilter}>
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="Filter by scheme" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Schemes</SelectItem>
+            <SelectItem value="APY">APY</SelectItem>
+            <SelectItem value="PMSBY">PMSBY</SelectItem>
+            <SelectItem value="PMJJY">PMJJY</SelectItem>
+            <SelectItem value="DLC">DLC (Life Certificate)</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button variant="outline" onClick={handlePrint} className="gap-2">
+          <Printer className="h-4 w-4" />
+          Print
+        </Button>
+        <DownloadButton
+          data={filteredRecords}
+          currentData={filteredRecords}
+          filename="social-security"
+          label="Download"
+        />
+        <input
+          type="file"
+          ref={fileInputRef}
+          accept=".csv,.xlsx,.xls"
+          onChange={handleFileUpload}
+          className="hidden"
+        />
+        <Button
+          variant="outline"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isUploading}
+          className="gap-2"
+        >
+          <Upload className="h-4 w-4" />
+          {isUploading ? 'Uploading...' : 'Browse'}
+        </Button>
+      </PageHeader>
+
+      <div className="flex-1 p-6 space-y-6">
 
         {/* Inline Form */}
         <div className="bg-card rounded-lg border p-6">
@@ -574,7 +566,7 @@ const SocialSecurity = () => {
           </div>
         </div>
       </div>
-    </PageWrapper>
+    </div>
   );
 };
 
