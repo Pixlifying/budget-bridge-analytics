@@ -22,6 +22,7 @@ interface ColorTheme {
 const ThemeSettings = () => {
   const { theme, setTheme } = useTheme();
   const [currentColorTheme, setCurrentColorTheme] = React.useState<string>(getColorTheme());
+  const [glassEnabled, setGlassEnabled] = React.useState<boolean>(getGlassmorphism());
   
   const colorThemes: ColorTheme[] = [
     {
