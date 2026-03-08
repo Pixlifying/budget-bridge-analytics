@@ -235,12 +235,18 @@ const Expenses = () => {
       title="Expenses"
       subtitle={`Manage your expenses for ${viewMode === 'day' ? 'today' : 'this month'}`}
       action={
-        <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+        <div className="flex flex-wrap gap-2 items-center">
           <DateRangePicker 
             date={date} 
             onDateChange={setDate} 
             mode={viewMode} 
             onModeChange={setViewMode} 
+          />
+          <Input
+            placeholder="Search..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-[180px] h-9 bg-sidebar-accent text-sidebar-accent-foreground placeholder:text-sidebar-accent-foreground/50 border-sidebar-border"
           />
           <Button onClick={handlePrint} variant="outline">
             <Printer size={16} className="mr-2" />
