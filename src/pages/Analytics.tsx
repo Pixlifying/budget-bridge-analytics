@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BarChart3, TrendingUp, PieChart, Activity, DollarSign, CreditCard } from 'lucide-react';
+import { BarChart3, TrendingUp, TrendingDown, PieChart, Activity, DollarSign, CreditCard, Wallet, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -8,30 +8,11 @@ import {
   formatCurrency
 } from '@/utils/calculateUtils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from '@/components/ui/chart';
-import { 
-  XAxis, 
-  YAxis, 
-  ResponsiveContainer, 
-  BarChart, 
-  Bar, 
-  PieChart as RechartsPieChart, 
-  Pie,
-  Cell,
-  Legend,
-  ComposedChart,
-  Line,
-  Label
-} from 'recharts';
 import { format } from 'date-fns';
-import Bar3DChart from '@/components/ui/Bar3DChart';
-import RevenueExpenses3DChart from '@/components/ui/RevenueExpenses3DChart';
-import Pie3DChart from '@/components/ui/Pie3DChart';
-import ServicePerformance3DChart from '@/components/ui/ServicePerformance3DChart';
+import AnimatedAreaChart from '@/components/ui/AnimatedAreaChart';
+import AnimatedBarChart from '@/components/ui/AnimatedBarChart';
+import AnimatedRadialChart from '@/components/ui/AnimatedRadialChart';
+import AnimatedODFlowChart from '@/components/ui/AnimatedODFlowChart';
 
 interface ODRecord {
   id: string;
@@ -97,21 +78,6 @@ interface MiscExpenseEntry {
   name: string;
   fee: number;
 }
-
-const chartConfig = {
-  received: {
-    label: "Amount Received",
-    color: "hsl(var(--primary))",
-  },
-  revenue: {
-    label: "Revenue",
-    color: "hsl(var(--primary))",
-  },
-  expenses: {
-    label: "Expenses",
-    color: "hsl(var(--destructive))",
-  },
-};
 
 const COLORS = [
   'hsl(var(--primary))',
@@ -206,6 +172,7 @@ const Analytics = () => {
   const totalPanMargin = filteredPanCards.reduce((sum, entry) => sum + entry.margin, 0);
   const totalPassportMargin = filteredPassports.reduce((sum, entry) => sum + entry.margin, 0);
   const totalBankingMargin = filteredBankingServices.reduce((sum, entry) => sum + entry.margin, 0);
+  const totalMiscExpenses = filteredMiscExpenses.reduce((sum, entry) => sum + entry.fee, 0);
 
   const totalRevenue = totalOnlineServices + totalApplications + totalPanMargin + totalPassportMargin + totalBankingMargin;
   const netProfit = totalRevenue - totalExpenses;
@@ -223,7 +190,7 @@ const Analytics = () => {
     { name: 'Passports', value: totalPassportMargin, color: COLORS[1] },
     { name: 'Banking', value: totalBankingMargin, color: COLORS[2] },
     { name: 'Online', value: totalOnlineServices, color: COLORS[3] },
-    { name: 'Applications', value: totalApplications, color: COLORS[4] }
+    { name: 'Forms', value: totalApplications, color: COLORS[4] }
   ].filter(item => item.value > 0);
 
   const serviceBreakdownData = [
@@ -231,11 +198,11 @@ const Analytics = () => {
     { service: 'Passports', margin: totalPassportMargin },
     { service: 'Banking', margin: totalBankingMargin },
     { service: 'Online', margin: totalOnlineServices },
-    { service: 'Applications', margin: totalApplications }
+    { service: 'Forms', margin: totalApplications }
   ].filter(item => item.margin > 0);
 
-  const monthlyTrendData = [];
-  const last6Months = [];
+  const monthlyTrendData: { month: string; revenue: number; expenses: number }[] = [];
+  const last6Months: Date[] = [];
   for (let i = 5; i >= 0; i--) {
     const monthDate = new Date();
     monthDate.setMonth(monthDate.getMonth() - i);
@@ -268,15 +235,60 @@ const Analytics = () => {
     monthlyTrendData.push(monthData);
   });
 
+  const metricCards = [
+    {
+      title: 'Total Revenue',
+      value: totalRevenue,
+      icon: DollarSign,
+      trend: '+12%',
+      trendUp: true,
+      gradient: 'from-emerald-500/15 to-emerald-500/5',
+      iconBg: 'bg-emerald-500/15',
+      iconColor: 'text-emerald-600',
+    },
+    {
+      title: 'Net Profit',
+      value: netProfit,
+      icon: TrendingUp,
+      trend: '+8%',
+      trendUp: true,
+      gradient: 'from-blue-500/15 to-blue-500/5',
+      iconBg: 'bg-blue-500/15',
+      iconColor: 'text-blue-600',
+    },
+    {
+      title: 'Cash in Hand',
+      value: latestCashInHand,
+      icon: Wallet,
+      trend: '-3%',
+      trendUp: false,
+      gradient: 'from-amber-500/15 to-amber-500/5',
+      iconBg: 'bg-amber-500/15',
+      iconColor: 'text-amber-600',
+    },
+    {
+      title: 'Total Expenses',
+      value: totalExpenses,
+      icon: Activity,
+      trend: '+5%',
+      trendUp: true,
+      gradient: 'from-rose-500/15 to-rose-500/5',
+      iconBg: 'bg-rose-500/15',
+      iconColor: 'text-rose-600',
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-3 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-7xl space-y-6">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 animate-fade-in">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h1>
-            <p className="text-muted-foreground mt-1">
-              Advanced insights for {viewMode === 'day' ? 'today' : 'this month'}
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+              Analytics Dashboard
+            </h1>
+            <p className="text-muted-foreground mt-1 text-sm">
+              Advanced insights for {viewMode === 'day' ? format(date, 'dd MMM yyyy') : format(date, 'MMMM yyyy')}
             </p>
           </div>
           <DateRangePicker 
@@ -287,111 +299,72 @@ const Analytics = () => {
           />
         </div>
 
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="relative overflow-hidden border-none shadow-md hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Total Revenue</p>
-                  <p className="text-2xl font-bold">{formatCurrency(totalRevenue)}</p>
-                  <div className="flex items-center gap-1 text-xs">
-                    <span className="text-green-600 flex items-center gap-0.5">
-                      <TrendingUp className="h-3 w-3" />
-                      +12%
-                    </span>
+        {/* Metric Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {metricCards.map((card, i) => {
+            const Icon = card.icon;
+            return (
+              <Card
+                key={card.title}
+                className={`relative overflow-hidden border-none shadow-md hover:shadow-xl transition-all duration-500 group bg-gradient-to-br ${card.gradient} animate-fade-in`}
+                style={{ animationDelay: `${i * 100}ms`, animationFillMode: 'both' }}
+              >
+                {/* Decorative blob */}
+                <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-primary/5 group-hover:scale-150 transition-transform duration-700" />
+                <CardContent className="p-4 sm:p-6 relative">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className={`p-2.5 rounded-xl ${card.iconBg} transition-transform duration-300 group-hover:scale-110`}>
+                      <Icon className={`h-5 w-5 ${card.iconColor}`} />
+                    </div>
+                    <div className={`flex items-center gap-0.5 text-xs font-medium px-2 py-1 rounded-full ${card.trendUp ? 'bg-emerald-500/10 text-emerald-600' : 'bg-rose-500/10 text-rose-600'}`}>
+                      {card.trendUp ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                      {card.trend}
+                    </div>
                   </div>
-                </div>
-                <div className="rounded-xl bg-blue-500/10 p-3">
-                  <DollarSign className="h-6 w-6 text-blue-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="relative overflow-hidden border-none shadow-md hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Net Profit</p>
-                  <p className="text-2xl font-bold">{formatCurrency(netProfit)}</p>
-                  <div className="flex items-center gap-1 text-xs">
-                    <span className="text-green-600 flex items-center gap-0.5">
-                      <TrendingUp className="h-3 w-3" />
-                      +8%
-                    </span>
-                  </div>
-                </div>
-                <div className="rounded-xl bg-indigo-500/10 p-3">
-                  <TrendingUp className="h-6 w-6 text-indigo-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="relative overflow-hidden border-none shadow-md hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Cash in Hand</p>
-                  <p className="text-2xl font-bold">{formatCurrency(latestCashInHand)}</p>
-                  <div className="flex items-center gap-1 text-xs">
-                    <span className="text-red-600 flex items-center gap-0.5">
-                      <TrendingUp className="h-3 w-3 rotate-180" />
-                      -3%
-                    </span>
-                  </div>
-                </div>
-                <div className="rounded-xl bg-orange-500/10 p-3">
-                  <CreditCard className="h-6 w-6 text-orange-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="relative overflow-hidden border-none shadow-md hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Total Expenses</p>
-                  <p className="text-2xl font-bold">{formatCurrency(totalExpenses)}</p>
-                  <div className="flex items-center gap-1 text-xs">
-                    <span className="text-green-600 flex items-center gap-0.5">
-                      <TrendingUp className="h-3 w-3" />
-                      +5%
-                    </span>
-                  </div>
-                </div>
-                <div className="rounded-xl bg-cyan-500/10 p-3">
-                  <Activity className="h-6 w-6 text-cyan-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                  <p className="text-xs font-medium text-muted-foreground">{card.title}</p>
+                  <p className="text-xl sm:text-2xl font-bold text-foreground mt-1 tracking-tight">
+                    {formatCurrency(card.value)}
+                  </p>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
-        {/* Monthly Trend & Revenue Breakdown */}
+        {/* Revenue Trend & Revenue Breakdown */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Monthly Trend 3D Bar Chart */}
-          <Card className="border-none shadow-md">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-base font-semibold">Monthly Trend</CardTitle>
-              <CardDescription className="text-xs">Revenue over the last 6 months</CardDescription>
+          <Card className="border-none shadow-md hover:shadow-lg transition-shadow duration-300 animate-fade-in" style={{ animationDelay: '400ms', animationFillMode: 'both' }}>
+            <CardHeader className="pb-2">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-primary/10">
+                  <BarChart3 className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-sm font-semibold">Revenue vs Expenses</CardTitle>
+                  <CardDescription className="text-xs">6-month trend overview</CardDescription>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent>
-              <Bar3DChart data={monthlyTrendData} />
+            <CardContent className="pt-0">
+              <AnimatedAreaChart data={monthlyTrendData} />
             </CardContent>
           </Card>
 
-          {/* Revenue Breakdown 3D Pie Chart */}
           {revenueBreakdownData.length > 0 && (
-            <Card className="border-none shadow-md">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-base font-semibold">Revenue by Source</CardTitle>
-                <CardDescription className="text-xs">{format(date, 'MMMM yyyy')}</CardDescription>
+            <Card className="border-none shadow-md hover:shadow-lg transition-shadow duration-300 animate-fade-in" style={{ animationDelay: '500ms', animationFillMode: 'both' }}>
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-primary/10">
+                    <PieChart className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-sm font-semibold">Revenue by Source</CardTitle>
+                    <CardDescription className="text-xs">{format(date, 'MMMM yyyy')}</CardDescription>
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent>
-                <Pie3DChart data={revenueBreakdownData} />
+              <CardContent className="pt-0">
+                <AnimatedRadialChart data={revenueBreakdownData} />
               </CardContent>
             </Card>
           )}
@@ -399,86 +372,63 @@ const Analytics = () => {
 
         {/* Service Performance & OD Flow */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Service Performance 3D Bar Chart */}
           {serviceBreakdownData.length > 0 && (
-            <Card className="border-none shadow-md">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-base font-semibold">Service Performance</CardTitle>
-                <CardDescription className="text-xs">Margin by service type</CardDescription>
+            <Card className="border-none shadow-md hover:shadow-lg transition-shadow duration-300 animate-fade-in" style={{ animationDelay: '600ms', animationFillMode: 'both' }}>
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-primary/10">
+                    <Activity className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-sm font-semibold">Service Performance</CardTitle>
+                    <CardDescription className="text-xs">Margin by service type</CardDescription>
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent>
-                <ServicePerformance3DChart data={serviceBreakdownData} />
+              <CardContent className="pt-0">
+                <AnimatedBarChart data={serviceBreakdownData} />
               </CardContent>
             </Card>
           )}
 
-          {/* OD Flow Bar Chart */}
           {odTrendData.length > 0 && (
-            <Card className="border-none shadow-md">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-base font-semibold">OD Flow Analytics</CardTitle>
-                <CardDescription className="text-xs">Cash flow breakdown</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ChartContainer config={chartConfig} className="h-[280px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={odTrendData} barGap={2}>
-                      <XAxis 
-                        dataKey="date" 
-                        stroke="hsl(var(--muted-foreground))"
-                        fontSize={11}
-                        tickLine={false}
-                        axisLine={false}
-                      />
-                      <YAxis 
-                        stroke="hsl(var(--muted-foreground))"
-                        fontSize={11}
-                        tickLine={false}
-                        axisLine={false}
-                      />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar dataKey="od_from_bank" fill="hsl(25, 95%, 53%)" radius={[4, 4, 0, 0]} name="OD from Bank" />
-                      <Bar dataKey="received" fill="hsl(160, 84%, 39%)" radius={[4, 4, 0, 0]} name="Amount Received" />
-                      <Bar dataKey="given" fill="hsl(280, 85%, 55%)" radius={[4, 4, 0, 0]} name="Amount Given" />
-                      <Bar dataKey="cash_in_hand" fill="hsl(340, 82%, 52%)" radius={[4, 4, 0, 0]} name="Cash in Hand" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </ChartContainer>
-                {/* Legend */}
-                <div className="flex flex-wrap justify-center gap-4 mt-4 text-xs">
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(25, 95%, 53%)' }}></div>
-                    <span>OD from Bank</span>
+            <Card className="border-none shadow-md hover:shadow-lg transition-shadow duration-300 animate-fade-in" style={{ animationDelay: '700ms', animationFillMode: 'both' }}>
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-primary/10">
+                    <CreditCard className="h-4 w-4 text-primary" />
                   </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(160, 84%, 39%)' }}></div>
-                    <span>Amount Received</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(280, 85%, 55%)' }}></div>
-                    <span>Amount Given</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(340, 82%, 52%)' }}></div>
-                    <span>Cash in Hand</span>
+                  <div>
+                    <CardTitle className="text-sm font-semibold">OD Flow Analytics</CardTitle>
+                    <CardDescription className="text-xs">Cash flow breakdown</CardDescription>
                   </div>
                 </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <AnimatedODFlowChart data={odTrendData} />
               </CardContent>
             </Card>
           )}
         </div>
 
-        {/* Revenue vs Expenses 3D Chart */}
-        <Card className="border-none shadow-md">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              Revenue vs Expenses
-            </CardTitle>
-            <CardDescription className="text-xs">6-month comparison</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <RevenueExpenses3DChart data={monthlyTrendData} />
+        {/* Quick Stats Summary */}
+        <Card className="border-none shadow-md animate-fade-in" style={{ animationDelay: '800ms', animationFillMode: 'both' }}>
+          <CardContent className="p-4 sm:p-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+              {[
+                { label: 'PAN Cards', value: totalPanMargin, color: 'bg-primary/10 text-primary' },
+                { label: 'Passports', value: totalPassportMargin, color: 'bg-blue-500/10 text-blue-600' },
+                { label: 'Banking', value: totalBankingMargin, color: 'bg-pink-500/10 text-pink-600' },
+                { label: 'Online', value: totalOnlineServices, color: 'bg-teal-500/10 text-teal-600' },
+                { label: 'Forms', value: totalApplications, color: 'bg-purple-500/10 text-purple-600' },
+                { label: 'Misc Exp.', value: totalMiscExpenses, color: 'bg-orange-500/10 text-orange-600' },
+              ].map((item) => (
+                <div key={item.label} className="text-center p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors duration-200">
+                  <p className="text-xs text-muted-foreground mb-1">{item.label}</p>
+                  <p className="text-sm sm:text-base font-bold text-foreground">{formatCurrency(item.value)}</p>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       </div>
