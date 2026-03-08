@@ -45,6 +45,7 @@ interface BankingServiceEntry {
   id: string;
   date: Date;
   amount: number;
+  expense: number;
   margin: number;
 }
 
