@@ -59,7 +59,7 @@ const App = () => {
       <NotificationProvider>
         <BrowserRouter>
           <TooltipProvider>
-            <MobileMenuContext.Provider value={{ open: mobileMenuOpen, setOpen: setMobileMenuOpen }}>
+            <MobileMenuContext.Provider value={{ open: mobileMenuOpen, setOpen: setMobileMenuOpen, sidebarCollapsed, setSidebarCollapsed }}>
               <ProtectedRoute>
                 <div className="flex h-screen bg-background">
                   <Sidebar mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
