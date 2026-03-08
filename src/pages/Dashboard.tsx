@@ -1039,7 +1039,7 @@ const Dashboard = () => {
             </div>
 
             {/* Third Row - Recent Activities, Khata, Documentation */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <DashCard>
                 <h3 className="font-medium text-foreground mb-3">Recent Activities {viewMode === 'day' ? '(Today)' : '(This Month)'}</h3>
                 <div className="relative overflow-hidden h-48">
