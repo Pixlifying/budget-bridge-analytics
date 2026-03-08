@@ -330,6 +330,19 @@ const Dashboard = () => {
 
   const khataTotal = khataCustomersData?.reduce((sum, c) => sum + c.current_balance, 0) || 0;
 
+  // User admin data for profile image
+  const { data: userAdminData } = useQuery({
+    queryKey: ['userAdmin'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_admin')
+        .select('username, profile_image_url')
+        .single();
+      if (error) throw error;
+      return data as { username: string; profile_image_url: string | null };
+    }
+  });
+
   // Recent activities - fetch today's data for day mode, or filtered data for month mode
   const { data: recentActivitiesData } = useQuery({
     queryKey: ['recentActivities', viewMode, date],
