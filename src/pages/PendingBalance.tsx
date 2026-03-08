@@ -40,6 +40,14 @@ const PendingBalance = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { isHighlighted, dateParam } = useHighlight();
+
+  useEffect(() => {
+    if (dateParam) {
+      const navDate = new Date(dateParam);
+      if (!isNaN(navDate.getTime())) { setDate(navDate); setViewMode('month'); }
+    }
+  }, [dateParam]);
 
   // Inline form state
   const [newEntry, setNewEntry] = useState({
