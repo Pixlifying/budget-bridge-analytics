@@ -135,7 +135,7 @@ const CustomerCard = ({ customer, onClick, onEdit, onDelete, isHighlighted = fal
                 <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
                   <MapPin size={14} className="text-green-500" />
                 </div>
-                <span className="text-sm text-slate-600 line-clamp-1">{customer.address}</span>
+                <span className="text-sm text-muted-foreground line-clamp-1">{customer.address}</span>
               </div>
             )}
 
