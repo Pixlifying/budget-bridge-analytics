@@ -38,6 +38,7 @@ const Applications = () => {
   const [editingEntry, setEditingEntry] = useState<ApplicationEntry | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [filterMode, setFilterMode] = useState<'day' | 'month' | 'quarter'>('day');
+  const [searchQuery, setSearchQuery] = useState('');
   const { isHighlighted, dateParam } = useHighlight();
 
   useEffect(() => {
