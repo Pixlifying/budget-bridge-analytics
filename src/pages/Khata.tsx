@@ -628,7 +628,7 @@ const Khata = () => {
             <Input
               placeholder="Search transactions..."
               value={transactionSearch}
-              onChange={(e) => setTransactionSearch(e.target.value)}
+              onChange={(e) => { setTransactionSearch(e.target.value); setCurrentPage(1); }}
               className="pl-9 bg-sidebar-accent/30 border-sidebar-border text-sidebar-foreground placeholder:text-sidebar-foreground/50 focus:bg-sidebar-accent/50"
             />
           </div>
