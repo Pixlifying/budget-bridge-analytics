@@ -119,7 +119,7 @@ const CustomerCard = ({ customer, onClick, onEdit, onDelete, isHighlighted = fal
         {/* Content */}
         <div className="pt-10 pb-5 px-5">
           {/* Name */}
-          <h3 className="font-bold text-lg text-slate-800 mb-3">{customer.name}</h3>
+          <h3 className="font-bold text-lg text-card-foreground mb-3">{customer.name}</h3>
           
           {/* Details with icons */}
           <div className="space-y-2">
