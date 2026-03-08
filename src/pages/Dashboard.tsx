@@ -1085,6 +1085,12 @@ const Dashboard = () => {
                     <span className="text-destructive">{formatCurrency(pendingBalanceTotal)}</span>
                   </div>
                 </div>
+                <button
+                  onClick={() => { setPendingDialogOpen(false); navigate('/pending-balance'); }}
+                  className="w-full mt-2 text-sm text-primary hover:underline text-center"
+                >
+                  View full Pending Balance page →
+                </button>
               </div>
             ) : (
               <p className="text-center text-muted-foreground py-8">No pending balances found</p>
