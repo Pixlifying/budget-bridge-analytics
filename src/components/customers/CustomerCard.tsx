@@ -152,7 +152,7 @@ const CustomerCard = ({ customer, onClick, onEdit, onDelete, isHighlighted = fal
 
         {/* Bottom 3D shadow effect */}
         <div 
-          className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-slate-200 to-transparent opacity-50"
+          className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-border to-transparent opacity-50"
           style={{
             transform: 'translateZ(-5px)',
           }}

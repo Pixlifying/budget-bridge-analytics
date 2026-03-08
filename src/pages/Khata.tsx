@@ -565,25 +565,26 @@ const Khata = () => {
     
     return (
       <div className="container px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6 max-w-6xl mx-auto">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 bg-sidebar text-sidebar-foreground rounded-xl px-4 py-3">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setSelectedCustomer(null)}
-            className="flex items-center gap-2 self-start"
+            className="flex items-center gap-2 self-start bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80"
           >
             <ArrowLeft size={16} />
             Back
           </Button>
           <div className="flex-1 min-w-0">
             <h1 className="text-xl sm:text-2xl font-bold truncate">{selectedCustomer.name}</h1>
-            <p className="text-sm text-muted-foreground">{selectedCustomer.phone}</p>
+            <p className="text-sm opacity-70">{selectedCustomer.phone}</p>
           </div>
           <div className="flex gap-2 flex-wrap">
             <Button
               variant="outline"
               size="sm"
               onClick={handlePrintCustomer}
+              className="bg-sidebar-accent text-sidebar-accent-foreground border-sidebar-accent hover:bg-sidebar-accent/80"
             >
               <Printer size={16} className="mr-1" />
               Print
@@ -592,6 +593,7 @@ const Khata = () => {
               variant="outline"
               size="sm"
               onClick={() => openEditCustomer(selectedCustomer)}
+              className="bg-sidebar-accent text-sidebar-accent-foreground border-sidebar-accent hover:bg-sidebar-accent/80"
             >
               <Edit size={16} className="mr-1" />
               Edit
