@@ -100,17 +100,24 @@ const Applications = () => {
     }
   };
 
-  const applyDateFilter = (data: ApplicationEntry[], date: Date, mode: 'day' | 'month' | 'quarter') => {
+  const applyDateFilter = (data: ApplicationEntry[], date: Date, mode: 'day' | 'month' | 'quarter', search: string = '') => {
+    let filtered: ApplicationEntry[];
     if (mode === 'day') {
-      const filtered = filterByDate(data, date);
-      setFilteredApplications(filtered);
+      filtered = filterByDate(data, date);
     } else if (mode === 'month') {
-      const filtered = filterByMonth(data, date);
-      setFilteredApplications(filtered);
+      filtered = filterByMonth(data, date);
     } else {
-      const filtered = filterByQuarter(data, date);
-      setFilteredApplications(filtered);
+      filtered = filterByQuarter(data, date);
     }
+
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      filtered = filtered.filter(e =>
+        e.customer_name.toLowerCase().includes(q)
+      );
+    }
+
+    setFilteredApplications(filtered);
   };
 
   useEffect(() => {
@@ -118,16 +125,8 @@ const Applications = () => {
   }, []);
 
   useEffect(() => {
-    applyDateFilter(applications, selectedDate, filterMode);
-  }, [selectedDate, filterMode, applications]);
-
-  useEffect(() => {
-    if (!searchQuery.trim()) return;
-    const q = searchQuery.toLowerCase();
-    setFilteredApplications(prev => prev.filter(e =>
-      e.customer_name.toLowerCase().includes(q)
-    ));
-  }, [searchQuery, selectedDate, filterMode, applications]);
+    applyDateFilter(applications, selectedDate, filterMode, searchQuery);
+  }, [selectedDate, filterMode, applications, searchQuery]);
 
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);

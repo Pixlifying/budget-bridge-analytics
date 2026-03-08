@@ -127,21 +127,26 @@ const OnlineServices = () => {
     }
   };
 
-  const applyDateFilter = (data: OnlineServiceEntry[], date: Date, mode: 'day' | 'month' | 'quarter') => {
-    console.log('Applying filter:', mode, 'for date:', date);
+  const applyDateFilter = (data: OnlineServiceEntry[], date: Date, mode: 'day' | 'month' | 'quarter', search: string = '') => {
+    let filtered: OnlineServiceEntry[];
     if (mode === 'day') {
-      const filtered = filterByDate(data, date);
-      console.log('Filtered services by day:', filtered.length);
-      setFilteredServices(filtered);
+      filtered = filterByDate(data, date);
     } else if (mode === 'month') {
-      const filtered = filterByMonth(data, date);
-      console.log('Filtered services by month:', filtered.length);
-      setFilteredServices(filtered);
+      filtered = filterByMonth(data, date);
     } else {
-      const filtered = filterByQuarter(data, date);
-      console.log('Filtered services by quarter:', filtered.length);
-      setFilteredServices(filtered);
+      filtered = filterByQuarter(data, date);
     }
+
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      filtered = filtered.filter(e =>
+        (e.customer_name && e.customer_name.toLowerCase().includes(q)) ||
+        e.service.toLowerCase().includes(q) ||
+        (e.custom_service && e.custom_service.toLowerCase().includes(q))
+      );
+    }
+
+    setFilteredServices(filtered);
   };
 
   useEffect(() => {
@@ -149,18 +154,8 @@ const OnlineServices = () => {
   }, []);
 
   useEffect(() => {
-    applyDateFilter(onlineServices, selectedDate, filterMode);
-  }, [selectedDate, filterMode, onlineServices]);
-
-  useEffect(() => {
-    if (!searchQuery.trim()) return;
-    const q = searchQuery.toLowerCase();
-    setFilteredServices(prev => prev.filter(e =>
-      (e.customer_name && e.customer_name.toLowerCase().includes(q)) ||
-      e.service.toLowerCase().includes(q) ||
-      (e.custom_service && e.custom_service.toLowerCase().includes(q))
-    ));
-  }, [searchQuery, selectedDate, filterMode, onlineServices]);
+    applyDateFilter(onlineServices, selectedDate, filterMode, searchQuery);
+  }, [selectedDate, filterMode, onlineServices, searchQuery]);
 
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
