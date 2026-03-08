@@ -568,6 +568,7 @@ const OnlineServices = () => {
               }}
               onEdit={() => openEditEntry(entry)}
               onDelete={() => handleDeleteEntry(entry.id)}
+              isHighlighted={isHighlighted(entry.id)}
             />
           ))}
         </div>
