@@ -434,27 +434,6 @@ const Dashboard = () => {
         });
       });
 
-      // Fetch expenses
-      let expenseQuery = supabase.from('expenses').select('*');
-      if (filterDate) {
-        expenseQuery = expenseQuery.gte('date', filterDate).lt('date', filterDate + 'T23:59:59');
-      } else if (startDate && endDate) {
-        expenseQuery = expenseQuery.gte('date', startDate).lte('date', endDate + 'T23:59:59');
-      }
-      const { data: expenses } = await expenseQuery.order('created_at', { ascending: false }).limit(5);
-
-      expenses?.forEach((item) => {
-        activities.push({
-          id: `expense-${item.id}`,
-          type: 'Expense',
-          description: `Expense - ${item.name}`,
-          amount: -item.amount,
-          date: item.date,
-          icon: 'expense',
-          color: 'destructive'
-        });
-      });
-
       // Fetch banking accounts (Other Banking)
       let bankingAccQuery = supabase.from('banking_accounts').select('*');
       if (filterDate) {
