@@ -567,104 +567,99 @@ const ODDetailRecords = () => {
   };
 
   return (
-    <PageWrapper title="OD Detail Records">
-      <div className="space-y-6">
-        {/* Compact Upload Section with Time Filter */}
-        <Card className="border-primary/20">
-          <CardContent className="py-4">
-            <div className="flex flex-wrap items-center gap-4">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv,.xlsx,.xls"
-                onChange={handleFileUpload}
-                className="hidden"
-                disabled={isLoading}
+    <PageWrapper 
+      title="OD Detail Records"
+      action={
+        <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+          {/* Time Filter Controls */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Label className="text-sm whitespace-nowrap">Transaction Time:</Label>
+            <Select value={timeFilterMode} onValueChange={(v: 'all' | 'before' | 'after' | 'range') => setTimeFilterMode(v)}>
+              <SelectTrigger className="w-28 h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="before">Before</SelectItem>
+                <SelectItem value="after">After</SelectItem>
+                <SelectItem value="range">Range</SelectItem>
+              </SelectContent>
+            </Select>
+            {(timeFilterMode === 'before' || timeFilterMode === 'after') && (
+              <Input
+                type="time"
+                value={filterTime}
+                onChange={(e) => setFilterTime(e.target.value)}
+                className="w-28 h-9"
               />
-              
-              {/* Time Filter Controls */}
-              <div className="flex flex-wrap items-center gap-2">
-                <Label className="text-sm whitespace-nowrap">Transaction Time:</Label>
-                <Select value={timeFilterMode} onValueChange={(v: 'all' | 'before' | 'after' | 'range') => setTimeFilterMode(v)}>
-                  <SelectTrigger className="w-28 h-9">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="before">Before</SelectItem>
-                    <SelectItem value="after">After</SelectItem>
-                    <SelectItem value="range">Range</SelectItem>
-                  </SelectContent>
-                </Select>
-                {(timeFilterMode === 'before' || timeFilterMode === 'after') && (
-                  <Input
-                    type="time"
-                    value={filterTime}
-                    onChange={(e) => setFilterTime(e.target.value)}
-                    className="w-28 h-9"
-                  />
-                )}
-                {timeFilterMode === 'range' && (
-                  <>
-                    <Label className="text-sm">From:</Label>
-                    <Input
-                      type="time"
-                      value={filterTimeFrom}
-                      onChange={(e) => setFilterTimeFrom(e.target.value)}
-                      className="w-28 h-9"
-                    />
-                    <Label className="text-sm">To:</Label>
-                    <Input
-                      type="time"
-                      value={filterTimeTo}
-                      onChange={(e) => setFilterTimeTo(e.target.value)}
-                      className="w-28 h-9"
-                    />
-                  </>
-                )}
+            )}
+            {timeFilterMode === 'range' && (
+              <>
+                <Label className="text-sm">From:</Label>
+                <Input
+                  type="time"
+                  value={filterTimeFrom}
+                  onChange={(e) => setFilterTimeFrom(e.target.value)}
+                  className="w-28 h-9"
+                />
+                <Label className="text-sm">To:</Label>
+                <Input
+                  type="time"
+                  value={filterTimeTo}
+                  onChange={(e) => setFilterTimeTo(e.target.value)}
+                  className="w-28 h-9"
+                />
+              </>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2 items-center">
+            <Label className="text-sm font-semibold whitespace-nowrap">Mode:</Label>
+            <Select value={printMode} onValueChange={(v: 'range' | 'month') => setPrintMode(v)}>
+              <SelectTrigger className="w-28 h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="range">Date Range</SelectItem>
+                <SelectItem value="month">Month</SelectItem>
+              </SelectContent>
+            </Select>
+            {printMode === 'range' ? (
+              <>
+                <Input type="date" className="w-36 h-9" value={printDateRange.startDate} onChange={(e) => setPrintDateRange({ ...printDateRange, startDate: e.target.value })} />
+                <Input type="date" className="w-36 h-9" value={printDateRange.endDate} onChange={(e) => setPrintDateRange({ ...printDateRange, endDate: e.target.value })} />
+              </>
+            ) : (
+              <Input type="month" className="w-36 h-9" value={printMonth} onChange={(e) => setPrintMonth(e.target.value)} />
+            )}
+            <Button size="sm" onClick={handlePrint} className="gap-2"><Printer className="h-4 w-4" />Print</Button>
+            <Button size="sm" variant="outline" onClick={handleDownload} className="gap-2"><Download className="h-4 w-4" />Download</Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,.xlsx,.xls"
+              onChange={handleFileUpload}
+              className="hidden"
+              disabled={isLoading}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading}
+              className="gap-2"
+            >
+              <Upload className="h-4 w-4" />
+              Browse
+            </Button>
+            {isLoading && (
+              <div className="flex items-center gap-2 text-primary">
+                <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm">Analyzing...</span>
               </div>
-              
-
-              <div className="w-px h-6 bg-border hidden sm:block" />
-
-              <Label className="text-sm font-semibold whitespace-nowrap">Mode:</Label>
-              <Select value={printMode} onValueChange={(v: 'range' | 'month') => setPrintMode(v)}>
-                <SelectTrigger className="w-28 h-9"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="range">Date Range</SelectItem>
-                  <SelectItem value="month">Month</SelectItem>
-                </SelectContent>
-              </Select>
-              {printMode === 'range' ? (
-                <>
-                  <Input type="date" className="w-36 h-9" value={printDateRange.startDate} onChange={(e) => setPrintDateRange({ ...printDateRange, startDate: e.target.value })} />
-                  <Input type="date" className="w-36 h-9" value={printDateRange.endDate} onChange={(e) => setPrintDateRange({ ...printDateRange, endDate: e.target.value })} />
-                </>
-              ) : (
-                <Input type="month" className="w-36 h-9" value={printMonth} onChange={(e) => setPrintMonth(e.target.value)} />
-              )}
-              <Button size="sm" onClick={handlePrint} className="gap-2"><Printer className="h-4 w-4" />Print</Button>
-              <Button size="sm" variant="outline" onClick={handleDownload} className="gap-2"><Download className="h-4 w-4" />Download</Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isLoading}
-                className="gap-2"
-              >
-                <Upload className="h-4 w-4" />
-                Browse CSV/Excel
-              </Button>
-              
-              {isLoading && (
-                <div className="flex items-center gap-2 text-primary">
-                  <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                  <span className="text-sm">Analyzing...</span>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+            )}
+          </div>
+        </div>
+      }
+    >
+      <div className="space-y-6">
 
         {/* Analysis Result - Inline Save */}
         {analysisResult && (
