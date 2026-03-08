@@ -232,6 +232,8 @@ const Expenses = () => {
   const expenseCount = filteredExpenses.length;
   const avgExpense = expenseCount > 0 ? totalExpenses / expenseCount : 0;
 
+  if (isLoading) return <PageSkeleton type="cards" />;
+
   return (
     <PageWrapper
       title="Expenses"
