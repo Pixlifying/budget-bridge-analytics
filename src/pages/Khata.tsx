@@ -575,12 +575,12 @@ const Khata = () => {
   if (selectedCustomer) {
     const balance = calculateBalance(selectedCustomer);
     const filteredTransactions = getFilteredTransactions(selectedCustomer.transactions);
-    const totalPages = Math.ceil(filteredTransactions.length / TRANSACTIONS_PER_PAGE);
-    const paginatedTransactions = filteredTransactions.slice(
+    const allTransactionsWithBalance = calculateRunningBalance(filteredTransactions, selectedCustomer.opening_balance);
+    const totalPages = Math.ceil(allTransactionsWithBalance.length / TRANSACTIONS_PER_PAGE);
+    const transactionsWithBalance = allTransactionsWithBalance.slice(
       (currentPage - 1) * TRANSACTIONS_PER_PAGE,
       currentPage * TRANSACTIONS_PER_PAGE
     );
-    const transactionsWithBalance = calculateRunningBalance(paginatedTransactions, selectedCustomer.opening_balance);
     
     return (
       <div className="container px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6 max-w-6xl mx-auto">
