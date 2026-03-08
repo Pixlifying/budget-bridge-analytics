@@ -247,3 +247,21 @@ export const setColorTheme = (colorTheme: string) => {
 export const getColorTheme = () => {
   return localStorage.getItem('color-theme') || 'default';
 };
+
+export const setGlassmorphism = (enabled: boolean) => {
+  localStorage.setItem('glassmorphism', String(enabled));
+  applyGlassmorphism(enabled);
+  window.dispatchEvent(new Event('storage'));
+};
+
+export const getGlassmorphism = (): boolean => {
+  return localStorage.getItem('glassmorphism') === 'true';
+};
+
+export const applyGlassmorphism = (enabled: boolean) => {
+  if (enabled) {
+    document.documentElement.classList.add('glassmorphism-mode');
+  } else {
+    document.documentElement.classList.remove('glassmorphism-mode');
+  }
+};
