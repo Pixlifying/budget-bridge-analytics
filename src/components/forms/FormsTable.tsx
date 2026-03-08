@@ -10,6 +10,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
+import EmptyState from '@/components/ui/EmptyState';
 
 interface FormEntry {
   id: string;
@@ -37,19 +39,28 @@ interface FormsTableProps {
 const FormsTable = ({ forms, onEdit, onDelete, loading, selectedDepartment, highlightId }: FormsTableProps) => {
   if (loading) {
     return (
-      <div className="p-8 text-center">
-        <div className="text-gray-500">Loading form entries...</div>
+      <div className="bg-card rounded-xl border border-border overflow-hidden">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-4 p-4 border-b border-border/50">
+            <Skeleton className="h-4 w-8" />
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 flex-1" />
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-8 w-16 rounded-md" />
+          </div>
+        ))}
       </div>
     );
   }
 
   if (forms.length === 0) {
     return (
-      <div className="p-8 text-center">
-        <div className="text-gray-500">
-          {selectedDepartment === 'all' ? 'No form entries found' : `No form entries found for ${selectedDepartment} department`}
-        </div>
-      </div>
+      <EmptyState
+        icon="file"
+        title="No Form Entries"
+        description={selectedDepartment === 'all' ? 'No form entries found. Start by adding your first form entry.' : `No form entries found for ${selectedDepartment} department.`}
+      />
     );
   }
 

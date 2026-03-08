@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import DownloadButton from '@/components/ui/DownloadButton';
 import { toast } from "sonner";
 import PageHeader from '@/components/layout/PageHeader';
+import PageSkeleton from '@/components/ui/PageSkeleton';
 
 import CustomerList from '@/components/customers/CustomerList';
 import CustomerForm from '@/components/customers/CustomerForm';
@@ -177,9 +178,7 @@ const Ledger = () => {
       <div className="flex-1 p-6">
         <div className="grid gap-4">
           {loading ? (
-            <div className="text-center py-8">
-              <div className="text-gray-500">Loading customers...</div>
-            </div>
+            <PageSkeleton type="cards" />
           ) : (
             <CustomerList
               customers={filteredCustomers}

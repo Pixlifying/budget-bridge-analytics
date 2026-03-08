@@ -25,7 +25,7 @@ const PageHeader = ({
   showThemeToggle = false
 }: PageHeaderProps) => {
   const [isScrolled, setIsScrolled] = useState(false);
-  const { setOpen } = useMobileMenu();
+  const { setOpen, sidebarCollapsed, setSidebarCollapsed } = useMobileMenu();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -35,6 +35,16 @@ const PageHeader = ({
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleMenuClick = () => {
+    // On mobile, open the mobile drawer
+    if (window.innerWidth < 768) {
+      setOpen(true);
+    } else {
+      // On desktop, toggle the sidebar collapsed state
+      setSidebarCollapsed(!sidebarCollapsed);
+    }
+  };
 
   return (
     <div className={cn(
@@ -47,8 +57,9 @@ const PageHeader = ({
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <button 
-              onClick={() => setOpen(true)} 
-              className="md:hidden p-2 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground"
+              onClick={handleMenuClick} 
+              className="p-2 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground"
+              title={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
             >
               <Menu size={20} />
             </button>

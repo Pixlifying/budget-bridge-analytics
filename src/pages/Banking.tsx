@@ -8,6 +8,8 @@ import { escapeHtml } from '@/lib/sanitize';
 import PageWrapper from '@/components/layout/PageWrapper';
 import { Button } from '@/components/ui/button';
 import ServiceCard from '@/components/ui/ServiceCard';
+import PageSkeleton from '@/components/ui/PageSkeleton';
+import EmptyState from '@/components/ui/EmptyState';
 import StatCard from '@/components/ui/StatCard';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import DownloadButton from '@/components/ui/DownloadButton';
@@ -441,6 +443,8 @@ const Banking = () => {
   const totalExtraAmount = filteredEntries.reduce((sum, entry) => sum + (entry.extra_amount || 0), 0);
   const totalMargin = filteredEntries.reduce((sum, entry) => sum + entry.margin, 0);
 
+  if (isLoading) return <PageSkeleton type="cards" />;
+
   return (
     <PageWrapper
       title="Banking"
@@ -573,9 +577,13 @@ const Banking = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredEntries.length === 0 ? (
-          <div className="col-span-full text-center py-8 bg-muted/30 rounded-lg">
-            <p className="text-muted-foreground">No banking entries found for this {viewMode === 'day' ? 'day' : 'month'}.</p>
-          </div>
+          <EmptyState
+            icon="data"
+            title="No Banking Entries"
+            description={`No banking entries found for this ${viewMode === 'day' ? 'day' : viewMode === 'month' ? 'month' : 'quarter'}. Add your first entry above.`}
+            actionLabel="Add Entry"
+            onAction={() => document.getElementById('amount')?.focus()}
+          />
         ) : (
           filteredEntries.map(entry => (
             <ServiceCard

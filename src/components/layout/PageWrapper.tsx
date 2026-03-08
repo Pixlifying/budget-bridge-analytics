@@ -12,7 +12,15 @@ interface PageWrapperProps {
 }
 
 const PageWrapper = ({ title, subtitle, action, children, icon }: PageWrapperProps) => {
-  const { setOpen } = useMobileMenu();
+  const { setOpen, sidebarCollapsed, setSidebarCollapsed } = useMobileMenu();
+
+  const handleMenuClick = () => {
+    if (window.innerWidth < 768) {
+      setOpen(true);
+    } else {
+      setSidebarCollapsed(!sidebarCollapsed);
+    }
+  };
 
   return (
     <div className="page-transition">
@@ -20,8 +28,9 @@ const PageWrapper = ({ title, subtitle, action, children, icon }: PageWrapperPro
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div className="flex items-center gap-3">
             <button 
-              onClick={() => setOpen(true)} 
-              className="md:hidden p-2 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground shrink-0"
+              onClick={handleMenuClick} 
+              className="p-2 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground shrink-0"
+              title={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
             >
               <Menu size={20} />
             </button>

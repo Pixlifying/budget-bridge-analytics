@@ -45,6 +45,7 @@ const queryClient = new QueryClient();
 
 const App = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     const savedTheme = getColorTheme();
@@ -58,10 +59,10 @@ const App = () => {
       <NotificationProvider>
         <BrowserRouter>
           <TooltipProvider>
-            <MobileMenuContext.Provider value={{ open: mobileMenuOpen, setOpen: setMobileMenuOpen }}>
+            <MobileMenuContext.Provider value={{ open: mobileMenuOpen, setOpen: setMobileMenuOpen, sidebarCollapsed, setSidebarCollapsed }}>
               <ProtectedRoute>
                 <div className="flex h-screen bg-background">
-                  <Sidebar mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
+                  <Sidebar mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} collapsed={sidebarCollapsed} onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)} />
                   <main className="flex-1 overflow-auto w-0 min-w-0">
                     <Routes>
                       <Route path="/" element={<Dashboard />} />

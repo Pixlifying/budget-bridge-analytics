@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import { useHighlight } from '@/hooks/useHighlight';
 import { Receipt, Printer } from 'lucide-react';
+import PageSkeleton from '@/components/ui/PageSkeleton';
+import EmptyState from '@/components/ui/EmptyState';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import PageWrapper from '@/components/layout/PageWrapper';
@@ -230,6 +232,8 @@ const Expenses = () => {
   const expenseCount = filteredExpenses.length;
   const avgExpense = expenseCount > 0 ? totalExpenses / expenseCount : 0;
 
+  if (isLoading) return <PageSkeleton type="cards" />;
+
   return (
     <PageWrapper
       title="Expenses"
@@ -320,18 +324,14 @@ const Expenses = () => {
         </Card>
       </div>
 
-      {isLoading ? (
-        <div className="text-center py-12">
-          <p>Loading expense data...</p>
-        </div>
-      ) : filteredExpenses.length === 0 ? (
-        <div className="text-center py-12 bg-muted/30 rounded-lg border border-border animate-fade-in">
-          <Receipt className="mx-auto h-12 w-12 text-muted-foreground/50" />
-          <h3 className="mt-4 text-lg font-medium">No Expenses</h3>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Add a new expense to get started.
-          </p>
-        </div>
+      {filteredExpenses.length === 0 ? (
+        <EmptyState
+          icon="data"
+          title="No Expenses"
+          description="Add a new expense to get started tracking your spending."
+          actionLabel="Add Expense"
+          onAction={() => document.getElementById('name')?.focus()}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredExpenses.map((entry) => (
