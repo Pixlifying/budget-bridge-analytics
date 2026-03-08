@@ -805,7 +805,7 @@ const Dashboard = () => {
                           {searchResults.map((result, idx) => (
                             <CommandItem 
                               key={idx} 
-                              onSelect={() => { navigate(result.route); setSearchOpen(false); setSearchQuery(''); }}
+                              onSelect={() => { navigate(`${result.route}?highlight=${result.id}&date=${result.date}`); setSearchOpen(false); setSearchQuery(''); }}
                               className="cursor-pointer"
                             >
                               <div className="flex flex-col">
