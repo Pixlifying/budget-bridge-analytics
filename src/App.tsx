@@ -97,7 +97,6 @@ const App = () => {
                     </Routes>
                   </main>
                   <HouseholdSidebar />
-                  </main>
                 </div>
               </ProtectedRoute>
             </MobileMenuContext.Provider>
