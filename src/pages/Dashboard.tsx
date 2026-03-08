@@ -25,6 +25,8 @@ const Dashboard = () => {
   const [applicationsDialogOpen, setApplicationsDialogOpen] = useState(false);
   const [onlineServicesDialogOpen, setOnlineServicesDialogOpen] = useState(false);
   const [documentationDialogOpen, setDocumentationDialogOpen] = useState(false);
+  const [expensesDialogOpen, setExpensesDialogOpen] = useState(false);
+  const [photostatDialogOpen, setPhotostatDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -889,7 +891,7 @@ const Dashboard = () => {
             {/* Second Row - More Stats */}
             <div className="grid grid-cols-4 gap-4">
               {/* Expenses */}
-              <DashCard>
+              <DashCard onClick={() => setExpensesDialogOpen(true)} className="cursor-pointer">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="p-2 rounded-lg bg-destructive/10">
                     <Receipt className="h-4 w-4 text-destructive" />
@@ -897,16 +899,7 @@ const Dashboard = () => {
                   <h3 className="font-medium text-foreground">Expenses</h3>
                 </div>
                 <p className="text-2xl font-bold text-foreground">{formatCurrency(expensesTotal)}</p>
-                <div className="flex items-center gap-1 mt-1">
-                  {expenseChange >= 0 ? (
-                    <ArrowUpRight className="h-3 w-3 text-destructive" />
-                  ) : (
-                    <ArrowDownRight className="h-3 w-3 text-green-500" />
-                  )}
-                  <span className={`text-xs ${expenseChange >= 0 ? 'text-destructive' : 'text-green-500'}`}>
-                    {Math.abs(expenseChange).toFixed(1)}% vs last month
-                  </span>
-                </div>
+                <p className="text-xs text-muted-foreground mt-1">{expensesCount} entries • Click to view</p>
               </DashCard>
 
               {/* Applications */}
@@ -922,7 +915,7 @@ const Dashboard = () => {
               </DashCard>
 
               {/* Photostat */}
-              <DashCard>
+              <DashCard onClick={() => setPhotostatDialogOpen(true)} className="cursor-pointer">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="p-2 rounded-lg bg-primary/10">
                     <Printer className="h-4 w-4 text-primary" />
@@ -930,7 +923,7 @@ const Dashboard = () => {
                   <h3 className="font-medium text-foreground">Photostat</h3>
                 </div>
                 <p className="text-2xl font-bold text-foreground">{formatCurrency(photostatTotal)}</p>
-                <p className="text-xs text-muted-foreground mt-1">Margin: {formatCurrency(photostatMarginTotal)}</p>
+                <p className="text-xs text-muted-foreground mt-1">Margin: {formatCurrency(photostatMarginTotal)} • Click to view</p>
               </DashCard>
 
               {/* Pending Balance */}
