@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { useHighlight } from '@/hooks/useHighlight';
 import { FileText, Plus, Edit, Printer } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
@@ -37,6 +38,17 @@ const Applications = () => {
   const [editingEntry, setEditingEntry] = useState<ApplicationEntry | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [filterMode, setFilterMode] = useState<'day' | 'month' | 'quarter'>('day');
+  const { isHighlighted, dateParam } = useHighlight();
+
+  useEffect(() => {
+    if (dateParam) {
+      const navDate = new Date(dateParam);
+      if (!isNaN(navDate.getTime())) {
+        setSelectedDate(navDate);
+        setFilterMode('month');
+      }
+    }
+  }, [dateParam]);
 
   // Form state for inline entry
   const [newEntry, setNewEntry] = useState({
@@ -503,6 +515,7 @@ const Applications = () => {
               }}
               onEdit={() => openEditEntry(entry)}
               onDelete={() => handleDeleteEntry(entry.id)}
+              isHighlighted={isHighlighted(entry.id)}
             />
           ))}
         </div>
