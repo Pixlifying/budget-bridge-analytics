@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, Wallet, Users, CreditCard } from 'lucide-react';
+import { AlertCircle, Wallet, CreditCard } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/utils/calculateUtils';
 
 interface Notification {
   id: string;
-  type: 'overdraft' | 'pending_balance' | 'khata';
+  type: 'overdraft' | 'pending_balance';
   title: string;
   message: string;
   amount?: number;
@@ -71,39 +71,6 @@ const NotificationBox = () => {
     refetchInterval: 60000,
   });
 
-  // Fetch khata customers with transactions to calculate current balance
-  const { data: khataData } = useQuery({
-    queryKey: ['khata_notifications'],
-    queryFn: async () => {
-      const [customersResult, transactionsResult] = await Promise.all([
-        supabase.from('khata_customers').select('*'),
-        supabase.from('khata_transactions').select('*')
-      ]);
-      
-      if (customersResult.error) throw customersResult.error;
-      if (transactionsResult.error) throw transactionsResult.error;
-      
-      const customers = customersResult.data || [];
-      const transactions = transactionsResult.data || [];
-      
-      // Calculate current balance for each customer
-      const customersWithBalance = customers.map(customer => {
-        const customerTransactions = transactions.filter(t => t.customer_id === customer.id);
-        const transactionTotal = customerTransactions.reduce((sum, t) => {
-          return sum + (t.type === 'credit' ? Number(t.amount) : -Number(t.amount));
-        }, 0);
-        
-        return {
-          ...customer,
-          current_balance: Number(customer.opening_balance) + transactionTotal
-        };
-      });
-      
-      return customersWithBalance;
-    },
-    refetchInterval: 60000,
-  });
-
   useEffect(() => {
     const newNotifications: Notification[] = [];
 
@@ -136,24 +103,8 @@ const NotificationBox = () => {
       });
     }
 
-    // Show all khata customers with current balance (including negative amounts)
-    if (khataData && khataData.length > 0) {
-      khataData.forEach((customer) => {
-        const isNegative = customer.current_balance < 0;
-        newNotifications.push({
-          id: `khata-${customer.id}`,
-          type: 'khata',
-          title: 'Khata Customer',
-          message: `${customer.name}: ${isNegative ? 'Owes ' : 'Balance '} ${formatCurrency(Math.abs(customer.current_balance))}`,
-          amount: customer.current_balance,
-          icon: <Users className="h-4 w-4" />,
-          priority: Math.abs(customer.current_balance) > 50000 ? 'high' : Math.abs(customer.current_balance) > 10000 ? 'medium' : 'low',
-        });
-      });
-    }
-
     setNotifications(newNotifications);
-  }, [odData, pendingData, khataData]);
+  }, [odData, pendingData]);
 
   if (notifications.length === 0) {
     return (
@@ -200,18 +151,14 @@ const NotificationBox = () => {
                 className={`p-3 m-2 rounded-xl border transition-all duration-300 hover:scale-105 ${
                   notification.type === 'overdraft'
                     ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800'
-                    : notification.type === 'pending_balance'
-                    ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'
-                    : 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800'
+                    : 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'
                 }`}
               >
                 <div className="flex items-start gap-3">
                   <div className={`p-2 rounded-lg ${
                     notification.type === 'overdraft'
                       ? 'bg-emerald-100 dark:bg-emerald-800/40 text-emerald-600 dark:text-emerald-400'
-                      : notification.type === 'pending_balance'
-                      ? 'bg-orange-100 dark:bg-orange-800/40 text-orange-600 dark:text-orange-400'
-                      : 'bg-purple-100 dark:bg-purple-800/40 text-purple-600 dark:text-purple-400'
+                      : 'bg-orange-100 dark:bg-orange-800/40 text-orange-600 dark:text-orange-400'
                   }`}>
                     {notification.icon}
                   </div>
@@ -226,9 +173,7 @@ const NotificationBox = () => {
                       <div className={`text-xs font-medium mt-1 ${
                         notification.type === 'overdraft'
                           ? 'text-emerald-600 dark:text-emerald-400'
-                          : notification.type === 'pending_balance'
-                          ? 'text-orange-600 dark:text-orange-400'
-                          : 'text-purple-600 dark:text-purple-400'
+                          : 'text-orange-600 dark:text-orange-400'
                       }`}>
                         {formatCurrency(notification.amount)}
                       </div>
