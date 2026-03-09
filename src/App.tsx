@@ -39,6 +39,7 @@ import SocialSecurity from "@/pages/SocialSecurity";
 import Documentation from "@/pages/Documentation";
 import Udhar from '@/pages/Udhar';
 import ODDetailRecords from "@/pages/ODDetailRecords";
+import WorkToBe from "@/pages/WorkToBe";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
