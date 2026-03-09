@@ -1165,6 +1165,36 @@ export type Database = {
         }
         Relationships: []
       }
+      work_to_be: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          mobile: string | null
+          name: string
+          service_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          id?: string
+          mobile?: string | null
+          name: string
+          service_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          mobile?: string | null
+          name?: string
+          service_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
