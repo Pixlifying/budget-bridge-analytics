@@ -137,8 +137,8 @@ const Applications = () => {
   };
 
   const handleAddEntry = async () => {
-    if (!newEntry.customer_name || !newEntry.amount) {
-      toast.error('Please fill in all required fields');
+    if (!newEntry.amount) {
+      toast.error('Please fill in the amount');
       return;
     }
 
