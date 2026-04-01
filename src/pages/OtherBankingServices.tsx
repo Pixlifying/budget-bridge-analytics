@@ -70,6 +70,8 @@ const OtherBankingServices = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month' | 'quarter'>('day');
   const { isHighlighted, dateParam } = useHighlight();
+  const pdfInputRef = useRef<HTMLInputElement>(null);
+  const [isPdfProcessing, setIsPdfProcessing] = useState(false);
 
   useEffect(() => {
     if (dateParam) {
