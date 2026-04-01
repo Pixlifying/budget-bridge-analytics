@@ -431,6 +431,100 @@ const OtherBankingServices = () => {
     printWindow.print();
   };
 
+  const handlePdfUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (file.type !== 'application/pdf') {
+      toast.error('Please upload a PDF file');
+      return;
+    }
+
+    setIsPdfProcessing(true);
+    try {
+      const text = await extractTextFromPdf(file);
+      
+      // Extract account numbers (5-18 digit numbers)
+      const accountNumberRegex = /\b(\d{5,18})\b/g;
+      const accountNumbers: string[] = [];
+      let match;
+      while ((match = accountNumberRegex.exec(text)) !== null) {
+        accountNumbers.push(match[1]);
+      }
+
+      // Extract names - look for patterns like "Name: XYZ" or lines with capitalized words
+      const namePatterns = [
+        /(?:name|customer|account\s*holder|applicant)\s*[:\-]\s*([A-Za-z\s.]+)/gi,
+        /(?:mr\.|mrs\.|ms\.|shri|smt)\s+([A-Za-z\s.]+)/gi,
+      ];
+      
+      const names: string[] = [];
+      for (const pattern of namePatterns) {
+        let nameMatch;
+        while ((nameMatch = pattern.exec(text)) !== null) {
+          const name = nameMatch[1].trim();
+          if (name.length > 2 && name.length < 50) {
+            names.push(name);
+          }
+        }
+      }
+
+      if (accountNumbers.length === 0 && names.length === 0) {
+        toast.error('Could not extract account numbers or names from the PDF');
+        return;
+      }
+
+      // Fill the first found values into the form
+      const extractedAccountNumber = accountNumbers[0] || '';
+      const extractedName = names[0] || '';
+
+      setNewEntry(prev => ({
+        ...prev,
+        account_number: extractedAccountNumber || prev.account_number,
+        customer_name: extractedName || prev.customer_name,
+      }));
+
+      toast.success(`Extracted: ${extractedName ? 'Name: ' + extractedName : ''}${extractedName && extractedAccountNumber ? ', ' : ''}${extractedAccountNumber ? 'Account: ' + extractedAccountNumber : ''}`);
+    } catch (error) {
+      console.error('Error processing PDF:', error);
+      toast.error('Failed to process PDF');
+    } finally {
+      setIsPdfProcessing(false);
+      if (pdfInputRef.current) pdfInputRef.current.value = '';
+    }
+  };
+
+  const extractTextFromPdf = async (file: File): Promise<string> => {
+    const arrayBuffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    
+    // Simple PDF text extraction - decode streams and extract text between BT/ET markers
+    let text = '';
+    const decoder = new TextDecoder('latin1');
+    const rawText = decoder.decode(bytes);
+    
+    // Extract text from PDF content streams
+    const textMatches = rawText.match(/\(([^)]+)\)/g);
+    if (textMatches) {
+      text = textMatches.map(m => m.slice(1, -1)).join(' ');
+    }
+    
+    // Also try to find text between BT and ET markers
+    const btEtRegex = /BT\s*([\s\S]*?)\s*ET/g;
+    let btMatch;
+    while ((btMatch = btEtRegex.exec(rawText)) !== null) {
+      const content = btMatch[1];
+      const tjMatches = content.match(/\(([^)]*)\)\s*Tj/g);
+      if (tjMatches) {
+        tjMatches.forEach(tj => {
+          const innerText = tj.match(/\(([^)]*)\)/);
+          if (innerText) text += ' ' + innerText[1];
+        });
+      }
+    }
+    
+    return text;
+  };
+
   const totalAccounts = filteredAccounts.length;
   const totalAmount = filteredAccounts.reduce((sum, account) => sum + account.amount, 0);
   const totalMargin = filteredAccounts.reduce((sum, account) => sum + account.margin, 0);
@@ -456,6 +550,21 @@ const OtherBankingServices = () => {
               data={bankingAccounts}
               filename="banking-accounts-data"
               currentData={filteredAccounts}
+            />
+            <Button 
+              variant="outline" 
+              onClick={() => pdfInputRef.current?.click()}
+              disabled={isPdfProcessing}
+            >
+              <Upload size={16} className="mr-2" />
+              {isPdfProcessing ? 'Processing...' : 'Browse PDF'}
+            </Button>
+            <input
+              ref={pdfInputRef}
+              type="file"
+              accept=".pdf"
+              className="hidden"
+              onChange={handlePdfUpload}
             />
           </div>
         </div>
