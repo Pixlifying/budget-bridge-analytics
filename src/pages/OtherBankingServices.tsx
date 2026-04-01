@@ -1,7 +1,7 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useHighlight } from '@/hooks/useHighlight';
-import { CreditCard, Plus, Edit, Trash2, Printer } from 'lucide-react';
+import { CreditCard, Plus, Edit, Trash2, Printer, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency, formatDate, filterByDate, filterByMonth, filterByQuarter } from '@/utils/calculateUtils';
