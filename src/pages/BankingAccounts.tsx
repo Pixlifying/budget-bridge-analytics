@@ -296,6 +296,66 @@ const BankingAccounts = () => {
     printWindow.print();
   };
 
+  const handlePdfUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (file.type !== 'application/pdf') {
+      toast.error('Please upload a PDF file');
+      return;
+    }
+    setIsPdfProcessing(true);
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const decoder = new TextDecoder('latin1');
+      const rawText = decoder.decode(new Uint8Array(arrayBuffer));
+      let text = '';
+      const textMatches = rawText.match(/\(([^)]+)\)/g);
+      if (textMatches) text = textMatches.map(m => m.slice(1, -1)).join(' ');
+      const btEtRegex = /BT\s*([\s\S]*?)\s*ET/g;
+      let btMatch;
+      while ((btMatch = btEtRegex.exec(rawText)) !== null) {
+        const tjMatches = btMatch[1].match(/\(([^)]*)\)\s*Tj/g);
+        if (tjMatches) tjMatches.forEach(tj => { const m = tj.match(/\(([^)]*)\)/); if (m) text += ' ' + m[1]; });
+      }
+
+      const accountNumbers: string[] = [];
+      let match;
+      const accRegex = /\b(\d{5,18})\b/g;
+      while ((match = accRegex.exec(text)) !== null) accountNumbers.push(match[1]);
+
+      const names: string[] = [];
+      const namePatterns = [
+        /(?:name|customer|account\s*holder|applicant)\s*[:\-]\s*([A-Za-z\s.]+)/gi,
+        /(?:mr\.|mrs\.|ms\.|shri|smt)\s+([A-Za-z\s.]+)/gi,
+      ];
+      for (const p of namePatterns) {
+        let nm;
+        while ((nm = p.exec(text)) !== null) {
+          const n = nm[1].trim();
+          if (n.length > 2 && n.length < 50) names.push(n);
+        }
+      }
+
+      if (!accountNumbers.length && !names.length) {
+        toast.error('Could not extract data from the PDF');
+        return;
+      }
+
+      setNewEntry(prev => ({
+        ...prev,
+        account_number: accountNumbers[0] || prev.account_number,
+        customer_name: names[0] || prev.customer_name,
+      }));
+      toast.success(`Extracted: ${names[0] ? 'Name: ' + names[0] : ''}${names[0] && accountNumbers[0] ? ', ' : ''}${accountNumbers[0] ? 'Account: ' + accountNumbers[0] : ''}`);
+    } catch (error) {
+      console.error('Error processing PDF:', error);
+      toast.error('Failed to process PDF');
+    } finally {
+      setIsPdfProcessing(false);
+      if (pdfInputRef.current) pdfInputRef.current.value = '';
+    }
+  };
+
   const totalAccounts = filteredAccounts.length;
   const totalAmount = filteredAccounts.reduce((sum, account) => sum + account.amount, 0);
 
@@ -320,6 +380,21 @@ const BankingAccounts = () => {
               data={bankingAccounts}
               filename="banking-accounts-data"
               currentData={filteredAccounts}
+            />
+            <Button 
+              variant="outline" 
+              onClick={() => pdfInputRef.current?.click()}
+              disabled={isPdfProcessing}
+            >
+              <Upload size={16} className="mr-2" />
+              {isPdfProcessing ? 'Processing...' : 'Browse'}
+            </Button>
+            <input
+              ref={pdfInputRef}
+              type="file"
+              accept=".pdf"
+              className="hidden"
+              onChange={handlePdfUpload}
             />
           </div>
         </div>
