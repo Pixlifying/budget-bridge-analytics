@@ -22,6 +22,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { format } from 'date-fns';
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Set worker source for pdf.js
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
 interface BankingAccount {
   id: string;
