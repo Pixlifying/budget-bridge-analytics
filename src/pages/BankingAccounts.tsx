@@ -22,6 +22,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { format } from 'date-fns';
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Set worker source for pdf.js
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
 interface BankingAccount {
   id: string;
@@ -305,48 +309,78 @@ const BankingAccounts = () => {
     }
     setIsPdfProcessing(true);
     try {
+      // Use pdf.js for proper text extraction
       const arrayBuffer = await file.arrayBuffer();
-      const decoder = new TextDecoder('latin1');
-      const rawText = decoder.decode(new Uint8Array(arrayBuffer));
-      let text = '';
-      const textMatches = rawText.match(/\(([^)]+)\)/g);
-      if (textMatches) text = textMatches.map(m => m.slice(1, -1)).join(' ');
-      const btEtRegex = /BT\s*([\s\S]*?)\s*ET/g;
-      let btMatch;
-      while ((btMatch = btEtRegex.exec(rawText)) !== null) {
-        const tjMatches = btMatch[1].match(/\(([^)]*)\)\s*Tj/g);
-        if (tjMatches) tjMatches.forEach(tj => { const m = tj.match(/\(([^)]*)\)/); if (m) text += ' ' + m[1]; });
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      
+      let fullText = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item: any) => item.str)
+          .join(' ');
+        fullText += pageText + '\n';
       }
 
-      const accountNumbers: string[] = [];
-      let match;
-      const accRegex = /\b(\d{5,18})\b/g;
-      while ((match = accRegex.exec(text)) !== null) accountNumbers.push(match[1]);
+      console.log('Extracted PDF text:', fullText);
 
-      const names: string[] = [];
+      // Extract Customer Name with various patterns
+      let extractedName = '';
       const namePatterns = [
-        /(?:name|customer|account\s*holder|applicant)\s*[:\-]\s*([A-Za-z\s.]+)/gi,
-        /(?:mr\.|mrs\.|ms\.|shri|smt)\s+([A-Za-z\s.]+)/gi,
+        /Customer\s*Name\s*[:\-]\s*([A-Za-z\s.]+)/i,
+        /Account\s*Holder\s*(?:Name)?\s*[:\-]\s*([A-Za-z\s.]+)/i,
+        /Name\s*[:\-]\s*([A-Za-z\s.]+)/i,
+        /Applicant\s*(?:Name)?\s*[:\-]\s*([A-Za-z\s.]+)/i,
+        /(?:Mr\.|Mrs\.|Ms\.|Shri|Smt)\s+([A-Za-z\s.]+)/i,
       ];
-      for (const p of namePatterns) {
-        let nm;
-        while ((nm = p.exec(text)) !== null) {
-          const n = nm[1].trim();
-          if (n.length > 2 && n.length < 50) names.push(n);
+      for (const pattern of namePatterns) {
+        const match = fullText.match(pattern);
+        if (match) {
+          const name = match[1].trim();
+          if (name.length > 2 && name.length < 60) {
+            extractedName = name;
+            break;
+          }
         }
       }
 
-      if (!accountNumbers.length && !names.length) {
-        toast.error('Could not extract data from the PDF');
+      // Extract Account Number with various patterns
+      let extractedAccount = '';
+      const accountPatterns = [
+        /Account\s*(?:No|Number|#)\s*[:\-]?\s*(\d[\d\s]{4,20}\d)/i,
+        /A\/C\s*(?:No|Number)?\s*[:\-]?\s*(\d[\d\s]{4,20}\d)/i,
+        /Acc(?:ount)?\s*[:\-]\s*(\d[\d\s]{4,20}\d)/i,
+      ];
+      for (const pattern of accountPatterns) {
+        const match = fullText.match(pattern);
+        if (match) {
+          extractedAccount = match[1].replace(/\s/g, '');
+          break;
+        }
+      }
+
+      // Fallback: find any long number sequence as account number
+      if (!extractedAccount) {
+        const longNumberMatch = fullText.match(/\b(\d{8,18})\b/);
+        if (longNumberMatch) extractedAccount = longNumberMatch[1];
+      }
+
+      if (!extractedName && !extractedAccount) {
+        toast.error('Could not extract Customer Name or Account Number from the PDF');
         return;
       }
 
       setNewEntry(prev => ({
         ...prev,
-        account_number: accountNumbers[0] || prev.account_number,
-        customer_name: names[0] || prev.customer_name,
+        account_number: extractedAccount || prev.account_number,
+        customer_name: extractedName || prev.customer_name,
       }));
-      toast.success(`Extracted: ${names[0] ? 'Name: ' + names[0] : ''}${names[0] && accountNumbers[0] ? ', ' : ''}${accountNumbers[0] ? 'Account: ' + accountNumbers[0] : ''}`);
+      
+      const parts = [];
+      if (extractedName) parts.push('Name: ' + extractedName);
+      if (extractedAccount) parts.push('Account: ' + extractedAccount);
+      toast.success(`Extracted: ${parts.join(', ')}`);
     } catch (error) {
       console.error('Error processing PDF:', error);
       toast.error('Failed to process PDF');
