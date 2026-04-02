@@ -994,7 +994,7 @@ const Dashboard = () => {
             </div>
 
             {/* Second Row - More Stats */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
               {/* Expenses */}
               <DashCard onClick={() => setExpensesDialogOpen(true)} className="cursor-pointer">
                 <div className="flex items-center gap-3 mb-2">
@@ -1017,33 +1017,6 @@ const Dashboard = () => {
                 </div>
                 <p className="text-2xl font-bold text-foreground">{formatCurrency(applicationsTotal)}</p>
                 <p className="text-xs text-muted-foreground mt-1">{applicationsCount} applications • Click to view</p>
-              </DashCard>
-
-              {/* Photostat */}
-              <DashCard onClick={() => setPhotostatDialogOpen(true)} className="cursor-pointer">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 rounded-lg bg-primary/10">
-                    <Printer className="h-4 w-4 text-primary" />
-                  </div>
-                  <h3 className="font-medium text-foreground">​Print</h3>
-                </div>
-                <p className="text-2xl font-bold text-foreground">{formatCurrency(photostatTotal)}</p>
-                <p className="text-xs text-muted-foreground mt-1">Margin: {formatCurrency(photostatMarginTotal)} • Click to view</p>
-              </DashCard>
-
-              {/* Pending Balance */}
-              <DashCard
-                className="cursor-pointer hover:shadow-lg transition-shadow"
-                onClick={() => setPendingDialogOpen(true)}>
-                
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 rounded-lg bg-destructive/10">
-                    <AlertCircle className="h-4 w-4 text-destructive" />
-                  </div>
-                  <h3 className="font-medium text-foreground">Pending Balance</h3>
-                </div>
-                <p className="text-2xl font-bold text-foreground">{formatCurrency(pendingBalanceTotal)}</p>
-                <p className="text-xs text-muted-foreground mt-1">{pendingBalanceData?.length || 0} pending entries • Click to view</p>
               </DashCard>
             </div>
 
