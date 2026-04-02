@@ -39,7 +39,7 @@ interface DocumentationEntry {
   created_at?: string;
 }
 
-const SERVICE_TYPES = ['Deceased', 'Car', 'PCL', 'Other'];
+const SERVICE_TYPES = ['Deceased', 'Car', 'PCL', 'Adhar', 'Other'];
 
 const Documentation = () => {
   const [entries, setEntries] = useState<DocumentationEntry[]>([]);
