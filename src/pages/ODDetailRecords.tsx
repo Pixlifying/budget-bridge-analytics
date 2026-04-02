@@ -623,8 +623,8 @@ const ODDetailRecords = () => {
             </Select>
             {printMode === 'range' ? (
               <>
-                <Input type="date" className="w-36 h-9" value={printDateRange.startDate} onChange={(e) => setPrintDateRange({ ...printDateRange, startDate: e.target.value })} />
-                <Input type="date" className="w-36 h-9" value={printDateRange.endDate} onChange={(e) => setPrintDateRange({ ...printDateRange, endDate: e.target.value })} />
+                <Input type="date" className="w-36 h-9 text-foreground" value={printDateRange.startDate} onChange={(e) => setPrintDateRange({ ...printDateRange, startDate: e.target.value })} />
+                <Input type="date" className="w-36 h-9 text-foreground" value={printDateRange.endDate} onChange={(e) => setPrintDateRange({ ...printDateRange, endDate: e.target.value })} />
               </>
             ) : (
               <Input type="month" className="w-36 h-9" value={printMonth} onChange={(e) => setPrintMonth(e.target.value)} />
