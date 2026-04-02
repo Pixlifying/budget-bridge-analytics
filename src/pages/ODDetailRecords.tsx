@@ -713,7 +713,7 @@ const ODDetailRecords = () => {
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="date">Date</Label>
-                  <Input type="date" id="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} required />
+                  <Input type="date" id="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} required className="text-foreground" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="od_from_bank">OD from Bank</Label>
