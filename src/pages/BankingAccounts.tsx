@@ -460,13 +460,17 @@ const BankingAccounts = () => {
             <Label htmlFor="account_type">Account Type</Label>
             <Select
               value={newEntry.account_type}
-              onValueChange={(value) => setNewEntry(prev => ({ ...prev, account_type: value, custom_account_type: value === 'Other' ? prev.custom_account_type : '' }))}
+              onValueChange={(value) => {
+                const autoAmount = value === 'PMJDY' ? 20 : value === 'Saving Account' ? 40 : newEntry.amount;
+                setNewEntry(prev => ({ ...prev, account_type: value, custom_account_type: value === 'Other' ? prev.custom_account_type : '', amount: autoAmount }));
+              }}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="Saving Account">Saving Account</SelectItem>
+                <SelectItem value="PMJDY">PMJDY</SelectItem>
                 <SelectItem value="FDR">FDR</SelectItem>
                 <SelectItem value="CCR">CCR</SelectItem>
                 <SelectItem value="Other">Other</SelectItem>
