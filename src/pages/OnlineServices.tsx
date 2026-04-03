@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useHighlight } from '@/hooks/useHighlight';
-import { Globe, Plus, Edit, Printer } from 'lucide-react';
+import { Globe, Plus, Edit, Printer, Upload } from 'lucide-react';
+import * as pdfjsLib from 'pdfjs-dist';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import PageWrapper from '@/components/layout/PageWrapper';
@@ -27,12 +28,16 @@ import { formatCurrency, filterByDate, filterByMonth, filterByQuarter } from '@/
 import { escapeHtml } from '@/lib/sanitize';
 import { format, startOfDay, endOfDay } from 'date-fns';
 
+// Configure PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+
 interface OnlineServiceEntry {
   id: string;
   date: Date;
   service: string;
   custom_service?: string;
   customer_name?: string;
+  reference_number?: string;
   amount: number;
   expense: number;
   total: number;
@@ -48,6 +53,7 @@ const OnlineServices = () => {
   const [filterMode, setFilterMode] = useState<'day' | 'month' | 'quarter'>('day');
   const [searchQuery, setSearchQuery] = useState('');
   const { isHighlighted, dateParam } = useHighlight();
+  const pdfInputRef = useRef<HTMLInputElement>(null);
 
   // Set date from search navigation
   useEffect(() => {
@@ -66,6 +72,7 @@ const OnlineServices = () => {
     customer_name: '',
     service: '',
     custom_service: '',
+    reference_number: '',
     amount: 0,
     expense: 0,
   });
@@ -75,6 +82,7 @@ const OnlineServices = () => {
     customer_name: '',
     service: '',
     custom_service: '',
+    reference_number: '',
     amount: 0,
     expense: 0,
   });
@@ -110,6 +118,7 @@ const OnlineServices = () => {
         service: entry.service,
         custom_service: entry.custom_service,
         customer_name: entry.customer_name || '',
+        reference_number: (entry as any).reference_number || '',
         amount: Number(entry.amount),
         expense: Number(entry.expense || 0),
         total: Number(entry.total),
@@ -185,10 +194,11 @@ const OnlineServices = () => {
           service: newEntry.service,
           custom_service: newEntry.service === 'Other' ? newEntry.custom_service : null,
           customer_name: newEntry.customer_name,
+          reference_number: newEntry.reference_number || null,
           amount: newEntry.amount,
           expense: newEntry.expense,
           total: total,
-        })
+        } as any)
         .select();
 
       if (error) {
@@ -214,6 +224,7 @@ const OnlineServices = () => {
           service: data[0].service,
           custom_service: data[0].custom_service,
           customer_name: data[0].customer_name || '',
+          reference_number: (data[0] as any).reference_number || '',
           amount: Number(data[0].amount),
           expense: Number(data[0].expense || 0),
           total: Number(data[0].total),
@@ -226,6 +237,7 @@ const OnlineServices = () => {
           customer_name: '',
           service: '',
           custom_service: '',
+          reference_number: '',
           amount: 0,
           expense: 0,
         });
@@ -253,10 +265,11 @@ const OnlineServices = () => {
           service: editForm.service,
           custom_service: editForm.service === 'Other' ? editForm.custom_service : null,
           customer_name: editForm.customer_name,
+          reference_number: editForm.reference_number || null,
           amount: editForm.amount,
           expense: editForm.expense,
           total: total,
-        })
+        } as any)
         .eq('id', editingEntry.id);
 
       if (error) throw error;
@@ -341,9 +354,55 @@ const OnlineServices = () => {
       customer_name: entry.customer_name || '',
       service: entry.service,
       custom_service: entry.custom_service || '',
+      reference_number: entry.reference_number || '',
       amount: entry.amount,
       expense: entry.expense,
     });
+  };
+
+  const handlePdfUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let fullText = '';
+      
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map((item: any) => item.str).join(' ');
+        fullText += pageText + '\n';
+      }
+
+      console.log('Extracted PDF text:', fullText);
+
+      // Extract reference number
+      const refMatch = fullText.match(/(?:Application\s+Reference\s+Number|Reference\s+Number|Ref\.?\s*No\.?)\s*[:\s]*([A-Z0-9\-\/]+)/i);
+      const refNumber = refMatch ? refMatch[1].trim() : '';
+
+      // Extract applicant name
+      const nameMatch = fullText.match(/(?:Name\s+of\s+the\s+Applicant|Applicant\s+Name|Name)\s*[:\s]*([A-Z][A-Z\s]+?)(?:\s{2,}|\n|$)/i);
+      const applicantName = nameMatch ? nameMatch[1].trim() : '';
+
+      if (refNumber || applicantName) {
+        setNewEntry(prev => ({
+          ...prev,
+          ...(refNumber && { reference_number: refNumber }),
+          ...(applicantName && { customer_name: applicantName }),
+        }));
+        toast.success(`Extracted: ${refNumber ? 'Ref: ' + refNumber : ''} ${applicantName ? 'Name: ' + applicantName : ''}`);
+      } else {
+        toast.error('Could not extract reference number or name from PDF');
+      }
+    } catch (error) {
+      console.error('Error parsing PDF:', error);
+      toast.error('Failed to parse PDF');
+    }
+
+    // Reset input
+    if (pdfInputRef.current) pdfInputRef.current.value = '';
   };
 
   const handlePrint = () => {
@@ -432,6 +491,17 @@ const OnlineServices = () => {
               filename="online-services"
               currentData={filteredServices}
             />
+            <input
+              type="file"
+              accept=".pdf"
+              ref={pdfInputRef}
+              onChange={handlePdfUpload}
+              className="hidden"
+            />
+            <Button variant="outline" onClick={() => pdfInputRef.current?.click()}>
+              <Upload size={16} className="mr-2" />
+              Browse
+            </Button>
           </div>
         </div>
       }
@@ -492,6 +562,15 @@ const OnlineServices = () => {
               value={newEntry.amount}
               onChange={(e) => setNewEntry(prev => ({ ...prev, amount: Number(e.target.value) }))}
               placeholder="Amount"
+            />
+          </div>
+          <div>
+            <Label htmlFor="ref_number">Reference No. (Optional)</Label>
+            <Input
+              id="ref_number"
+              value={newEntry.reference_number}
+              onChange={(e) => setNewEntry(prev => ({ ...prev, reference_number: e.target.value }))}
+              placeholder="Reference number"
             />
           </div>
           <div>
@@ -568,12 +647,14 @@ const OnlineServices = () => {
               date={entry.date}
               data={{
                 customer: entry.customer_name || 'Not specified',
+                ...(entry.reference_number && { reference: entry.reference_number }),
                 amount: formatCurrency(entry.amount),
                 expense: formatCurrency(entry.expense),
                 margin: formatCurrency(entry.total),
               }}
               labels={{
                 customer: 'Customer',
+                ...(entry.reference_number && { reference: 'Ref No.' }),
                 amount: 'Amount',
                 expense: 'Expense',
                 margin: 'Margin',
@@ -637,6 +718,15 @@ const OnlineServices = () => {
                 />
               </div>
             )}
+            <div className="grid gap-2">
+              <Label htmlFor="edit_ref_number">Reference No. (Optional)</Label>
+              <Input
+                id="edit_ref_number"
+                value={editForm.reference_number}
+                onChange={(e) => setEditForm(prev => ({ ...prev, reference_number: e.target.value }))}
+                placeholder="Reference number"
+              />
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="edit_amount">Amount</Label>
               <Input
