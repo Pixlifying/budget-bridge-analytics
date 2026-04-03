@@ -53,6 +53,7 @@ const OnlineServices = () => {
   const [filterMode, setFilterMode] = useState<'day' | 'month' | 'quarter'>('day');
   const [searchQuery, setSearchQuery] = useState('');
   const { isHighlighted, dateParam } = useHighlight();
+  const pdfInputRef = useRef<HTMLInputElement>(null);
 
   // Set date from search navigation
   useEffect(() => {
