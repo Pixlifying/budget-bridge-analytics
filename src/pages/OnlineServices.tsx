@@ -28,8 +28,11 @@ import { formatCurrency, filterByDate, filterByMonth, filterByQuarter } from '@/
 import { escapeHtml } from '@/lib/sanitize';
 import { format, startOfDay, endOfDay } from 'date-fns';
 
-// Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// Configure PDF.js worker - use legacy build without worker for reliability
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.mjs',
+  import.meta.url
+).toString();
 
 interface OnlineServiceEntry {
   id: string;
@@ -372,7 +375,16 @@ const OnlineServices = () => {
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
-        const pageText = textContent.items.map((item: any) => item.str).join(' ');
+        let lastY: number | null = null;
+        const pageText = textContent.items.map((item: any) => {
+          const currentY = item.transform ? item.transform[5] : null;
+          let prefix = '';
+          if (lastY !== null && currentY !== null && Math.abs(currentY - lastY) > 5) {
+            prefix = '\n';
+          }
+          lastY = currentY;
+          return prefix + item.str;
+        }).join(' ');
         fullText += pageText + '\n';
       }
 
