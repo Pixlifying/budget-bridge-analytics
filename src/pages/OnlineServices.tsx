@@ -647,12 +647,14 @@ const OnlineServices = () => {
               date={entry.date}
               data={{
                 customer: entry.customer_name || 'Not specified',
+                ...(entry.reference_number && { reference: entry.reference_number }),
                 amount: formatCurrency(entry.amount),
                 expense: formatCurrency(entry.expense),
                 margin: formatCurrency(entry.total),
               }}
               labels={{
                 customer: 'Customer',
+                ...(entry.reference_number && { reference: 'Ref No.' }),
                 amount: 'Amount',
                 expense: 'Expense',
                 margin: 'Margin',
