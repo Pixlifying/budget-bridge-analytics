@@ -719,6 +719,15 @@ const OnlineServices = () => {
               </div>
             )}
             <div className="grid gap-2">
+              <Label htmlFor="edit_ref_number">Reference No. (Optional)</Label>
+              <Input
+                id="edit_ref_number"
+                value={editForm.reference_number}
+                onChange={(e) => setEditForm(prev => ({ ...prev, reference_number: e.target.value }))}
+                placeholder="Reference number"
+              />
+            </div>
+            <div className="grid gap-2">
               <Label htmlFor="edit_amount">Amount</Label>
               <Input
                 id="edit_amount"
