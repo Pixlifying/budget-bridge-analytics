@@ -28,12 +28,16 @@ import { formatCurrency, filterByDate, filterByMonth, filterByQuarter } from '@/
 import { escapeHtml } from '@/lib/sanitize';
 import { format, startOfDay, endOfDay } from 'date-fns';
 
+// Configure PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+
 interface OnlineServiceEntry {
   id: string;
   date: Date;
   service: string;
   custom_service?: string;
   customer_name?: string;
+  reference_number?: string;
   amount: number;
   expense: number;
   total: number;
