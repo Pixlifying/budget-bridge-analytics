@@ -567,6 +567,15 @@ const OnlineServices = () => {
             </div>
           )}
           <div>
+            <Label htmlFor="ref_number">Reference No. (Optional)</Label>
+            <Input
+              id="ref_number"
+              value={newEntry.reference_number}
+              onChange={(e) => setNewEntry(prev => ({ ...prev, reference_number: e.target.value }))}
+              placeholder="Reference number"
+            />
+          </div>
+          <div>
             <Label htmlFor="amount">Amount</Label>
             <Input
               id="amount"
@@ -574,15 +583,6 @@ const OnlineServices = () => {
               value={newEntry.amount}
               onChange={(e) => setNewEntry(prev => ({ ...prev, amount: Number(e.target.value) }))}
               placeholder="Amount"
-            />
-          </div>
-          <div>
-            <Label htmlFor="ref_number">Reference No. (Optional)</Label>
-            <Input
-              id="ref_number"
-              value={newEntry.reference_number}
-              onChange={(e) => setNewEntry(prev => ({ ...prev, reference_number: e.target.value }))}
-              placeholder="Reference number"
             />
           </div>
           <div>
