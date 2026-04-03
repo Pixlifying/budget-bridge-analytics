@@ -491,6 +491,17 @@ const OnlineServices = () => {
               filename="online-services"
               currentData={filteredServices}
             />
+            <input
+              type="file"
+              accept=".pdf"
+              ref={pdfInputRef}
+              onChange={handlePdfUpload}
+              className="hidden"
+            />
+            <Button variant="outline" onClick={() => pdfInputRef.current?.click()}>
+              <Upload size={16} className="mr-2" />
+              Browse
+            </Button>
           </div>
         </div>
       }
