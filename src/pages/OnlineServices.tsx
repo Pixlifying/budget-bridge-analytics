@@ -265,10 +265,11 @@ const OnlineServices = () => {
           service: editForm.service,
           custom_service: editForm.service === 'Other' ? editForm.custom_service : null,
           customer_name: editForm.customer_name,
+          reference_number: editForm.reference_number || null,
           amount: editForm.amount,
           expense: editForm.expense,
           total: total,
-        })
+        } as any)
         .eq('id', editingEntry.id);
 
       if (error) throw error;
