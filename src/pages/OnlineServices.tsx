@@ -224,6 +224,7 @@ const OnlineServices = () => {
           service: data[0].service,
           custom_service: data[0].custom_service,
           customer_name: data[0].customer_name || '',
+          reference_number: (data[0] as any).reference_number || '',
           amount: Number(data[0].amount),
           expense: Number(data[0].expense || 0),
           total: Number(data[0].total),
@@ -236,6 +237,7 @@ const OnlineServices = () => {
           customer_name: '',
           service: '',
           custom_service: '',
+          reference_number: '',
           amount: 0,
           expense: 0,
         });
