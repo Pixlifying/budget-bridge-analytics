@@ -354,9 +354,55 @@ const OnlineServices = () => {
       customer_name: entry.customer_name || '',
       service: entry.service,
       custom_service: entry.custom_service || '',
+      reference_number: entry.reference_number || '',
       amount: entry.amount,
       expense: entry.expense,
     });
+  };
+
+  const handlePdfUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let fullText = '';
+      
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map((item: any) => item.str).join(' ');
+        fullText += pageText + '\n';
+      }
+
+      console.log('Extracted PDF text:', fullText);
+
+      // Extract reference number
+      const refMatch = fullText.match(/(?:Application\s+Reference\s+Number|Reference\s+Number|Ref\.?\s*No\.?)\s*[:\s]*([A-Z0-9\-\/]+)/i);
+      const refNumber = refMatch ? refMatch[1].trim() : '';
+
+      // Extract applicant name
+      const nameMatch = fullText.match(/(?:Name\s+of\s+the\s+Applicant|Applicant\s+Name|Name)\s*[:\s]*([A-Z][A-Z\s]+?)(?:\s{2,}|\n|$)/i);
+      const applicantName = nameMatch ? nameMatch[1].trim() : '';
+
+      if (refNumber || applicantName) {
+        setNewEntry(prev => ({
+          ...prev,
+          ...(refNumber && { reference_number: refNumber }),
+          ...(applicantName && { customer_name: applicantName }),
+        }));
+        toast.success(`Extracted: ${refNumber ? 'Ref: ' + refNumber : ''} ${applicantName ? 'Name: ' + applicantName : ''}`);
+      } else {
+        toast.error('Could not extract reference number or name from PDF');
+      }
+    } catch (error) {
+      console.error('Error parsing PDF:', error);
+      toast.error('Failed to parse PDF');
+    }
+
+    // Reset input
+    if (pdfInputRef.current) pdfInputRef.current.value = '';
   };
 
   const handlePrint = () => {
