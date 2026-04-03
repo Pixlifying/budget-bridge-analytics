@@ -194,10 +194,11 @@ const OnlineServices = () => {
           service: newEntry.service,
           custom_service: newEntry.service === 'Other' ? newEntry.custom_service : null,
           customer_name: newEntry.customer_name,
+          reference_number: newEntry.reference_number || null,
           amount: newEntry.amount,
           expense: newEntry.expense,
           total: total,
-        })
+        } as any)
         .select();
 
       if (error) {
