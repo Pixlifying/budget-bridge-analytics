@@ -72,6 +72,7 @@ const OnlineServices = () => {
     customer_name: '',
     service: '',
     custom_service: '',
+    reference_number: '',
     amount: 0,
     expense: 0,
   });
@@ -81,6 +82,7 @@ const OnlineServices = () => {
     customer_name: '',
     service: '',
     custom_service: '',
+    reference_number: '',
     amount: 0,
     expense: 0,
   });
