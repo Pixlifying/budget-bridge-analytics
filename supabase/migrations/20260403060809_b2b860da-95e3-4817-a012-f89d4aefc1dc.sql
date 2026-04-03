@@ -1,0 +1,1 @@
+ALTER TABLE public.online_services ADD COLUMN reference_number text;

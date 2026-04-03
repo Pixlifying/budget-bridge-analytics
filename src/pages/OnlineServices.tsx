@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useHighlight } from '@/hooks/useHighlight';
-import { Globe, Plus, Edit, Printer } from 'lucide-react';
+import { Globe, Plus, Edit, Printer, Upload } from 'lucide-react';
+import * as pdfjsLib from 'pdfjs-dist';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import PageWrapper from '@/components/layout/PageWrapper';

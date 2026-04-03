@@ -713,6 +713,7 @@ export type Database = {
           date: string
           expense: number | null
           id: string
+          reference_number: string | null
           service: string
           total: number
         }
@@ -724,6 +725,7 @@ export type Database = {
           date?: string
           expense?: number | null
           id?: string
+          reference_number?: string | null
           service: string
           total: number
         }
@@ -735,6 +737,7 @@ export type Database = {
           date?: string
           expense?: number | null
           id?: string
+          reference_number?: string | null
           service?: string
           total?: number
         }
