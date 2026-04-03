@@ -375,7 +375,16 @@ const OnlineServices = () => {
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
-        const pageText = textContent.items.map((item: any) => item.str).join(' ');
+        let lastY: number | null = null;
+        const pageText = textContent.items.map((item: any) => {
+          const currentY = item.transform ? item.transform[5] : null;
+          let prefix = '';
+          if (lastY !== null && currentY !== null && Math.abs(currentY - lastY) > 5) {
+            prefix = '\n';
+          }
+          lastY = currentY;
+          return prefix + item.str;
+        }).join(' ');
         fullText += pageText + '\n';
       }
 
