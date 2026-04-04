@@ -96,6 +96,7 @@ const WorkToBe = () => {
           name: formData.name,
           mobile: formData.mobile || null,
           service_type: formData.service_type,
+          status: formData.status,
         } as any);
 
       if (error) throw error;
