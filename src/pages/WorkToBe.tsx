@@ -349,6 +349,17 @@ const WorkToBe = () => {
                 </SelectContent>
               </Select>
             </div>
+            <div className="grid gap-2">
+              <Label>Status</Label>
+              <Select value={editForm.status}
+                onValueChange={(v) => setEditForm(p => ({ ...p, status: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Pending">Pending</SelectItem>
+                  <SelectItem value="Work Done">Work Done</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <Button onClick={handleEdit}>Update</Button>
           </div>
         </DialogContent>
