@@ -93,13 +93,15 @@ const OnlineServices = () => {
   const serviceOptions = [
     { label: 'Income Certificate', value: 'Income Certificate' },
     { label: 'Birth Certificate', value: 'Birth Certificate' },
-    { label: 'Ladli Beti', value: 'Ladli Beti' },
-    { label: 'Insurance Car/Bike', value: 'Insurance Car/Bike' },
+    { label: 'Death Certificate', value: 'Death Certificate' },
+    { label: 'Character Certificate', value: 'Character Certificate' },
     { label: 'Marriage Certificate', value: 'Marriage Certificate' },
     { label: 'Railway Tickets', value: 'Railway Tickets' },
     { label: 'Pension Form', value: 'Pension Form' },
     { label: 'Domicile', value: 'Domicile' },
     { label: 'Marriage Assistance Form', value: 'Marriage Assistance Form' },
+    { label: 'Legal Heir', value: 'Legal Heir' },
+    { label: 'Ayushman Card', value: 'Ayushman Card' },
     { label: 'Other', value: 'Other' }
   ];
 
@@ -391,12 +393,24 @@ const OnlineServices = () => {
       console.log('Extracted PDF text:', fullText);
 
       // Extract reference number
-      const refMatch = fullText.match(/(?:Application\s+Reference\s+Number|Reference\s+Number|Ref\.?\s*No\.?)\s*[:\s]*([A-Z0-9\-\/]+)/i);
+      const refMatch = fullText.match(/(?:Application\s+Reference\s+Number|Reference\s+Number|Ref\.?\s*No\.?)\s*[:\s]*([A-Z]{2}-[A-Z]+-[A-Z]+\/\d+\/\d+|[A-Z0-9\-\/]+)/i);
       const refNumber = refMatch ? refMatch[1].trim() : '';
 
-      // Extract applicant name
-      const nameMatch = fullText.match(/(?:Name\s+of\s+the\s+Applicant|Applicant\s+Name|Name)\s*[:\s]*([A-Z][A-Z\s]+?)(?:\s{2,}|\n|$)/i);
-      const applicantName = nameMatch ? nameMatch[1].trim() : '';
+      // Extract applicant name - try multiple patterns
+      const namePatterns = [
+        /Name\s+of\s+(?:the\s+)?Applicant\s*[:\s]*([A-Z][A-Z\s]+?)(?:\s{2,}|\n|$)/i,
+        /NAME\s+OF\s+APPLICANT\s*[:\s]*([A-Z][A-Z\s]+?)(?:\s{2,}|\n|$)/i,
+        /Name\s+of\s+Child\s*[:\s]*([A-Z][A-Z\s]+?)(?:\s{2,}|\n|$)/i,
+        /Applicant\s+Name\s*[:\s]*([A-Z][A-Z\s]+?)(?:\s{2,}|\n|$)/i,
+      ];
+      let applicantName = '';
+      for (const pattern of namePatterns) {
+        const match = fullText.match(pattern);
+        if (match) {
+          applicantName = match[1].trim();
+          break;
+        }
+      }
 
       if (refNumber || applicantName) {
         setNewEntry(prev => ({
