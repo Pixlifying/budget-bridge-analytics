@@ -50,6 +50,8 @@ const SocialSecurity = () => {
   const { highlightId } = useHighlight();
   const [searchQuery, setSearchQuery] = useState('');
   const [schemeFilter, setSchemeFilter] = useState<string>('all');
+  const [filterDate, setFilterDate] = useState<Date>(new Date());
+  const [viewMode, setViewMode] = useState<'day' | 'month' | 'quarter' | 'year'>('month');
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
