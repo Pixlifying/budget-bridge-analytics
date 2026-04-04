@@ -276,6 +276,32 @@ const WorkToBe = () => {
                   <TableCell className="font-medium">{entry.name}</TableCell>
                   <TableCell>{entry.mobile || '-'}</TableCell>
                   <TableCell>{entry.service_type}</TableCell>
+                  <TableCell>
+                    <Select
+                      value={entry.status || 'Pending'}
+                      onValueChange={async (v) => {
+                        try {
+                          const { error } = await supabase
+                            .from('work_to_be' as any)
+                            .update({ status: v, updated_at: new Date().toISOString() } as any)
+                            .eq('id', entry.id);
+                          if (error) throw error;
+                          toast.success(`Status changed to ${v}`);
+                          fetchEntries();
+                        } catch (error) {
+                          toast.error('Failed to update status');
+                        }
+                      }}
+                    >
+                      <SelectTrigger className={`w-[130px] h-8 text-xs ${entry.status === 'Work Done' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'}`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Pending">Pending</SelectItem>
+                        <SelectItem value="Work Done">Work Done</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button variant="ghost" size="icon" onClick={() => openEdit(entry)}>
