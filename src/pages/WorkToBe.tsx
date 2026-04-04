@@ -232,6 +232,17 @@ const WorkToBe = () => {
               </SelectContent>
             </Select>
           </div>
+          <div>
+            <Label htmlFor="w_status">Status</Label>
+            <Select value={formData.status}
+              onValueChange={(v) => setFormData(p => ({ ...p, status: v }))}>
+              <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Pending">Pending</SelectItem>
+                <SelectItem value="Work Done">Work Done</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <Button onClick={handleAdd}>Save</Button>
         </div>
       </div>
