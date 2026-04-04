@@ -393,7 +393,7 @@ const OnlineServices = () => {
       console.log('Extracted PDF text:', fullText);
 
       // Extract reference number
-      const refMatch = fullText.match(/(?:Application\s+Reference\s+Number|Reference\s+Number|Ref\.?\s*No\.?)\s*[:\s]*([A-Z0-9\-\/]+)/i);
+      const refMatch = fullText.match(/(?:Application\s+Reference\s+Number|Reference\s+Number|Ref\.?\s*No\.?)\s*[:\s]*([A-Z]{2}-[A-Z]+-[A-Z]+\/\d+\/\d+|[A-Z0-9\-\/]+)/i);
       const refNumber = refMatch ? refMatch[1].trim() : '';
 
       // Extract applicant name - try multiple patterns
