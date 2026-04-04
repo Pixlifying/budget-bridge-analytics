@@ -21,6 +21,7 @@ interface WorkEntry {
   name: string;
   mobile: string | null;
   service_type: string;
+  status: string;
   created_at: string;
   updated_at: string;
 }
