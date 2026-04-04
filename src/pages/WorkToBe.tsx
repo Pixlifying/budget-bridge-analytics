@@ -162,6 +162,7 @@ const WorkToBe = () => {
       name: entry.name,
       mobile: entry.mobile || '',
       service_type: entry.service_type,
+      status: entry.status || 'Pending',
     });
   };
 
