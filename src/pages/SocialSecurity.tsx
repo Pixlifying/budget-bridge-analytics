@@ -309,7 +309,22 @@ const SocialSecurity = () => {
       record.scheme_type.toLowerCase().includes(query)
     );
     const matchesScheme = schemeFilter === 'all' || record.scheme_type === schemeFilter;
-    return matchesSearch && matchesScheme;
+
+    const recordDate = new Date(record.date);
+    let matchesDate = true;
+    if (viewMode === 'day') {
+      matchesDate = isSameDay(recordDate, filterDate);
+    } else if (viewMode === 'month') {
+      matchesDate = isSameMonth(recordDate, filterDate);
+    } else if (viewMode === 'quarter') {
+      const qStart = startOfQuarter(filterDate);
+      const qEnd = endOfQuarter(filterDate);
+      matchesDate = recordDate >= qStart && recordDate <= qEnd;
+    } else if (viewMode === 'year') {
+      matchesDate = isSameYear(recordDate, filterDate);
+    }
+
+    return matchesSearch && matchesScheme && matchesDate;
   });
 
   return (
