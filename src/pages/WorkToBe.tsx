@@ -101,7 +101,7 @@ const WorkToBe = () => {
 
       if (error) throw error;
 
-      setFormData({ date: new Date().toISOString().split('T')[0], name: '', mobile: '', service_type: '' });
+      setFormData({ date: new Date().toISOString().split('T')[0], name: '', mobile: '', service_type: '', status: 'Pending' });
       toast.success('Work entry added successfully');
       fetchEntries();
     } catch (error) {
