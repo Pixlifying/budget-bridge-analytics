@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { useHighlight } from '@/hooks/useHighlight';
 import { useForm } from 'react-hook-form';
-import { format } from 'date-fns';
+import { format, isSameDay, isSameMonth, isSameYear, startOfQuarter, endOfQuarter } from 'date-fns';
 import { Calendar, Plus, Printer, Trash2, Edit2, Search, Upload } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
 import Papa from 'papaparse';
 import PageHeader from '@/components/layout/PageHeader';
+import DateRangePicker from '@/components/ui/DateRangePicker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -49,6 +50,8 @@ const SocialSecurity = () => {
   const { highlightId } = useHighlight();
   const [searchQuery, setSearchQuery] = useState('');
   const [schemeFilter, setSchemeFilter] = useState<string>('all');
+  const [filterDate, setFilterDate] = useState<Date>(new Date());
+  const [viewMode, setViewMode] = useState<'day' | 'month' | 'quarter' | 'year'>('month');
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -306,7 +309,22 @@ const SocialSecurity = () => {
       record.scheme_type.toLowerCase().includes(query)
     );
     const matchesScheme = schemeFilter === 'all' || record.scheme_type === schemeFilter;
-    return matchesSearch && matchesScheme;
+
+    const recordDate = new Date(record.date);
+    let matchesDate = true;
+    if (viewMode === 'day') {
+      matchesDate = isSameDay(recordDate, filterDate);
+    } else if (viewMode === 'month') {
+      matchesDate = isSameMonth(recordDate, filterDate);
+    } else if (viewMode === 'quarter') {
+      const qStart = startOfQuarter(filterDate);
+      const qEnd = endOfQuarter(filterDate);
+      matchesDate = recordDate >= qStart && recordDate <= qEnd;
+    } else if (viewMode === 'year') {
+      matchesDate = isSameYear(recordDate, filterDate);
+    }
+
+    return matchesSearch && matchesScheme && matchesDate;
   });
 
   return (
@@ -317,6 +335,13 @@ const SocialSecurity = () => {
         onSearchChange={setSearchQuery}
         searchPlaceholder="Search by name, account, mobile..."
       >
+        <DateRangePicker
+          date={filterDate}
+          onDateChange={setFilterDate}
+          mode={viewMode}
+          onModeChange={setViewMode}
+          showYearMode={true}
+        />
         <Select value={schemeFilter} onValueChange={setSchemeFilter}>
           <SelectTrigger className="w-[150px]">
             <SelectValue placeholder="Filter by scheme" />
