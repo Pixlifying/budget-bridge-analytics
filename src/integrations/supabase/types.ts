@@ -1176,6 +1176,7 @@ export type Database = {
           mobile: string | null
           name: string
           service_type: string
+          status: string
           updated_at: string
         }
         Insert: {
@@ -1185,6 +1186,7 @@ export type Database = {
           mobile?: string | null
           name: string
           service_type: string
+          status?: string
           updated_at?: string
         }
         Update: {
@@ -1194,6 +1196,7 @@ export type Database = {
           mobile?: string | null
           name?: string
           service_type?: string
+          status?: string
           updated_at?: string
         }
         Relationships: []

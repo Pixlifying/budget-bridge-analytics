@@ -21,6 +21,7 @@ interface WorkEntry {
   name: string;
   mobile: string | null;
   service_type: string;
+  status: string;
   created_at: string;
   updated_at: string;
 }
@@ -42,6 +43,7 @@ const WorkToBe = () => {
     name: '',
     mobile: '',
     service_type: '',
+    status: 'Pending',
   });
 
   const [editForm, setEditForm] = useState({
@@ -49,6 +51,7 @@ const WorkToBe = () => {
     name: '',
     mobile: '',
     service_type: '',
+    status: 'Pending',
   });
 
   const fetchEntries = useCallback(async () => {
@@ -93,11 +96,12 @@ const WorkToBe = () => {
           name: formData.name,
           mobile: formData.mobile || null,
           service_type: formData.service_type,
+          status: formData.status,
         } as any);
 
       if (error) throw error;
 
-      setFormData({ date: new Date().toISOString().split('T')[0], name: '', mobile: '', service_type: '' });
+      setFormData({ date: new Date().toISOString().split('T')[0], name: '', mobile: '', service_type: '', status: 'Pending' });
       toast.success('Work entry added successfully');
       fetchEntries();
     } catch (error) {
@@ -116,6 +120,7 @@ const WorkToBe = () => {
           name: editForm.name,
           mobile: editForm.mobile || null,
           service_type: editForm.service_type,
+          status: editForm.status,
           updated_at: new Date().toISOString(),
         } as any)
         .eq('id', editingEntry.id);
@@ -157,6 +162,7 @@ const WorkToBe = () => {
       name: entry.name,
       mobile: entry.mobile || '',
       service_type: entry.service_type,
+      status: entry.status || 'Pending',
     });
   };
 
@@ -226,6 +232,17 @@ const WorkToBe = () => {
               </SelectContent>
             </Select>
           </div>
+          <div>
+            <Label htmlFor="w_status">Status</Label>
+            <Select value={formData.status}
+              onValueChange={(v) => setFormData(p => ({ ...p, status: v }))}>
+              <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Pending">Pending</SelectItem>
+                <SelectItem value="Work Done">Work Done</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <Button onClick={handleAdd}>Save</Button>
         </div>
       </div>
@@ -248,6 +265,7 @@ const WorkToBe = () => {
                 <TableHead>Name</TableHead>
                 <TableHead>Mobile</TableHead>
                 <TableHead>Service Type</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -258,6 +276,32 @@ const WorkToBe = () => {
                   <TableCell className="font-medium">{entry.name}</TableCell>
                   <TableCell>{entry.mobile || '-'}</TableCell>
                   <TableCell>{entry.service_type}</TableCell>
+                  <TableCell>
+                    <Select
+                      value={entry.status || 'Pending'}
+                      onValueChange={async (v) => {
+                        try {
+                          const { error } = await supabase
+                            .from('work_to_be' as any)
+                            .update({ status: v, updated_at: new Date().toISOString() } as any)
+                            .eq('id', entry.id);
+                          if (error) throw error;
+                          toast.success(`Status changed to ${v}`);
+                          fetchEntries();
+                        } catch (error) {
+                          toast.error('Failed to update status');
+                        }
+                      }}
+                    >
+                      <SelectTrigger className={`w-[130px] h-8 text-xs ${entry.status === 'Work Done' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'}`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Pending">Pending</SelectItem>
+                        <SelectItem value="Work Done">Work Done</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button variant="ghost" size="icon" onClick={() => openEdit(entry)}>
@@ -302,6 +346,17 @@ const WorkToBe = () => {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {SERVICE_TYPES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label>Status</Label>
+              <Select value={editForm.status}
+                onValueChange={(v) => setEditForm(p => ({ ...p, status: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Pending">Pending</SelectItem>
+                  <SelectItem value="Work Done">Work Done</SelectItem>
                 </SelectContent>
               </Select>
             </div>

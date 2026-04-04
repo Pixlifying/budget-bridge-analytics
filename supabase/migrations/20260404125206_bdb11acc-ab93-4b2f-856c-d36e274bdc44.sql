@@ -1,0 +1,1 @@
+ALTER TABLE public.work_to_be ADD COLUMN status text NOT NULL DEFAULT 'Pending';
