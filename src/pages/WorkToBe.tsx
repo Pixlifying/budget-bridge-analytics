@@ -120,6 +120,7 @@ const WorkToBe = () => {
           name: editForm.name,
           mobile: editForm.mobile || null,
           service_type: editForm.service_type,
+          status: editForm.status,
           updated_at: new Date().toISOString(),
         } as any)
         .eq('id', editingEntry.id);
