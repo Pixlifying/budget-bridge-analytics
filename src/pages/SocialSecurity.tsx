@@ -335,6 +335,13 @@ const SocialSecurity = () => {
         onSearchChange={setSearchQuery}
         searchPlaceholder="Search by name, account, mobile..."
       >
+        <DateRangePicker
+          date={filterDate}
+          onDateChange={setFilterDate}
+          mode={viewMode}
+          onModeChange={setViewMode}
+          showYearMode={true}
+        />
         <Select value={schemeFilter} onValueChange={setSchemeFilter}>
           <SelectTrigger className="w-[150px]">
             <SelectValue placeholder="Filter by scheme" />
