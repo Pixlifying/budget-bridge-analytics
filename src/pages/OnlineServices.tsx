@@ -93,13 +93,15 @@ const OnlineServices = () => {
   const serviceOptions = [
     { label: 'Income Certificate', value: 'Income Certificate' },
     { label: 'Birth Certificate', value: 'Birth Certificate' },
-    { label: 'Ladli Beti', value: 'Ladli Beti' },
-    { label: 'Insurance Car/Bike', value: 'Insurance Car/Bike' },
+    { label: 'Death Certificate', value: 'Death Certificate' },
+    { label: 'Character Certificate', value: 'Character Certificate' },
     { label: 'Marriage Certificate', value: 'Marriage Certificate' },
     { label: 'Railway Tickets', value: 'Railway Tickets' },
     { label: 'Pension Form', value: 'Pension Form' },
     { label: 'Domicile', value: 'Domicile' },
     { label: 'Marriage Assistance Form', value: 'Marriage Assistance Form' },
+    { label: 'Legal Heir', value: 'Legal Heir' },
+    { label: 'Ayushman Card', value: 'Ayushman Card' },
     { label: 'Other', value: 'Other' }
   ];
 
