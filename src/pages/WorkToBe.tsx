@@ -51,6 +51,7 @@ const WorkToBe = () => {
     name: '',
     mobile: '',
     service_type: '',
+    status: 'Pending',
   });
 
   const fetchEntries = useCallback(async () => {
