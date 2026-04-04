@@ -396,9 +396,21 @@ const OnlineServices = () => {
       const refMatch = fullText.match(/(?:Application\s+Reference\s+Number|Reference\s+Number|Ref\.?\s*No\.?)\s*[:\s]*([A-Z0-9\-\/]+)/i);
       const refNumber = refMatch ? refMatch[1].trim() : '';
 
-      // Extract applicant name
-      const nameMatch = fullText.match(/(?:Name\s+of\s+the\s+Applicant|Applicant\s+Name|Name)\s*[:\s]*([A-Z][A-Z\s]+?)(?:\s{2,}|\n|$)/i);
-      const applicantName = nameMatch ? nameMatch[1].trim() : '';
+      // Extract applicant name - try multiple patterns
+      const namePatterns = [
+        /Name\s+of\s+(?:the\s+)?Applicant\s*[:\s]*([A-Z][A-Z\s]+?)(?:\s{2,}|\n|$)/i,
+        /NAME\s+OF\s+APPLICANT\s*[:\s]*([A-Z][A-Z\s]+?)(?:\s{2,}|\n|$)/i,
+        /Name\s+of\s+Child\s*[:\s]*([A-Z][A-Z\s]+?)(?:\s{2,}|\n|$)/i,
+        /Applicant\s+Name\s*[:\s]*([A-Z][A-Z\s]+?)(?:\s{2,}|\n|$)/i,
+      ];
+      let applicantName = '';
+      for (const pattern of namePatterns) {
+        const match = fullText.match(pattern);
+        if (match) {
+          applicantName = match[1].trim();
+          break;
+        }
+      }
 
       if (refNumber || applicantName) {
         setNewEntry(prev => ({
