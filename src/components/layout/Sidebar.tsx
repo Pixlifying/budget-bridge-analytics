@@ -214,6 +214,7 @@ const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: Sid
     { icon: <IconUsers size={16} />, label: 'Account Details', to: '/account-details' },
     { icon: <IconShield size={16} />, label: 'Social Security', to: '/social-security' },
     { icon: <IconDocument size={16} />, label: 'Documentation', to: '/documentation' },
+    { icon: <IconMoney size={16} />, label: 'IMPS/Electricity', to: '/imps-electricity' },
   ];
 
   const customerServiceItems = [
