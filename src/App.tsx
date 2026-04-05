@@ -40,6 +40,7 @@ import Documentation from "@/pages/Documentation";
 import Udhar from '@/pages/Udhar';
 import ODDetailRecords from "@/pages/ODDetailRecords";
 import WorkToBe from "@/pages/WorkToBe";
+import ImpsElectricity from "@/pages/ImpsElectricity";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -73,6 +74,7 @@ const App = () => {
                       <Route path="/od-records" element={<ODDetailRecords />} />
                       <Route path="/social-security" element={<SocialSecurity />} />
                       <Route path="/documentation" element={<Documentation />} />
+                      <Route path="/imps-electricity" element={<ImpsElectricity />} />
                       <Route path="/udhar" element={<Udhar />} />
                       <Route path="/online-services" element={<OnlineServices />} />
                       <Route path="/applications" element={<Applications />} />
