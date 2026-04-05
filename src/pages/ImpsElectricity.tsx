@@ -19,7 +19,10 @@ import { cn } from '@/lib/utils';
 import DownloadButton from '@/components/ui/DownloadButton';
 import { escapeHtml } from '@/lib/sanitize';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.mjs',
+  import.meta.url
+).toString();
 
 interface ImpsElectricityForm {
   date: Date;
