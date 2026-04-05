@@ -19,10 +19,14 @@ import { cn } from '@/lib/utils';
 import DownloadButton from '@/components/ui/DownloadButton';
 import { escapeHtml } from '@/lib/sanitize';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.mjs',
-  import.meta.url
-).toString();
+try {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+    'pdfjs-dist/build/pdf.worker.mjs',
+    import.meta.url
+  ).toString();
+} catch {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+}
 
 interface ImpsElectricityForm {
   date: Date;
