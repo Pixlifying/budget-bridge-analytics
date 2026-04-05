@@ -19,10 +19,14 @@ import { cn } from '@/lib/utils';
 import DownloadButton from '@/components/ui/DownloadButton';
 import { escapeHtml } from '@/lib/sanitize';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.mjs',
-  import.meta.url
-).toString();
+try {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+    'pdfjs-dist/build/pdf.worker.mjs',
+    import.meta.url
+  ).toString();
+} catch {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+}
 
 interface ImpsElectricityForm {
   date: Date;
@@ -157,33 +161,27 @@ const ImpsElectricity = () => {
     setIsUploading(true);
     try {
       const buffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+      
+      let pdf;
+      try {
+        pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+      } catch {
+        // Fallback: disable worker if it fails
+        pdf = await pdfjsLib.getDocument({ data: buffer, disableWorker: true } as any).promise;
+      }
 
-      let allTextItems: { str: string; y: number }[] = [];
+      let fullText = '';
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
-        for (const item of textContent.items) {
-          if ('str' in item && item.str.trim()) {
-            const y = Math.round((item as any).transform?.[5] || 0);
-            allTextItems.push({ str: item.str.trim(), y });
-          }
-        }
+        const pageText = textContent.items
+          .filter((item: any) => 'str' in item)
+          .map((item: any) => item.str)
+          .join(' ');
+        fullText += pageText + '\n';
       }
 
-      // Group text items by y-coordinate (same line)
-      const lineMap = new Map<number, string[]>();
-      for (const item of allTextItems) {
-        const key = Math.round(item.y / 3) * 3;
-        if (!lineMap.has(key)) lineMap.set(key, []);
-        lineMap.get(key)!.push(item.str);
-      }
-
-      const lines = Array.from(lineMap.entries())
-        .sort((a, b) => b[0] - a[0])
-        .map(([_, parts]) => parts.join(' '));
-
-      const fullText = lines.join('\n');
+      console.log('Extracted PDF text:', fullText.substring(0, 1000));
 
       let customerName = '';
       let accountNumber = '';
@@ -191,33 +189,33 @@ const ImpsElectricity = () => {
       let detectedType = '';
 
       // Try Electricity Bill extraction
-      const customerNameMatch = fullText.match(/Customer\s*Name\s*[:\-]?\s*(.+)/i);
-      const consumerCodeMatch = fullText.match(/(?:Account\s*ID|Consumer\s*Code)\s*[:\-]?\s*(\S+)/i);
-      const billAmountMatch = fullText.match(/Bill\s*Amount\s*[:\-]?\s*([\d,.]+)/i);
+      const customerNameMatch = fullText.match(/Customer\s*Name\s*[:\-]?\s*([A-Z][A-Z\s]+)/i);
+      const consumerCodeMatch = fullText.match(/(?:Account\s*ID|Consumer\s*Code|Consumer\s*No)\s*[:\-]?\s*([\d]+)/i);
+      const billAmountMatch = fullText.match(/(?:Bill\s*Amount|Total\s*Amount|Net\s*Amount|Amount\s*Payable)\s*[:\-]?\s*(?:Rs\.?\s*)?([\d,.]+)/i);
 
-      if (customerNameMatch && consumerCodeMatch) {
+      if (customerNameMatch && (consumerCodeMatch || billAmountMatch)) {
         detectedType = 'Electricity Bill';
         customerName = customerNameMatch[1].trim();
-        accountNumber = consumerCodeMatch[1].trim();
+        accountNumber = consumerCodeMatch ? consumerCodeMatch[1].trim() : '';
         amount = billAmountMatch ? parseFloat(billAmountMatch[1].replace(/,/g, '')) : 0;
       }
 
       // Try IMPS extraction
       if (!detectedType) {
-        const beneficiaryNameMatch = fullText.match(/Beneficiary\s*Name\s*[:\-]?\s*(.+)/i);
-        const beneficiaryAccountMatch = fullText.match(/Beneficiary\s*Account\s*[:\-]?\s*(\S+)/i);
-        const txnAmountMatch = fullText.match(/TXN\s*Amount\s*[:\-]?\s*([\d,.]+)/i);
+        const beneficiaryNameMatch = fullText.match(/Beneficiary\s*Name\s*[:\-]?\s*([A-Z][A-Z\s]+)/i);
+        const beneficiaryAccountMatch = fullText.match(/Beneficiary\s*Account\s*[:\-]?\s*([X\d]+)/i);
+        const txnAmountMatch = fullText.match(/(?:TXN|Transaction|Transfer)\s*Amount\s*[:\-]?\s*(?:Rs\.?\s*)?([\d,.]+)/i);
 
-        if (beneficiaryNameMatch && beneficiaryAccountMatch) {
+        if (beneficiaryNameMatch || beneficiaryAccountMatch) {
           detectedType = 'IMPS';
-          customerName = beneficiaryNameMatch[1].trim();
-          accountNumber = beneficiaryAccountMatch[1].trim();
+          customerName = beneficiaryNameMatch ? beneficiaryNameMatch[1].trim() : '';
+          accountNumber = beneficiaryAccountMatch ? beneficiaryAccountMatch[1].trim() : '';
           amount = txnAmountMatch ? parseFloat(txnAmountMatch[1].replace(/,/g, '')) : 0;
         }
       }
 
       if (!detectedType) {
-        toast({ title: 'Error', description: 'Could not detect IMPS or Electricity Bill data from the PDF', variant: 'destructive' });
+        toast({ title: 'Error', description: 'Could not detect IMPS or Electricity Bill data from the PDF. Check console for extracted text.', variant: 'destructive' });
         return;
       }
 
@@ -228,6 +226,7 @@ const ImpsElectricity = () => {
 
       toast({ title: 'PDF Parsed', description: `Detected ${detectedType} - ${customerName}` });
     } catch (error: any) {
+      console.error('PDF parse error:', error);
       toast({ title: 'Error', description: 'Failed to parse PDF: ' + error.message, variant: 'destructive' });
     } finally {
       setIsUploading(false);
