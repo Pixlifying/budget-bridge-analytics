@@ -510,6 +510,42 @@ export type Database = {
         }
         Relationships: []
       }
+      imps_electricity: {
+        Row: {
+          account_number: string
+          amount: number
+          created_at: string
+          customer_name: string
+          date: string
+          id: string
+          record_type: string
+          remarks: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_number: string
+          amount?: number
+          created_at?: string
+          customer_name: string
+          date?: string
+          id?: string
+          record_type?: string
+          remarks?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_number?: string
+          amount?: number
+          created_at?: string
+          customer_name?: string
+          date?: string
+          id?: string
+          record_type?: string
+          remarks?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       khata_customers: {
         Row: {
           created_at: string
