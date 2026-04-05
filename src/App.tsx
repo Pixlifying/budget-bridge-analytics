@@ -40,6 +40,7 @@ import Documentation from "@/pages/Documentation";
 import Udhar from '@/pages/Udhar';
 import ODDetailRecords from "@/pages/ODDetailRecords";
 import WorkToBe from "@/pages/WorkToBe";
+import ImpsElectricity from "@/pages/ImpsElectricity";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
