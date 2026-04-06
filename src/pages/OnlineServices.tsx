@@ -740,7 +740,14 @@ const OnlineServices = () => {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="edit_service">Service Type</Label>
-              <Select value={editForm.service} onValueChange={(value) => setEditForm(prev => ({ ...prev, service: value }))}>
+              <Select value={editForm.service} onValueChange={(value) => {
+                const pricing = defaultPricing[value];
+                setEditForm(prev => ({
+                  ...prev,
+                  service: value,
+                  ...(pricing ? { amount: pricing.amount, expense: pricing.expense } : {}),
+                }));
+              }}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select service" />
                 </SelectTrigger>
