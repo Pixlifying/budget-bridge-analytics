@@ -90,6 +90,19 @@ const OnlineServices = () => {
     expense: 0,
   });
 
+  const defaultPricing: Record<string, { amount: number; expense: number }> = {
+    'Income Certificate': { amount: 150, expense: 25 },
+    'Birth Certificate': { amount: 250, expense: 50 },
+    'Death Certificate': { amount: 200, expense: 50 },
+    'Character Certificate': { amount: 150, expense: 25 },
+    'Marriage Certificate': { amount: 300, expense: 120 },
+    'Pension Form': { amount: 150, expense: 25 },
+    'Domicile': { amount: 150, expense: 25 },
+    'Marriage Assistance Form': { amount: 250, expense: 25 },
+    'Legal Heir': { amount: 500, expense: 50 },
+    'Ayushman Card': { amount: 100, expense: 10 },
+  };
+
   const serviceOptions = [
     { label: 'Income Certificate', value: 'Income Certificate' },
     { label: 'Birth Certificate', value: 'Birth Certificate' },
@@ -556,7 +569,14 @@ const OnlineServices = () => {
           </div>
           <div>
             <Label htmlFor="service">Service Type</Label>
-            <Select value={newEntry.service} onValueChange={(value) => setNewEntry(prev => ({ ...prev, service: value }))}>
+            <Select value={newEntry.service} onValueChange={(value) => {
+              const pricing = defaultPricing[value];
+              setNewEntry(prev => ({
+                ...prev,
+                service: value,
+                ...(pricing ? { amount: pricing.amount, expense: pricing.expense } : {}),
+              }));
+            }}>
               <SelectTrigger>
                 <SelectValue placeholder="Select service" />
               </SelectTrigger>
@@ -720,7 +740,14 @@ const OnlineServices = () => {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="edit_service">Service Type</Label>
-              <Select value={editForm.service} onValueChange={(value) => setEditForm(prev => ({ ...prev, service: value }))}>
+              <Select value={editForm.service} onValueChange={(value) => {
+                const pricing = defaultPricing[value];
+                setEditForm(prev => ({
+                  ...prev,
+                  service: value,
+                  ...(pricing ? { amount: pricing.amount, expense: pricing.expense } : {}),
+                }));
+              }}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select service" />
                 </SelectTrigger>
