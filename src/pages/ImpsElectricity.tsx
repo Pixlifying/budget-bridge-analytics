@@ -218,16 +218,19 @@ const ImpsElectricity = () => {
       }
 
       // Try IMPS extraction
+      let beneficiaryBank = '';
       if (!detectedType) {
         const beneficiaryNameMatch = cleanText.match(/Beneficiary\s*Name\s*[:\-]?\s*\n?\s*([A-Z][A-Z\s./]+)/im);
         const beneficiaryAccountMatch = cleanText.match(/Beneficiary\s*Account\s*[:\-]?\s*\n?\s*([X\d]+)/im);
         const txnAmountMatch = cleanText.match(/(?:TXN|Transaction|Transfer)\s*Amount\s*[:\-]?\s*\n?\s*(?:Rs\.?\s*)?([\d,.]+)/im);
+        const beneficiaryBankMatch = cleanText.match(/Beneficiary\s*Bank\s*[:\-]?\s*\n?\s*([A-Z][A-Z\s.&]+)/im);
 
         if (beneficiaryNameMatch || beneficiaryAccountMatch) {
           detectedType = 'IMPS';
           customerName = beneficiaryNameMatch ? beneficiaryNameMatch[1].trim() : '';
           accountNumber = beneficiaryAccountMatch ? beneficiaryAccountMatch[1].trim() : '';
           amount = txnAmountMatch ? parseFloat(txnAmountMatch[1].replace(/,/g, '')) : 0;
+          beneficiaryBank = beneficiaryBankMatch ? beneficiaryBankMatch[1].trim() : '';
         }
       }
 
@@ -240,6 +243,9 @@ const ImpsElectricity = () => {
       setValue('customer_name', customerName);
       setValue('account_number', accountNumber);
       setValue('amount', amount);
+      if (beneficiaryBank) {
+        setValue('remarks', beneficiaryBank);
+      }
 
       toast({ title: 'PDF Parsed', description: `Detected ${detectedType} - ${customerName}` });
     } catch (error: any) {
