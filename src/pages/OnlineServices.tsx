@@ -90,6 +90,19 @@ const OnlineServices = () => {
     expense: 0,
   });
 
+  const defaultPricing: Record<string, { amount: number; expense: number }> = {
+    'Income Certificate': { amount: 150, expense: 25 },
+    'Birth Certificate': { amount: 250, expense: 50 },
+    'Death Certificate': { amount: 200, expense: 50 },
+    'Character Certificate': { amount: 150, expense: 25 },
+    'Marriage Certificate': { amount: 300, expense: 120 },
+    'Pension Form': { amount: 150, expense: 25 },
+    'Domicile': { amount: 150, expense: 25 },
+    'Marriage Assistance Form': { amount: 250, expense: 25 },
+    'Legal Heir': { amount: 500, expense: 50 },
+    'Ayushman Card': { amount: 100, expense: 10 },
+  };
+
   const serviceOptions = [
     { label: 'Income Certificate', value: 'Income Certificate' },
     { label: 'Birth Certificate', value: 'Birth Certificate' },
