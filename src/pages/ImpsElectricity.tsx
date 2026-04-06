@@ -174,24 +174,41 @@ const ImpsElectricity = () => {
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
-        const pageText = textContent.items
-          .filter((item: any) => 'str' in item)
-          .map((item: any) => item.str)
-          .join(' ');
-        fullText += pageText + '\n';
+        const items = textContent.items.filter((item: any) => 'str' in item) as any[];
+        let lastY: number | null = null;
+        const lines: string[] = [];
+        let currentLine = '';
+        for (const item of items) {
+          const y = Math.round(item.transform[5]);
+          if (lastY !== null && Math.abs(y - lastY) > 3) {
+            lines.push(currentLine.trim());
+            currentLine = '';
+          }
+          currentLine += item.str;
+          lastY = y;
+        }
+        if (currentLine.trim()) lines.push(currentLine.trim());
+        fullText += lines.join('\n') + '\n';
       }
 
-      console.log('Extracted PDF text:', fullText.substring(0, 1000));
+      // Normalize split words like "Benefi ciary" -> "Beneficiary"
+      const cleanText = fullText
+        .replace(/B\s*e\s*n\s*e\s*f\s*i\s*c\s*i\s*a\s*r\s*y/gi, 'Beneficiary')
+        .replace(/C\s*u\s*s\s*t\s*o\s*m\s*e\s*r/gi, 'Customer')
+        .replace(/A\s*c\s*c\s*o\s*u\s*n\s*t/gi, 'Account')
+        .replace(/C\s*o\s*n\s*s\s*u\s*m\s*e\s*r/gi, 'Consumer');
+
+      console.log('Extracted PDF text:', cleanText.substring(0, 2000));
 
       let customerName = '';
       let accountNumber = '';
       let amount = 0;
       let detectedType = '';
 
-      // Try Electricity Bill extraction
-      const customerNameMatch = fullText.match(/Customer\s*Name\s*[:\-]?\s*([A-Z][A-Z\s]+)/i);
-      const consumerCodeMatch = fullText.match(/(?:Account\s*ID|Consumer\s*Code|Consumer\s*No)\s*[:\-]?\s*([\d]+)/i);
-      const billAmountMatch = fullText.match(/(?:Bill\s*Amount|Total\s*Amount|Net\s*Amount|Amount\s*Payable)\s*[:\-]?\s*(?:Rs\.?\s*)?([\d,.]+)/i);
+      // Try Electricity Bill extraction - stop name at digits/newlines to avoid grabbing mobile numbers
+      const customerNameMatch = cleanText.match(/Customer\s*Name\s*[:\-]?\s*([A-Z][A-Z\s./]+?)(?:\s*\d|\s*\n|$)/i);
+      const consumerCodeMatch = cleanText.match(/(?:Account\s*ID|Consumer\s*Code|Consumer\s*No)\s*[:\-]?\s*([\d]+)/i);
+      const billAmountMatch = cleanText.match(/(?:Bill\s*Amount|Total\s*Amount|Net\s*Amount|Amount\s*Payable)\s*[:\-]?\s*(?:Rs\.?\s*)?([\d,.]+)/i);
 
       if (customerNameMatch && (consumerCodeMatch || billAmountMatch)) {
         detectedType = 'Electricity Bill';
@@ -202,9 +219,9 @@ const ImpsElectricity = () => {
 
       // Try IMPS extraction
       if (!detectedType) {
-        const beneficiaryNameMatch = fullText.match(/Beneficiary\s*Name\s*[:\-]?\s*([A-Z][A-Z\s]+)/i);
-        const beneficiaryAccountMatch = fullText.match(/Beneficiary\s*Account\s*[:\-]?\s*([X\d]+)/i);
-        const txnAmountMatch = fullText.match(/(?:TXN|Transaction|Transfer)\s*Amount\s*[:\-]?\s*(?:Rs\.?\s*)?([\d,.]+)/i);
+        const beneficiaryNameMatch = cleanText.match(/Beneficiary\s*Name\s*[:\-]?\s*\n?\s*([A-Z][A-Z\s./]+)/im);
+        const beneficiaryAccountMatch = cleanText.match(/Beneficiary\s*Account\s*[:\-]?\s*\n?\s*([X\d]+)/im);
+        const txnAmountMatch = cleanText.match(/(?:TXN|Transaction|Transfer)\s*Amount\s*[:\-]?\s*\n?\s*(?:Rs\.?\s*)?([\d,.]+)/im);
 
         if (beneficiaryNameMatch || beneficiaryAccountMatch) {
           detectedType = 'IMPS';
