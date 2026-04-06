@@ -159,8 +159,8 @@ const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: Sid
   // Auto-expand parent menu when navigating to a child route
   useEffect(() => {
     const menuMap: Record<string, { menuKey: string; paths: string[] }[]> = {
-      financialServices: [{ menuKey: 'financialServices', paths: ['/banking', '/od-records'] }],
-      nonFinancialServices: [{ menuKey: 'nonFinancialServices', paths: ['/banking-accounts', '/account-details', '/social-security', '/documentation'] }],
+      financialServices: [{ menuKey: 'financialServices', paths: ['/banking', '/od-records', '/banking-accounts'] }],
+      nonFinancialServices: [{ menuKey: 'nonFinancialServices', paths: ['/account-details', '/social-security', '/documentation'] }],
       customerServices: [{ menuKey: 'customerServices', paths: ['/online-services', '/applications', '/photostat', '/papers'] }],
       ledger: [{ menuKey: 'ledger', paths: ['/khata', '/pending-balance', '/expenses'] }],
       apps: [{ menuKey: 'apps', paths: ['/calculator', '/age-calculator', '/forms'] }],

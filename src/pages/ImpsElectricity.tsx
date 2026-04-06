@@ -243,6 +243,9 @@ const ImpsElectricity = () => {
       setValue('customer_name', customerName);
       setValue('account_number', accountNumber);
       setValue('amount', amount);
+      if (beneficiaryBank) {
+        setValue('remarks', beneficiaryBank);
+      }
 
       toast({ title: 'PDF Parsed', description: `Detected ${detectedType} - ${customerName}` });
     } catch (error: any) {
