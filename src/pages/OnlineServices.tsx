@@ -569,7 +569,14 @@ const OnlineServices = () => {
           </div>
           <div>
             <Label htmlFor="service">Service Type</Label>
-            <Select value={newEntry.service} onValueChange={(value) => setNewEntry(prev => ({ ...prev, service: value }))}>
+            <Select value={newEntry.service} onValueChange={(value) => {
+              const pricing = defaultPricing[value];
+              setNewEntry(prev => ({
+                ...prev,
+                service: value,
+                ...(pricing ? { amount: pricing.amount, expense: pricing.expense } : {}),
+              }));
+            }}>
               <SelectTrigger>
                 <SelectValue placeholder="Select service" />
               </SelectTrigger>
