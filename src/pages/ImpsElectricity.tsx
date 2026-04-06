@@ -192,15 +192,6 @@ const ImpsElectricity = () => {
       }
 
       // Normalize split words like "Benefi ciary" -> "Beneficiary"
-      const normalizedText = fullText.replace(/(\w)\s+(\w)/g, (match, a, b) => {
-        const joined = a + b;
-        const knownWords = ['Beneficiary', 'Customer', 'Account', 'Amount', 'Consumer', 'Transaction', 'Transfer', 'Mobile', 'Number'];
-        for (const word of knownWords) {
-          if (word.toLowerCase().includes(joined.toLowerCase())) return match;
-        }
-        return match;
-      });
-      // Simpler approach: just remove spaces within known split words
       const cleanText = fullText
         .replace(/B\s*e\s*n\s*e\s*f\s*i\s*c\s*i\s*a\s*r\s*y/gi, 'Beneficiary')
         .replace(/C\s*u\s*s\s*t\s*o\s*m\s*e\s*r/gi, 'Customer')
@@ -214,8 +205,8 @@ const ImpsElectricity = () => {
       let amount = 0;
       let detectedType = '';
 
-      // Try Electricity Bill extraction
-      const customerNameMatch = cleanText.match(/Customer\s*Name\s*[:\-]?\s*([A-Z][A-Z\s./]+)/i);
+      // Try Electricity Bill extraction - stop name at digits/newlines to avoid grabbing mobile numbers
+      const customerNameMatch = cleanText.match(/Customer\s*Name\s*[:\-]?\s*([A-Z][A-Z\s./]+?)(?:\s*\d|\s*\n|$)/i);
       const consumerCodeMatch = cleanText.match(/(?:Account\s*ID|Consumer\s*Code|Consumer\s*No)\s*[:\-]?\s*([\d]+)/i);
       const billAmountMatch = cleanText.match(/(?:Bill\s*Amount|Total\s*Amount|Net\s*Amount|Amount\s*Payable)\s*[:\-]?\s*(?:Rs\.?\s*)?([\d,.]+)/i);
 
