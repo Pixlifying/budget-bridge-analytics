@@ -220,7 +220,7 @@ const ImpsElectricity = () => {
       // Try IMPS extraction
       let beneficiaryBank = '';
       if (!detectedType) {
-        const beneficiaryNameMatch = cleanText.match(/Beneficiary\s*Name\s*[:\-]?\s*\n?\s*([A-Z][A-Z\s./]+)/im);
+        const beneficiaryNameMatch = cleanText.match(/Benefi\s*ciary\s*Name\s*[:\-]?\s*\n?\s*(?:(?:Mr|Mrs|Ms|Smt)\.?\s+)?([A-Z][A-Z\s./]+?)(?:\s*\n|\s{2,}|Benefi|$)/im);
         const beneficiaryAccountMatch = cleanText.match(/Beneficiary\s*Account\s*[:\-]?\s*\n?\s*([X\d]+)/im);
         const txnAmountMatch = cleanText.match(/(?:TXN|Transaction|Transfer)\s*Amount\s*[:\-]?\s*\n?\s*(?:Rs\.?\s*)?([\d,.]+)/im);
         const beneficiaryBankMatch = cleanText.match(/Beneficiary\s*Bank\s*[:\-]?\s*\n?\s*([A-Z][A-Z\s.&]+)/im);
