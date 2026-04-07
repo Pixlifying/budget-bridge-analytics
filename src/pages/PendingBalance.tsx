@@ -46,7 +46,7 @@ const PendingBalance = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { isHighlighted, dateParam } = useHighlight();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (dateParam) {
