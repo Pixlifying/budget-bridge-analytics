@@ -414,6 +414,7 @@ const OnlineServices = () => {
         /Name\s+of\s+(?:the\s+)?Applicant\s*[:\s]*([A-Z][A-Z\s]+?)(?:\s{2,}|\n|$)/i,
         /NAME\s+OF\s+APPLICANT\s*[:\s]*([A-Z][A-Z\s]+?)(?:\s{2,}|\n|$)/i,
         /Name\s+of\s+Child\s*[:\s]*([A-Z][A-Z\s]+?)(?:\s{2,}|\n|$)/i,
+        /Name\s+of\s+Dependent\s*[:\s]*([A-Z][A-Z\s]+?)(?:\s{2,}|\n|$)/i,
         /Applicant\s+Name\s*[:\s]*([A-Z][A-Z\s]+?)(?:\s{2,}|\n|$)/i,
       ];
       let applicantName = '';
