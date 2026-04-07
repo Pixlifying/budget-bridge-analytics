@@ -440,6 +440,17 @@ const [searchQuery, setSearchQuery] = useState('');
               <Printer size={16} className="mr-2" />
               Print
             </Button>
+            <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+              <FileUp size={16} className="mr-2" />
+              Browse
+            </Button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              accept=".pdf"
+              onChange={handlePdfUpload}
+            />
             <DownloadButton 
               data={pendingBalances}
               filename="pending-balances"
