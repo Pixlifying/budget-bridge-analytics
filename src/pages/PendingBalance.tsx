@@ -1,7 +1,7 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useHighlight } from '@/hooks/useHighlight';
-import { Edit, Trash2, Printer } from 'lucide-react';
+import { Edit, Trash2, Printer, FileUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,6 +20,12 @@ import {
   filterByQuarter,
   formatCurrency
 } from '@/utils/calculateUtils';
+import * as pdfjsLib from 'pdfjs-dist';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.mjs',
+  import.meta.url
+).toString();
 
 interface PendingBalanceEntry {
   id: string;
