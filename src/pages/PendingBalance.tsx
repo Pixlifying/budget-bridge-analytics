@@ -267,6 +267,96 @@ const [searchQuery, setSearchQuery] = useState('');
     });
   };
 
+  const handlePdfUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let fullText = '';
+
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        let lastY: number | null = null;
+        content.items.forEach((item: any) => {
+          if ('str' in item) {
+            if (lastY !== null && Math.abs(item.transform[5] - lastY) > 5) {
+              fullText += '\n';
+            }
+            fullText += item.str + ' ';
+            lastY = item.transform[5];
+          }
+        });
+        fullText += '\n';
+      }
+
+      const cleanText = fullText.replace(/\s+/g, ' ').trim();
+      const lines = fullText.split('\n').map(l => l.trim()).filter(Boolean);
+
+      // Extract Name
+      let name = '';
+      const namePatterns = [
+        /(?:Applicant|Customer|Name|Name of (?:Applicant|Dependent|Person))\s*[:\-]?\s*(.+)/i,
+        /(?:Benefi\s*ciary\s*Name)\s*[:\-]?\s*(?:(?:Mr|Mrs|Ms|Smt)\.?\s+)?(.+?)(?:\s*\n|\s{2,}|Benefi|$)/i,
+      ];
+      for (const pattern of namePatterns) {
+        const match = cleanText.match(pattern) || fullText.match(pattern);
+        if (match) {
+          name = match[1].trim().replace(/\s{2,}/g, ' ');
+          break;
+        }
+      }
+
+      // Extract Address
+      let address = '';
+      const addressMatch = cleanText.match(/(?:Address|Village|Residence|Location)\s*[:\-]?\s*(.+?)(?=\s{2,}|Phone|Mobile|Service|Amount|$)/i)
+        || fullText.match(/(?:Address|Village|Residence|Location)\s*[:\-]?\s*\n?\s*(.+)/i);
+      if (addressMatch) {
+        address = addressMatch[1].trim().replace(/\s{2,}/g, ' ');
+      }
+
+      // Extract Phone
+      let phone = '';
+      const phoneMatch = cleanText.match(/(?:Phone|Mobile|Contact|Tel)\s*[:\-]?\s*(\+?\d[\d\s\-]{7,14}\d)/i)
+        || cleanText.match(/(\b\d{10}\b)/);
+      if (phoneMatch) {
+        phone = phoneMatch[1].trim().replace(/\s/g, '');
+      }
+
+      // Extract Service Type
+      let service = '';
+      const serviceMatch = cleanText.match(/(?:Service|Service Type|Type of Service|Work)\s*[:\-]?\s*(.+?)(?=\s{2,}|Amount|Fee|$)/i);
+      if (serviceMatch) {
+        service = serviceMatch[1].trim();
+      }
+
+      // Extract Amount
+      let amount = 0;
+      const amountMatch = cleanText.match(/(?:Amount|Fee|Total|Balance|Bill Amount|TXN Amount)\s*[:\-]?\s*(?:Rs\.?|₹|INR)?\s*([\d,]+\.?\d*)/i);
+      if (amountMatch) {
+        amount = parseFloat(amountMatch[1].replace(/,/g, ''));
+      }
+
+      setNewEntry(prev => ({
+        ...prev,
+        ...(name ? { name } : {}),
+        ...(address ? { address } : {}),
+        ...(phone ? { phone } : {}),
+        ...(service ? { service } : {}),
+        ...(amount ? { amount } : {}),
+      }));
+
+      toast.success('PDF data extracted successfully');
+    } catch (err) {
+      console.error('PDF extraction error:', err);
+      toast.error('Failed to extract data from PDF');
+    }
+
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
