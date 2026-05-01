@@ -147,13 +147,11 @@ const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: Sid
   const location = useLocation();
   
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
-    admin: false,
     financialServices: false,
     nonFinancialServices: false,
     customerServices: false,
     ledger: false,
     apps: false,
-    household: false
   });
 
   // Auto-expand parent menu when navigating to a child route
@@ -164,8 +162,6 @@ const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: Sid
       customerServices: [{ menuKey: 'customerServices', paths: ['/online-services', '/applications', '/photostat', '/papers'] }],
       ledger: [{ menuKey: 'ledger', paths: ['/khata', '/pending-balance', '/expenses'] }],
       apps: [{ menuKey: 'apps', paths: ['/calculator', '/age-calculator', '/forms'] }],
-      household: [{ menuKey: 'household', paths: ['/milk', '/misc-expenses', '/udhar'] }],
-      admin: [{ menuKey: 'admin', paths: ['/user-admin', '/theme-settings', '/downloads'] }],
     };
 
     const updates: Record<string, boolean> = {};
@@ -191,18 +187,6 @@ const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: Sid
       [menuKey]: !prev[menuKey]
     }));
   };
-
-  const adminItems = [
-    { icon: <IconUserAdmin size={16} />, label: 'User Admin', to: '/user-admin' },
-    { icon: <IconPalette size={16} />, label: 'Theme Settings', to: '/theme-settings' },
-    { icon: <IconPrint size={16} />, label: 'Print', to: '/downloads' },
-  ];
-
-  const householdItems = [
-    { icon: <IconMilk size={16} />, label: 'Milk', to: '/milk' },
-    { icon: <IconExpense size={16} />, label: 'Misc Expenses', to: '/misc-expenses' },
-    { icon: <IconMoney size={16} />, label: 'Money (Udhar)', to: '/udhar' },
-  ];
 
   const financialServiceItems = [
     { icon: <IconBankingTransaction size={16} />, label: 'Banking Transaction', to: '/banking' },
@@ -243,8 +227,6 @@ const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: Sid
     { icon: <IconBook size={18} />, label: 'Ledger', to: '#', hasChildren: true, menuKey: 'ledger', children: ledgerItems },
     { icon: <IconCalculator size={18} />, label: 'Apps', to: '#', hasChildren: true, menuKey: 'apps', children: appsItems },
     { icon: <IconChart size={18} />, label: 'Analytics', to: '/analytics', hasChildren: false },
-    { icon: <IconHome size={18} />, label: 'Household', to: '#', hasChildren: true, menuKey: 'household', children: householdItems },
-    { icon: <IconSettings size={18} />, label: 'Admin', to: '#', hasChildren: true, menuKey: 'admin', children: adminItems },
   ];
 
   const sidebarContent = (
