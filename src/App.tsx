@@ -42,6 +42,7 @@ import ODDetailRecords from "@/pages/ODDetailRecords";
 import WorkToBe from "@/pages/WorkToBe";
 import ImpsElectricity from "@/pages/ImpsElectricity";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import Admin from "@/pages/Admin";
 
 const queryClient = new QueryClient();
 
@@ -96,6 +97,7 @@ const App = () => {
                       <Route path="/downloads" element={<Downloads />} />
                       <Route path="/user-admin" element={<UserAdmin />} />
                       <Route path="/theme-settings" element={<ThemeSettings />} />
+                      <Route path="/admin" element={<Admin />} />
                       <Route path="/query" element={<Query />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>

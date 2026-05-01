@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CreditCard, FileText, Globe, BarChart3, AlertCircle, Wallet, Printer, Receipt, TrendingUp, Search, Bell, MessageSquare, Users, ArrowUpRight, ArrowDownRight, Upload, Clock, BookOpen, Menu } from 'lucide-react';
+import { CreditCard, FileText, Globe, BarChart3, AlertCircle, Wallet, Printer, Receipt, TrendingUp, Search, Bell, MessageSquare, Users, ArrowUpRight, ArrowDownRight, Upload, Clock, BookOpen, Menu, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
 import { format, startOfMonth, endOfMonth, subMonths, startOfQuarter, endOfQuarter } from 'date-fns';
@@ -843,6 +843,13 @@ const Dashboard = () => {
             <div className="hidden sm:block">
               <DateRangePicker date={date} onDateChange={handleDateChange} mode={viewMode} onModeChange={handleViewModeChange} />
             </div>
+            <button
+              onClick={() => navigate('/admin')}
+              title="Admin"
+              className="p-2 rounded-full bg-background border border-border hover:bg-muted transition-colors"
+            >
+              <Shield className="h-5 w-5 text-muted-foreground" />
+            </button>
             <Popover open={notificationOpen} onOpenChange={setNotificationOpen}>
               <PopoverTrigger asChild>
                 <button className="p-2 rounded-full bg-background border border-border hover:bg-muted transition-colors relative">
