@@ -743,7 +743,7 @@ const Banking = () => {
             <ServiceCard
               key={entry.id}
               id={entry.id}
-              title="Banking Entry"
+              title={entry.transaction_type || 'Banking Entry'}
               date={entry.date}
               data={{
                 transactions: entry.transaction_count,
