@@ -64,6 +64,8 @@ const Banking = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month' | 'quarter'>('day');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
+  const [isParsingPdf, setIsParsingPdf] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { isHighlighted, dateParam } = useHighlight();
 
@@ -239,6 +241,7 @@ const Banking = () => {
         amount: totalAmount,
         transaction_count: transactionCount,
         extra_amount: extraAmount,
+        transaction_type: '',
       });
 
       toast.success(`Extracted ${transactionCount} transactions. Total: ₹${totalAmount.toLocaleString()}, Extra: ₹${extraAmount.toLocaleString()}`);
@@ -274,6 +277,7 @@ const Banking = () => {
           amount: 0,
           transaction_count: 1,
           extra_amount: 0,
+          transaction_type: '',
         });
         toast.success('Banking entry saved successfully');
       }
@@ -310,7 +314,8 @@ const Banking = () => {
           margin: margin,
           transaction_count: newEntry.transaction_count,
           extra_amount: newEntry.extra_amount,
-        })
+          transaction_type: newEntry.transaction_type || null,
+        } as any)
         .select();
 
       if (error) throw error;
@@ -332,6 +337,7 @@ const Banking = () => {
           amount: 0,
           transaction_count: 1,
           extra_amount: 0,
+          transaction_type: '',
         });
         toast.success('Banking entry added successfully');
       }
@@ -355,7 +361,8 @@ const Banking = () => {
           margin: margin,
           transaction_count: editForm.transaction_count,
           extra_amount: editForm.extra_amount,
-        })
+          transaction_type: editForm.transaction_type || null,
+        } as any)
         .eq('id', editingEntry.id);
 
       if (error) throw error;
@@ -367,6 +374,7 @@ const Banking = () => {
         margin: margin,
         transaction_count: editForm.transaction_count,
         extra_amount: editForm.extra_amount,
+        transaction_type: editForm.transaction_type || null,
       };
 
       setBankingEntries(prev =>
@@ -405,6 +413,7 @@ const Banking = () => {
       amount: entry.amount,
       transaction_count: entry.transaction_count,
       extra_amount: entry.extra_amount || 0,
+      transaction_type: entry.transaction_type || '',
     });
   };
 
