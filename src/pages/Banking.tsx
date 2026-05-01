@@ -610,6 +610,22 @@ const Banking = () => {
               <Upload size={16} className="mr-2" />
               Browse
             </Button>
+            <input
+              ref={pdfInputRef}
+              type="file"
+              accept=".pdf"
+              onChange={handlePdfUpload}
+              className="hidden"
+              id="pdf-upload"
+            />
+            <Button
+              variant="outline"
+              onClick={() => pdfInputRef.current?.click()}
+              disabled={isParsingPdf}
+            >
+              <Upload size={16} className="mr-2" />
+              {isParsingPdf ? 'Parsing...' : 'Browse PDF'}
+            </Button>
           </div>
         </div>
       }
@@ -619,7 +635,7 @@ const Banking = () => {
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-foreground">Add Banking Entry</h3>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
           <div>
             <Label htmlFor="date">Date</Label>
             <Input
@@ -628,6 +644,22 @@ const Banking = () => {
               value={newEntry.date}
               onChange={(e) => setNewEntry(prev => ({ ...prev, date: e.target.value }))}
             />
+          </div>
+          <div>
+            <Label htmlFor="transaction_type">Transaction Type</Label>
+            <Select
+              value={newEntry.transaction_type || ''}
+              onValueChange={(v) => setNewEntry(prev => ({ ...prev, transaction_type: v }))}
+            >
+              <SelectTrigger id="transaction_type">
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+              <SelectContent>
+                {TRANSACTION_TYPES.map(t => (
+                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div>
             <Label htmlFor="transaction_count">Transaction Count</Label>
