@@ -297,6 +297,95 @@ const Banking = () => {
     }
   };
 
+  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      toast.error('Please upload a PDF file');
+      if (pdfInputRef.current) pdfInputRef.current.value = '';
+      return;
+    }
+
+    setIsParsingPdf(true);
+    try {
+      const buffer = await file.arrayBuffer();
+      let pdf;
+      try {
+        pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+      } catch {
+        pdf = await pdfjsLib.getDocument({ data: buffer, disableWorker: true } as any).promise;
+      }
+
+      let fullText = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const items = textContent.items.filter((it: any) => 'str' in it) as any[];
+        let lastY: number | null = null;
+        const lines: string[] = [];
+        let currentLine = '';
+        for (const item of items) {
+          const y = Math.round(item.transform[5]);
+          if (lastY !== null && Math.abs(y - lastY) > 3) {
+            lines.push(currentLine.trim());
+            currentLine = '';
+          }
+          currentLine += item.str;
+          lastY = y;
+        }
+        if (currentLine.trim()) lines.push(currentLine.trim());
+        fullText += lines.join('\n') + '\n';
+      }
+
+      const cleanText = fullText.replace(/\s+/g, ' ');
+
+      // Detect transaction type
+      let detectedType = '';
+      const typeMatch = cleanText.match(/TRANSACTION\s*TYPE\s*[:\-]?\s*([A-Za-z ]+?)(?:\s{2,}|\n|Amount|AMOUNT|Date|DATE|$)/i);
+      if (typeMatch) {
+        const raw = typeMatch[1].trim();
+        const found = TRANSACTION_TYPES.find(t => raw.toLowerCase().startsWith(t.toLowerCase()) || t.toLowerCase().startsWith(raw.toLowerCase()));
+        if (found) detectedType = found;
+        else detectedType = raw;
+      } else {
+        // Fallback: look for any of the known types in text
+        const found = TRANSACTION_TYPES.find(t => cleanText.toLowerCase().includes(t.toLowerCase()));
+        if (found) detectedType = found;
+      }
+
+      // Detect amount
+      let amount = 0;
+      const amountMatch = cleanText.match(/(?:TXN\s*Amount|Transaction\s*Amount|Amount)\s*[:\-]?\s*(?:Rs\.?|₹)?\s*([\d,]+(?:\.\d+)?)/i);
+      if (amountMatch) {
+        amount = parseFloat(amountMatch[1].replace(/,/g, '')) || 0;
+      }
+
+      const totalAmount = amount > 10000 ? 10000 : amount;
+      const extraAmount = amount > 10000 ? amount - 10000 : 0;
+
+      setNewEntry(prev => ({
+        ...prev,
+        amount: totalAmount || prev.amount,
+        extra_amount: extraAmount || prev.extra_amount,
+        transaction_count: 1,
+        transaction_type: detectedType || prev.transaction_type,
+      }));
+
+      if (!detectedType && !amount) {
+        toast.error('Could not extract data from PDF. Check console.');
+        console.log('Banking PDF text:', cleanText.substring(0, 2000));
+      } else {
+        toast.success(`Extracted${detectedType ? ' ' + detectedType : ''}${amount ? ' • ₹' + amount.toLocaleString() : ''}`);
+      }
+    } catch (err: any) {
+      console.error('PDF parse error:', err);
+      toast.error('Failed to parse PDF: ' + err.message);
+    } finally {
+      setIsParsingPdf(false);
+      if (pdfInputRef.current) pdfInputRef.current.value = '';
+    }
+  };
+
   const handleAddEntry = async () => {
     if (!newEntry.amount || !newEntry.transaction_count) {
       toast.error('Please fill in all required fields');
