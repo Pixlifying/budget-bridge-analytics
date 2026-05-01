@@ -782,6 +782,22 @@ const Banking = () => {
               />
             </div>
             <div className="grid gap-2">
+              <Label htmlFor="edit_transaction_type">Transaction Type</Label>
+              <Select
+                value={editForm.transaction_type || ''}
+                onValueChange={(v) => setEditForm(prev => ({ ...prev, transaction_type: v }))}
+              >
+                <SelectTrigger id="edit_transaction_type">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TRANSACTION_TYPES.map(t => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
               <Label htmlFor="edit_transaction_count">Transaction Count</Label>
               <Input
                 id="edit_transaction_count"
