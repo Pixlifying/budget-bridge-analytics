@@ -15,6 +15,7 @@ import DateRangePicker from '@/components/ui/DateRangePicker';
 import DownloadButton from '@/components/ui/DownloadButton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -24,6 +25,25 @@ import {
 import { format } from 'date-fns';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
+import * as pdfjsLib from 'pdfjs-dist';
+
+try {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+    'pdfjs-dist/build/pdf.worker.mjs',
+    import.meta.url
+  ).toString();
+} catch {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+}
+
+const TRANSACTION_TYPES = [
+  'Withdrawal',
+  'AEPS Cash Withdrawal',
+  'AEPS Cash Deposit',
+  'Savings Deposit By Cash',
+  'IMPS Transaction',
+  'Electricity Bill',
+] as const;
 
 interface BankingEntry {
   id: string;
@@ -32,6 +52,7 @@ interface BankingEntry {
   margin: number;
   transaction_count: number;
   extra_amount: number;
+  transaction_type?: string | null;
   created_at?: string;
 }
 
