@@ -1,0 +1,1 @@
+ALTER TABLE public.banking_services ADD COLUMN IF NOT EXISTS transaction_type TEXT;
