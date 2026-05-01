@@ -83,6 +83,7 @@ const Banking = () => {
     amount: 0,
     transaction_count: 1,
     extra_amount: 0,
+    transaction_type: '',
   });
 
   const [editForm, setEditForm] = useState({
@@ -90,6 +91,7 @@ const Banking = () => {
     amount: 0,
     transaction_count: 1,
     extra_amount: 0,
+    transaction_type: '',
   });
 
   const fetchBankingEntries = async () => {
@@ -109,6 +111,7 @@ const Banking = () => {
         margin: Number(entry.margin),
         transaction_count: Number(entry.transaction_count),
         extra_amount: Number(entry.extra_amount || 0),
+        transaction_type: (entry as any).transaction_type ?? null,
         created_at: entry.created_at
       }));
 
