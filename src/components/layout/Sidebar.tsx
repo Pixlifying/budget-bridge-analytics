@@ -19,7 +19,6 @@ import {
   IconWarning,
   IconMoney,
   IconExpense,
-  IconForms,
   IconBankingTransaction,
   IconBankAccounts,
   IconAgeCalc,
