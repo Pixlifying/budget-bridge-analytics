@@ -713,6 +713,7 @@ export type Database = {
           date: string
           id: string
           last_balance: number
+          od_adjusted: number
           od_from_bank: number
           remarks: string | null
           updated_at: string
@@ -725,6 +726,7 @@ export type Database = {
           date?: string
           id?: string
           last_balance?: number
+          od_adjusted?: number
           od_from_bank?: number
           remarks?: string | null
           updated_at?: string
@@ -737,6 +739,7 @@ export type Database = {
           date?: string
           id?: string
           last_balance?: number
+          od_adjusted?: number
           od_from_bank?: number
           remarks?: string | null
           updated_at?: string
@@ -1209,6 +1212,7 @@ export type Database = {
       }
       work_to_be: {
         Row: {
+          address: string | null
           created_at: string
           date: string
           id: string
@@ -1219,6 +1223,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          address?: string | null
           created_at?: string
           date?: string
           id?: string
@@ -1229,6 +1234,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          address?: string | null
           created_at?: string
           date?: string
           id?: string
