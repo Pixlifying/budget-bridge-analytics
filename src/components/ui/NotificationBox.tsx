@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, Wallet, CreditCard } from 'lucide-react';
+import { AlertCircle, Wallet, CreditCard, Activity, Globe, FileText, Receipt, Printer } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/utils/calculateUtils';
+import { format } from 'date-fns';
 
 interface Notification {
   id: string;
@@ -71,6 +72,31 @@ const NotificationBox = () => {
     refetchInterval: 60000,
   });
 
+  // Fetch recent activities (latest entries across modules)
+  const { data: recentActivities } = useQuery({
+    queryKey: ['recent_activities_notifications'],
+    queryFn: async () => {
+      const items: Array<{ id: string; type: string; description: string; amount: number; date: string; icon: 'banking' | 'online' | 'application' | 'photostat' | 'expense' }> = [];
+
+      const [banking, online, apps, photos, expenses] = await Promise.all([
+        supabase.from('banking_services').select('*').order('created_at', { ascending: false }).limit(5),
+        supabase.from('online_services').select('*').order('created_at', { ascending: false }).limit(5),
+        supabase.from('applications').select('*').order('created_at', { ascending: false }).limit(5),
+        supabase.from('photostats').select('*').order('created_at', { ascending: false }).limit(5),
+        supabase.from('expenses').select('*').order('created_at', { ascending: false }).limit(5),
+      ]);
+
+      banking.data?.forEach((i: any) => items.push({ id: `b-${i.id}`, type: 'Banking', description: `Banking · ${i.transaction_count} txn`, amount: Number(i.margin) || 0, date: i.date, icon: 'banking' }));
+      online.data?.forEach((i: any) => items.push({ id: `o-${i.id}`, type: 'Online', description: `${i.service}${i.customer_name ? ` · ${i.customer_name}` : ''}`, amount: Number(i.total) || 0, date: i.date, icon: 'online' }));
+      apps.data?.forEach((i: any) => items.push({ id: `a-${i.id}`, type: 'Offline Service', description: i.customer_name, amount: Number(i.amount) || 0, date: i.date, icon: 'application' }));
+      photos.data?.forEach((i: any) => items.push({ id: `p-${i.id}`, type: 'Print', description: `Print · ${i.is_double_sided ? 'Double' : 'Single'}`, amount: Number(i.margin) || 0, date: i.date, icon: 'photostat' }));
+      expenses.data?.forEach((i: any) => items.push({ id: `e-${i.id}`, type: 'Expense', description: i.name, amount: -Math.abs(Number(i.amount) || 0), date: i.date, icon: 'expense' }));
+
+      return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 15);
+    },
+    refetchInterval: 60000,
+  });
+
   useEffect(() => {
     const newNotifications: Notification[] = [];
 
@@ -106,7 +132,9 @@ const NotificationBox = () => {
     setNotifications(newNotifications);
   }, [odData, pendingData]);
 
-  if (notifications.length === 0) {
+  const hasRecent = (recentActivities?.length || 0) > 0;
+
+  if (notifications.length === 0 && !hasRecent) {
     return (
       <div className="w-80 max-w-[90vw] h-96 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl border border-white/20 dark:border-white/10 shadow-xl p-4 md:w-80">
         <div className="flex items-center gap-2 mb-4">
@@ -123,6 +151,14 @@ const NotificationBox = () => {
     );
   }
 
+  const renderActivityIcon = (icon: string) => {
+    if (icon === 'banking') return <CreditCard className="h-4 w-4" />;
+    if (icon === 'online') return <Globe className="h-4 w-4" />;
+    if (icon === 'application') return <FileText className="h-4 w-4" />;
+    if (icon === 'photostat') return <Printer className="h-4 w-4" />;
+    return <Receipt className="h-4 w-4" />;
+  };
+
   return (
     <div className="w-80 max-w-[90vw] h-96 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl border border-white/20 dark:border-white/10 shadow-xl overflow-hidden relative md:w-80">
       {/* Header */}
@@ -134,18 +170,15 @@ const NotificationBox = () => {
       </div>
 
       {/* Scrolling Container */}
-      <div className="relative h-80 overflow-hidden">
+      <div className="relative h-80 overflow-y-auto">
         {/* Top fade effect */}
         <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-white/60 to-transparent dark:from-slate-800/60 z-10 pointer-events-none" />
         
         {/* Bottom fade effect */}
         <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white/60 to-transparent dark:from-slate-800/60 z-10 pointer-events-none" />
 
-        {/* Animated notifications */}
-        <div className="h-full overflow-hidden group">
-          <div className="animate-scroll-up group-hover:pause">
-            {/* Single loop of notifications */}
-            {notifications.map((notification, index) => (
+        <div>
+          {notifications.map((notification, index) => (
               <div
                 key={`${notification.id}-${index}`}
                 className={`p-3 m-2 rounded-xl border transition-all duration-300 hover:scale-105 ${
@@ -181,8 +214,33 @@ const NotificationBox = () => {
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
+          ))}
+
+          {/* Recent Activity section — appears after pending notifications */}
+          {hasRecent && (
+            <>
+              <div className="px-4 pt-3 pb-1 mt-1 border-t border-white/20 dark:border-white/10 flex items-center gap-2">
+                <Activity className="h-4 w-4 text-primary" />
+                <h4 className="font-semibold text-sm text-foreground">Recent Activity</h4>
+              </div>
+              {recentActivities!.map((a) => (
+                <div key={a.id} className="p-3 mx-2 my-1 rounded-xl border border-border/40 bg-card/40 hover:bg-card/70 transition-colors">
+                  <div className="flex items-start gap-3">
+                    <div className={`p-2 rounded-lg ${a.amount < 0 ? 'bg-destructive/10 text-destructive' : 'bg-primary/10 text-primary'}`}>
+                      {renderActivityIcon(a.icon)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{a.description}</p>
+                      <p className="text-[11px] text-muted-foreground">{a.type} · {format(new Date(a.date), 'dd MMM')}</p>
+                    </div>
+                    <span className={`text-xs font-semibold ${a.amount < 0 ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                      {a.amount < 0 ? '-' : '+'}{formatCurrency(Math.abs(a.amount))}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
         </div>
       </div>
     </div>
