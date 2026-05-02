@@ -779,6 +779,7 @@ const ODDetailRecords = () => {
                     <TableHead>Last Balance</TableHead>
                     <TableHead>Deposit</TableHead>
                     <TableHead>Withdrawal</TableHead>
+                    <TableHead>OD Adjusted</TableHead>
                     <TableHead>Cash in Hand</TableHead>
                     <TableHead>Remarks</TableHead>
                     <TableHead>Actions</TableHead>
@@ -813,6 +814,18 @@ const ODDetailRecords = () => {
                           />
                         ) : (
                           <span className="text-destructive">₹{record.amount_distributed.toLocaleString('en-IN')}</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {inlineEditId === record.id ? (
+                          <Input
+                            type="number"
+                            className="w-24 h-8"
+                            value={inlineEditData.od_adjusted || 0}
+                            onChange={(e) => setInlineEditData({ ...inlineEditData, od_adjusted: parseFloat(e.target.value) || 0 })}
+                          />
+                        ) : (
+                          <span className="text-amber-600">₹{(record.od_adjusted || 0).toLocaleString('en-IN')}</span>
                         )}
                       </TableCell>
                       <TableCell className="font-semibold">₹{record.cash_in_hand.toLocaleString('en-IN')}</TableCell>
