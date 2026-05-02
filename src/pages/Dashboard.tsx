@@ -1000,8 +1000,8 @@ const Dashboard = () => {
               </DashCard>
             </div>
 
-            {/* Second Row - More Stats */}
-            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            {/* Second Row - Expenses, Offline Services, Khata, Documentation - single line */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               {/* Expenses */}
               <DashCard onClick={() => setExpensesDialogOpen(true)} className="cursor-pointer">
                 <div className="flex items-center gap-3 mb-2">
@@ -1011,100 +1011,43 @@ const Dashboard = () => {
                   <h3 className="font-medium text-foreground">Expenses</h3>
                 </div>
                 <p className="text-2xl font-bold text-foreground">{formatCurrency(expensesTotal)}</p>
-                <p className="text-xs text-muted-foreground mt-1">{expensesCount} entries • Click to view</p>
+                <p className="text-xs text-muted-foreground mt-1">{expensesCount} entries</p>
               </DashCard>
 
-              {/* Applications */}
-              <DashCard onClick={() => setApplicationsDialogOpen(true)}>
+              {/* Offline Services (formerly Forms/Applications) */}
+              <DashCard onClick={() => setApplicationsDialogOpen(true)} className="cursor-pointer">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="p-2 rounded-lg bg-primary/10">
                     <FileText className="h-4 w-4 text-primary" />
                   </div>
-                  <h3 className="font-medium text-foreground">Forms</h3>
+                  <h3 className="font-medium text-foreground">Offline Services</h3>
                 </div>
                 <p className="text-2xl font-bold text-foreground">{formatCurrency(applicationsTotal)}</p>
-                <p className="text-xs text-muted-foreground mt-1">{applicationsCount} applications • Click to view</p>
+                <p className="text-xs text-muted-foreground mt-1">{applicationsCount} entries</p>
               </DashCard>
-            </div>
 
-            {/* Third Row - Recent Activities, Khata, Documentation */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <DashCard>
-                <h3 className="font-medium text-foreground mb-3">Recent Activities {viewMode === 'day' ? '(Today)' : '(This Month)'}</h3>
-                <div className="relative overflow-hidden h-48">
-                  {recentActivitiesData && recentActivitiesData.length > 0 ?
-                  <div className="animate-vertical-ticker">
-                      {[...recentActivitiesData, ...recentActivitiesData].map((activity, idx) =>
-                    <div key={`${activity.id}-${idx}`} className="flex items-center gap-3 py-2.5 border-b border-border/20 hover:bg-muted/30 transition-colors rounded-lg px-2">
-                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm ${
-                      activity.color === 'destructive' ?
-                      'bg-gradient-to-br from-destructive/20 to-destructive/5' :
-                      activity.color === 'accent' ?
-                      'bg-gradient-to-br from-accent/30 to-accent/10' :
-                      'bg-gradient-to-br from-primary/20 to-primary/5'}`
-                      }>
-                            {activity.icon === 'banking' && <CreditCard className={`h-4 w-4 ${activity.color === 'destructive' ? 'text-destructive' : activity.color === 'accent' ? 'text-accent-foreground' : 'text-primary'}`} />}
-                            {activity.icon === 'online' && <Globe className={`h-4 w-4 ${activity.color === 'destructive' ? 'text-destructive' : 'text-primary'}`} />}
-                            {activity.icon === 'expense' && <Receipt className="h-4 w-4 text-destructive" />}
-                            {activity.icon === 'application' && <FileText className="h-4 w-4 text-primary" />}
-                            {activity.icon === 'photostat' && <Printer className="h-4 w-4 text-primary" />}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <span className="text-sm font-medium text-foreground block truncate">{activity.description}</span>
-                            <span className="text-xs text-muted-foreground/70">{activity.type}</span>
-                          </div>
-                          <span className={`text-sm font-semibold flex-shrink-0 px-2 py-1 rounded-md ${
-                      activity.amount < 0 ?
-                      'text-destructive bg-destructive/10' :
-                      'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'}`
-                      }>
-                            {activity.amount < 0 ? '-' : '+'}{formatCurrency(Math.abs(activity.amount))}
-                          </span>
-                        </div>
-                    )}
-                    </div> :
-
-                  <p className="text-sm text-muted-foreground text-center py-8">No activities {viewMode === 'day' ? 'today' : viewMode === 'month' ? 'this month' : 'this quarter'}</p>
-                  }
-                </div>
-              </DashCard>
-              
               {/* Khata */}
               <DashCard onClick={() => setKhataDialogOpen(true)} className="cursor-pointer">
-                <div className="flex items-center gap-3 mb-3">
+                <div className="flex items-center gap-3 mb-2">
                   <div className="p-2 rounded-lg bg-primary/10">
                     <BookOpen className="h-4 w-4 text-primary" />
                   </div>
                   <h3 className="font-medium text-foreground">Khata</h3>
                 </div>
-                <div className="space-y-2">
-                  <p className="text-lg font-bold text-foreground">
-                    {khataCustomersData?.length || 0} customers
-                  </p>
-                  <p className="text-xs text-muted-foreground">Click to view details</p>
-                  <div className="flex justify-between text-xs mt-2">
-                    <span className="text-muted-foreground">Net Balance: <span className={`font-medium ${khataTotal >= 0 ? 'text-primary' : 'text-destructive'}`}>{formatCurrency(khataTotal)}</span></span>
-                  </div>
-                </div>
+                <p className="text-2xl font-bold text-foreground">{khataCustomersData?.length || 0}</p>
+                <p className="text-xs text-muted-foreground mt-1">Net: <span className={khataTotal >= 0 ? 'text-primary' : 'text-destructive'}>{formatCurrency(khataTotal)}</span></p>
               </DashCard>
 
               {/* Documentation */}
               <DashCard onClick={() => setDocumentationDialogOpen(true)} className="cursor-pointer">
-                <div className="flex items-center gap-3 mb-3">
+                <div className="flex items-center gap-3 mb-2">
                   <div className="p-2 rounded-lg bg-primary/10">
                     <FileText className="h-4 w-4 text-primary" />
                   </div>
                   <h3 className="font-medium text-foreground">Documentation</h3>
                 </div>
-                <div className="space-y-2">
-                  <p className="text-lg font-bold text-foreground">
-                    {documentationData?.length || 0} entries
-                  </p>
-                  <p className="text-xs text-muted-foreground">Click to view customer summary</p>
-                  <div className="flex justify-between text-xs mt-2">
-                    <span className="text-muted-foreground">Amount: <span className="text-primary font-medium">{formatCurrency(documentationData?.reduce((sum, d) => sum + Number(d.amount), 0) || 0)}</span></span>
-                  </div>
-                </div>
+                <p className="text-2xl font-bold text-foreground">{documentationData?.length || 0}</p>
+                <p className="text-xs text-muted-foreground mt-1">{formatCurrency(documentationData?.reduce((sum, d) => sum + Number(d.amount), 0) || 0)}</p>
               </DashCard>
             </div>
 

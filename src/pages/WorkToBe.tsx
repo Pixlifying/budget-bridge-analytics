@@ -20,6 +20,7 @@ interface WorkEntry {
   date: string;
   name: string;
   mobile: string | null;
+  address: string | null;
   service_type: string;
   status: string;
   created_at: string;
@@ -42,16 +43,18 @@ const WorkToBe = () => {
     date: new Date().toISOString().split('T')[0],
     name: '',
     mobile: '',
+    address: '',
     service_type: '',
-    status: 'Pending',
+    status: 'Pending – Not Typed',
   });
 
   const [editForm, setEditForm] = useState({
     date: '',
     name: '',
     mobile: '',
+    address: '',
     service_type: '',
-    status: 'Pending',
+    status: 'Pending – Not Typed',
   });
 
   const fetchEntries = useCallback(async () => {
@@ -79,6 +82,7 @@ const WorkToBe = () => {
     const q = searchQuery.toLowerCase();
     return e.name.toLowerCase().includes(q) || 
            e.service_type.toLowerCase().includes(q) ||
+           (e.address && e.address.toLowerCase().includes(q)) ||
            (e.mobile && e.mobile.includes(q));
   });
 
@@ -95,13 +99,14 @@ const WorkToBe = () => {
           date: formData.date,
           name: formData.name,
           mobile: formData.mobile || null,
+          address: formData.address || null,
           service_type: formData.service_type,
           status: formData.status,
         } as any);
 
       if (error) throw error;
 
-      setFormData({ date: new Date().toISOString().split('T')[0], name: '', mobile: '', service_type: '', status: 'Pending' });
+      setFormData({ date: new Date().toISOString().split('T')[0], name: '', mobile: '', address: '', service_type: '', status: 'Pending – Not Typed' });
       toast.success('Work entry added successfully');
       fetchEntries();
     } catch (error) {
@@ -119,6 +124,7 @@ const WorkToBe = () => {
           date: editForm.date,
           name: editForm.name,
           mobile: editForm.mobile || null,
+          address: editForm.address || null,
           service_type: editForm.service_type,
           status: editForm.status,
           updated_at: new Date().toISOString(),
@@ -161,8 +167,9 @@ const WorkToBe = () => {
       date: entry.date,
       name: entry.name,
       mobile: entry.mobile || '',
+      address: entry.address || '',
       service_type: entry.service_type,
-      status: entry.status || 'Pending',
+      status: entry.status || 'Pending – Not Typed',
     });
   };
 
@@ -174,8 +181,8 @@ const WorkToBe = () => {
       h1{text-align:center}table{width:100%;border-collapse:collapse;margin-top:10px}
       th,td{border:1px solid #000;padding:8px;text-align:left;font-size:10px}
       th{background:#f5f5f5;font-weight:bold}</style></head><body>
-      <h1>Work To Be Report</h1><table><thead><tr><th>Date</th><th>Name</th><th>Mobile</th><th>Service Type</th></tr></thead><tbody>
-      ${filteredEntries.map(e => `<tr><td>${escapeHtml(e.date)}</td><td>${escapeHtml(e.name)}</td><td>${escapeHtml(e.mobile || '-')}</td><td>${escapeHtml(e.service_type)}</td></tr>`).join('')}
+      <h1>Work To Be Report</h1><table><thead><tr><th>Date</th><th>Name</th><th>Mobile</th><th>Address</th><th>Service Type</th><th>Status</th></tr></thead><tbody>
+      ${filteredEntries.map(e => `<tr><td>${escapeHtml(e.date)}</td><td>${escapeHtml(e.name)}</td><td>${escapeHtml(e.mobile || '-')}</td><td>${escapeHtml(e.address || '-')}</td><td>${escapeHtml(e.service_type)}</td><td>${escapeHtml(e.status || '-')}</td></tr>`).join('')}
       </tbody></table></body></html>`);
     printWindow.document.close();
     printWindow.print();
@@ -204,7 +211,7 @@ const WorkToBe = () => {
       {/* Add Form */}
       <div className="mb-6 p-4 bg-card rounded-lg shadow-sm border border-border">
         <h3 className="text-lg font-semibold mb-4">Add Work Entry</h3>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
           <div>
             <Label htmlFor="w_date">Date</Label>
             <Input id="w_date" type="date" value={formData.date}
@@ -223,6 +230,12 @@ const WorkToBe = () => {
               placeholder="Mobile number" />
           </div>
           <div>
+            <Label htmlFor="w_address">Address</Label>
+            <Input id="w_address" value={formData.address}
+              onChange={(e) => setFormData(p => ({ ...p, address: e.target.value }))}
+              placeholder="Address" />
+          </div>
+          <div>
             <Label htmlFor="w_service">Service Type</Label>
             <Select value={formData.service_type}
               onValueChange={(v) => setFormData(p => ({ ...p, service_type: v }))}>
@@ -238,8 +251,8 @@ const WorkToBe = () => {
               onValueChange={(v) => setFormData(p => ({ ...p, status: v }))}>
               <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="Pending">Pending</SelectItem>
-                <SelectItem value="Work Done">Work Done</SelectItem>
+                <SelectItem value="Pending – Not Typed">Pending – Not Typed</SelectItem>
+                <SelectItem value="Work Done – Typed">Work Done – Typed</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -264,6 +277,7 @@ const WorkToBe = () => {
                 <TableHead>Date</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Mobile</TableHead>
+                <TableHead>Address</TableHead>
                 <TableHead>Service Type</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -275,10 +289,11 @@ const WorkToBe = () => {
                   <TableCell>{format(new Date(entry.date), 'dd/MM/yyyy')}</TableCell>
                   <TableCell className="font-medium">{entry.name}</TableCell>
                   <TableCell>{entry.mobile || '-'}</TableCell>
+                  <TableCell className="max-w-[200px] truncate">{entry.address || '-'}</TableCell>
                   <TableCell>{entry.service_type}</TableCell>
                   <TableCell>
                     <Select
-                      value={entry.status || 'Pending'}
+                      value={entry.status || 'Pending – Not Typed'}
                       onValueChange={async (v) => {
                         try {
                           const { error } = await supabase
@@ -293,12 +308,12 @@ const WorkToBe = () => {
                         }
                       }}
                     >
-                      <SelectTrigger className={`w-[130px] h-8 text-xs ${entry.status === 'Work Done' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'}`}>
+                      <SelectTrigger className={`w-[180px] h-8 text-xs ${entry.status?.startsWith('Work Done') ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'}`}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Pending">Pending</SelectItem>
-                        <SelectItem value="Work Done">Work Done</SelectItem>
+                        <SelectItem value="Pending – Not Typed">Pending – Not Typed</SelectItem>
+                        <SelectItem value="Work Done – Typed">Work Done – Typed</SelectItem>
                       </SelectContent>
                     </Select>
                   </TableCell>
@@ -340,6 +355,11 @@ const WorkToBe = () => {
                 onChange={(e) => setEditForm(p => ({ ...p, mobile: e.target.value }))} />
             </div>
             <div className="grid gap-2">
+              <Label>Address</Label>
+              <Input value={editForm.address}
+                onChange={(e) => setEditForm(p => ({ ...p, address: e.target.value }))} />
+            </div>
+            <div className="grid gap-2">
               <Label>Service Type</Label>
               <Select value={editForm.service_type}
                 onValueChange={(v) => setEditForm(p => ({ ...p, service_type: v }))}>
@@ -355,8 +375,8 @@ const WorkToBe = () => {
                 onValueChange={(v) => setEditForm(p => ({ ...p, status: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Pending">Pending</SelectItem>
-                  <SelectItem value="Work Done">Work Done</SelectItem>
+                  <SelectItem value="Pending – Not Typed">Pending – Not Typed</SelectItem>
+                  <SelectItem value="Work Done – Typed">Work Done – Typed</SelectItem>
                 </SelectContent>
               </Select>
             </div>

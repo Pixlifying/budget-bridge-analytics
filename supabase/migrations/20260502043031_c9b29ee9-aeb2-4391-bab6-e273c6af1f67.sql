@@ -1,0 +1,2 @@
+ALTER TABLE public.od_detail_records ADD COLUMN IF NOT EXISTS od_adjusted NUMERIC NOT NULL DEFAULT 0;
+ALTER TABLE public.work_to_be ADD COLUMN IF NOT EXISTS address TEXT;
