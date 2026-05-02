@@ -6,6 +6,30 @@
 @tailwind utilities;
 
 @layer base {
+  /* Make native date/time pickers readable in all themes (text + icon) */
+  input[type="time"],
+  input[type="date"],
+  input[type="month"],
+  input[type="datetime-local"] {
+    color: hsl(var(--foreground));
+    color-scheme: light dark;
+  }
+  input[type="time"]::-webkit-calendar-picker-indicator,
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="month"]::-webkit-calendar-picker-indicator,
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.5);
+    cursor: pointer;
+  }
+  .dark input[type="time"]::-webkit-calendar-picker-indicator,
+  .dark input[type="date"]::-webkit-calendar-picker-indicator,
+  .dark input[type="month"]::-webkit-calendar-picker-indicator,
+  .dark input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.85);
+  }
+}
+
+@layer base {
   :root {
     --background: 40 20% 96%;
     --foreground: 150 10% 20%;
