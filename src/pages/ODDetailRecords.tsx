@@ -23,6 +23,7 @@ interface ODDetailRecord {
   last_balance: number;
   amount_received: number;
   amount_distributed: number;
+  od_adjusted: number;
   cash_in_hand: number;
   remarks?: string;
   created_at?: string;
@@ -41,6 +42,7 @@ const ODDetailRecords = () => {
     last_balance: 0,
     amount_received: 0,
     amount_distributed: 0,
+    od_adjusted: 0,
     remarks: '',
   });
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -65,7 +67,7 @@ const ODDetailRecords = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const cashInHand = formData.last_balance + formData.od_from_bank + formData.amount_received - formData.amount_distributed;
+  const cashInHand = formData.last_balance + formData.od_from_bank + formData.amount_received - formData.amount_distributed - formData.od_adjusted;
 
   useEffect(() => {
     fetchRecords();
@@ -88,6 +90,7 @@ const ODDetailRecords = () => {
         last_balance: record.last_balance,
         amount_received: record.amount_received,
         amount_distributed: record.amount_given || 0,
+        od_adjusted: (record as any).od_adjusted || 0,
         cash_in_hand: record.cash_in_hand,
         remarks: record.remarks || '',
         created_at: record.created_at,
@@ -318,9 +321,10 @@ const ODDetailRecords = () => {
         last_balance: formData.last_balance,
         amount_received: formData.amount_received,
         amount_given: formData.amount_distributed,
+        od_adjusted: formData.od_adjusted,
         cash_in_hand: cashInHand,
         remarks: formData.remarks || null,
-      };
+      } as any;
 
       if (editingId) {
         const { error } = await supabase.from('od_detail_records').update({ ...recordData, updated_at: new Date().toISOString() }).eq('id', editingId);
@@ -349,6 +353,7 @@ const ODDetailRecords = () => {
       last_balance: record.last_balance,
       amount_received: record.amount_received,
       amount_distributed: record.amount_distributed,
+      od_adjusted: record.od_adjusted || 0,
       remarks: record.remarks || '',
     });
     setEditingId(record.id);
@@ -359,6 +364,7 @@ const ODDetailRecords = () => {
     setInlineEditData({
       amount_received: record.amount_received,
       amount_distributed: record.amount_distributed,
+      od_adjusted: record.od_adjusted || 0,
       remarks: record.remarks,
     });
   };
@@ -372,15 +378,16 @@ const ODDetailRecords = () => {
       if (!record) return;
       
       const newCashInHand = record.last_balance + record.od_from_bank + 
-        (inlineEditData.amount_received || 0) - (inlineEditData.amount_distributed || 0);
+        (inlineEditData.amount_received || 0) - (inlineEditData.amount_distributed || 0) - (inlineEditData.od_adjusted || 0);
       
       const { error } = await supabase.from('od_detail_records').update({
         amount_received: inlineEditData.amount_received,
         amount_given: inlineEditData.amount_distributed,
+        od_adjusted: inlineEditData.od_adjusted,
         cash_in_hand: newCashInHand,
         remarks: inlineEditData.remarks,
         updated_at: new Date().toISOString(),
-      }).eq('id', inlineEditId);
+      } as any).eq('id', inlineEditId);
 
       if (error) throw error;
       toast({ title: "Success", description: "Record updated" });
@@ -415,6 +422,7 @@ const ODDetailRecords = () => {
       last_balance: latestCashInHand,
       amount_received: 0,
       amount_distributed: 0,
+      od_adjusted: 0,
       remarks: '',
     });
     setEditingId(null);
@@ -730,6 +738,10 @@ const ODDetailRecords = () => {
                 <div className="space-y-2">
                   <Label htmlFor="amount_distributed">Withdrawal</Label>
                   <Input type="number" id="amount_distributed" value={formData.amount_distributed} onChange={(e) => setFormData({ ...formData, amount_distributed: parseFloat(e.target.value) || 0 })} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="od_adjusted">OD Adjusted</Label>
+                  <Input type="number" id="od_adjusted" value={formData.od_adjusted} onChange={(e) => setFormData({ ...formData, od_adjusted: parseFloat(e.target.value) || 0 })} />
                 </div>
                 <div className="space-y-2">
                   <Label>Cash in Hand</Label>
