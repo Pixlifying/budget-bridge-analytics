@@ -258,6 +258,8 @@ const NotificationBox = () => {
               ))}
             </>
           )}
+          </div>
+          ))}
         </div>
       </div>
     </div>
