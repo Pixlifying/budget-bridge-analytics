@@ -184,15 +184,17 @@ const NotificationBox = () => {
         </div>
       </div>
 
-      {/* Scrolling Container */}
-      <div className="relative h-80 overflow-y-auto">
+      {/* Scrolling Container — bottom-to-top ticker */}
+      <div className="relative h-80 overflow-hidden group">
         {/* Top fade effect */}
         <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-white/60 to-transparent dark:from-slate-800/60 z-10 pointer-events-none" />
         
         {/* Bottom fade effect */}
         <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white/60 to-transparent dark:from-slate-800/60 z-10 pointer-events-none" />
 
-        <div>
+        <div className="animate-ticker-up group-hover:[animation-play-state:paused]">
+          {[0, 1].map((loopIdx) => (
+          <div key={loopIdx}>
           {notifications.map((notification, index) => (
               <div
                 key={`${notification.id}-${index}`}
