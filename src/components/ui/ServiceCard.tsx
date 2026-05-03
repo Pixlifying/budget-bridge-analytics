@@ -1,5 +1,5 @@
 
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, Printer } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/utils/calculateUtils';
 import {
@@ -21,6 +21,7 @@ interface ServiceCardProps {
   labels: Record<string, string>;
   onEdit: () => void;
   onDelete: () => void;
+  onPrint?: () => void;
   className?: string;
   showActions?: boolean;
   isHighlighted?: boolean;
@@ -34,6 +35,7 @@ const ServiceCard = ({
   labels,
   onEdit,
   onDelete,
+  onPrint,
   className,
   showActions = true,
   isHighlighted = false,
@@ -73,6 +75,17 @@ const ServiceCard = ({
       </CardContent>
       {showActions && (
         <CardFooter className="pt-2 flex justify-end gap-2">
+          {onPrint && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 px-3 text-primary hover:bg-primary/10"
+              onClick={onPrint}
+            >
+              <Printer size={14} className="mr-1" />
+              <span className="text-xs">Print Bill</span>
+            </Button>
+          )}
           <Button 
             variant="outline" 
             size="sm" 
