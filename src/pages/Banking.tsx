@@ -204,101 +204,82 @@ const Banking = () => {
         return;
       }
 
-      // Find AMOUNT and TRANSACTION ID columns (case-insensitive)
+      // Find AMOUNT and TRANSACTION TYPE columns (case-insensitive)
       const headers = Object.keys(rows[0]);
       const amountKey = headers.find(h => h.toUpperCase().includes('AMOUNT'));
-      const transactionIdKey = headers.find(h => 
-        h.toUpperCase().includes('TRANSACTION') || 
-        h.toUpperCase().includes('TXN') ||
-        h.toUpperCase().includes('ID')
-      );
+      const typeKey = headers.find(h => h.toUpperCase().replace(/\s+/g, '').includes('TRANSACTIONTYPE'))
+        || headers.find(h => h.toUpperCase() === 'TYPE');
 
       if (!amountKey) {
         toast.error('AMOUNT column not found in file');
         return;
       }
 
-      // Process each row and calculate amounts
-      let totalAmount = 0;
-      let extraAmount = 0;
-      let transactionCount = 0;
+      // Group rows by category
+      const groups: Record<Category, { amount: number; extra: number; count: number }> = {
+        Deposit: { amount: 0, extra: 0, count: 0 },
+        Withdrawal: { amount: 0, extra: 0, count: 0 },
+        IMPS: { amount: 0, extra: 0, count: 0 },
+        Electricity: { amount: 0, extra: 0, count: 0 },
+      };
+      let uncategorized = 0;
 
       rows.forEach((row) => {
         let amount = 0;
         const amountValue = row[amountKey];
-        
-        if (typeof amountValue === 'number') {
-          amount = amountValue;
-        } else if (typeof amountValue === 'string') {
-          const cleanedAmount = amountValue.replace(/[₹$,\s]/g, '');
-          amount = parseFloat(cleanedAmount) || 0;
-        }
-
+        if (typeof amountValue === 'number') amount = amountValue;
+        else if (typeof amountValue === 'string') amount = parseFloat(amountValue.replace(/[₹$,\s]/g, '')) || 0;
         if (amount <= 0) return;
 
-        // If amount > 10000, cap at 10000 and add excess to extra_amount
-        if (amount > 10000) {
-          totalAmount += 10000;
-          extraAmount += (amount - 10000);
-        } else {
-          totalAmount += amount;
-        }
+        const rawType = typeKey ? String(row[typeKey] ?? '') : '';
+        const cat = categorize(rawType);
+        if (!cat) { uncategorized++; return; }
 
-        transactionCount++;
+        if (amount > 10000) {
+          groups[cat].amount += 10000;
+          groups[cat].extra += (amount - 10000);
+        } else {
+          groups[cat].amount += amount;
+        }
+        groups[cat].count++;
       });
 
-      if (transactionCount === 0) {
-        toast.error('No valid transactions found in file');
+      const inserts = (Object.keys(groups) as Category[])
+        .filter(c => groups[c].count > 0)
+        .map(c => ({
+          date: new Date().toISOString(),
+          amount: groups[c].amount,
+          margin: calculateBankingServicesMargin(groups[c].amount),
+          transaction_count: groups[c].count,
+          extra_amount: groups[c].extra,
+          transaction_type: CATEGORY_DEFAULT_TYPE[c],
+        }));
+
+      if (inserts.length === 0) {
+        toast.error('No valid categorized transactions found' + (uncategorized ? ` (${uncategorized} skipped)` : ''));
         return;
       }
 
-      // Calculate margin only on the capped amount (not extra_amount)
-      const margin = calculateBankingServicesMargin(totalAmount);
-
-      setNewEntry({
-        date: new Date().toISOString().split('T')[0],
-        amount: totalAmount,
-        transaction_count: transactionCount,
-        extra_amount: extraAmount,
-        transaction_type: '',
-      });
-
-      toast.success(`Extracted ${transactionCount} transactions. Total: ₹${totalAmount.toLocaleString()}, Extra: ₹${extraAmount.toLocaleString()}`);
-
-      // Auto-save the entry
       const { data, error } = await supabase
         .from('banking_services')
-        .insert({
-          date: new Date().toISOString(),
-          amount: totalAmount,
-          margin: margin,
-          transaction_count: transactionCount,
-          extra_amount: extraAmount,
-        })
+        .insert(inserts as any)
         .select();
 
       if (error) throw error;
 
-      if (data && data.length > 0) {
-        const newBankingEntry: BankingEntry = {
-          id: data[0].id,
-          date: new Date(data[0].date),
-          amount: Number(data[0].amount),
-          margin: Number(data[0].margin),
-          transaction_count: Number(data[0].transaction_count),
-          extra_amount: Number(data[0].extra_amount || 0),
-          created_at: data[0].created_at
-        };
-
-        setBankingEntries(prev => [newBankingEntry, ...prev]);
-        setNewEntry({
-          date: new Date().toISOString().split('T')[0],
-          amount: 0,
-          transaction_count: 1,
-          extra_amount: 0,
-          transaction_type: '',
-        });
-        toast.success('Banking entry saved successfully');
+      if (data) {
+        const newEntries: BankingEntry[] = data.map((d: any) => ({
+          id: d.id,
+          date: new Date(d.date),
+          amount: Number(d.amount),
+          margin: Number(d.margin),
+          transaction_count: Number(d.transaction_count),
+          extra_amount: Number(d.extra_amount || 0),
+          transaction_type: d.transaction_type ?? null,
+          created_at: d.created_at,
+        }));
+        setBankingEntries(prev => [...newEntries, ...prev]);
+        toast.success(`Imported ${inserts.length} category groups${uncategorized ? ` (${uncategorized} uncategorized skipped)` : ''}`);
       }
     } catch (error) {
       console.error('Error processing file:', error);
