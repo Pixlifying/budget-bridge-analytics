@@ -665,21 +665,24 @@ const Banking = () => {
               onChange={(e) => setNewEntry(prev => ({ ...prev, date: e.target.value }))}
             />
           </div>
-          <div>
-            <Label htmlFor="transaction_type">Transaction Type</Label>
-            <Select
-              value={newEntry.transaction_type || ''}
-              onValueChange={(v) => setNewEntry(prev => ({ ...prev, transaction_type: v }))}
-            >
-              <SelectTrigger id="transaction_type">
-                <SelectValue placeholder="Select type" />
-              </SelectTrigger>
-              <SelectContent>
-                {TRANSACTION_TYPES.map(t => (
-                  <SelectItem key={t} value={t}>{t}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="md:col-span-2">
+            <Label>Category</Label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1">
+              {(['Deposit','Withdrawal','IMPS','Electricity'] as Category[]).map(c => {
+                const active = categorize(newEntry.transaction_type) === c;
+                return (
+                  <Button
+                    key={c}
+                    type="button"
+                    variant={active ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setNewEntry(prev => ({ ...prev, transaction_type: CATEGORY_DEFAULT_TYPE[c] }))}
+                  >
+                    {c}
+                  </Button>
+                );
+              })}
+            </div>
           </div>
           <div>
             <Label htmlFor="transaction_count">Transaction Count</Label>
@@ -721,36 +724,46 @@ const Banking = () => {
         </p>
       </div>
 
+      {/* Category blocks — click to filter */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        {([
+          { key: 'Deposit' as Category, icon: <ArrowDownCircle size={20} /> },
+          { key: 'Withdrawal' as Category, icon: <ArrowUpCircle size={20} /> },
+          { key: 'IMPS' as Category, icon: <Send size={20} /> },
+          { key: 'Electricity' as Category, icon: <Zap size={20} /> },
+        ]).map(({ key, icon }) => {
+          const s = categoryStats[key];
+          const active = categoryFilter === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setCategoryFilter(active ? 'All' : key)}
+              className={`text-left rounded-xl border p-4 transition-all hover:scale-[1.02] ${active ? 'border-primary ring-2 ring-primary/40 bg-primary/5' : 'border-border bg-card'}`}
+            >
+              <div className="flex items-center justify-between mb-2 text-muted-foreground">
+                <span className="text-sm font-medium">{key}</span>
+                {icon}
+              </div>
+              <div className="text-2xl font-bold text-foreground">{s.count}</div>
+              <div className="text-xs text-muted-foreground mt-1">
+                {formatCurrency(s.amount)} · margin {formatCurrency(s.margin)}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
-        <StatCard 
-          title="Total Entries"
-          value={totalEntries.toString()}
-          icon={<CreditCard size={20} />}
-        />
-        <StatCard 
-          title="Total Transactions"
-          value={totalTransactions.toString()}
-          icon={<CreditCard size={20} />}
-        />
-        <StatCard 
-          title="Total Amount"
-          value={formatCurrency(totalAmount)}
-          icon={<CreditCard size={20} />}
-        />
-        <StatCard 
-          title="Extra Amount"
-          value={formatCurrency(totalExtraAmount)}
-          icon={<CreditCard size={20} />}
-        />
-        <StatCard 
-          title="Total Margin"
-          value={formatCurrency(totalMargin)}
-          icon={<CreditCard size={20} />}
-        />
+        <StatCard title="Total Entries" value={totalEntries.toString()} icon={<CreditCard size={20} />} />
+        <StatCard title="Total Transactions" value={totalTransactions.toString()} icon={<CreditCard size={20} />} />
+        <StatCard title="Total Amount" value={formatCurrency(totalAmount)} icon={<CreditCard size={20} />} />
+        <StatCard title="Extra Amount" value={formatCurrency(totalExtraAmount)} icon={<CreditCard size={20} />} />
+        <StatCard title="Total Margin" value={formatCurrency(totalMargin)} icon={<CreditCard size={20} />} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredEntries.length === 0 ? (
+        {visibleEntries.length === 0 ? (
           <EmptyState
             icon="data"
             title="No Banking Entries"
@@ -759,7 +772,7 @@ const Banking = () => {
             onAction={() => document.getElementById('amount')?.focus()}
           />
         ) : (
-          filteredEntries.map(entry => (
+          visibleEntries.map(entry => (
             <ServiceCard
               key={entry.id}
               id={entry.id}
