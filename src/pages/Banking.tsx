@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useHighlight } from '@/hooks/useHighlight';
-import { CreditCard, Plus, Edit, Trash2, Printer, Upload } from 'lucide-react';
+import { CreditCard, Plus, Edit, Trash2, Printer, Upload, ArrowDownCircle, ArrowUpCircle, Send, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency, formatDate, filterByDate, filterByMonth, filterByQuarter, calculateBankingServicesMargin } from '@/utils/calculateUtils';
@@ -44,6 +44,25 @@ const TRANSACTION_TYPES = [
   'IMPS Transaction',
   'Electricity Bill',
 ] as const;
+
+type Category = 'Deposit' | 'Withdrawal' | 'IMPS' | 'Electricity';
+
+const categorize = (type?: string | null): Category | null => {
+  if (!type) return null;
+  const t = type.toLowerCase();
+  if (t.includes('deposit')) return 'Deposit';
+  if (t.includes('withdraw')) return 'Withdrawal';
+  if (t.includes('imps')) return 'IMPS';
+  if (t.includes('electric')) return 'Electricity';
+  return null;
+};
+
+const CATEGORY_DEFAULT_TYPE: Record<Category, string> = {
+  Deposit: 'Savings Deposit By Cash',
+  Withdrawal: 'Withdrawal',
+  IMPS: 'IMPS Transaction',
+  Electricity: 'Electricity Bill',
+};
 
 interface BankingEntry {
   id: string;
