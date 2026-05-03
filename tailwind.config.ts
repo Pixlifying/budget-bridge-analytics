@@ -105,6 +105,10 @@ export default {
 				'pulse': {
 					'0%, 100%': { opacity: '1' },
 					'50%': { opacity: '0.5' }
+				},
+				'ticker-up': {
+					'0%': { transform: 'translateY(0)' },
+					'100%': { transform: 'translateY(-50%)' }
 				}
 			},
 			animation: {
@@ -116,7 +120,8 @@ export default {
 				'slide-in-right': 'slide-in-right 0.3s ease-out',
 				'scale-in': 'scale-in 0.3s ease-out',
 				'float': 'float 3s ease-in-out infinite',
-				'pulse': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+				'pulse': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+				'ticker-up': 'ticker-up 30s linear infinite'
 			},
 			backdropBlur: {
 				xs: '2px',

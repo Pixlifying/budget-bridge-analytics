@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useHighlight } from '@/hooks/useHighlight';
-import { CreditCard, Plus, Edit, Trash2, Printer, Upload } from 'lucide-react';
+import { CreditCard, Plus, Edit, Trash2, Printer, Upload, ArrowDownCircle, ArrowUpCircle, Send, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency, formatDate, filterByDate, filterByMonth, filterByQuarter, calculateBankingServicesMargin } from '@/utils/calculateUtils';
@@ -45,6 +45,25 @@ const TRANSACTION_TYPES = [
   'Electricity Bill',
 ] as const;
 
+type Category = 'Deposit' | 'Withdrawal' | 'IMPS' | 'Electricity';
+
+const categorize = (type?: string | null): Category | null => {
+  if (!type) return null;
+  const t = type.toLowerCase();
+  if (t.includes('deposit')) return 'Deposit';
+  if (t.includes('withdraw')) return 'Withdrawal';
+  if (t.includes('imps')) return 'IMPS';
+  if (t.includes('electric')) return 'Electricity';
+  return null;
+};
+
+const CATEGORY_DEFAULT_TYPE: Record<Category, string> = {
+  Deposit: 'Savings Deposit By Cash',
+  Withdrawal: 'Withdrawal',
+  IMPS: 'IMPS Transaction',
+  Electricity: 'Electricity Bill',
+};
+
 interface BankingEntry {
   id: string;
   date: Date;
@@ -67,6 +86,7 @@ const Banking = () => {
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const [isParsingPdf, setIsParsingPdf] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<Category | 'All'>('All');
   const { isHighlighted, dateParam } = useHighlight();
 
   useEffect(() => {
@@ -152,6 +172,25 @@ const Banking = () => {
     setFilteredEntries(filtered);
   }, [date, viewMode, bankingEntries, searchQuery]);
 
+  // Category-aggregated stats from filtered entries
+  const categoryStats: Record<Category, { count: number; amount: number; margin: number }> = {
+    Deposit: { count: 0, amount: 0, margin: 0 },
+    Withdrawal: { count: 0, amount: 0, margin: 0 },
+    IMPS: { count: 0, amount: 0, margin: 0 },
+    Electricity: { count: 0, amount: 0, margin: 0 },
+  };
+  filteredEntries.forEach(e => {
+    const c = categorize(e.transaction_type);
+    if (!c) return;
+    categoryStats[c].count += e.transaction_count;
+    categoryStats[c].amount += e.amount;
+    categoryStats[c].margin += e.margin;
+  });
+
+  const visibleEntries = categoryFilter === 'All'
+    ? filteredEntries
+    : filteredEntries.filter(e => categorize(e.transaction_type) === categoryFilter);
+
   // Process CSV/Excel file using PapaParse
   const processFile = async (file: File) => {
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
@@ -185,101 +224,82 @@ const Banking = () => {
         return;
       }
 
-      // Find AMOUNT and TRANSACTION ID columns (case-insensitive)
+      // Find AMOUNT and TRANSACTION TYPE columns (case-insensitive)
       const headers = Object.keys(rows[0]);
       const amountKey = headers.find(h => h.toUpperCase().includes('AMOUNT'));
-      const transactionIdKey = headers.find(h => 
-        h.toUpperCase().includes('TRANSACTION') || 
-        h.toUpperCase().includes('TXN') ||
-        h.toUpperCase().includes('ID')
-      );
+      const typeKey = headers.find(h => h.toUpperCase().replace(/\s+/g, '').includes('TRANSACTIONTYPE'))
+        || headers.find(h => h.toUpperCase() === 'TYPE');
 
       if (!amountKey) {
         toast.error('AMOUNT column not found in file');
         return;
       }
 
-      // Process each row and calculate amounts
-      let totalAmount = 0;
-      let extraAmount = 0;
-      let transactionCount = 0;
+      // Group rows by category
+      const groups: Record<Category, { amount: number; extra: number; count: number }> = {
+        Deposit: { amount: 0, extra: 0, count: 0 },
+        Withdrawal: { amount: 0, extra: 0, count: 0 },
+        IMPS: { amount: 0, extra: 0, count: 0 },
+        Electricity: { amount: 0, extra: 0, count: 0 },
+      };
+      let uncategorized = 0;
 
       rows.forEach((row) => {
         let amount = 0;
         const amountValue = row[amountKey];
-        
-        if (typeof amountValue === 'number') {
-          amount = amountValue;
-        } else if (typeof amountValue === 'string') {
-          const cleanedAmount = amountValue.replace(/[₹$,\s]/g, '');
-          amount = parseFloat(cleanedAmount) || 0;
-        }
-
+        if (typeof amountValue === 'number') amount = amountValue;
+        else if (typeof amountValue === 'string') amount = parseFloat(amountValue.replace(/[₹$,\s]/g, '')) || 0;
         if (amount <= 0) return;
 
-        // If amount > 10000, cap at 10000 and add excess to extra_amount
-        if (amount > 10000) {
-          totalAmount += 10000;
-          extraAmount += (amount - 10000);
-        } else {
-          totalAmount += amount;
-        }
+        const rawType = typeKey ? String(row[typeKey] ?? '') : '';
+        const cat = categorize(rawType);
+        if (!cat) { uncategorized++; return; }
 
-        transactionCount++;
+        if (amount > 10000) {
+          groups[cat].amount += 10000;
+          groups[cat].extra += (amount - 10000);
+        } else {
+          groups[cat].amount += amount;
+        }
+        groups[cat].count++;
       });
 
-      if (transactionCount === 0) {
-        toast.error('No valid transactions found in file');
+      const inserts = (Object.keys(groups) as Category[])
+        .filter(c => groups[c].count > 0)
+        .map(c => ({
+          date: new Date().toISOString(),
+          amount: groups[c].amount,
+          margin: calculateBankingServicesMargin(groups[c].amount),
+          transaction_count: groups[c].count,
+          extra_amount: groups[c].extra,
+          transaction_type: CATEGORY_DEFAULT_TYPE[c],
+        }));
+
+      if (inserts.length === 0) {
+        toast.error('No valid categorized transactions found' + (uncategorized ? ` (${uncategorized} skipped)` : ''));
         return;
       }
 
-      // Calculate margin only on the capped amount (not extra_amount)
-      const margin = calculateBankingServicesMargin(totalAmount);
-
-      setNewEntry({
-        date: new Date().toISOString().split('T')[0],
-        amount: totalAmount,
-        transaction_count: transactionCount,
-        extra_amount: extraAmount,
-        transaction_type: '',
-      });
-
-      toast.success(`Extracted ${transactionCount} transactions. Total: ₹${totalAmount.toLocaleString()}, Extra: ₹${extraAmount.toLocaleString()}`);
-
-      // Auto-save the entry
       const { data, error } = await supabase
         .from('banking_services')
-        .insert({
-          date: new Date().toISOString(),
-          amount: totalAmount,
-          margin: margin,
-          transaction_count: transactionCount,
-          extra_amount: extraAmount,
-        })
+        .insert(inserts as any)
         .select();
 
       if (error) throw error;
 
-      if (data && data.length > 0) {
-        const newBankingEntry: BankingEntry = {
-          id: data[0].id,
-          date: new Date(data[0].date),
-          amount: Number(data[0].amount),
-          margin: Number(data[0].margin),
-          transaction_count: Number(data[0].transaction_count),
-          extra_amount: Number(data[0].extra_amount || 0),
-          created_at: data[0].created_at
-        };
-
-        setBankingEntries(prev => [newBankingEntry, ...prev]);
-        setNewEntry({
-          date: new Date().toISOString().split('T')[0],
-          amount: 0,
-          transaction_count: 1,
-          extra_amount: 0,
-          transaction_type: '',
-        });
-        toast.success('Banking entry saved successfully');
+      if (data) {
+        const newEntries: BankingEntry[] = data.map((d: any) => ({
+          id: d.id,
+          date: new Date(d.date),
+          amount: Number(d.amount),
+          margin: Number(d.margin),
+          transaction_count: Number(d.transaction_count),
+          extra_amount: Number(d.extra_amount || 0),
+          transaction_type: d.transaction_type ?? null,
+          created_at: d.created_at,
+        }));
+        setBankingEntries(prev => [...newEntries, ...prev]);
+        toast.success(`Imported ${inserts.length} category groups${uncategorized ? ` (${uncategorized} uncategorized skipped)` : ''}`);
       }
     } catch (error) {
       console.error('Error processing file:', error);
@@ -645,21 +665,24 @@ const Banking = () => {
               onChange={(e) => setNewEntry(prev => ({ ...prev, date: e.target.value }))}
             />
           </div>
-          <div>
-            <Label htmlFor="transaction_type">Transaction Type</Label>
-            <Select
-              value={newEntry.transaction_type || ''}
-              onValueChange={(v) => setNewEntry(prev => ({ ...prev, transaction_type: v }))}
-            >
-              <SelectTrigger id="transaction_type">
-                <SelectValue placeholder="Select type" />
-              </SelectTrigger>
-              <SelectContent>
-                {TRANSACTION_TYPES.map(t => (
-                  <SelectItem key={t} value={t}>{t}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="md:col-span-2">
+            <Label>Category</Label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1">
+              {(['Deposit','Withdrawal','IMPS','Electricity'] as Category[]).map(c => {
+                const active = categorize(newEntry.transaction_type) === c;
+                return (
+                  <Button
+                    key={c}
+                    type="button"
+                    variant={active ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setNewEntry(prev => ({ ...prev, transaction_type: CATEGORY_DEFAULT_TYPE[c] }))}
+                  >
+                    {c}
+                  </Button>
+                );
+              })}
+            </div>
           </div>
           <div>
             <Label htmlFor="transaction_count">Transaction Count</Label>
@@ -701,36 +724,46 @@ const Banking = () => {
         </p>
       </div>
 
+      {/* Category blocks — click to filter */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        {([
+          { key: 'Deposit' as Category, icon: <ArrowDownCircle size={20} /> },
+          { key: 'Withdrawal' as Category, icon: <ArrowUpCircle size={20} /> },
+          { key: 'IMPS' as Category, icon: <Send size={20} /> },
+          { key: 'Electricity' as Category, icon: <Zap size={20} /> },
+        ]).map(({ key, icon }) => {
+          const s = categoryStats[key];
+          const active = categoryFilter === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setCategoryFilter(active ? 'All' : key)}
+              className={`text-left rounded-xl border p-4 transition-all hover:scale-[1.02] ${active ? 'border-primary ring-2 ring-primary/40 bg-primary/5' : 'border-border bg-card'}`}
+            >
+              <div className="flex items-center justify-between mb-2 text-muted-foreground">
+                <span className="text-sm font-medium">{key}</span>
+                {icon}
+              </div>
+              <div className="text-2xl font-bold text-foreground">{s.count}</div>
+              <div className="text-xs text-muted-foreground mt-1">
+                {formatCurrency(s.amount)} · margin {formatCurrency(s.margin)}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
-        <StatCard 
-          title="Total Entries"
-          value={totalEntries.toString()}
-          icon={<CreditCard size={20} />}
-        />
-        <StatCard 
-          title="Total Transactions"
-          value={totalTransactions.toString()}
-          icon={<CreditCard size={20} />}
-        />
-        <StatCard 
-          title="Total Amount"
-          value={formatCurrency(totalAmount)}
-          icon={<CreditCard size={20} />}
-        />
-        <StatCard 
-          title="Extra Amount"
-          value={formatCurrency(totalExtraAmount)}
-          icon={<CreditCard size={20} />}
-        />
-        <StatCard 
-          title="Total Margin"
-          value={formatCurrency(totalMargin)}
-          icon={<CreditCard size={20} />}
-        />
+        <StatCard title="Total Entries" value={totalEntries.toString()} icon={<CreditCard size={20} />} />
+        <StatCard title="Total Transactions" value={totalTransactions.toString()} icon={<CreditCard size={20} />} />
+        <StatCard title="Total Amount" value={formatCurrency(totalAmount)} icon={<CreditCard size={20} />} />
+        <StatCard title="Extra Amount" value={formatCurrency(totalExtraAmount)} icon={<CreditCard size={20} />} />
+        <StatCard title="Total Margin" value={formatCurrency(totalMargin)} icon={<CreditCard size={20} />} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredEntries.length === 0 ? (
+        {visibleEntries.length === 0 ? (
           <EmptyState
             icon="data"
             title="No Banking Entries"
@@ -739,7 +772,7 @@ const Banking = () => {
             onAction={() => document.getElementById('amount')?.focus()}
           />
         ) : (
-          filteredEntries.map(entry => (
+          visibleEntries.map(entry => (
             <ServiceCard
               key={entry.id}
               id={entry.id}
