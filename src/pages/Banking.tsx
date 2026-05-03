@@ -86,6 +86,7 @@ const Banking = () => {
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const [isParsingPdf, setIsParsingPdf] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<Category | 'All'>('All');
   const { isHighlighted, dateParam } = useHighlight();
 
   useEffect(() => {
@@ -170,6 +171,25 @@ const Banking = () => {
 
     setFilteredEntries(filtered);
   }, [date, viewMode, bankingEntries, searchQuery]);
+
+  // Category-aggregated stats from filtered entries
+  const categoryStats: Record<Category, { count: number; amount: number; margin: number }> = {
+    Deposit: { count: 0, amount: 0, margin: 0 },
+    Withdrawal: { count: 0, amount: 0, margin: 0 },
+    IMPS: { count: 0, amount: 0, margin: 0 },
+    Electricity: { count: 0, amount: 0, margin: 0 },
+  };
+  filteredEntries.forEach(e => {
+    const c = categorize(e.transaction_type);
+    if (!c) return;
+    categoryStats[c].count += e.transaction_count;
+    categoryStats[c].amount += e.amount;
+    categoryStats[c].margin += e.margin;
+  });
+
+  const visibleEntries = categoryFilter === 'All'
+    ? filteredEntries
+    : filteredEntries.filter(e => categorize(e.transaction_type) === categoryFilter);
 
   // Process CSV/Excel file using PapaParse
   const processFile = async (file: File) => {
