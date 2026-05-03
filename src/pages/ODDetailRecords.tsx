@@ -476,6 +476,7 @@ const ODDetailRecords = () => {
     const totalODFromBank = filteredRecords.reduce((sum, r) => sum + r.od_from_bank, 0);
     const totalReceived = filteredRecords.reduce((sum, r) => sum + r.amount_received, 0);
     const totalDistributed = filteredRecords.reduce((sum, r) => sum + r.amount_distributed, 0);
+    const totalODAdjusted = filteredRecords.reduce((sum, r) => sum + (r.od_adjusted || 0), 0);
     
     let pagesHtml = '';
     for (let page = 0; page < totalPages; page++) {
@@ -497,6 +498,7 @@ const ODDetailRecords = () => {
                 <th>Last Balance</th>
                 <th>Deposit</th>
                 <th>Withdrawal</th>
+                <th>OD Adjusted</th>
                 <th>Cash in Hand</th>
                 <th>Remarks</th>
               </tr>
@@ -510,6 +512,7 @@ const ODDetailRecords = () => {
                   <td style="text-align: right;">₹${record.last_balance.toLocaleString('en-IN')}</td>
                   <td style="text-align: right;">₹${record.amount_received.toLocaleString('en-IN')}</td>
                   <td style="text-align: right;">₹${record.amount_distributed.toLocaleString('en-IN')}</td>
+                  <td style="text-align: right;">₹${(record.od_adjusted || 0).toLocaleString('en-IN')}</td>
                   <td style="text-align: right; font-weight: 600;">₹${record.cash_in_hand.toLocaleString('en-IN')}</td>
                   <td style="text-align: left;">${record.remarks || '-'}</td>
                 </tr>
@@ -524,6 +527,7 @@ const ODDetailRecords = () => {
                 <div class="summary-item"><span>Total OD from Bank:</span><span>₹${totalODFromBank.toLocaleString('en-IN')}</span></div>
                 <div class="summary-item"><span>Total Deposit:</span><span>₹${totalReceived.toLocaleString('en-IN')}</span></div>
                 <div class="summary-item"><span>Total Withdrawal:</span><span>₹${totalDistributed.toLocaleString('en-IN')}</span></div>
+                <div class="summary-item"><span>Total OD Adjusted:</span><span>₹${totalODAdjusted.toLocaleString('en-IN')}</span></div>
                 <div class="summary-item highlight"><span>Final Cash in Hand:</span><span>₹${filteredRecords.length > 0 ? filteredRecords[filteredRecords.length - 1].cash_in_hand.toLocaleString('en-IN') : '0'}</span></div>
               </div>
             </div>
@@ -568,6 +572,7 @@ const ODDetailRecords = () => {
       'Last Balance': record.last_balance,
       'Deposit': record.amount_received,
       'Withdrawal': record.amount_distributed,
+      'OD Adjusted': record.od_adjusted || 0,
       'Cash in Hand': record.cash_in_hand,
       'Remarks': record.remarks || '',
     }));

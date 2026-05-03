@@ -78,12 +78,25 @@ const NotificationBox = () => {
     queryFn: async () => {
       const items: Array<{ id: string; type: string; description: string; amount: number; date: string; icon: 'banking' | 'online' | 'application' | 'photostat' | 'expense' }> = [];
 
+      // Compute the last 2 working days (Mon-Fri), inclusive of today if working day
+      const workingDays: string[] = [];
+      const cursor = new Date();
+      while (workingDays.length < 2) {
+        const dow = cursor.getDay();
+        if (dow !== 0 && dow !== 6) {
+          workingDays.push(format(cursor, 'yyyy-MM-dd'));
+        }
+        cursor.setDate(cursor.getDate() - 1);
+      }
+      const earliest = workingDays[workingDays.length - 1];
+      const latest = workingDays[0] + 'T23:59:59.999';
+
       const [banking, online, apps, photos, expenses] = await Promise.all([
-        supabase.from('banking_services').select('*').order('created_at', { ascending: false }).limit(5),
-        supabase.from('online_services').select('*').order('created_at', { ascending: false }).limit(5),
-        supabase.from('applications').select('*').order('created_at', { ascending: false }).limit(5),
-        supabase.from('photostats').select('*').order('created_at', { ascending: false }).limit(5),
-        supabase.from('expenses').select('*').order('created_at', { ascending: false }).limit(5),
+        supabase.from('banking_services').select('*').gte('date', earliest).lte('date', latest).order('created_at', { ascending: false }),
+        supabase.from('online_services').select('*').gte('date', earliest).lte('date', latest).order('created_at', { ascending: false }),
+        supabase.from('applications').select('*').gte('date', earliest).lte('date', latest).order('created_at', { ascending: false }),
+        supabase.from('photostats').select('*').gte('date', earliest).lte('date', latest).order('created_at', { ascending: false }),
+        supabase.from('expenses').select('*').gte('date', earliest).lte('date', latest).order('created_at', { ascending: false }),
       ]);
 
       banking.data?.forEach((i: any) => items.push({ id: `b-${i.id}`, type: 'Banking', description: `Banking · ${i.transaction_count} txn`, amount: Number(i.margin) || 0, date: i.date, icon: 'banking' }));
@@ -92,7 +105,9 @@ const NotificationBox = () => {
       photos.data?.forEach((i: any) => items.push({ id: `p-${i.id}`, type: 'Print', description: `Print · ${i.is_double_sided ? 'Double' : 'Single'}`, amount: Number(i.margin) || 0, date: i.date, icon: 'photostat' }));
       expenses.data?.forEach((i: any) => items.push({ id: `e-${i.id}`, type: 'Expense', description: i.name, amount: -Math.abs(Number(i.amount) || 0), date: i.date, icon: 'expense' }));
 
-      return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 15);
+      return items
+        .filter(it => workingDays.includes(format(new Date(it.date), 'yyyy-MM-dd')))
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     },
     refetchInterval: 60000,
   });

@@ -500,6 +500,51 @@ const OnlineServices = () => {
     printWindow.print();
   };
 
+  const handlePrintBill = (entry: OnlineServiceEntry) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const serviceName = entry.service === 'Other' && entry.custom_service ? entry.custom_service : entry.service;
+    const serial = `KC-${format(new Date(), 'yyyy')}-${entry.id.slice(0, 4).toUpperCase()}`;
+    const billDate = format(new Date(), 'dd/MM/yyyy');
+
+    const html = `<!DOCTYPE html><html><head><title>Bill - ${escapeHtml(entry.customer_name || '')}</title>
+      <style>
+        @page { size: A6; margin: 5mm; }
+        @media print { html, body { margin: 0 !important; padding: 0 !important; } }
+        * { box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; font-size: 11px; margin: 0; padding: 0; color: #000; }
+        .bill { width: 105mm; min-height: 148mm; padding: 6mm; }
+        .title { text-align: center; font-size: 16px; font-weight: 700; margin: 0 0 2mm; letter-spacing: 1px; }
+        .addr { text-align: center; font-size: 10px; margin-bottom: 4mm; }
+        .row { display: flex; justify-content: space-between; padding: 1.5mm 0; border-bottom: 1px dashed #999; font-size: 11px; }
+        .row span:first-child { font-weight: 600; }
+        .amt { margin-top: 4mm; padding: 3mm; border: 1.5px solid #000; text-align: center; font-size: 14px; font-weight: 700; }
+        .footer { margin-top: 8mm; display: flex; align-items: flex-end; justify-content: space-between; gap: 4mm; }
+        .sig { flex: 1; font-size: 11px; }
+        .sig-line { border-bottom: 1px solid #000; height: 10mm; margin-top: 2mm; }
+        .qr { width: 22mm; height: 22mm; }
+      </style></head><body>
+      <div class="bill">
+        <div class="title">KHIDMAT CENTER</div>
+        <div class="addr">Address: Ward No 6, R.S. Pura</div>
+        <div class="row"><span>Serial No:</span><span>${escapeHtml(serial)}</span></div>
+        <div class="row"><span>Date:</span><span>${escapeHtml(billDate)}</span></div>
+        <div class="row"><span>Customer Name:</span><span>${escapeHtml(entry.customer_name || '')}</span></div>
+        <div class="row"><span>Service Type:</span><span>${escapeHtml(serviceName)}</span></div>
+        <div class="amt">Amount: ₹ ${entry.amount.toFixed(2)}</div>
+        <div class="footer">
+          <div class="sig">Signature:<div class="sig-line"></div></div>
+          <img class="qr" src="${window.location.origin}/bill-qr.png" alt="QR" onerror="this.style.display='none'" />
+        </div>
+      </div>
+      <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 200); };</script>
+      </body></html>`;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+  };
+
   const totalServices = filteredServices.length;
   const totalAmount = filteredServices.reduce((sum, service) => sum + service.total, 0);
 
@@ -708,6 +753,7 @@ const OnlineServices = () => {
               }}
               onEdit={() => openEditEntry(entry)}
               onDelete={() => handleDeleteEntry(entry.id)}
+              onPrint={() => handlePrintBill(entry)}
               isHighlighted={isHighlighted(entry.id)}
             />
           ))}
