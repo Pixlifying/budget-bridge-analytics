@@ -654,7 +654,7 @@ const Dashboard = () => {
     value: bankingMargin,
     color: 'hsl(var(--chart-1))'
   }, {
-    name: 'Other Banking',
+    name: 'Accounts',
     value: bankingAccountsMargin,
     color: 'hsl(var(--chart-2))'
   }, {
@@ -662,13 +662,9 @@ const Dashboard = () => {
     value: onlineMargin,
     color: 'hsl(var(--chart-3))'
   }, {
-    name: 'Forms',
-    value: applicationsMargin,
+    name: 'Offline Services',
+    value: applicationsMargin + photostatMarginTotal,
     color: 'hsl(var(--chart-4))'
-  }, {
-    name: 'Print',
-    value: photostatMarginTotal,
-    color: 'hsl(var(--chart-5))'
   }, {
     name: 'Documentation',
     value: documentationMargin,

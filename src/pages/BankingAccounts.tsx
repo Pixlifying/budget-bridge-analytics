@@ -329,19 +329,25 @@ const BankingAccounts = () => {
       console.log('Extracted PDF text:', fullText);
 
       // Extract Customer Name with various patterns
+      // IMPORTANT: must NOT pick up DOB / dates / numbers — restrict to alphabetic-only and stop at line breaks/labels
       let extractedName = '';
+      const looksLikeDate = (s: string) => /\d/.test(s) || /\b(dob|date|birth)\b/i.test(s);
+      const cleanName = (s: string) => s.replace(/\s+/g, ' ').trim()
+        // strip trailing label words that often follow on same line
+        .replace(/\b(DOB|Date\s*of\s*Birth|Father|Mother|S\/O|D\/O|W\/O|Address|Mobile|Phone|Account|A\/C).*$/i, '')
+        .trim();
       const namePatterns = [
-        /Customer\s*Name\s*[:\-]\s*([A-Za-z\s.]+)/i,
-        /Account\s*Holder\s*(?:Name)?\s*[:\-]\s*([A-Za-z\s.]+)/i,
-        /Name\s*[:\-]\s*([A-Za-z\s.]+)/i,
-        /Applicant\s*(?:Name)?\s*[:\-]\s*([A-Za-z\s.]+)/i,
-        /(?:Mr\.|Mrs\.|Ms\.|Shri|Smt)\s+([A-Za-z\s.]+)/i,
+        /Customer\s*Name\s*[:\-]\s*([A-Za-z][A-Za-z .]+?)(?=\s{2,}|\n|DOB|Date|S\/O|D\/O|W\/O|$)/i,
+        /Account\s*Holder\s*(?:Name)?\s*[:\-]\s*([A-Za-z][A-Za-z .]+?)(?=\s{2,}|\n|DOB|Date|S\/O|D\/O|W\/O|$)/i,
+        /Applicant\s*(?:Name)?\s*[:\-]\s*([A-Za-z][A-Za-z .]+?)(?=\s{2,}|\n|DOB|Date|S\/O|D\/O|W\/O|$)/i,
+        /(?:^|\n)\s*Name\s*[:\-]\s*([A-Za-z][A-Za-z .]+?)(?=\s{2,}|\n|DOB|Date|S\/O|D\/O|W\/O|$)/i,
+        /(?:Mr\.|Mrs\.|Ms\.|Shri|Smt)\s+([A-Za-z][A-Za-z .]+?)(?=\s{2,}|\n|DOB|Date|$)/i,
       ];
       for (const pattern of namePatterns) {
         const match = fullText.match(pattern);
         if (match) {
-          const name = match[1].trim();
-          if (name.length > 2 && name.length < 60) {
+          const name = cleanName(match[1]);
+          if (name.length > 2 && name.length < 60 && !looksLikeDate(name)) {
             extractedName = name;
             break;
           }
