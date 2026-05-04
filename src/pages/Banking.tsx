@@ -310,12 +310,12 @@ const Banking = () => {
   };
 
   const handleAddEntry = async () => {
-    const groups: Array<{ cat: Category; amount: number; count: number }> = [
-      { cat: 'Deposit', amount: newEntry.deposit_amount, count: newEntry.deposit_count },
-      { cat: 'Withdrawal', amount: newEntry.withdrawal_amount, count: newEntry.withdrawal_count },
-      { cat: 'IMPS', amount: newEntry.imps_amount, count: newEntry.imps_count },
-      { cat: 'Electricity', amount: newEntry.electricity_amount, count: newEntry.electricity_count },
-    ].filter(g => g.amount > 0 || g.count > 0);
+    const groups = ([
+      { cat: 'Deposit' as Category, amount: newEntry.deposit_amount, count: newEntry.deposit_count },
+      { cat: 'Withdrawal' as Category, amount: newEntry.withdrawal_amount, count: newEntry.withdrawal_count },
+      { cat: 'IMPS' as Category, amount: newEntry.imps_amount, count: newEntry.imps_count },
+      { cat: 'Electricity' as Category, amount: newEntry.electricity_amount, count: newEntry.electricity_count },
+    ]).filter(g => g.amount > 0 || g.count > 0);
 
     if (groups.length === 0) {
       toast.error('Enter amount/count for at least one category');
