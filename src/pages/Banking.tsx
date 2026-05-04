@@ -90,10 +90,14 @@ const Banking = () => {
   // Form state for inline entry
   const [newEntry, setNewEntry] = useState({
     date: new Date().toISOString().split('T')[0],
-    amount: 0,
-    transaction_count: 1,
-    extra_amount: 0,
-    transaction_type: '',
+    deposit_amount: 0,
+    deposit_count: 0,
+    withdrawal_amount: 0,
+    withdrawal_count: 0,
+    imps_amount: 0,
+    imps_count: 0,
+    electricity_amount: 0,
+    electricity_count: 0,
   });
 
   const [editForm, setEditForm] = useState({
@@ -306,48 +310,55 @@ const Banking = () => {
   };
 
   const handleAddEntry = async () => {
-    if (!newEntry.amount || !newEntry.transaction_count) {
-      toast.error('Please fill in all required fields');
+    const groups: Array<{ cat: Category; amount: number; count: number }> = [
+      { cat: 'Deposit', amount: newEntry.deposit_amount, count: newEntry.deposit_count },
+      { cat: 'Withdrawal', amount: newEntry.withdrawal_amount, count: newEntry.withdrawal_count },
+      { cat: 'IMPS', amount: newEntry.imps_amount, count: newEntry.imps_count },
+      { cat: 'Electricity', amount: newEntry.electricity_amount, count: newEntry.electricity_count },
+    ].filter(g => g.amount > 0 || g.count > 0);
+
+    if (groups.length === 0) {
+      toast.error('Enter amount/count for at least one category');
       return;
     }
 
     try {
-      const margin = calculateBankingServicesMargin(newEntry.amount);
-      
-      const { data, error } = await supabase
-        .from('banking_services')
-        .insert({
+      const inserts = groups.map(g => {
+        const cappedAmount = g.amount > 10000 ? 10000 : g.amount;
+        const extra = g.amount > 10000 ? g.amount - 10000 : 0;
+        return {
           date: new Date(newEntry.date).toISOString(),
-          amount: newEntry.amount,
-          margin: margin,
-          transaction_count: newEntry.transaction_count,
-          extra_amount: newEntry.extra_amount,
-          transaction_type: newEntry.transaction_type || null,
-        } as any)
-        .select();
+          amount: cappedAmount,
+          margin: calculateBankingServicesMargin(cappedAmount),
+          transaction_count: g.count || 1,
+          extra_amount: extra,
+          transaction_type: CATEGORY_DEFAULT_TYPE[g.cat],
+        };
+      });
 
+      const { data, error } = await supabase.from('banking_services').insert(inserts as any).select();
       if (error) throw error;
 
-      if (data && data.length > 0) {
-        const newBankingEntry: BankingEntry = {
-          id: data[0].id,
-          date: new Date(data[0].date),
-          amount: Number(data[0].amount),
-          margin: Number(data[0].margin),
-          transaction_count: Number(data[0].transaction_count),
-          extra_amount: Number(data[0].extra_amount || 0),
-          created_at: data[0].created_at
-        };
-
-        setBankingEntries(prev => [newBankingEntry, ...prev]);
+      if (data) {
+        const newEntries: BankingEntry[] = data.map((d: any) => ({
+          id: d.id,
+          date: new Date(d.date),
+          amount: Number(d.amount),
+          margin: Number(d.margin),
+          transaction_count: Number(d.transaction_count),
+          extra_amount: Number(d.extra_amount || 0),
+          transaction_type: d.transaction_type ?? null,
+          created_at: d.created_at,
+        }));
+        setBankingEntries(prev => [...newEntries, ...prev]);
         setNewEntry({
           date: new Date().toISOString().split('T')[0],
-          amount: 0,
-          transaction_count: 1,
-          extra_amount: 0,
-          transaction_type: '',
+          deposit_amount: 0, deposit_count: 0,
+          withdrawal_amount: 0, withdrawal_count: 0,
+          imps_amount: 0, imps_count: 0,
+          electricity_amount: 0, electricity_count: 0,
         });
-        toast.success('Banking entry added successfully');
+        toast.success(`Added ${inserts.length} banking ${inserts.length === 1 ? 'entry' : 'entries'}`);
       }
     } catch (error) {
       console.error('Error adding banking entry:', error);
@@ -538,7 +549,51 @@ const Banking = () => {
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-foreground">Add Banking Entry</h3>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
+        <div className="mb-4">
+          <Label htmlFor="date">Date</Label>
+          <Input
+            id="date"
+            type="date"
+            value={newEntry.date}
+            onChange={(e) => setNewEntry(prev => ({ ...prev, date: e.target.value }))}
+            className="md:max-w-xs"
+          />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {([
+            { key: 'deposit', label: 'Savings Deposit', icon: <ArrowDownCircle size={16} /> },
+            { key: 'withdrawal', label: 'Withdrawal', icon: <ArrowUpCircle size={16} /> },
+            { key: 'imps', label: 'IMPS Transaction', icon: <Send size={16} /> },
+            { key: 'electricity', label: 'Electricity Bill', icon: <Zap size={16} /> },
+          ] as const).map(({ key, label, icon }) => (
+            <div key={key} className="rounded-lg border border-border p-3 bg-background/50">
+              <div className="flex items-center gap-2 mb-2 text-sm font-semibold text-foreground">
+                {icon}{label}
+              </div>
+              <Label className="text-xs">Count</Label>
+              <Input
+                type="number"
+                min="0"
+                value={(newEntry as any)[`${key}_count`]}
+                onChange={(e) => setNewEntry(prev => ({ ...prev, [`${key}_count`]: Number(e.target.value) }) as any)}
+                placeholder="0"
+                className="mb-2"
+              />
+              <Label className="text-xs">Amount</Label>
+              <Input
+                type="number"
+                min="0"
+                value={(newEntry as any)[`${key}_amount`]}
+                onChange={(e) => setNewEntry(prev => ({ ...prev, [`${key}_amount`]: Number(e.target.value) }) as any)}
+                placeholder="0"
+              />
+            </div>
+          ))}
+        </div>
+        <div className="flex justify-end mt-4">
+          <Button onClick={handleAddEntry}>Save All</Button>
+        </div>
+        <div className="hidden">
           <div>
             <Label htmlFor="date">Date</Label>
             <Input
@@ -548,59 +603,6 @@ const Banking = () => {
               onChange={(e) => setNewEntry(prev => ({ ...prev, date: e.target.value }))}
             />
           </div>
-          <div className="md:col-span-2">
-            <Label>Category</Label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1">
-              {(['Deposit','Withdrawal','IMPS','Electricity'] as Category[]).map(c => {
-                const active = categorize(newEntry.transaction_type) === c;
-                return (
-                  <Button
-                    key={c}
-                    type="button"
-                    variant={active ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setNewEntry(prev => ({ ...prev, transaction_type: CATEGORY_DEFAULT_TYPE[c] }))}
-                  >
-                    {c}
-                  </Button>
-                );
-              })}
-            </div>
-          </div>
-          <div>
-            <Label htmlFor="transaction_count">Transaction Count</Label>
-            <Input
-              id="transaction_count"
-              type="number"
-              value={newEntry.transaction_count}
-              onChange={(e) => setNewEntry(prev => ({ ...prev, transaction_count: Number(e.target.value) }))}
-              placeholder="Transaction count"
-              min="1"
-            />
-          </div>
-          <div>
-            <Label htmlFor="amount">Amount (Max ₹10,000/txn)</Label>
-            <Input
-              id="amount"
-              type="number"
-              value={newEntry.amount}
-              onChange={(e) => setNewEntry(prev => ({ ...prev, amount: Number(e.target.value) }))}
-              placeholder="Amount"
-            />
-          </div>
-          <div>
-            <Label htmlFor="extra_amount">Extra Amount</Label>
-            <Input
-              id="extra_amount"
-              type="number"
-              value={newEntry.extra_amount}
-              onChange={(e) => setNewEntry(prev => ({ ...prev, extra_amount: Number(e.target.value) }))}
-              placeholder="Extra Amount"
-            />
-          </div>
-          <Button onClick={handleAddEntry}>
-            Save
-          </Button>
         </div>
         <p className="text-xs text-muted-foreground mt-2">
           * Margin is calculated only on Amount (capped at ₹10,000 per transaction). Extra amount is saved separately.
