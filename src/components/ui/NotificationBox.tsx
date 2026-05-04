@@ -78,18 +78,13 @@ const NotificationBox = () => {
     queryFn: async () => {
       const items: Array<{ id: string; type: string; description: string; amount: number; date: string; icon: 'banking' | 'online' | 'application' | 'photostat' | 'expense' }> = [];
 
-      // Compute the last 2 working days (Mon-Fri), inclusive of today if working day
-      const workingDays: string[] = [];
-      const cursor = new Date();
-      while (workingDays.length < 2) {
-        const dow = cursor.getDay();
-        if (dow !== 0 && dow !== 6) {
-          workingDays.push(format(cursor, 'yyyy-MM-dd'));
-        }
-        cursor.setDate(cursor.getDate() - 1);
-      }
-      const earliest = workingDays[workingDays.length - 1];
-      const latest = workingDays[0] + 'T23:59:59.999';
+      // Last 2 calendar days (today + yesterday)
+      const today = new Date();
+      const yesterday = new Date();
+      yesterday.setDate(today.getDate() - 1);
+      const allowedDays = [format(today, 'yyyy-MM-dd'), format(yesterday, 'yyyy-MM-dd')];
+      const earliest = allowedDays[1];
+      const latest = allowedDays[0] + 'T23:59:59.999';
 
       const [banking, online, apps, photos, expenses] = await Promise.all([
         supabase.from('banking_services').select('*').gte('date', earliest).lte('date', latest).order('created_at', { ascending: false }),
@@ -106,7 +101,7 @@ const NotificationBox = () => {
       expenses.data?.forEach((i: any) => items.push({ id: `e-${i.id}`, type: 'Expense', description: i.name, amount: -Math.abs(Number(i.amount) || 0), date: i.date, icon: 'expense' }));
 
       return items
-        .filter(it => workingDays.includes(format(new Date(it.date), 'yyyy-MM-dd')))
+        .filter(it => allowedDays.includes(format(new Date(it.date), 'yyyy-MM-dd')))
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     },
     refetchInterval: 60000,
