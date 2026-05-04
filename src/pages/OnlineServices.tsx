@@ -500,30 +500,85 @@ const OnlineServices = () => {
     printWindow.print();
   };
 
-  const handlePrintBill = (entry: OnlineServiceEntry) => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
+  // Convert a number to Indian English words (integer rupees)
+  const numberToWords = (num: number): string => {
+    if (num === 0) return 'Zero';
+    const a = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+    const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    const inWords = (n: number): string => {
+      if (n < 20) return a[n];
+      if (n < 100) return b[Math.floor(n / 10)] + (n % 10 ? ' ' + a[n % 10] : '');
+      if (n < 1000) return a[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' ' + inWords(n % 100) : '');
+      if (n < 100000) return inWords(Math.floor(n / 1000)) + ' Thousand' + (n % 1000 ? ' ' + inWords(n % 1000) : '');
+      if (n < 10000000) return inWords(Math.floor(n / 100000)) + ' Lakh' + (n % 100000 ? ' ' + inWords(n % 100000) : '');
+      return inWords(Math.floor(n / 10000000)) + ' Crore' + (n % 10000000 ? ' ' + inWords(n % 10000000) : '');
+    };
+    const rupees = Math.floor(num);
+    const paise = Math.round((num - rupees) * 100);
+    let res = inWords(rupees) + ' Rupees';
+    if (paise > 0) res += ' and ' + inWords(paise) + ' Paise';
+    return res + ' Only';
+  };
+
+  const handlePrintBill = async (entry: OnlineServiceEntry) => {
+    // Ask payment mode
+    const modeInput = (window.prompt('Payment Mode (UPI / Cash):', 'Cash') || '').trim();
+    const paymentMode = /upi/i.test(modeInput) ? 'UPI' : 'Cash';
 
     const serviceName = entry.service === 'Other' && entry.custom_service ? entry.custom_service : entry.service;
-    const serial = `KC-${format(new Date(), 'yyyy')}-${entry.id.slice(0, 4).toUpperCase()}`;
+    const prefix = serviceName.replace(/[^A-Za-z]/g, '').slice(0, 3).toUpperCase() || 'SVC';
+    const year = format(entry.date, 'yyyy');
+
+    // Sequential number = count of entries of same service in this year, ordered by created_at, plus index of this entry
+    let seqNum = 1;
+    try {
+      const yearStart = `${year}-01-01`;
+      const yearEnd = `${year}-12-31T23:59:59.999`;
+      const { data: yearEntries } = await supabase
+        .from('online_services')
+        .select('id, created_at, service, custom_service')
+        .gte('date', yearStart)
+        .lte('date', yearEnd)
+        .order('created_at', { ascending: true });
+      if (yearEntries) {
+        const sameType = yearEntries.filter((e: any) => {
+          const n = e.service === 'Other' && e.custom_service ? e.custom_service : e.service;
+          return n === serviceName;
+        });
+        const idx = sameType.findIndex((e: any) => e.id === entry.id);
+        seqNum = (idx >= 0 ? idx : sameType.length) + 1;
+      }
+    } catch (err) {
+      console.error('Serial calc error:', err);
+    }
+    const serial = `KC/${year}/${prefix}/${String(seqNum).padStart(3, '0')}`;
     const billDate = format(new Date(), 'dd/MM/yyyy');
+    const refNo = entry.reference_number?.trim() || 'Nil';
+    const amountWords = numberToWords(entry.amount);
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
 
     const html = `<!DOCTYPE html><html><head><title>Bill - ${escapeHtml(entry.customer_name || '')}</title>
       <style>
         @page { size: A6; margin: 5mm; }
         @media print { html, body { margin: 0 !important; padding: 0 !important; } }
         * { box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; font-size: 11px; margin: 0; padding: 0; color: #000; }
-        .bill { width: 105mm; min-height: 148mm; padding: 6mm; }
-        .title { text-align: center; font-size: 16px; font-weight: 700; margin: 0 0 2mm; letter-spacing: 1px; }
-        .addr { text-align: center; font-size: 10px; margin-bottom: 4mm; }
-        .row { display: flex; justify-content: space-between; padding: 1.5mm 0; border-bottom: 1px dashed #999; font-size: 11px; }
-        .row span:first-child { font-weight: 600; }
-        .amt { margin-top: 4mm; padding: 3mm; border: 1.5px solid #000; text-align: center; font-size: 14px; font-weight: 700; }
-        .footer { margin-top: 8mm; display: flex; align-items: flex-end; justify-content: space-between; gap: 4mm; }
-        .sig { flex: 1; font-size: 11px; }
-        .sig-line { border-bottom: 1px solid #000; height: 10mm; margin-top: 2mm; }
+        body { font-family: Arial, sans-serif; font-size: 10.5px; margin: 0; padding: 0; color: #000; }
+        .bill { width: 105mm; min-height: 148mm; padding: 5mm; }
+        .title { text-align: center; font-size: 15px; font-weight: 700; margin: 0 0 1mm; letter-spacing: 1px; }
+        .addr { text-align: center; font-size: 10px; margin-bottom: 3mm; }
+        .row { display: flex; justify-content: space-between; padding: 1mm 0; border-bottom: 1px dashed #999; font-size: 10.5px; gap: 4mm; }
+        .row span:first-child { font-weight: 600; white-space: nowrap; }
+        .row span:last-child { text-align: right; word-break: break-word; }
+        .amt { margin-top: 3mm; padding: 2.5mm; border: 1.5px solid #000; text-align: center; font-size: 13px; font-weight: 700; }
+        .words { margin-top: 2mm; font-size: 10px; font-style: italic; text-align: center; }
+        .footer { margin-top: 6mm; display: flex; align-items: flex-end; justify-content: space-between; gap: 4mm; }
+        .sig { flex: 1; font-size: 10.5px; text-align: center; }
+        .sig-img { height: 12mm; margin: 1mm auto 0; display: block; }
+        .sig-line { border-bottom: 1px solid #000; height: 1px; margin-top: 1mm; }
         .qr { width: 22mm; height: 22mm; }
+        .thanks { text-align: center; font-size: 10px; font-weight: 600; margin-top: 4mm; }
       </style></head><body>
       <div class="bill">
         <div class="title">KHIDMAT CENTER</div>
@@ -532,13 +587,21 @@ const OnlineServices = () => {
         <div class="row"><span>Date:</span><span>${escapeHtml(billDate)}</span></div>
         <div class="row"><span>Customer Name:</span><span>${escapeHtml(entry.customer_name || '')}</span></div>
         <div class="row"><span>Service Type:</span><span>${escapeHtml(serviceName)}</span></div>
+        <div class="row"><span>Reference No:</span><span>${escapeHtml(refNo)}</span></div>
+        <div class="row"><span>Payment Mode:</span><span>${escapeHtml(paymentMode)}</span></div>
         <div class="amt">Amount: ₹ ${entry.amount.toFixed(2)}</div>
+        <div class="words">In Words: ${escapeHtml(amountWords)}</div>
         <div class="footer">
-          <div class="sig">Signature:<div class="sig-line"></div></div>
+          <div class="sig">
+            Signature
+            <img class="sig-img" src="${window.location.origin}/signature.png" alt="Signature" onerror="this.style.display='none'" />
+            <div class="sig-line"></div>
+          </div>
           <img class="qr" src="${window.location.origin}/bill-qr.png" alt="QR" onerror="this.style.display='none'" />
         </div>
+        <div class="thanks">Thank You, Visit Again</div>
       </div>
-      <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 200); };</script>
+      <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 250); };</script>
       </body></html>`;
 
     printWindow.document.write(html);
