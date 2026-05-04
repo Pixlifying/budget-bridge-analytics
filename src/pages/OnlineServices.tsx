@@ -92,8 +92,8 @@ const OnlineServices = () => {
 
   const defaultPricing: Record<string, { amount: number; expense: number }> = {
     'Income Certificate': { amount: 150, expense: 25 },
-    'Birth Certificate': { amount: 250, expense: 50 },
-    'Death Certificate': { amount: 200, expense: 50 },
+    'PAN Card': { amount: 250, expense: 100 },
+    'Passport': { amount: 1750, expense: 1500 },
     'Character Certificate': { amount: 150, expense: 25 },
     'Marriage Certificate': { amount: 300, expense: 120 },
     'Pension Form': { amount: 150, expense: 25 },
@@ -105,8 +105,8 @@ const OnlineServices = () => {
 
   const serviceOptions = [
     { label: 'Income Certificate', value: 'Income Certificate' },
-    { label: 'Birth Certificate', value: 'Birth Certificate' },
-    { label: 'Death Certificate', value: 'Death Certificate' },
+    { label: 'PAN Card', value: 'PAN Card' },
+    { label: 'Passport', value: 'Passport' },
     { label: 'Character Certificate', value: 'Character Certificate' },
     { label: 'Marriage Certificate', value: 'Marriage Certificate' },
     { label: 'Railway Tickets', value: 'Railway Tickets' },
