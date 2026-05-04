@@ -529,22 +529,6 @@ const Banking = () => {
               <Upload size={16} className="mr-2" />
               Browse
             </Button>
-            <input
-              ref={pdfInputRef}
-              type="file"
-              accept=".pdf"
-              onChange={handlePdfUpload}
-              className="hidden"
-              id="pdf-upload"
-            />
-            <Button
-              variant="outline"
-              onClick={() => pdfInputRef.current?.click()}
-              disabled={isParsingPdf}
-            >
-              <Upload size={16} className="mr-2" />
-              {isParsingPdf ? 'Parsing...' : 'Browse PDF'}
-            </Button>
           </div>
         </div>
       }
