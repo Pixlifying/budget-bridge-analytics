@@ -346,6 +346,94 @@ const Applications = () => {
   };
 
   const totalApplications = filteredApplications.length;
+
+  const numberToWords = (num: number): string => {
+    if (num === 0) return 'Zero';
+    const a = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+    const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    const inWords = (n: number): string => {
+      if (n < 20) return a[n];
+      if (n < 100) return b[Math.floor(n / 10)] + (n % 10 ? ' ' + a[n % 10] : '');
+      if (n < 1000) return a[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' ' + inWords(n % 100) : '');
+      if (n < 100000) return inWords(Math.floor(n / 1000)) + ' Thousand' + (n % 1000 ? ' ' + inWords(n % 1000) : '');
+      if (n < 10000000) return inWords(Math.floor(n / 100000)) + ' Lakh' + (n % 100000 ? ' ' + inWords(n % 100000) : '');
+      return inWords(Math.floor(n / 10000000)) + ' Crore' + (n % 10000000 ? ' ' + inWords(n % 10000000) : '');
+    };
+    return inWords(Math.floor(num)) + ' Rupees Only';
+  };
+
+  const handlePrintBill = async (entry: ApplicationEntry) => {
+    const modeInput = (window.prompt('Payment Mode (UPI / Cash):', 'Cash') || '').trim();
+    const paymentMode = /upi/i.test(modeInput) ? 'UPI' : 'Cash';
+    const year = format(entry.date, 'yyyy');
+    const prefix = 'OFF';
+    let seqNum = 1;
+    try {
+      const yearStart = `${year}-01-01`;
+      const yearEnd = `${year}-12-31T23:59:59.999`;
+      const { data: yearEntries } = await supabase
+        .from('applications')
+        .select('id, created_at')
+        .gte('date', yearStart).lte('date', yearEnd)
+        .order('created_at', { ascending: true });
+      if (yearEntries) {
+        const idx = yearEntries.findIndex((e: any) => e.id === entry.id);
+        seqNum = (idx >= 0 ? idx : yearEntries.length) + 1;
+      }
+    } catch {}
+    const serial = `KC/${year}/${prefix}/${String(seqNum).padStart(3, '0')}`;
+    const billDate = format(new Date(), 'dd/MM/yyyy');
+    const totalAmt = entry.amount + entry.expense;
+    const amountWords = numberToWords(totalAmt);
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    const html = `<!DOCTYPE html><html><head><title>Bill - ${escapeHtml(entry.customer_name)}</title>
+      <style>
+        @page { size: A6; margin: 5mm; }
+        @media print { html, body { margin: 0 !important; padding: 0 !important; } }
+        * { box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; font-size: 10.5px; margin: 0; padding: 0; color: #000; }
+        .bill { width: 105mm; min-height: 148mm; padding: 5mm; }
+        .title { text-align: center; font-size: 15px; font-weight: 700; margin: 0 0 1mm; letter-spacing: 1px; }
+        .addr { text-align: center; font-size: 10px; margin-bottom: 3mm; }
+        .row { display: flex; justify-content: space-between; padding: 1mm 0; border-bottom: 1px dashed #999; font-size: 10.5px; gap: 4mm; }
+        .row span:first-child { font-weight: 600; white-space: nowrap; }
+        .row span:last-child { text-align: right; word-break: break-word; }
+        .amt { margin-top: 3mm; padding: 2.5mm; border: 1.5px solid #000; text-align: center; font-size: 13px; font-weight: 700; }
+        .words { margin-top: 2mm; font-size: 10px; font-style: italic; text-align: center; }
+        .footer { margin-top: 6mm; display: flex; align-items: flex-end; justify-content: space-between; gap: 4mm; }
+        .sig { flex: 1; font-size: 10.5px; text-align: center; }
+        .sig-img { height: 12mm; margin: 1mm auto 0; display: block; }
+        .sig-line { border-bottom: 1px solid #000; height: 1px; margin-top: 1mm; }
+        .qr { width: 22mm; height: 22mm; }
+        .thanks { text-align: center; font-size: 10px; font-weight: 600; margin-top: 4mm; }
+      </style></head><body>
+      <div class="bill">
+        <div class="title">KHIDMAT CENTER</div>
+        <div class="addr">Address: Ward No 6, R.S. Pura</div>
+        <div class="row"><span>Serial No:</span><span>${escapeHtml(serial)}</span></div>
+        <div class="row"><span>Date:</span><span>${escapeHtml(billDate)}</span></div>
+        <div class="row"><span>Customer Name:</span><span>${escapeHtml(entry.customer_name)}</span></div>
+        <div class="row"><span>Service Type:</span><span>Offline Service</span></div>
+        <div class="row"><span>Payment Mode:</span><span>${escapeHtml(paymentMode)}</span></div>
+        <div class="amt">Amount: ₹ ${totalAmt.toFixed(2)}</div>
+        <div class="words">In Words: ${escapeHtml(amountWords)}</div>
+        <div class="footer">
+          <div class="sig">Signature
+            <img class="sig-img" src="${window.location.origin}/signature.png" alt="Signature" onerror="this.style.display='none'" />
+            <div class="sig-line"></div>
+          </div>
+          <img class="qr" src="${window.location.origin}/bill-qr.png" alt="QR" onerror="this.style.display='none'" />
+        </div>
+        <div class="thanks">Thank You, Visit Again</div>
+      </div>
+      <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 250); };</script>
+      </body></html>`;
+    printWindow.document.write(html);
+    printWindow.document.close();
+  };
+
   const totalAmount = filteredApplications.reduce((sum, app) => sum + app.amount, 0);
 
   return (
@@ -529,6 +617,7 @@ const Applications = () => {
               }}
               onEdit={() => openEditEntry(entry)}
               onDelete={() => handleDeleteEntry(entry.id)}
+              onPrint={() => handlePrintBill(entry)}
               isHighlighted={isHighlighted(entry.id)}
             />
           ))}
