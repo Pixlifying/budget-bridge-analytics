@@ -328,26 +328,27 @@ const BankingAccounts = () => {
 
       console.log('Extracted PDF text:', fullText);
 
-      // Extract Customer Name with various patterns
-      // IMPORTANT: must NOT pick up DOB / dates / numbers — restrict to alphabetic-only and stop at line breaks/labels
+      // Extract FULL Customer Name. Capture multi-word names (first + middle + last)
+      // Stop only at clear field boundaries (newline, double-space, or another label).
       let extractedName = '';
       const looksLikeDate = (s: string) => /\d/.test(s) || /\b(dob|date|birth)\b/i.test(s);
       const cleanName = (s: string) => s.replace(/\s+/g, ' ').trim()
-        // strip trailing label words that often follow on same line
-        .replace(/\b(DOB|Date\s*of\s*Birth|Father|Mother|S\/O|D\/O|W\/O|Address|Mobile|Phone|Account|A\/C).*$/i, '')
+        .replace(/\s*(DOB|Date\s*of\s*Birth|Father|Mother|S\/O|D\/O|W\/O|Address|Mobile|Phone|Account|A\/C|Aadhaar|Aadhar|PAN|Email).*$/i, '')
         .trim();
+      // Allow multi-word capture up to a delimiter; greedy across spaces but stop at labels.
+      const stopAhead = '(?=\\s*(?:DOB|Date|S\\/O|D\\/O|W\\/O|Father|Mother|Address|Mobile|Phone|Account|A\\/C|Aadhaar|Aadhar|PAN|Email|\\n|\\r|$))';
       const namePatterns = [
-        /Customer\s*Name\s*[:\-]\s*([A-Za-z][A-Za-z .]+?)(?=\s{2,}|\n|DOB|Date|S\/O|D\/O|W\/O|$)/i,
-        /Account\s*Holder\s*(?:Name)?\s*[:\-]\s*([A-Za-z][A-Za-z .]+?)(?=\s{2,}|\n|DOB|Date|S\/O|D\/O|W\/O|$)/i,
-        /Applicant\s*(?:Name)?\s*[:\-]\s*([A-Za-z][A-Za-z .]+?)(?=\s{2,}|\n|DOB|Date|S\/O|D\/O|W\/O|$)/i,
-        /(?:^|\n)\s*Name\s*[:\-]\s*([A-Za-z][A-Za-z .]+?)(?=\s{2,}|\n|DOB|Date|S\/O|D\/O|W\/O|$)/i,
-        /(?:Mr\.|Mrs\.|Ms\.|Shri|Smt)\s+([A-Za-z][A-Za-z .]+?)(?=\s{2,}|\n|DOB|Date|$)/i,
+        new RegExp(`Customer\\s*Name\\s*[:\\-]\\s*([A-Za-z][A-Za-z .'-]{1,80}?)${stopAhead}`, 'i'),
+        new RegExp(`Account\\s*Holder(?:'s)?\\s*(?:Name)?\\s*[:\\-]\\s*([A-Za-z][A-Za-z .'-]{1,80}?)${stopAhead}`, 'i'),
+        new RegExp(`Applicant(?:'s)?\\s*(?:Name)?\\s*[:\\-]\\s*([A-Za-z][A-Za-z .'-]{1,80}?)${stopAhead}`, 'i'),
+        new RegExp(`(?:^|\\n)\\s*Name\\s*[:\\-]\\s*([A-Za-z][A-Za-z .'-]{1,80}?)${stopAhead}`, 'i'),
+        new RegExp(`(?:Mr\\.|Mrs\\.|Ms\\.|Shri|Smt)\\s+([A-Za-z][A-Za-z .'-]{1,80}?)${stopAhead}`, 'i'),
       ];
       for (const pattern of namePatterns) {
         const match = fullText.match(pattern);
         if (match) {
           const name = cleanName(match[1]);
-          if (name.length > 2 && name.length < 60 && !looksLikeDate(name)) {
+          if (name.length > 2 && name.length < 80 && !looksLikeDate(name) && /\s/.test(name) || (name.length > 2 && !looksLikeDate(name))) {
             extractedName = name;
             break;
           }
