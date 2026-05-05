@@ -21,6 +21,7 @@ import {
   formatCurrency
 } from '@/utils/calculateUtils';
 import * as pdfjsLib from 'pdfjs-dist';
+import * as XLSX from 'xlsx';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.mjs',
@@ -267,93 +268,74 @@ const [searchQuery, setSearchQuery] = useState('');
     });
   };
 
+  const extractNameFromText = (text: string): string => {
+    const cleanText = text.replace(/\s+/g, ' ').trim();
+    const stop = '(?=\\s*(?:S\\/O|D\\/O|W\\/O|DOB|Date|Father|Mother|Address|Mobile|Phone|Email|Aadhaar|Aadhar|PAN|Account|A\\/C|Service|Amount|\\n|\\r|$))';
+    const patterns = [
+      new RegExp(`(?:Customer|Applicant|Beneficiary|Account\\s*Holder)(?:'s)?\\s*Name\\s*[:\\-]\\s*([A-Za-z][A-Za-z .'-]{1,80}?)${stop}`, 'i'),
+      new RegExp(`(?:^|\\n)\\s*Name\\s*[:\\-]\\s*([A-Za-z][A-Za-z .'-]{1,80}?)${stop}`, 'i'),
+      new RegExp(`(?:Mr\\.|Mrs\\.|Ms\\.|Shri|Smt)\\s+([A-Za-z][A-Za-z .'-]{1,80}?)${stop}`, 'i'),
+    ];
+    for (const p of patterns) {
+      const m = text.match(p) || cleanText.match(p);
+      if (m) {
+        const n = m[1].replace(/\s+/g, ' ').trim()
+          .replace(/\s*(DOB|Date|Father|Mother|S\/O|D\/O|W\/O|Address|Mobile|Phone|Email|Aadhaar|Aadhar|PAN).*$/i, '')
+          .trim();
+        if (n.length > 2 && n.length < 80) return n;
+      }
+    }
+    return '';
+  };
+
   const handlePdfUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
 
     try {
-      const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      let fullText = '';
-
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        let lastY: number | null = null;
-        content.items.forEach((item: any) => {
-          if ('str' in item) {
-            if (lastY !== null && Math.abs(item.transform[5] - lastY) > 5) {
-              fullText += '\n';
+      let text = '';
+      if (ext === 'pdf') {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          let lastY: number | null = null;
+          content.items.forEach((item: any) => {
+            if ('str' in item) {
+              if (lastY !== null && Math.abs(item.transform[5] - lastY) > 5) text += '\n';
+              text += item.str + ' ';
+              lastY = item.transform[5];
             }
-            fullText += item.str + ' ';
-            lastY = item.transform[5];
-          }
-        });
-        fullText += '\n';
-      }
-
-      const cleanText = fullText.replace(/\s+/g, ' ').trim();
-      const lines = fullText.split('\n').map(l => l.trim()).filter(Boolean);
-
-      // Extract Name
-      let name = '';
-      const namePatterns = [
-        /(?:Applicant|Customer|Name|Name of (?:Applicant|Dependent|Person))\s*[:\-]?\s*(.+)/i,
-        /(?:Benefi\s*ciary\s*Name)\s*[:\-]?\s*(?:(?:Mr|Mrs|Ms|Smt)\.?\s+)?(.+?)(?:\s*\n|\s{2,}|Benefi|$)/i,
-      ];
-      for (const pattern of namePatterns) {
-        const match = cleanText.match(pattern) || fullText.match(pattern);
-        if (match) {
-          name = match[1].trim().replace(/\s{2,}/g, ' ');
-          break;
+          });
+          text += '\n';
         }
+      } else if (ext === 'xlsx' || ext === 'xls' || ext === 'csv') {
+        const arrayBuffer = await file.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        workbook.SheetNames.forEach(sn => {
+          const rows: any[][] = XLSX.utils.sheet_to_json(workbook.Sheets[sn], { header: 1 });
+          rows.forEach(r => { text += (r || []).join(' ') + '\n'; });
+        });
+      } else if (ext === 'doc' || ext === 'docx' || ext === 'txt') {
+        text = await file.text();
+      } else {
+        toast.error('Unsupported file. Use PDF, Excel, Doc or TXT.');
+        return;
       }
 
-      // Extract Address
-      let address = '';
-      const addressMatch = cleanText.match(/(?:Address|Village|Residence|Location)\s*[:\-]?\s*(.+?)(?=\s{2,}|Phone|Mobile|Service|Amount|$)/i)
-        || fullText.match(/(?:Address|Village|Residence|Location)\s*[:\-]?\s*\n?\s*(.+)/i);
-      if (addressMatch) {
-        address = addressMatch[1].trim().replace(/\s{2,}/g, ' ');
+      const name = extractNameFromText(text);
+      if (name) {
+        setNewEntry(prev => ({ ...prev, name }));
+        toast.success(`Name extracted: ${name}`);
+      } else {
+        toast.error('Could not extract customer name');
       }
-
-      // Extract Phone
-      let phone = '';
-      const phoneMatch = cleanText.match(/(?:Phone|Mobile|Contact|Tel)\s*[:\-]?\s*(\+?\d[\d\s\-]{7,14}\d)/i)
-        || cleanText.match(/(\b\d{10}\b)/);
-      if (phoneMatch) {
-        phone = phoneMatch[1].trim().replace(/\s/g, '');
-      }
-
-      // Extract Service Type
-      let service = '';
-      const serviceMatch = cleanText.match(/(?:Service|Service Type|Type of Service|Work)\s*[:\-]?\s*(.+?)(?=\s{2,}|Amount|Fee|$)/i);
-      if (serviceMatch) {
-        service = serviceMatch[1].trim();
-      }
-
-      // Extract Amount
-      let amount = 0;
-      const amountMatch = cleanText.match(/(?:Amount|Fee|Total|Balance|Bill Amount|TXN Amount)\s*[:\-]?\s*(?:Rs\.?|₹|INR)?\s*([\d,]+\.?\d*)/i);
-      if (amountMatch) {
-        amount = parseFloat(amountMatch[1].replace(/,/g, ''));
-      }
-
-      setNewEntry(prev => ({
-        ...prev,
-        ...(name ? { name } : {}),
-        ...(address ? { address } : {}),
-        ...(phone ? { phone } : {}),
-        ...(service ? { service } : {}),
-        ...(amount ? { amount } : {}),
-      }));
-
-      toast.success('PDF data extracted successfully');
     } catch (err) {
-      console.error('PDF extraction error:', err);
-      toast.error('Failed to extract data from PDF');
+      console.error('Extraction error:', err);
+      toast.error('Failed to extract from file');
     }
-
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -448,7 +430,7 @@ const [searchQuery, setSearchQuery] = useState('');
               type="file"
               ref={fileInputRef}
               className="hidden"
-              accept=".pdf"
+              accept=".pdf,.xlsx,.xls,.csv,.doc,.docx,.txt"
               onChange={handlePdfUpload}
             />
             <DownloadButton 
