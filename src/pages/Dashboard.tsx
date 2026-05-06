@@ -904,11 +904,11 @@ const Dashboard = () => {
                   </div>
                   <div className="flex-1 bg-white/15 rounded-xl p-2.5 text-center backdrop-blur-sm">
                     <span className="text-lg font-bold block">{applicationsCount}</span>
-                    <span className="text-[10px] opacity-80">Applications</span>
+                    <span className="text-[10px] opacity-80">Offline Services</span>
                   </div>
                   <div className="flex-1 bg-white/15 rounded-xl p-2.5 text-center backdrop-blur-sm">
                     <span className="text-lg font-bold block">{formatCurrency(bankingAccountsMargin)}</span>
-                    <span className="text-[10px] opacity-80">Other Banking</span>
+                    <span className="text-[10px] opacity-80">Accounts</span>
                   </div>
                 </div>
               </div>

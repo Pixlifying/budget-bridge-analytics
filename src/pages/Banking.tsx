@@ -637,8 +637,11 @@ const Banking = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Date</TableHead>
-                <TableHead>Transaction Type</TableHead>
-                <TableHead className="text-right">Transactions</TableHead>
+                <TableHead className="text-right">Withdrawal</TableHead>
+                <TableHead className="text-right">Deposit</TableHead>
+                <TableHead className="text-right">IMPS</TableHead>
+                <TableHead className="text-right">Electricity</TableHead>
+                <TableHead className="text-right">Transaction</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
                 <TableHead className="text-right">Extra Amount</TableHead>
                 <TableHead className="text-right">Margin</TableHead>
@@ -646,14 +649,20 @@ const Banking = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {visibleEntries.map(entry => (
+              {visibleEntries.map(entry => {
+                const cat = categorize(entry.transaction_type);
+                const cell = (k: Category) => cat === k ? formatCurrency(entry.amount) : '-';
+                return (
                 <TableRow
                   key={entry.id}
                   data-record-id={entry.id}
                   className={isHighlighted(entry.id) ? 'search-highlight' : ''}
                 >
                   <TableCell>{format(entry.date, 'dd/MM/yyyy')}</TableCell>
-                  <TableCell className="font-medium">{entry.transaction_type || '-'}</TableCell>
+                  <TableCell className="text-right">{cell('Withdrawal')}</TableCell>
+                  <TableCell className="text-right">{cell('Deposit')}</TableCell>
+                  <TableCell className="text-right">{cell('IMPS')}</TableCell>
+                  <TableCell className="text-right">{cell('Electricity')}</TableCell>
                   <TableCell className="text-right">{entry.transaction_count}</TableCell>
                   <TableCell className="text-right">{formatCurrency(entry.amount)}</TableCell>
                   <TableCell className="text-right">{formatCurrency(entry.extra_amount || 0)}</TableCell>
@@ -674,7 +683,8 @@ const Banking = () => {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
         </div>
