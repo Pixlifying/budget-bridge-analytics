@@ -180,6 +180,58 @@ const Banking = () => {
     ? filteredEntries
     : filteredEntries.filter(e => categorize(e.transaction_type) === categoryFilter);
 
+  // Group visible entries by date (yyyy-MM-dd) so each date shows as a single row
+  interface GroupedRow {
+    dateKey: string;
+    date: Date;
+    ids: string[];
+    cats: Record<Category, number>;
+    transaction_count: number;
+    amount: number;
+    extra_amount: number;
+    margin: number;
+  }
+  const groupedRows: GroupedRow[] = (() => {
+    const map = new Map<string, GroupedRow>();
+    visibleEntries.forEach(e => {
+      const key = format(e.date, 'yyyy-MM-dd');
+      let row = map.get(key);
+      if (!row) {
+        row = {
+          dateKey: key,
+          date: e.date,
+          ids: [],
+          cats: { Deposit: 0, Withdrawal: 0, IMPS: 0, Electricity: 0 },
+          transaction_count: 0,
+          amount: 0,
+          extra_amount: 0,
+          margin: 0,
+        };
+        map.set(key, row);
+      }
+      row.ids.push(e.id);
+      const c = categorize(e.transaction_type);
+      if (c) row.cats[c] += e.amount;
+      row.transaction_count += e.transaction_count;
+      row.amount += e.amount;
+      row.extra_amount += e.extra_amount || 0;
+      row.margin += e.margin;
+    });
+    return Array.from(map.values()).sort((a, b) => b.date.getTime() - a.date.getTime());
+  })();
+
+  const handleDeleteGroup = async (ids: string[]) => {
+    try {
+      const { error } = await supabase.from('banking_services').delete().in('id', ids);
+      if (error) throw error;
+      setBankingEntries(prev => prev.filter(e => !ids.includes(e.id)));
+      toast.success(`Deleted ${ids.length} entr${ids.length === 1 ? 'y' : 'ies'}`);
+    } catch (error) {
+      console.error('Error deleting entries:', error);
+      toast.error('Failed to delete entries');
+    }
+  };
+
   // Process CSV/Excel file using PapaParse
   const processFile = async (file: File) => {
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
@@ -649,34 +701,39 @@ const Banking = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {visibleEntries.map(entry => {
-                const cat = categorize(entry.transaction_type);
-                const cell = (k: Category) => cat === k ? formatCurrency(entry.amount) : '-';
+              {groupedRows.map(row => {
+                const cell = (k: Category) => row.cats[k] > 0 ? formatCurrency(row.cats[k]) : '-';
+                const singleEntry = row.ids.length === 1
+                  ? bankingEntries.find(e => e.id === row.ids[0])
+                  : null;
+                const highlighted = row.ids.some(id => isHighlighted(id));
                 return (
                 <TableRow
-                  key={entry.id}
-                  data-record-id={entry.id}
-                  className={isHighlighted(entry.id) ? 'search-highlight' : ''}
+                  key={row.dateKey}
+                  data-record-id={row.ids[0]}
+                  className={highlighted ? 'search-highlight' : ''}
                 >
-                  <TableCell>{format(entry.date, 'dd/MM/yyyy')}</TableCell>
+                  <TableCell>{format(row.date, 'dd/MM/yyyy')}</TableCell>
                   <TableCell className="text-right">{cell('Withdrawal')}</TableCell>
                   <TableCell className="text-right">{cell('Deposit')}</TableCell>
                   <TableCell className="text-right">{cell('IMPS')}</TableCell>
                   <TableCell className="text-right">{cell('Electricity')}</TableCell>
-                  <TableCell className="text-right">{entry.transaction_count}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(entry.amount)}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(entry.extra_amount || 0)}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(entry.margin)}</TableCell>
+                  <TableCell className="text-right">{row.transaction_count}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(row.amount)}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(row.extra_amount)}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(row.margin)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button size="sm" variant="outline" onClick={() => openEditEntry(entry)}>
-                        <Edit size={14} />
-                      </Button>
+                      {singleEntry && (
+                        <Button size="sm" variant="outline" onClick={() => openEditEntry(singleEntry)}>
+                          <Edit size={14} />
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         variant="outline"
                         className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 border-rose-200"
-                        onClick={() => handleDeleteEntry(entry.id)}
+                        onClick={() => handleDeleteGroup(row.ids)}
                       >
                         <Trash2 size={14} />
                       </Button>
