@@ -180,6 +180,58 @@ const Banking = () => {
     ? filteredEntries
     : filteredEntries.filter(e => categorize(e.transaction_type) === categoryFilter);
 
+  // Group visible entries by date (yyyy-MM-dd) so each date shows as a single row
+  interface GroupedRow {
+    dateKey: string;
+    date: Date;
+    ids: string[];
+    cats: Record<Category, number>;
+    transaction_count: number;
+    amount: number;
+    extra_amount: number;
+    margin: number;
+  }
+  const groupedRows: GroupedRow[] = (() => {
+    const map = new Map<string, GroupedRow>();
+    visibleEntries.forEach(e => {
+      const key = format(e.date, 'yyyy-MM-dd');
+      let row = map.get(key);
+      if (!row) {
+        row = {
+          dateKey: key,
+          date: e.date,
+          ids: [],
+          cats: { Deposit: 0, Withdrawal: 0, IMPS: 0, Electricity: 0 },
+          transaction_count: 0,
+          amount: 0,
+          extra_amount: 0,
+          margin: 0,
+        };
+        map.set(key, row);
+      }
+      row.ids.push(e.id);
+      const c = categorize(e.transaction_type);
+      if (c) row.cats[c] += e.amount;
+      row.transaction_count += e.transaction_count;
+      row.amount += e.amount;
+      row.extra_amount += e.extra_amount || 0;
+      row.margin += e.margin;
+    });
+    return Array.from(map.values()).sort((a, b) => b.date.getTime() - a.date.getTime());
+  })();
+
+  const handleDeleteGroup = async (ids: string[]) => {
+    try {
+      const { error } = await supabase.from('banking_services').delete().in('id', ids);
+      if (error) throw error;
+      setBankingEntries(prev => prev.filter(e => !ids.includes(e.id)));
+      toast.success(`Deleted ${ids.length} entr${ids.length === 1 ? 'y' : 'ies'}`);
+    } catch (error) {
+      console.error('Error deleting entries:', error);
+      toast.error('Failed to delete entries');
+    }
+  };
+
   // Process CSV/Excel file using PapaParse
   const processFile = async (file: File) => {
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
