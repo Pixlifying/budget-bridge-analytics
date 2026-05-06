@@ -16,6 +16,7 @@ import DownloadButton from '@/components/ui/DownloadButton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   Dialog,
   DialogContent,
@@ -622,41 +623,62 @@ const Banking = () => {
         <StatCard title="Total Margin" value={formatCurrency(totalMargin)} icon={<CreditCard size={20} />} />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {visibleEntries.length === 0 ? (
-          <EmptyState
-            icon="data"
-            title="No Banking Entries"
-            description={`No banking entries found for this ${viewMode === 'day' ? 'day' : viewMode === 'month' ? 'month' : 'quarter'}. Add your first entry above.`}
-            actionLabel="Add Entry"
-            onAction={() => document.getElementById('amount')?.focus()}
-          />
-        ) : (
-          visibleEntries.map(entry => (
-            <ServiceCard
-              key={entry.id}
-              id={entry.id}
-              title={entry.transaction_type || 'Banking Entry'}
-              date={entry.date}
-              data={{
-                transactions: entry.transaction_count,
-                amount: formatCurrency(entry.amount),
-                extra_amount: formatCurrency(entry.extra_amount),
-                margin: formatCurrency(entry.margin)
-              }}
-              labels={{
-                transactions: 'Transactions',
-                amount: 'Amount',
-                extra_amount: 'Extra Amount',
-                margin: 'Margin'
-              }}
-              onEdit={() => openEditEntry(entry)}
-              onDelete={() => handleDeleteEntry(entry.id)}
-              isHighlighted={isHighlighted(entry.id)}
-            />
-          ))
-        )}
-      </div>
+      {visibleEntries.length === 0 ? (
+        <EmptyState
+          icon="data"
+          title="No Banking Entries"
+          description={`No banking entries found for this ${viewMode === 'day' ? 'day' : viewMode === 'month' ? 'month' : 'quarter'}. Add your first entry above.`}
+          actionLabel="Add Entry"
+          onAction={() => document.getElementById('amount')?.focus()}
+        />
+      ) : (
+        <div className="bg-card rounded-xl border border-border overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Transaction Type</TableHead>
+                <TableHead className="text-right">Transactions</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+                <TableHead className="text-right">Extra Amount</TableHead>
+                <TableHead className="text-right">Margin</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {visibleEntries.map(entry => (
+                <TableRow
+                  key={entry.id}
+                  data-record-id={entry.id}
+                  className={isHighlighted(entry.id) ? 'search-highlight' : ''}
+                >
+                  <TableCell>{format(entry.date, 'dd/MM/yyyy')}</TableCell>
+                  <TableCell className="font-medium">{entry.transaction_type || '-'}</TableCell>
+                  <TableCell className="text-right">{entry.transaction_count}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(entry.amount)}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(entry.extra_amount || 0)}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(entry.margin)}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button size="sm" variant="outline" onClick={() => openEditEntry(entry)}>
+                        <Edit size={14} />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 border-rose-200"
+                        onClick={() => handleDeleteEntry(entry.id)}
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       {/* Edit Entry Dialog */}
       <Dialog open={!!editingEntry} onOpenChange={() => setEditingEntry(null)}>
