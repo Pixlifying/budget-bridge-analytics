@@ -979,7 +979,7 @@ const Dashboard = () => {
                 </div>
               </DashCard>
 
-              {/* Banking Amount */}
+              {/* Accounts */}
               <DashCard>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -987,7 +987,7 @@ const Dashboard = () => {
                       <Wallet className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Banking Amount</p>
+                      <p className="text-sm text-muted-foreground">Accounts</p>
                       <p className="text-xl font-bold text-foreground">{formatCurrency(bankingServicesTotal)}</p>
                       <p className="text-xs text-muted-foreground">Margin: {formatCurrency(bankingMargin)}</p>
                     </div>
