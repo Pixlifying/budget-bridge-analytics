@@ -701,34 +701,39 @@ const Banking = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {visibleEntries.map(entry => {
-                const cat = categorize(entry.transaction_type);
-                const cell = (k: Category) => cat === k ? formatCurrency(entry.amount) : '-';
+              {groupedRows.map(row => {
+                const cell = (k: Category) => row.cats[k] > 0 ? formatCurrency(row.cats[k]) : '-';
+                const singleEntry = row.ids.length === 1
+                  ? bankingEntries.find(e => e.id === row.ids[0])
+                  : null;
+                const highlighted = row.ids.some(id => isHighlighted(id));
                 return (
                 <TableRow
-                  key={entry.id}
-                  data-record-id={entry.id}
-                  className={isHighlighted(entry.id) ? 'search-highlight' : ''}
+                  key={row.dateKey}
+                  data-record-id={row.ids[0]}
+                  className={highlighted ? 'search-highlight' : ''}
                 >
-                  <TableCell>{format(entry.date, 'dd/MM/yyyy')}</TableCell>
+                  <TableCell>{format(row.date, 'dd/MM/yyyy')}</TableCell>
                   <TableCell className="text-right">{cell('Withdrawal')}</TableCell>
                   <TableCell className="text-right">{cell('Deposit')}</TableCell>
                   <TableCell className="text-right">{cell('IMPS')}</TableCell>
                   <TableCell className="text-right">{cell('Electricity')}</TableCell>
-                  <TableCell className="text-right">{entry.transaction_count}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(entry.amount)}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(entry.extra_amount || 0)}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(entry.margin)}</TableCell>
+                  <TableCell className="text-right">{row.transaction_count}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(row.amount)}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(row.extra_amount)}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(row.margin)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button size="sm" variant="outline" onClick={() => openEditEntry(entry)}>
-                        <Edit size={14} />
-                      </Button>
+                      {singleEntry && (
+                        <Button size="sm" variant="outline" onClick={() => openEditEntry(singleEntry)}>
+                          <Edit size={14} />
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         variant="outline"
                         className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 border-rose-200"
-                        onClick={() => handleDeleteEntry(entry.id)}
+                        onClick={() => handleDeleteGroup(row.ids)}
                       >
                         <Trash2 size={14} />
                       </Button>
