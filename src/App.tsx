@@ -41,6 +41,7 @@ import Udhar from '@/pages/Udhar';
 import ODDetailRecords from "@/pages/ODDetailRecords";
 import WorkToBe from "@/pages/WorkToBe";
 import ImpsElectricity from "@/pages/ImpsElectricity";
+import DocumentsRequired from "@/pages/DocumentsRequired";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Admin from "@/pages/Admin";
 
@@ -93,6 +94,7 @@ const App = () => {
                       <Route path="/age-calculator" element={<Calculator />} />
                       <Route path="/forms" element={<Forms />} />
                       <Route path="/work-to-be" element={<WorkToBe />} />
+                      <Route path="/documents-required" element={<DocumentsRequired />} />
                       <Route path="/milk" element={<Milk />} />
                       <Route path="/downloads" element={<Downloads />} />
                       <Route path="/user-admin" element={<UserAdmin />} />
