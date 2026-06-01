@@ -541,7 +541,8 @@ const Banking = () => {
     printWindow.print();
   };
 
-  const totalEntries = filteredEntries.length;
+  // Count distinct dates rather than raw row count
+  const totalEntries = new Set(filteredEntries.map(e => format(e.date, 'yyyy-MM-dd'))).size;
   const totalAmount = filteredEntries.reduce((sum, entry) => sum + entry.amount, 0);
   const totalTransactions = filteredEntries.reduce((sum, entry) => sum + entry.transaction_count, 0);
   const totalExtraAmount = filteredEntries.reduce((sum, entry) => sum + (entry.extra_amount || 0), 0);
