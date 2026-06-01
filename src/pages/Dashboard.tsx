@@ -891,7 +891,7 @@ const Dashboard = () => {
                 </div>
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-3 pt-3 border-t border-white/20">
                   <div className="flex-1 bg-white/15 rounded-xl p-2.5 text-center backdrop-blur-sm">
-                    <span className="text-lg font-bold block">{bankingData?.length || 0}</span>
+                    <span className="text-lg font-bold block">{new Set((bankingData || []).map((e: any) => new Date(e.date).toDateString())).size}</span>
                     <span className="text-[10px] opacity-80">Txn Days</span>
                   </div>
                   <div className="flex-1 bg-white/15 rounded-xl p-2.5 text-center backdrop-blur-sm">
