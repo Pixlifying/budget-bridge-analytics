@@ -203,6 +203,7 @@ const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: Sid
   const appsItems = [
     { icon: <IconCalculator size={16} />, label: 'Calculator', to: '/calculator' },
     { icon: <IconDocument size={16} />, label: 'Notes', to: '/work-to-be' },
+    { icon: <IconDocument size={16} />, label: 'Documents Required', to: '/documents-required' },
   ];
 
   const ledgerItems = [
