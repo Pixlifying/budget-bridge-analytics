@@ -509,7 +509,7 @@ const Banking = () => {
         </head>
         <body>
           <h1>Banking Report</h1>
-          <div class="total">Total Entries: ${totalEntries} | Total Amount: ₹${totalAmount.toFixed(2)} | Total Margin: ₹${totalMargin.toFixed(2)}</div>
+          <div class="total">Total Entries: ${totalEntries} | Total Txn. Amount: ₹${totalAmount.toFixed(2)} | Total Margin: ₹${totalMargin.toFixed(2)}</div>
           <table>
             <thead>
               <tr>
