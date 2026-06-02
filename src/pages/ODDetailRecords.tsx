@@ -196,7 +196,14 @@ const ODDetailRecords = () => {
       const transaction = findTransactionTypeAndAmount(row);
       if (transaction) {
         if (WITHDRAWAL_TYPES.some(t => t.toLowerCase() === transaction.type.toLowerCase())) totalWithdrawal += transaction.amount;
-        else if (DEPOSIT_TYPES.some(t => t.toLowerCase() === transaction.type.toLowerCase())) totalDeposit += transaction.amount;
+        else if (DEPOSIT_TYPES.some(t => t.toLowerCase() === transaction.type.toLowerCase())) {
+          if (isImpsAccountToAccount(row, transaction.type)) {
+            // A2A IMPS transfer: deposit=0, add 0.4% commission as cash inflow
+            totalDeposit += transaction.amount * 0.004;
+          } else {
+            totalDeposit += transaction.amount;
+          }
+        }
       }
     }
     return { totalWithdrawal, totalDeposit };
@@ -225,7 +232,13 @@ const ODDetailRecords = () => {
             const transaction = findTransactionTypeAndAmount(stringRow);
             if (transaction) {
               if (WITHDRAWAL_TYPES.some(t => t.toLowerCase() === transaction.type.toLowerCase())) totalWithdrawal += transaction.amount;
-              else if (DEPOSIT_TYPES.some(t => t.toLowerCase() === transaction.type.toLowerCase())) totalDeposit += transaction.amount;
+              else if (DEPOSIT_TYPES.some(t => t.toLowerCase() === transaction.type.toLowerCase())) {
+                if (isImpsAccountToAccount(stringRow, transaction.type)) {
+                  totalDeposit += transaction.amount * 0.004;
+                } else {
+                  totalDeposit += transaction.amount;
+                }
+              }
             }
           }
           resolve({ totalWithdrawal, totalDeposit });
