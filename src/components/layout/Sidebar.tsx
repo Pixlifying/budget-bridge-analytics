@@ -152,6 +152,7 @@ const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: Sid
     const menuMap: Record<string, { menuKey: string; paths: string[] }[]> = {
       financialServices: [{ menuKey: 'financialServices', paths: ['/banking', '/od-records', '/banking-accounts'] }],
       nonFinancialServices: [{ menuKey: 'nonFinancialServices', paths: ['/account-details', '/social-security', '/documentation'] }],
+      // imps-electricity moved to financialServices
       customerServices: [{ menuKey: 'customerServices', paths: ['/online-services', '/applications', '/photostat', '/papers'] }],
       ledger: [{ menuKey: 'ledger', paths: ['/khata', '/pending-balance', '/expenses'] }],
       apps: [{ menuKey: 'apps', paths: ['/calculator', '/age-calculator', '/work-to-be', '/documents-required'] }],
