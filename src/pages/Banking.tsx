@@ -309,7 +309,10 @@ const Banking = () => {
         if (amount <= 0) return;
         if (!cat) { uncategorized++; return; }
 
-        if (amount > 10000) {
+        if (cat === 'IMPS') {
+          // IMPS: store exact total amount (no 10k cap, no extra)
+          groups[cat].amount += amount;
+        } else if (amount > 10000) {
           groups[cat].amount += 10000;
           groups[cat].extra += (amount - 10000);
         } else {
@@ -323,8 +326,12 @@ const Banking = () => {
         .map(c => ({
           date: new Date().toISOString(),
           amount: groups[c].amount,
-          // Electricity has no margin
-          margin: c === 'Electricity' ? 0 : calculateBankingServicesMargin(groups[c].amount),
+          // Electricity has no margin; IMPS = 0.4% commission
+          margin: c === 'Electricity'
+            ? 0
+            : c === 'IMPS'
+              ? groups[c].amount * 0.004
+              : calculateBankingServicesMargin(groups[c].amount),
           transaction_count: groups[c].count,
           extra_amount: groups[c].extra,
           transaction_type: CATEGORY_DEFAULT_TYPE[c],
@@ -380,7 +387,12 @@ const Banking = () => {
     try {
       const cat = categorize(newEntry.transaction_type);
       const isElectricity = cat === 'Electricity';
-      const margin = isElectricity ? 0 : calculateBankingServicesMargin(newEntry.amount);
+      const isImps = cat === 'IMPS';
+      const margin = isElectricity
+        ? 0
+        : isImps
+          ? newEntry.amount * 0.004
+          : calculateBankingServicesMargin(newEntry.amount);
       const insertRow = {
         date: new Date(newEntry.date).toISOString(),
         amount: newEntry.amount,
@@ -422,7 +434,12 @@ const Banking = () => {
     if (!editingEntry) return;
 
     try {
-      const margin = calculateBankingServicesMargin(editForm.amount);
+      const cat = categorize(editForm.transaction_type);
+      const margin = cat === 'Electricity'
+        ? 0
+        : cat === 'IMPS'
+          ? editForm.amount * 0.004
+          : calculateBankingServicesMargin(editForm.amount);
       
       const { error } = await supabase
         .from('banking_services')
@@ -725,11 +742,16 @@ const Banking = () => {
                   <TableCell className="text-right">{formatCurrency(row.margin)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      {singleEntry && (
-                        <Button size="sm" variant="outline" onClick={() => openEditEntry(singleEntry)}>
-                          <Edit size={14} />
-                        </Button>
-                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          const entry = singleEntry || bankingEntries.find(e => e.id === row.ids[0]);
+                          if (entry) openEditEntry(entry);
+                        }}
+                      >
+                        <Edit size={14} />
+                      </Button>
                       <Button
                         size="sm"
                         variant="outline"
