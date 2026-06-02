@@ -150,8 +150,9 @@ const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: Sid
   // Auto-expand parent menu when navigating to a child route
   useEffect(() => {
     const menuMap: Record<string, { menuKey: string; paths: string[] }[]> = {
-      financialServices: [{ menuKey: 'financialServices', paths: ['/banking', '/od-records', '/banking-accounts'] }],
+      financialServices: [{ menuKey: 'financialServices', paths: ['/banking', '/od-records', '/banking-accounts', '/imps-electricity'] }],
       nonFinancialServices: [{ menuKey: 'nonFinancialServices', paths: ['/account-details', '/social-security', '/documentation'] }],
+      // imps-electricity moved to financialServices
       customerServices: [{ menuKey: 'customerServices', paths: ['/online-services', '/applications', '/photostat', '/papers'] }],
       ledger: [{ menuKey: 'ledger', paths: ['/khata', '/pending-balance', '/expenses'] }],
       apps: [{ menuKey: 'apps', paths: ['/calculator', '/age-calculator', '/work-to-be', '/documents-required'] }],
@@ -185,13 +186,13 @@ const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: Sid
     { icon: <IconBankingTransaction size={16} />, label: 'Banking Transaction', to: '/banking' },
     { icon: <IconPiggy size={16} />, label: 'OD Records', to: '/od-records' },
     { icon: <IconBankAccounts size={16} />, label: 'Accounts Opened', to: '/banking-accounts' },
+    { icon: <IconMoney size={16} />, label: 'IMPS/Electricity', to: '/imps-electricity' },
   ];
 
   const nonFinancialServiceItems = [
     { icon: <IconUsers size={16} />, label: 'Account Details', to: '/account-details' },
     { icon: <IconShield size={16} />, label: 'Social Security', to: '/social-security' },
     { icon: <IconDocument size={16} />, label: 'Documentation', to: '/documentation' },
-    { icon: <IconMoney size={16} />, label: 'IMPS/Electricity', to: '/imps-electricity' },
   ];
 
   const customerServiceItems = [
