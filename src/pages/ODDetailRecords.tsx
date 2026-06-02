@@ -184,6 +184,17 @@ const ODDetailRecords = () => {
   };
 
   const parseCSVWithPapaparse = (content: string): { totalWithdrawal: number; totalDeposit: number } => {
+    const isImpsAccountToAccount = (row: Record<string, string>, type: string): boolean => {
+      if (!/imps/i.test(type)) return false;
+      let fromAcc = '', toAcc = '';
+      for (const [k, v] of Object.entries(row)) {
+        const kl = k.toLowerCase().trim();
+        const val = String(v || '').trim();
+        if (kl.includes('from') && kl.includes('account')) fromAcc = val;
+        if (kl.includes('to') && kl.includes('account')) toAcc = val;
+      }
+      return /^\d{5,}$/.test(fromAcc.replace(/\s/g, '')) && /^\d{5,}$/.test(toAcc.replace(/\s/g, ''));
+    };
     let totalWithdrawal = 0;
     let totalDeposit = 0;
 
