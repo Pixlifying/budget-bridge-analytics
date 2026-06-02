@@ -654,7 +654,7 @@ const Dashboard = () => {
     value: bankingMargin,
     color: 'hsl(var(--chart-1))'
   }, {
-    name: 'Amount',
+    name: 'Acc. Amount',
     value: bankingAccountsMargin,
     color: 'hsl(var(--chart-2))'
   }, {

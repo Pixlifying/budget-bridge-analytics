@@ -515,7 +515,7 @@ const Banking = () => {
               <tr>
                 <th>Date</th>
                 <th>Transaction Count</th>
-                <th>Amount</th>
+                <th>Txn. Amount</th>
                 <th>Extra Amount</th>
                 <th>Margin</th>
               </tr>
@@ -622,7 +622,7 @@ const Banking = () => {
               onChange={(e) => setNewEntry(prev => ({ ...prev, transaction_count: Number(e.target.value) }))} />
           </div>
           <div>
-            <Label htmlFor="amount">Amount</Label>
+            <Label htmlFor="amount">Txn. Amount</Label>
             <Input id="amount" type="number" min="0" value={newEntry.amount}
               onChange={(e) => setNewEntry(prev => ({ ...prev, amount: Number(e.target.value) }))} />
           </div>
@@ -695,7 +695,7 @@ const Banking = () => {
                 <TableHead className="text-right">IMPS</TableHead>
                 <TableHead className="text-right">Electricity</TableHead>
                 <TableHead className="text-right">Transaction</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
+                <TableHead className="text-right">Txn. Amount</TableHead>
                 <TableHead className="text-right">Extra Amount</TableHead>
                 <TableHead className="text-right">Margin</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -792,7 +792,7 @@ const Banking = () => {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="edit_amount">Amount</Label>
+              <Label htmlFor="edit_amount">Txn. Amount</Label>
               <Input
                 id="edit_amount"
                 type="number"

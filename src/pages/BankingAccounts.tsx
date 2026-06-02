@@ -499,7 +499,7 @@ const BankingAccounts = () => {
             </div>
           )}
           <div>
-            <Label htmlFor="amount">Amount</Label>
+            <Label htmlFor="amount">Acc. Amount</Label>
             <Input
               id="amount"
               type="number"
@@ -566,7 +566,7 @@ const BankingAccounts = () => {
               labels={{
                 customer: 'Customer',
                 type: 'Account Type',
-                amount: 'Amount',
+                amount: 'Acc. Amount',
                 account: 'Account Number'
               }}
               onEdit={() => openEditEntry(entry)}
@@ -612,7 +612,7 @@ const BankingAccounts = () => {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="edit_amount">Amount</Label>
+              <Label htmlFor="edit_amount">Acc. Amount</Label>
               <Input
                 id="edit_amount"
                 type="number"
