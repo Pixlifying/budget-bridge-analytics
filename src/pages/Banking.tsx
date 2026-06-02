@@ -509,13 +509,13 @@ const Banking = () => {
         </head>
         <body>
           <h1>Banking Report</h1>
-          <div class="total">Total Entries: ${totalEntries} | Total Txn. Amount: ₹${totalAmount.toFixed(2)} | Total Margin: ₹${totalMargin.toFixed(2)}</div>
+          <div class="total">Total Entries: ${totalEntries} | Total Amount: ₹${totalAmount.toFixed(2)} | Total Margin: ₹${totalMargin.toFixed(2)}</div>
           <table>
             <thead>
               <tr>
                 <th>Date</th>
                 <th>Transaction Count</th>
-                <th>Txn. Amount</th>
+                <th>Amount</th>
                 <th>Extra Amount</th>
                 <th>Margin</th>
               </tr>
@@ -622,7 +622,7 @@ const Banking = () => {
               onChange={(e) => setNewEntry(prev => ({ ...prev, transaction_count: Number(e.target.value) }))} />
           </div>
           <div>
-            <Label htmlFor="amount">Txn. Amount</Label>
+            <Label htmlFor="amount">Amount</Label>
             <Input id="amount" type="number" min="0" value={newEntry.amount}
               onChange={(e) => setNewEntry(prev => ({ ...prev, amount: Number(e.target.value) }))} />
           </div>
@@ -671,7 +671,7 @@ const Banking = () => {
       <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
         <StatCard title="Total Entries" value={totalEntries.toString()} icon={<CreditCard size={20} />} />
         <StatCard title="Total Transactions" value={totalTransactions.toString()} icon={<CreditCard size={20} />} />
-        <StatCard title="Total Txn. Amount" value={formatCurrency(totalAmount)} icon={<CreditCard size={20} />} />
+        <StatCard title="Total Amount" value={formatCurrency(totalAmount)} icon={<CreditCard size={20} />} />
         <StatCard title="Extra Amount" value={formatCurrency(totalExtraAmount)} icon={<CreditCard size={20} />} />
         <StatCard title="Total Margin" value={formatCurrency(totalMargin)} icon={<CreditCard size={20} />} />
       </div>
@@ -695,7 +695,7 @@ const Banking = () => {
                 <TableHead className="text-right">IMPS</TableHead>
                 <TableHead className="text-right">Electricity</TableHead>
                 <TableHead className="text-right">Transaction</TableHead>
-                <TableHead className="text-right">Txn. Amount</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
                 <TableHead className="text-right">Extra Amount</TableHead>
                 <TableHead className="text-right">Margin</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -792,13 +792,13 @@ const Banking = () => {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="edit_amount">Txn. Amount</Label>
+              <Label htmlFor="edit_amount">Amount</Label>
               <Input
                 id="edit_amount"
                 type="number"
                 value={editForm.amount}
                 onChange={(e) => setEditForm(prev => ({ ...prev, amount: Number(e.target.value) }))}
-                placeholder="Txn. Amount"
+                placeholder="Amount"
               />
             </div>
             <div className="grid gap-2">

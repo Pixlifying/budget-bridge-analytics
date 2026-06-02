@@ -654,7 +654,7 @@ const Dashboard = () => {
     value: bankingMargin,
     color: 'hsl(var(--chart-1))'
   }, {
-    name: 'Txn. Amount',
+    name: 'Amount',
     value: bankingAccountsMargin,
     color: 'hsl(var(--chart-2))'
   }, {
@@ -908,7 +908,7 @@ const Dashboard = () => {
                   </div>
                   <div className="flex-1 bg-white/15 rounded-xl p-2.5 text-center backdrop-blur-sm">
                     <span className="text-lg font-bold block">{formatCurrency(bankingAccountsMargin)}</span>
-                    <span className="text-[10px] opacity-80">Txn. Amount</span>
+                    <span className="text-[10px] opacity-80">Amount</span>
                   </div>
                 </div>
               </div>
@@ -979,7 +979,7 @@ const Dashboard = () => {
                 </div>
               </DashCard>
 
-              {/* Txn. Amount */}
+              {/* Amount */}
               <DashCard>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -987,7 +987,7 @@ const Dashboard = () => {
                       <Wallet className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Txn. Amount</p>
+                      <p className="text-sm text-muted-foreground">Amount</p>
                       <p className="text-xl font-bold text-foreground">{formatCurrency(bankingServicesTotal)}</p>
                       <p className="text-xs text-muted-foreground">Margin: {formatCurrency(bankingMargin)}</p>
                     </div>
