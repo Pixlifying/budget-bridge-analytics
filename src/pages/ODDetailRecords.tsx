@@ -34,6 +34,18 @@ const RECORDS_PER_PAGE = 15;
 const WITHDRAWAL_TYPES = ['AEPS Cash Withdrawal', 'Withdrawal'];
 const DEPOSIT_TYPES = ['Savings Deposit By Cash', 'AEPS Cash Deposit', 'IMPS Transaction', 'BBPS Make Payment'];
 
+const isImpsAccountToAccount = (row: Record<string, string>, type: string): boolean => {
+  if (!/imps/i.test(type)) return false;
+  let fromAcc = '', toAcc = '';
+  for (const [k, v] of Object.entries(row)) {
+    const kl = k.toLowerCase().trim();
+    const val = String(v || '').trim();
+    if (kl.includes('from') && kl.includes('account')) fromAcc = val;
+    if (kl.includes('to') && kl.includes('account')) toAcc = val;
+  }
+  return /^\d{5,}$/.test(fromAcc.replace(/\s/g, '')) && /^\d{5,}$/.test(toAcc.replace(/\s/g, ''));
+};
+
 const ODDetailRecords = () => {
   const [records, setRecords] = useState<ODDetailRecord[]>([]);
   const [formData, setFormData] = useState({
@@ -196,7 +208,14 @@ const ODDetailRecords = () => {
       const transaction = findTransactionTypeAndAmount(row);
       if (transaction) {
         if (WITHDRAWAL_TYPES.some(t => t.toLowerCase() === transaction.type.toLowerCase())) totalWithdrawal += transaction.amount;
-        else if (DEPOSIT_TYPES.some(t => t.toLowerCase() === transaction.type.toLowerCase())) totalDeposit += transaction.amount;
+        else if (DEPOSIT_TYPES.some(t => t.toLowerCase() === transaction.type.toLowerCase())) {
+          if (isImpsAccountToAccount(row, transaction.type)) {
+            // A2A IMPS transfer: deposit=0, add 0.4% commission as cash inflow
+            totalDeposit += transaction.amount * 0.004;
+          } else {
+            totalDeposit += transaction.amount;
+          }
+        }
       }
     }
     return { totalWithdrawal, totalDeposit };
@@ -225,7 +244,13 @@ const ODDetailRecords = () => {
             const transaction = findTransactionTypeAndAmount(stringRow);
             if (transaction) {
               if (WITHDRAWAL_TYPES.some(t => t.toLowerCase() === transaction.type.toLowerCase())) totalWithdrawal += transaction.amount;
-              else if (DEPOSIT_TYPES.some(t => t.toLowerCase() === transaction.type.toLowerCase())) totalDeposit += transaction.amount;
+              else if (DEPOSIT_TYPES.some(t => t.toLowerCase() === transaction.type.toLowerCase())) {
+                if (isImpsAccountToAccount(stringRow, transaction.type)) {
+                  totalDeposit += transaction.amount * 0.004;
+                } else {
+                  totalDeposit += transaction.amount;
+                }
+              }
             }
           }
           resolve({ totalWithdrawal, totalDeposit });
