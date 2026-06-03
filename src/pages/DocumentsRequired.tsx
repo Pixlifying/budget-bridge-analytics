@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Printer, Plus, Save, Edit, Trash2, FileText } from 'lucide-react';
+import { Printer, Plus, Save, Edit, Trash2, FileText, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import PageWrapper from '@/components/layout/PageWrapper';
 import { Button } from '@/components/ui/button';
@@ -51,6 +51,7 @@ const DocumentsRequired = () => {
   const [addOpen, setAddOpen] = useState(false);
   const [newName, setNewName] = useState('');
   const [newContent, setNewContent] = useState('');
+  const [waPhone, setWaPhone] = useState('');
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(docs));
@@ -118,6 +119,20 @@ const DocumentsRequired = () => {
     w.print();
   };
 
+  const handleWhatsApp = () => {
+    const content = docs[selected] || '';
+    if (!content.trim()) {
+      toast.error('No content to share');
+      return;
+    }
+    const text = `*Documents Required - ${selected}*\n\n${content}`;
+    const phone = waPhone.replace(/\D/g, '');
+    const url = phone
+      ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
+      : `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+  };
+
   return (
     <PageWrapper
       title="Documents Required"
@@ -126,6 +141,9 @@ const DocumentsRequired = () => {
         <div className="flex gap-2">
           <Button onClick={() => setAddOpen(true)} variant="outline">
             <Plus size={16} className="mr-2" /> Add Service
+          </Button>
+          <Button onClick={handleWhatsApp} variant="outline" className="text-green-600">
+            <MessageCircle size={16} className="mr-2" /> WhatsApp
           </Button>
           <Button onClick={handlePrint} variant="outline">
             <Printer size={16} className="mr-2" /> Print
@@ -185,6 +203,19 @@ const DocumentsRequired = () => {
                 <Trash2 size={16} />
               </Button>
             </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-2 mb-4">
+            <Input
+              type="tel"
+              placeholder="WhatsApp number (with country code, e.g. 9198xxxxxxxx)"
+              value={waPhone}
+              onChange={(e) => setWaPhone(e.target.value)}
+              className="sm:max-w-sm"
+            />
+            <Button onClick={handleWhatsApp} variant="outline" className="text-green-600">
+              <MessageCircle size={16} className="mr-2" /> Send via WhatsApp
+            </Button>
           </div>
 
           {editing ? (

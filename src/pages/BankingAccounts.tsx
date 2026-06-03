@@ -51,6 +51,7 @@ const BankingAccounts = () => {
   const { isHighlighted, dateParam } = useHighlight();
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const [isPdfProcessing, setIsPdfProcessing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (dateParam) {
@@ -117,14 +118,26 @@ const BankingAccounts = () => {
   }, []);
 
   useEffect(() => {
+    let filtered: BankingAccount[];
     if (viewMode === 'day') {
-      setFilteredAccounts(filterByDate(bankingAccounts, date));
+      filtered = filterByDate(bankingAccounts, date);
     } else if (viewMode === 'month') {
-      setFilteredAccounts(filterByMonth(bankingAccounts, date));
+      filtered = filterByMonth(bankingAccounts, date);
     } else {
-      setFilteredAccounts(filterByQuarter(bankingAccounts, date));
+      filtered = filterByQuarter(bankingAccounts, date);
     }
-  }, [date, viewMode, bankingAccounts]);
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(a =>
+        (a.customer_name || '').toLowerCase().includes(q) ||
+        (a.account_number || '').toLowerCase().includes(q) ||
+        (a.account_type || '').toLowerCase().includes(q) ||
+        (a.insurance_type || '').toLowerCase().includes(q) ||
+        String(a.amount).includes(q)
+      );
+    }
+    setFilteredAccounts(filtered);
+  }, [date, viewMode, bankingAccounts, searchQuery]);
 
   const handleAddEntry = async () => {
     if (!newEntry.customer_name || !newEntry.account_type || !newEntry.amount) {
@@ -445,6 +458,14 @@ const BankingAccounts = () => {
       }
     >
       {/* Add Banking Account Form */}
+      <div className="mb-4">
+        <Input
+          placeholder="Search by customer name, account number, type..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="max-w-md"
+        />
+      </div>
       <div className="mb-6 p-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg shadow-lg">
         <h3 className="text-lg font-semibold mb-4">Add Banking Account</h3>
         <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
