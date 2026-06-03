@@ -272,6 +272,12 @@ const Banking = () => {
         || headers.find(h => h.toUpperCase() === 'TYPE');
       const bbpsKey = headers.find(h => h.toUpperCase().includes('BBPS'))
         || headers.find(h => h.toUpperCase().includes('ELECTRIC'));
+      const toAccountKey = headers.find(h => h.toUpperCase().replace(/\s+/g, '').includes('TOACCOUNT'))
+        || headers.find(h => h.toUpperCase().replace(/\s+/g, '').includes('BENEFICIARYACCOUNT'));
+      const fromAccountKey = headers.find(h => h.toUpperCase().replace(/\s+/g, '').includes('FROMACCOUNT'));
+      const nameKey = headers.find(h => h.toUpperCase().replace(/\s+/g, '').includes('BENEFICIARYNAME'))
+        || headers.find(h => h.toUpperCase().replace(/\s+/g, '').includes('CUSTOMERNAME'))
+        || headers.find(h => h.toUpperCase() === 'NAME');
 
       if (!amountKey) {
         toast.error('AMOUNT column not found in file');
@@ -286,6 +292,7 @@ const Banking = () => {
         Electricity: { amount: 0, extra: 0, count: 0 },
       };
       let uncategorized = 0;
+      const impsRows: { name: string; account: string; amount: number; remarks: string | null }[] = [];
 
       const parseNum = (v: any): number => {
         if (typeof v === 'number') return v;
@@ -312,6 +319,12 @@ const Banking = () => {
         if (cat === 'IMPS') {
           // IMPS: store exact total amount (no 10k cap, no extra)
           groups[cat].amount += amount;
+          impsRows.push({
+            name: nameKey ? String(row[nameKey] ?? '').trim() || 'Unknown' : 'Unknown',
+            account: toAccountKey ? String(row[toAccountKey] ?? '').trim() : '',
+            amount,
+            remarks: fromAccountKey ? `From: ${String(row[fromAccountKey] ?? '').trim()}` : null,
+          });
         } else if (amount > 10000) {
           groups[cat].amount += 10000;
           groups[cat].extra += (amount - 10000);
@@ -361,6 +374,20 @@ const Banking = () => {
           created_at: d.created_at,
         }));
         setBankingEntries(prev => [...newEntries, ...prev]);
+
+        // Also mirror each IMPS row into imps_electricity
+        if (impsRows.length > 0) {
+          const impsInserts = impsRows.map(r => ({
+            date: new Date().toISOString(),
+            record_type: 'IMPS',
+            customer_name: r.name,
+            account_number: r.account,
+            amount: r.amount,
+            remarks: r.remarks,
+          }));
+          const { error: impsErr } = await supabase.from('imps_electricity').insert(impsInserts as any);
+          if (impsErr) console.error('Failed to mirror IMPS to imps_electricity:', impsErr);
+        }
         toast.success(`Imported ${inserts.length} category groups${uncategorized ? ` (${uncategorized} uncategorized skipped)` : ''}`);
       }
     } catch (error) {
@@ -405,6 +432,18 @@ const Banking = () => {
       if (error) throw error;
       if (data && data.length > 0) {
         const d: any = data[0];
+        // Mirror IMPS transaction into imps_electricity
+        if (isImps) {
+          const { error: impsErr } = await supabase.from('imps_electricity').insert({
+            date: new Date(newEntry.date).toISOString(),
+            record_type: 'IMPS',
+            customer_name: 'Unknown',
+            account_number: '',
+            amount: newEntry.amount,
+            remarks: null,
+          } as any);
+          if (impsErr) console.error('Failed to mirror IMPS to imps_electricity:', impsErr);
+        }
         setBankingEntries(prev => [{
           id: d.id,
           date: new Date(d.date),
