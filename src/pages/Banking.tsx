@@ -432,6 +432,18 @@ const Banking = () => {
       if (error) throw error;
       if (data && data.length > 0) {
         const d: any = data[0];
+        // Mirror IMPS transaction into imps_electricity
+        if (isImps) {
+          const { error: impsErr } = await supabase.from('imps_electricity').insert({
+            date: new Date(newEntry.date).toISOString(),
+            record_type: 'IMPS',
+            customer_name: 'Unknown',
+            account_number: '',
+            amount: newEntry.amount,
+            remarks: null,
+          } as any);
+          if (impsErr) console.error('Failed to mirror IMPS to imps_electricity:', impsErr);
+        }
         setBankingEntries(prev => [{
           id: d.id,
           date: new Date(d.date),
