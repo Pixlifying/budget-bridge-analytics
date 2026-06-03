@@ -278,6 +278,13 @@ const Banking = () => {
       const nameKey = headers.find(h => h.toUpperCase().replace(/\s+/g, '').includes('BENEFICIARYNAME'))
         || headers.find(h => h.toUpperCase().replace(/\s+/g, '').includes('CUSTOMERNAME'))
         || headers.find(h => h.toUpperCase() === 'NAME');
+      const txnIdKey = headers.find(h => h.toUpperCase().replace(/\s+/g, '').includes('TRANSACTIONID'))
+        || headers.find(h => h.toUpperCase().replace(/\s+/g, '').includes('TXNID'))
+        || headers.find(h => h.toUpperCase().replace(/\s+/g, '').includes('REFERENCENO'))
+        || headers.find(h => h.toUpperCase().replace(/\s+/g, '').includes('RRN'));
+      const consumerKey = headers.find(h => h.toUpperCase().replace(/\s+/g, '').includes('CONSUMERNUMBER'))
+        || headers.find(h => h.toUpperCase().replace(/\s+/g, '').includes('CONSUMERNO'))
+        || headers.find(h => h.toUpperCase().replace(/\s+/g, '').includes('BILLNUMBER'));
 
       if (!amountKey) {
         toast.error('AMOUNT column not found in file');
@@ -293,6 +300,7 @@ const Banking = () => {
       };
       let uncategorized = 0;
       const impsRows: { name: string; account: string; amount: number; remarks: string | null }[] = [];
+      const bbpsRows: { name: string; account: string; amount: number; remarks: string | null }[] = [];
 
       const parseNum = (v: any): number => {
         if (typeof v === 'number') return v;
@@ -307,9 +315,17 @@ const Banking = () => {
 
         // BBPS column → Electricity (count entry; amount may be 0, margin nil)
         const bbpsAmount = bbpsKey ? parseNum(row[bbpsKey]) : 0;
-        if (bbpsKey && (bbpsAmount > 0 || /bbps|electric/i.test(rawType))) {
-          groups.Electricity.amount += bbpsAmount;
+        const isBbpsRow = /bbps\s*make\s*payment|bbps|electric/i.test(rawType) || (bbpsKey && bbpsAmount > 0);
+        if (isBbpsRow) {
+          const bbpsValue = bbpsAmount > 0 ? bbpsAmount : amount;
+          groups.Electricity.amount += bbpsValue;
           groups.Electricity.count++;
+          bbpsRows.push({
+            name: nameKey ? String(row[nameKey] ?? '').trim() || 'Unknown' : 'Unknown',
+            account: consumerKey ? String(row[consumerKey] ?? '').trim() : (toAccountKey ? String(row[toAccountKey] ?? '').trim() : ''),
+            amount: bbpsValue,
+            remarks: txnIdKey ? String(row[txnIdKey] ?? '').trim() || null : null,
+          });
           return;
         }
 
@@ -323,7 +339,7 @@ const Banking = () => {
             name: nameKey ? String(row[nameKey] ?? '').trim() || 'Unknown' : 'Unknown',
             account: toAccountKey ? String(row[toAccountKey] ?? '').trim() : '',
             amount,
-            remarks: fromAccountKey ? `From: ${String(row[fromAccountKey] ?? '').trim()}` : null,
+            remarks: txnIdKey ? String(row[txnIdKey] ?? '').trim() || null : null,
           });
         } else if (amount > 10000) {
           groups[cat].amount += 10000;
@@ -387,6 +403,19 @@ const Banking = () => {
           }));
           const { error: impsErr } = await supabase.from('imps_electricity').insert(impsInserts as any);
           if (impsErr) console.error('Failed to mirror IMPS to imps_electricity:', impsErr);
+        }
+        // Mirror each BBPS Make Payment row into imps_electricity as Electricity
+        if (bbpsRows.length > 0) {
+          const bbpsInserts = bbpsRows.map(r => ({
+            date: new Date().toISOString(),
+            record_type: 'Electricity',
+            customer_name: r.name,
+            account_number: r.account,
+            amount: r.amount,
+            remarks: r.remarks,
+          }));
+          const { error: bbpsErr } = await supabase.from('imps_electricity').insert(bbpsInserts as any);
+          if (bbpsErr) console.error('Failed to mirror BBPS to imps_electricity:', bbpsErr);
         }
         toast.success(`Imported ${inserts.length} category groups${uncategorized ? ` (${uncategorized} uncategorized skipped)` : ''}`);
       }
