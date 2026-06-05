@@ -33,6 +33,7 @@ const TRANSACTION_TYPES = [
   'AEPS Cash Deposit',
   'Savings Deposit By Cash',
   'IMPS Transaction',
+  'BBPS Make Payment',
   'Electricity Bill',
 ] as const;
 
@@ -44,7 +45,7 @@ const categorize = (type?: string | null): Category | null => {
   if (t.includes('deposit')) return 'Deposit';
   if (t.includes('withdraw')) return 'Withdrawal';
   if (t.includes('imps')) return 'IMPS';
-  if (t.includes('electric')) return 'Electricity';
+  if (t.includes('electric') || t.includes('bbps')) return 'Electricity';
   return null;
 };
 
