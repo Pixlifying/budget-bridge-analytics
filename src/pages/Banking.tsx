@@ -273,6 +273,9 @@ const Banking = () => {
         || headers.find(h => h.toUpperCase() === 'TYPE');
       const bbpsKey = headers.find(h => h.toUpperCase().includes('BBPS'))
         || headers.find(h => h.toUpperCase().includes('ELECTRIC'));
+      const txnIdKey = headers.find(h => /txn\s*id|transaction\s*id|rrn|ref(erence)?\s*(no|number|id)?/i.test(h));
+      const custNameKey = headers.find(h => /customer\s*name|cust\s*name|beneficiary/i.test(h));
+      const acctKey = headers.find(h => /account\s*no|a\/c\s*no|account\s*number|consumer/i.test(h));
 
       if (!amountKey) {
         toast.error('AMOUNT column not found in file');
@@ -287,6 +290,7 @@ const Banking = () => {
         Electricity: { amount: 0, extra: 0, count: 0 },
       };
       let uncategorized = 0;
+      const impsElecRows: any[] = [];
 
       const parseNum = (v: any): number => {
         if (typeof v === 'number') return v;
@@ -304,6 +308,14 @@ const Banking = () => {
         if (bbpsKey && (bbpsAmount > 0 || /bbps|electric/i.test(rawType))) {
           groups.Electricity.amount += bbpsAmount;
           groups.Electricity.count++;
+          impsElecRows.push({
+            date: new Date().toISOString(),
+            record_type: 'Electricity Bill',
+            customer_name: (custNameKey && String(row[custNameKey] || '').trim()) || 'N/A',
+            account_number: (acctKey && String(row[acctKey] || '').trim()) || 'N/A',
+            amount: bbpsAmount || amount || 0,
+            remarks: `Transaction ID: ${(txnIdKey && String(row[txnIdKey] || '').trim()) || 'N/A'}`,
+          });
           return;
         }
 
@@ -317,6 +329,16 @@ const Banking = () => {
           groups[cat].amount += amount;
         }
         groups[cat].count++;
+        if (cat === 'IMPS') {
+          impsElecRows.push({
+            date: new Date().toISOString(),
+            record_type: 'IMPS',
+            customer_name: (custNameKey && String(row[custNameKey] || '').trim()) || 'N/A',
+            account_number: (acctKey && String(row[acctKey] || '').trim()) || 'N/A',
+            amount,
+            remarks: `Transaction ID: ${(txnIdKey && String(row[txnIdKey] || '').trim()) || 'N/A'}`,
+          });
+        }
       });
 
       const inserts = (Object.keys(groups) as Category[])
@@ -355,6 +377,9 @@ const Banking = () => {
           created_at: d.created_at,
         }));
         setBankingEntries(prev => [...newEntries, ...prev]);
+        if (impsElecRows.length > 0) {
+          await supabase.from('imps_electricity').insert(impsElecRows as any);
+        }
         toast.success(`Imported ${inserts.length} category groups${uncategorized ? ` (${uncategorized} uncategorized skipped)` : ''}`);
       }
     } catch (error) {
