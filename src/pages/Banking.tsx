@@ -743,11 +743,23 @@ const Banking = () => {
                   <TableCell className="text-right">{formatCurrency(row.margin)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      {singleEntry && (
-                        <Button size="sm" variant="outline" onClick={() => openEditEntry(singleEntry)}>
-                          <Edit size={14} />
-                        </Button>
-                      )}
+                      {row.ids.map((eid, idx) => {
+                        const e = bankingEntries.find(b => b.id === eid);
+                        if (!e) return null;
+                        const c = categorize(e.transaction_type);
+                        return (
+                          <Button
+                            key={eid}
+                            size="sm"
+                            variant="outline"
+                            title={`Edit ${c || 'entry'} (${formatCurrency(e.amount)})`}
+                            onClick={() => openEditEntry(e)}
+                          >
+                            <Edit size={14} />
+                            {row.ids.length > 1 && <span className="ml-1 text-[10px]">{c?.[0] || idx + 1}</span>}
+                          </Button>
+                        );
+                      })}
                       <Button
                         size="sm"
                         variant="outline"
