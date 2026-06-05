@@ -404,6 +404,24 @@ const Banking = () => {
           transaction_type: d.transaction_type ?? null,
           created_at: d.created_at,
         }, ...prev]);
+        // Auto-record into IMPS/Electricity for IMPS and BBPS Make Payment
+        const t = (newEntry.transaction_type || '').toLowerCase();
+        const isImps = t.includes('imps');
+        const isBbps = t.includes('bbps');
+        if (isImps || isBbps) {
+          const count = Math.max(1, newEntry.transaction_count || 1);
+          const perAmount = newEntry.amount / count;
+          const recordType = isImps ? 'IMPS' : 'Electricity Bill';
+          const rows = Array.from({ length: count }).map(() => ({
+            date: new Date(newEntry.date).toISOString(),
+            record_type: recordType,
+            customer_name: 'N/A',
+            account_number: 'N/A',
+            amount: perAmount,
+            remarks: `Transaction ID: ${d.id}`,
+          }));
+          await supabase.from('imps_electricity').insert(rows as any);
+        }
         setNewEntry({
           date: new Date().toISOString().split('T')[0],
           transaction_type: 'Savings Deposit By Cash',
