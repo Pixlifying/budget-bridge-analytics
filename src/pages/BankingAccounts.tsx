@@ -421,6 +421,12 @@ const BankingAccounts = () => {
       subtitle="Manage banking accounts and view analytics"
       action={
         <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+          <Input
+            placeholder="Search by name, account..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-[200px] h-9"
+          />
           <DateRangePicker 
             date={date} 
             onDateChange={setDate} 
