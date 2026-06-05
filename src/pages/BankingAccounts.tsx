@@ -281,14 +281,13 @@ const BankingAccounts = () => {
         </head>
         <body>
           <h1>Banking Accounts Report</h1>
-          <div class="total">Total Accounts: ${totalAccounts} | Total Amount: ₹${totalAmount.toFixed(2)}</div>
+          <div class="total">Total Accounts: ${totalAccounts}</div>
           <table>
             <thead>
               <tr>
                 <th>Date</th>
                 <th>Customer Name</th>
                 <th>Account Type</th>
-                <th>Amount</th>
                 <th>Account Number</th>
                 <th>Insurance Type</th>
               </tr>
@@ -299,7 +298,6 @@ const BankingAccounts = () => {
                   <td>${escapeHtml(format(account.date, 'dd/MM/yyyy'))}</td>
                   <td>${escapeHtml(account.customer_name)}</td>
                   <td>${escapeHtml(account.account_type)}</td>
-                  <td>₹${escapeHtml(account.amount.toFixed(2))}</td>
                   <td>${escapeHtml(account.account_number || '-')}</td>
                   <td>${escapeHtml(account.insurance_type || '-')}</td>
                 </tr>
