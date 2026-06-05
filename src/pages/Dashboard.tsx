@@ -654,7 +654,7 @@ const Dashboard = () => {
     value: bankingMargin,
     color: 'hsl(var(--chart-1))'
   }, {
-    name: 'Acc. Amount',
+    name: 'Accounts',
     value: bankingAccountsMargin,
     color: 'hsl(var(--chart-2))'
   }, {
@@ -891,7 +891,7 @@ const Dashboard = () => {
                 </div>
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-3 pt-3 border-t border-white/20">
                   <div className="flex-1 bg-white/15 rounded-xl p-2.5 text-center backdrop-blur-sm">
-                    <span className="text-lg font-bold block">{new Set((bankingData || []).map((e: any) => new Date(e.date).toDateString())).size}</span>
+                    <span className="text-lg font-bold block">{bankingData?.length || 0}</span>
                     <span className="text-[10px] opacity-80">Txn Days</span>
                   </div>
                   <div className="flex-1 bg-white/15 rounded-xl p-2.5 text-center backdrop-blur-sm">
@@ -908,14 +908,14 @@ const Dashboard = () => {
                   </div>
                   <div className="flex-1 bg-white/15 rounded-xl p-2.5 text-center backdrop-blur-sm">
                     <span className="text-lg font-bold block">{formatCurrency(bankingAccountsMargin)}</span>
-                    <span className="text-[10px] opacity-80">Account Amount</span>
+                    <span className="text-[10px] opacity-80">Accounts</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Top Stats Row - Total Margin, Banking Txn, Txn Amount */}
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            {/* Top Stats Row */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               {/* Total Margin */}
               <DashCard onClick={() => setMarginDialogOpen(true)}>
                 <div className="flex items-center justify-between">
@@ -963,7 +963,23 @@ const Dashboard = () => {
                 </div>
               </DashCard>
 
-              {/* Txn Amount */}
+              {/* Online Services */}
+              <DashCard onClick={() => setOnlineServicesDialogOpen(true)}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-primary/10">
+                      <Globe className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Online Services</p>
+                      <p className="text-xl font-bold text-foreground">{formatCurrency(onlineServicesTotal)}</p>
+                      <p className="text-xs text-muted-foreground">{onlineServicesCount} services • Click to view</p>
+                    </div>
+                  </div>
+                </div>
+              </DashCard>
+
+              {/* Accounts */}
               <DashCard>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -971,7 +987,7 @@ const Dashboard = () => {
                       <Wallet className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Txn Amount</p>
+                      <p className="text-sm text-muted-foreground">Accounts</p>
                       <p className="text-xl font-bold text-foreground">{formatCurrency(bankingServicesTotal)}</p>
                       <p className="text-xs text-muted-foreground">Margin: {formatCurrency(bankingMargin)}</p>
                     </div>
@@ -980,18 +996,18 @@ const Dashboard = () => {
               </DashCard>
             </div>
 
-            {/* Second Row - Online Services, Offline Services, Expenses */}
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-              {/* Online Services */}
-              <DashCard onClick={() => setOnlineServicesDialogOpen(true)}>
+            {/* Second Row - Expenses, Offline Services, Khata, Documentation - single line */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              {/* Expenses */}
+              <DashCard onClick={() => setExpensesDialogOpen(true)} className="cursor-pointer">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 rounded-lg bg-primary/10">
-                    <Globe className="h-4 w-4 text-primary" />
+                  <div className="p-2 rounded-lg bg-destructive/10">
+                    <Receipt className="h-4 w-4 text-destructive" />
                   </div>
-                  <h3 className="font-medium text-foreground">Online Services</h3>
+                  <h3 className="font-medium text-foreground">Expenses</h3>
                 </div>
-                <p className="text-2xl font-bold text-foreground">{formatCurrency(onlineServicesTotal)}</p>
-                <p className="text-xs text-muted-foreground mt-1">{onlineServicesCount} services • Click to view</p>
+                <p className="text-2xl font-bold text-foreground">{formatCurrency(expensesTotal)}</p>
+                <p className="text-xs text-muted-foreground mt-1">{expensesCount} entries</p>
               </DashCard>
 
               {/* Offline Services (formerly Forms/Applications) */}
@@ -1006,21 +1022,6 @@ const Dashboard = () => {
                 <p className="text-xs text-muted-foreground mt-1">{applicationsCount} entries</p>
               </DashCard>
 
-              {/* Expenses */}
-              <DashCard onClick={() => setExpensesDialogOpen(true)} className="cursor-pointer">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 rounded-lg bg-destructive/10">
-                    <Receipt className="h-4 w-4 text-destructive" />
-                  </div>
-                  <h3 className="font-medium text-foreground">Expenses</h3>
-                </div>
-                <p className="text-2xl font-bold text-foreground">{formatCurrency(expensesTotal)}</p>
-                <p className="text-xs text-muted-foreground mt-1">{expensesCount} entries</p>
-              </DashCard>
-            </div>
-
-            {/* Third Row - Khata, Documentation */}
-            <div className="grid grid-cols-2 gap-3 sm:gap-4">
               {/* Khata */}
               <DashCard onClick={() => setKhataDialogOpen(true)} className="cursor-pointer">
                 <div className="flex items-center gap-3 mb-2">

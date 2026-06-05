@@ -86,26 +86,19 @@ const NotificationBox = () => {
       const earliest = allowedDays[1];
       const latest = allowedDays[0] + 'T23:59:59.999';
 
-      const [banking, online, apps, photos] = await Promise.all([
+      const [banking, online, apps, photos, expenses] = await Promise.all([
         supabase.from('banking_services').select('*').gte('date', earliest).lte('date', latest).order('created_at', { ascending: false }),
         supabase.from('online_services').select('*').gte('date', earliest).lte('date', latest).order('created_at', { ascending: false }),
         supabase.from('applications').select('*').gte('date', earliest).lte('date', latest).order('created_at', { ascending: false }),
         supabase.from('photostats').select('*').gte('date', earliest).lte('date', latest).order('created_at', { ascending: false }),
+        supabase.from('expenses').select('*').gte('date', earliest).lte('date', latest).order('created_at', { ascending: false }),
       ]);
 
-      // Group banking entries by date so each date counts as one entry with combined totals
-      const bankingByDate = new Map<string, { count: number; margin: number; date: string }>();
-      banking.data?.forEach((i: any) => {
-        const key = format(new Date(i.date), 'yyyy-MM-dd');
-        const cur = bankingByDate.get(key) || { count: 0, margin: 0, date: i.date };
-        cur.count += Number(i.transaction_count) || 0;
-        cur.margin += Number(i.margin) || 0;
-        bankingByDate.set(key, cur);
-      });
-      bankingByDate.forEach((v, key) => items.push({ id: `b-${key}`, type: 'Banking', description: `Banking · ${v.count} txn`, amount: v.margin, date: v.date, icon: 'banking' }));
+      banking.data?.forEach((i: any) => items.push({ id: `b-${i.id}`, type: 'Banking', description: `Banking · ${i.transaction_count} txn`, amount: Number(i.margin) || 0, date: i.date, icon: 'banking' }));
       online.data?.forEach((i: any) => items.push({ id: `o-${i.id}`, type: 'Online', description: `${i.service}${i.customer_name ? ` · ${i.customer_name}` : ''}`, amount: Number(i.total) || 0, date: i.date, icon: 'online' }));
       apps.data?.forEach((i: any) => items.push({ id: `a-${i.id}`, type: 'Offline Service', description: i.customer_name, amount: Number(i.amount) || 0, date: i.date, icon: 'application' }));
       photos.data?.forEach((i: any) => items.push({ id: `p-${i.id}`, type: 'Print', description: `Print · ${i.is_double_sided ? 'Double' : 'Single'}`, amount: Number(i.margin) || 0, date: i.date, icon: 'photostat' }));
+      expenses.data?.forEach((i: any) => items.push({ id: `e-${i.id}`, type: 'Expense', description: i.name, amount: -Math.abs(Number(i.amount) || 0), date: i.date, icon: 'expense' }));
 
       return items
         .filter(it => allowedDays.includes(format(new Date(it.date), 'yyyy-MM-dd')))

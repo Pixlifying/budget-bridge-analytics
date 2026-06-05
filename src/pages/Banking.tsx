@@ -272,19 +272,6 @@ const Banking = () => {
         || headers.find(h => h.toUpperCase() === 'TYPE');
       const bbpsKey = headers.find(h => h.toUpperCase().includes('BBPS'))
         || headers.find(h => h.toUpperCase().includes('ELECTRIC'));
-      const toAccountKey = headers.find(h => h.toUpperCase().replace(/\s+/g, '').includes('TOACCOUNT'))
-        || headers.find(h => h.toUpperCase().replace(/\s+/g, '').includes('BENEFICIARYACCOUNT'));
-      const fromAccountKey = headers.find(h => h.toUpperCase().replace(/\s+/g, '').includes('FROMACCOUNT'));
-      const nameKey = headers.find(h => h.toUpperCase().replace(/\s+/g, '').includes('BENEFICIARYNAME'))
-        || headers.find(h => h.toUpperCase().replace(/\s+/g, '').includes('CUSTOMERNAME'))
-        || headers.find(h => h.toUpperCase() === 'NAME');
-      const txnIdKey = headers.find(h => h.toUpperCase().replace(/\s+/g, '').includes('TRANSACTIONID'))
-        || headers.find(h => h.toUpperCase().replace(/\s+/g, '').includes('TXNID'))
-        || headers.find(h => h.toUpperCase().replace(/\s+/g, '').includes('REFERENCENO'))
-        || headers.find(h => h.toUpperCase().replace(/\s+/g, '').includes('RRN'));
-      const consumerKey = headers.find(h => h.toUpperCase().replace(/\s+/g, '').includes('CONSUMERNUMBER'))
-        || headers.find(h => h.toUpperCase().replace(/\s+/g, '').includes('CONSUMERNO'))
-        || headers.find(h => h.toUpperCase().replace(/\s+/g, '').includes('BILLNUMBER'));
 
       if (!amountKey) {
         toast.error('AMOUNT column not found in file');
@@ -299,8 +286,6 @@ const Banking = () => {
         Electricity: { amount: 0, extra: 0, count: 0 },
       };
       let uncategorized = 0;
-      const impsRows: { name: string; account: string; amount: number; remarks: string | null }[] = [];
-      const bbpsRows: { name: string; account: string; amount: number; remarks: string | null }[] = [];
 
       const parseNum = (v: any): number => {
         if (typeof v === 'number') return v;
@@ -315,33 +300,16 @@ const Banking = () => {
 
         // BBPS column → Electricity (count entry; amount may be 0, margin nil)
         const bbpsAmount = bbpsKey ? parseNum(row[bbpsKey]) : 0;
-        const isBbpsRow = /bbps\s*make\s*payment|bbps|electric/i.test(rawType) || (bbpsKey && bbpsAmount > 0);
-        if (isBbpsRow) {
-          const bbpsValue = bbpsAmount > 0 ? bbpsAmount : amount;
-          groups.Electricity.amount += bbpsValue;
+        if (bbpsKey && (bbpsAmount > 0 || /bbps|electric/i.test(rawType))) {
+          groups.Electricity.amount += bbpsAmount;
           groups.Electricity.count++;
-          bbpsRows.push({
-            name: nameKey ? String(row[nameKey] ?? '').trim() || 'Unknown' : 'Unknown',
-            account: consumerKey ? String(row[consumerKey] ?? '').trim() : (toAccountKey ? String(row[toAccountKey] ?? '').trim() : ''),
-            amount: bbpsValue,
-            remarks: txnIdKey ? String(row[txnIdKey] ?? '').trim() || null : null,
-          });
           return;
         }
 
         if (amount <= 0) return;
         if (!cat) { uncategorized++; return; }
 
-        if (cat === 'IMPS') {
-          // IMPS: store exact total amount (no 10k cap, no extra)
-          groups[cat].amount += amount;
-          impsRows.push({
-            name: nameKey ? String(row[nameKey] ?? '').trim() || 'Unknown' : 'Unknown',
-            account: toAccountKey ? String(row[toAccountKey] ?? '').trim() : '',
-            amount,
-            remarks: txnIdKey ? String(row[txnIdKey] ?? '').trim() || null : null,
-          });
-        } else if (amount > 10000) {
+        if (amount > 10000) {
           groups[cat].amount += 10000;
           groups[cat].extra += (amount - 10000);
         } else {
@@ -355,12 +323,8 @@ const Banking = () => {
         .map(c => ({
           date: new Date().toISOString(),
           amount: groups[c].amount,
-          // Electricity has no margin; IMPS = 0.4% commission
-          margin: c === 'Electricity'
-            ? 0
-            : c === 'IMPS'
-              ? groups[c].amount * 0.004
-              : calculateBankingServicesMargin(groups[c].amount),
+          // Electricity has no margin
+          margin: c === 'Electricity' ? 0 : calculateBankingServicesMargin(groups[c].amount),
           transaction_count: groups[c].count,
           extra_amount: groups[c].extra,
           transaction_type: CATEGORY_DEFAULT_TYPE[c],
@@ -390,33 +354,6 @@ const Banking = () => {
           created_at: d.created_at,
         }));
         setBankingEntries(prev => [...newEntries, ...prev]);
-
-        // Also mirror each IMPS row into imps_electricity
-        if (impsRows.length > 0) {
-          const impsInserts = impsRows.map(r => ({
-            date: new Date().toISOString(),
-            record_type: 'IMPS',
-            customer_name: r.name,
-            account_number: r.account,
-            amount: r.amount,
-            remarks: r.remarks,
-          }));
-          const { error: impsErr } = await supabase.from('imps_electricity').insert(impsInserts as any);
-          if (impsErr) console.error('Failed to mirror IMPS to imps_electricity:', impsErr);
-        }
-        // Mirror each BBPS Make Payment row into imps_electricity as Electricity
-        if (bbpsRows.length > 0) {
-          const bbpsInserts = bbpsRows.map(r => ({
-            date: new Date().toISOString(),
-            record_type: 'Electricity',
-            customer_name: r.name,
-            account_number: r.account,
-            amount: r.amount,
-            remarks: r.remarks,
-          }));
-          const { error: bbpsErr } = await supabase.from('imps_electricity').insert(bbpsInserts as any);
-          if (bbpsErr) console.error('Failed to mirror BBPS to imps_electricity:', bbpsErr);
-        }
         toast.success(`Imported ${inserts.length} category groups${uncategorized ? ` (${uncategorized} uncategorized skipped)` : ''}`);
       }
     } catch (error) {
@@ -443,12 +380,7 @@ const Banking = () => {
     try {
       const cat = categorize(newEntry.transaction_type);
       const isElectricity = cat === 'Electricity';
-      const isImps = cat === 'IMPS';
-      const margin = isElectricity
-        ? 0
-        : isImps
-          ? newEntry.amount * 0.004
-          : calculateBankingServicesMargin(newEntry.amount);
+      const margin = isElectricity ? 0 : calculateBankingServicesMargin(newEntry.amount);
       const insertRow = {
         date: new Date(newEntry.date).toISOString(),
         amount: newEntry.amount,
@@ -461,18 +393,6 @@ const Banking = () => {
       if (error) throw error;
       if (data && data.length > 0) {
         const d: any = data[0];
-        // Mirror IMPS transaction into imps_electricity
-        if (isImps) {
-          const { error: impsErr } = await supabase.from('imps_electricity').insert({
-            date: new Date(newEntry.date).toISOString(),
-            record_type: 'IMPS',
-            customer_name: 'Unknown',
-            account_number: '',
-            amount: newEntry.amount,
-            remarks: null,
-          } as any);
-          if (impsErr) console.error('Failed to mirror IMPS to imps_electricity:', impsErr);
-        }
         setBankingEntries(prev => [{
           id: d.id,
           date: new Date(d.date),
@@ -502,12 +422,7 @@ const Banking = () => {
     if (!editingEntry) return;
 
     try {
-      const cat = categorize(editForm.transaction_type);
-      const margin = cat === 'Electricity'
-        ? 0
-        : cat === 'IMPS'
-          ? editForm.amount * 0.004
-          : calculateBankingServicesMargin(editForm.amount);
+      const margin = calculateBankingServicesMargin(editForm.amount);
       
       const { error } = await supabase
         .from('banking_services')
@@ -600,7 +515,7 @@ const Banking = () => {
               <tr>
                 <th>Date</th>
                 <th>Transaction Count</th>
-                <th>Txn. Amount</th>
+                <th>Amount</th>
                 <th>Extra Amount</th>
                 <th>Margin</th>
               </tr>
@@ -626,8 +541,7 @@ const Banking = () => {
     printWindow.print();
   };
 
-  // Count distinct dates rather than raw row count
-  const totalEntries = new Set(filteredEntries.map(e => format(e.date, 'yyyy-MM-dd'))).size;
+  const totalEntries = filteredEntries.length;
   const totalAmount = filteredEntries.reduce((sum, entry) => sum + entry.amount, 0);
   const totalTransactions = filteredEntries.reduce((sum, entry) => sum + entry.transaction_count, 0);
   const totalExtraAmount = filteredEntries.reduce((sum, entry) => sum + (entry.extra_amount || 0), 0);
@@ -707,7 +621,7 @@ const Banking = () => {
               onChange={(e) => setNewEntry(prev => ({ ...prev, transaction_count: Number(e.target.value) }))} />
           </div>
           <div>
-            <Label htmlFor="amount">Txn. Amount</Label>
+            <Label htmlFor="amount">Amount</Label>
             <Input id="amount" type="number" min="0" value={newEntry.amount}
               onChange={(e) => setNewEntry(prev => ({ ...prev, amount: Number(e.target.value) }))} />
           </div>
@@ -780,7 +694,7 @@ const Banking = () => {
                 <TableHead className="text-right">IMPS</TableHead>
                 <TableHead className="text-right">Electricity</TableHead>
                 <TableHead className="text-right">Transaction</TableHead>
-                <TableHead className="text-right">Txn. Amount</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
                 <TableHead className="text-right">Extra Amount</TableHead>
                 <TableHead className="text-right">Margin</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -810,16 +724,11 @@ const Banking = () => {
                   <TableCell className="text-right">{formatCurrency(row.margin)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          const entry = singleEntry || bankingEntries.find(e => e.id === row.ids[0]);
-                          if (entry) openEditEntry(entry);
-                        }}
-                      >
-                        <Edit size={14} />
-                      </Button>
+                      {singleEntry && (
+                        <Button size="sm" variant="outline" onClick={() => openEditEntry(singleEntry)}>
+                          <Edit size={14} />
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         variant="outline"
@@ -882,7 +791,7 @@ const Banking = () => {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="edit_amount">Txn. Amount</Label>
+              <Label htmlFor="edit_amount">Amount</Label>
               <Input
                 id="edit_amount"
                 type="number"

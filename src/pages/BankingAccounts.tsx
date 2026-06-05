@@ -51,7 +51,6 @@ const BankingAccounts = () => {
   const { isHighlighted, dateParam } = useHighlight();
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const [isPdfProcessing, setIsPdfProcessing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (dateParam) {
@@ -118,26 +117,14 @@ const BankingAccounts = () => {
   }, []);
 
   useEffect(() => {
-    let filtered: BankingAccount[];
     if (viewMode === 'day') {
-      filtered = filterByDate(bankingAccounts, date);
+      setFilteredAccounts(filterByDate(bankingAccounts, date));
     } else if (viewMode === 'month') {
-      filtered = filterByMonth(bankingAccounts, date);
+      setFilteredAccounts(filterByMonth(bankingAccounts, date));
     } else {
-      filtered = filterByQuarter(bankingAccounts, date);
+      setFilteredAccounts(filterByQuarter(bankingAccounts, date));
     }
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      filtered = filtered.filter(a =>
-        (a.customer_name || '').toLowerCase().includes(q) ||
-        (a.account_number || '').toLowerCase().includes(q) ||
-        (a.account_type || '').toLowerCase().includes(q) ||
-        (a.insurance_type || '').toLowerCase().includes(q) ||
-        String(a.amount).includes(q)
-      );
-    }
-    setFilteredAccounts(filtered);
-  }, [date, viewMode, bankingAccounts, searchQuery]);
+  }, [date, viewMode, bankingAccounts]);
 
   const handleAddEntry = async () => {
     if (!newEntry.customer_name || !newEntry.account_type || !newEntry.amount) {
@@ -282,13 +269,14 @@ const BankingAccounts = () => {
         </head>
         <body>
           <h1>Banking Accounts Report</h1>
-          <div class="total">Total Accounts: ${totalAccounts}</div>
+          <div class="total">Total Accounts: ${totalAccounts} | Total Amount: ₹${totalAmount.toFixed(2)}</div>
           <table>
             <thead>
               <tr>
                 <th>Date</th>
                 <th>Customer Name</th>
                 <th>Account Type</th>
+                <th>Amount</th>
                 <th>Account Number</th>
                 <th>Insurance Type</th>
               </tr>
@@ -299,6 +287,7 @@ const BankingAccounts = () => {
                   <td>${escapeHtml(format(account.date, 'dd/MM/yyyy'))}</td>
                   <td>${escapeHtml(account.customer_name)}</td>
                   <td>${escapeHtml(account.account_type)}</td>
+                  <td>₹${escapeHtml(account.amount.toFixed(2))}</td>
                   <td>${escapeHtml(account.account_number || '-')}</td>
                   <td>${escapeHtml(account.insurance_type || '-')}</td>
                 </tr>
@@ -456,14 +445,6 @@ const BankingAccounts = () => {
       }
     >
       {/* Add Banking Account Form */}
-      <div className="mb-4">
-        <Input
-          placeholder="Search by customer name, account number, type..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="max-w-md"
-        />
-      </div>
       <div className="mb-6 p-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg shadow-lg">
         <h3 className="text-lg font-semibold mb-4">Add Banking Account</h3>
         <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
@@ -518,7 +499,7 @@ const BankingAccounts = () => {
             </div>
           )}
           <div>
-            <Label htmlFor="amount">Acc. Amount</Label>
+            <Label htmlFor="amount">Amount</Label>
             <Input
               id="amount"
               type="number"
@@ -585,7 +566,7 @@ const BankingAccounts = () => {
               labels={{
                 customer: 'Customer',
                 type: 'Account Type',
-                amount: 'Acc. Amount',
+                amount: 'Amount',
                 account: 'Account Number'
               }}
               onEdit={() => openEditEntry(entry)}
@@ -631,7 +612,7 @@ const BankingAccounts = () => {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="edit_amount">Acc. Amount</Label>
+              <Label htmlFor="edit_amount">Amount</Label>
               <Input
                 id="edit_amount"
                 type="number"

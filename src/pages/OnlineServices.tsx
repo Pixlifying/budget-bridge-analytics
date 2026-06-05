@@ -552,8 +552,7 @@ const OnlineServices = () => {
       console.error('Serial calc error:', err);
     }
     const serial = `KC/${year}/${prefix}/${String(seqNum).padStart(3, '0')}`;
-    const submissionDate = entry.date instanceof Date ? entry.date : new Date(entry.date as any);
-    const billDate = format(submissionDate, 'dd/MM/yyyy');
+    const billDate = format(new Date(), 'dd/MM/yyyy');
     const refNo = entry.reference_number?.trim() || 'Nil';
     const amountWords = numberToWords(entry.amount);
 

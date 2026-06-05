@@ -22,7 +22,6 @@ import {
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import VoiceInputButton from '@/components/ui/VoiceInputButton';
 
 interface FormField {
   name: string;
@@ -155,25 +154,17 @@ const ServiceForm = ({
                       ))}
                     </select>
                   ) : field.type === 'textarea' ? (
-                    <div className="flex items-start gap-2">
-                      <Textarea
-                        id={field.name}
-                        value={values[field.name] || ''}
-                        onChange={(e) => handleChange(field.name, e.target.value)}
-                        required={field.required}
-                        readOnly={field.readOnly}
-                        className={cn(
-                          "min-h-[60px] max-h-[120px] flex-1",
-                          field.readOnly && "bg-muted"
-                        )}
-                      />
-                      {!field.readOnly && (
-                        <VoiceInputButton
-                          currentValue={values[field.name] || ''}
-                          onTranscript={(text) => handleChange(field.name, text)}
-                        />
+                    <Textarea
+                      id={field.name}
+                      value={values[field.name] || ''}
+                      onChange={(e) => handleChange(field.name, e.target.value)}
+                      required={field.required}
+                      readOnly={field.readOnly}
+                      className={cn(
+                        "min-h-[60px] max-h-[120px]",
+                        field.readOnly && "bg-muted"
                       )}
-                    </div>
+                    />
                   ) : field.type === 'number' ? (
                     <Input
                       id={field.name}
@@ -186,23 +177,15 @@ const ServiceForm = ({
                       className={field.readOnly ? "bg-muted" : ""}
                     />
                   ) : (
-                    <div className="flex items-center gap-2">
-                      <Input
-                        id={field.name}
-                        type="text"
-                        value={values[field.name] || ''}
-                        onChange={(e) => handleChange(field.name, e.target.value)}
-                        required={field.required}
-                        readOnly={field.readOnly}
-                        className={cn("flex-1", field.readOnly && "bg-muted")}
-                      />
-                      {!field.readOnly && (
-                        <VoiceInputButton
-                          currentValue={values[field.name] || ''}
-                          onTranscript={(text) => handleChange(field.name, text)}
-                        />
-                      )}
-                    </div>
+                    <Input
+                      id={field.name}
+                      type="text"
+                      value={values[field.name] || ''}
+                      onChange={(e) => handleChange(field.name, e.target.value)}
+                      required={field.required}
+                      readOnly={field.readOnly}
+                      className={field.readOnly ? "bg-muted" : ""}
+                    />
                   )}
                 </div>
               );
