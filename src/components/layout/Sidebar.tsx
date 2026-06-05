@@ -185,13 +185,13 @@ const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: Sid
     { icon: <IconBankingTransaction size={16} />, label: 'Banking Transaction', to: '/banking' },
     { icon: <IconPiggy size={16} />, label: 'OD Records', to: '/od-records' },
     { icon: <IconBankAccounts size={16} />, label: 'Accounts Opened', to: '/banking-accounts' },
+    { icon: <IconMoney size={16} />, label: 'IMPS/Electricity', to: '/imps-electricity' },
   ];
 
   const nonFinancialServiceItems = [
     { icon: <IconUsers size={16} />, label: 'Account Details', to: '/account-details' },
     { icon: <IconShield size={16} />, label: 'Social Security', to: '/social-security' },
     { icon: <IconDocument size={16} />, label: 'Documentation', to: '/documentation' },
-    { icon: <IconMoney size={16} />, label: 'IMPS/Electricity', to: '/imps-electricity' },
   ];
 
   const customerServiceItems = [
