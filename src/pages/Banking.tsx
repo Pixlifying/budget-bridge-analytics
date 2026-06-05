@@ -33,6 +33,7 @@ const TRANSACTION_TYPES = [
   'AEPS Cash Deposit',
   'Savings Deposit By Cash',
   'IMPS Transaction',
+  'BBPS Make Payment',
   'Electricity Bill',
 ] as const;
 
@@ -44,7 +45,7 @@ const categorize = (type?: string | null): Category | null => {
   if (t.includes('deposit')) return 'Deposit';
   if (t.includes('withdraw')) return 'Withdrawal';
   if (t.includes('imps')) return 'IMPS';
-  if (t.includes('electric')) return 'Electricity';
+  if (t.includes('electric') || t.includes('bbps')) return 'Electricity';
   return null;
 };
 
@@ -272,6 +273,9 @@ const Banking = () => {
         || headers.find(h => h.toUpperCase() === 'TYPE');
       const bbpsKey = headers.find(h => h.toUpperCase().includes('BBPS'))
         || headers.find(h => h.toUpperCase().includes('ELECTRIC'));
+      const txnIdKey = headers.find(h => /txn\s*id|transaction\s*id|rrn|ref(erence)?\s*(no|number|id)?/i.test(h));
+      const custNameKey = headers.find(h => /customer\s*name|cust\s*name|beneficiary/i.test(h));
+      const acctKey = headers.find(h => /account\s*no|a\/c\s*no|account\s*number|consumer/i.test(h));
 
       if (!amountKey) {
         toast.error('AMOUNT column not found in file');
@@ -286,6 +290,7 @@ const Banking = () => {
         Electricity: { amount: 0, extra: 0, count: 0 },
       };
       let uncategorized = 0;
+      const impsElecRows: any[] = [];
 
       const parseNum = (v: any): number => {
         if (typeof v === 'number') return v;
@@ -303,6 +308,14 @@ const Banking = () => {
         if (bbpsKey && (bbpsAmount > 0 || /bbps|electric/i.test(rawType))) {
           groups.Electricity.amount += bbpsAmount;
           groups.Electricity.count++;
+          impsElecRows.push({
+            date: new Date().toISOString(),
+            record_type: 'Electricity Bill',
+            customer_name: (custNameKey && String(row[custNameKey] || '').trim()) || 'N/A',
+            account_number: (acctKey && String(row[acctKey] || '').trim()) || 'N/A',
+            amount: bbpsAmount || amount || 0,
+            remarks: `Transaction ID: ${(txnIdKey && String(row[txnIdKey] || '').trim()) || 'N/A'}`,
+          });
           return;
         }
 
@@ -316,6 +329,16 @@ const Banking = () => {
           groups[cat].amount += amount;
         }
         groups[cat].count++;
+        if (cat === 'IMPS') {
+          impsElecRows.push({
+            date: new Date().toISOString(),
+            record_type: 'IMPS',
+            customer_name: (custNameKey && String(row[custNameKey] || '').trim()) || 'N/A',
+            account_number: (acctKey && String(row[acctKey] || '').trim()) || 'N/A',
+            amount,
+            remarks: `Transaction ID: ${(txnIdKey && String(row[txnIdKey] || '').trim()) || 'N/A'}`,
+          });
+        }
       });
 
       const inserts = (Object.keys(groups) as Category[])
@@ -354,6 +377,9 @@ const Banking = () => {
           created_at: d.created_at,
         }));
         setBankingEntries(prev => [...newEntries, ...prev]);
+        if (impsElecRows.length > 0) {
+          await supabase.from('imps_electricity').insert(impsElecRows as any);
+        }
         toast.success(`Imported ${inserts.length} category groups${uncategorized ? ` (${uncategorized} uncategorized skipped)` : ''}`);
       }
     } catch (error) {
@@ -403,6 +429,24 @@ const Banking = () => {
           transaction_type: d.transaction_type ?? null,
           created_at: d.created_at,
         }, ...prev]);
+        // Auto-record into IMPS/Electricity for IMPS and BBPS Make Payment
+        const t = (newEntry.transaction_type || '').toLowerCase();
+        const isImps = t.includes('imps');
+        const isBbps = t.includes('bbps');
+        if (isImps || isBbps) {
+          const count = Math.max(1, newEntry.transaction_count || 1);
+          const perAmount = newEntry.amount / count;
+          const recordType = isImps ? 'IMPS' : 'Electricity Bill';
+          const rows = Array.from({ length: count }).map(() => ({
+            date: new Date(newEntry.date).toISOString(),
+            record_type: recordType,
+            customer_name: 'N/A',
+            account_number: 'N/A',
+            amount: perAmount,
+            remarks: `Transaction ID: ${d.id}`,
+          }));
+          await supabase.from('imps_electricity').insert(rows as any);
+        }
         setNewEntry({
           date: new Date().toISOString().split('T')[0],
           transaction_type: 'Savings Deposit By Cash',
@@ -703,9 +747,6 @@ const Banking = () => {
             <TableBody>
               {groupedRows.map(row => {
                 const cell = (k: Category) => row.cats[k] > 0 ? formatCurrency(row.cats[k]) : '-';
-                const singleEntry = row.ids.length === 1
-                  ? bankingEntries.find(e => e.id === row.ids[0])
-                  : null;
                 const highlighted = row.ids.some(id => isHighlighted(id));
                 return (
                 <TableRow
@@ -724,11 +765,23 @@ const Banking = () => {
                   <TableCell className="text-right">{formatCurrency(row.margin)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      {singleEntry && (
-                        <Button size="sm" variant="outline" onClick={() => openEditEntry(singleEntry)}>
-                          <Edit size={14} />
-                        </Button>
-                      )}
+                      {row.ids.map((eid, idx) => {
+                        const e = bankingEntries.find(b => b.id === eid);
+                        if (!e) return null;
+                        const c = categorize(e.transaction_type);
+                        return (
+                          <Button
+                            key={eid}
+                            size="sm"
+                            variant="outline"
+                            title={`Edit ${c || 'entry'} (${formatCurrency(e.amount)})`}
+                            onClick={() => openEditEntry(e)}
+                          >
+                            <Edit size={14} />
+                            {row.ids.length > 1 && <span className="ml-1 text-[10px]">{c?.[0] || idx + 1}</span>}
+                          </Button>
+                        );
+                      })}
                       <Button
                         size="sm"
                         variant="outline"

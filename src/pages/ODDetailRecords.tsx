@@ -362,6 +362,7 @@ const ODDetailRecords = () => {
   const startInlineEdit = (record: ODDetailRecord) => {
     setInlineEditId(record.id);
     setInlineEditData({
+      date: record.date,
       amount_received: record.amount_received,
       amount_distributed: record.amount_distributed,
       od_adjusted: record.od_adjusted || 0,
@@ -381,6 +382,7 @@ const ODDetailRecords = () => {
         (inlineEditData.amount_received || 0) - (inlineEditData.amount_distributed || 0) - (inlineEditData.od_adjusted || 0);
       
       const { error } = await supabase.from('od_detail_records').update({
+        date: inlineEditData.date,
         amount_received: inlineEditData.amount_received,
         amount_given: inlineEditData.amount_distributed,
         od_adjusted: inlineEditData.od_adjusted,
@@ -462,9 +464,6 @@ const ODDetailRecords = () => {
 
   const handlePrint = () => {
     const filteredRecords = getFilteredRecordsForPrint();
-    const recordsPerPage = 20;
-    const totalPages = Math.ceil(filteredRecords.length / recordsPerPage);
-    
     let dateRangeText = '';
     if (printMode === 'month') {
       const [year, month] = printMonth.split('-').map(Number);
@@ -477,65 +476,58 @@ const ODDetailRecords = () => {
     const totalReceived = filteredRecords.reduce((sum, r) => sum + r.amount_received, 0);
     const totalDistributed = filteredRecords.reduce((sum, r) => sum + r.amount_distributed, 0);
     const totalODAdjusted = filteredRecords.reduce((sum, r) => sum + (r.od_adjusted || 0), 0);
-    
-    let pagesHtml = '';
-    for (let page = 0; page < totalPages; page++) {
-      const pageRecords = filteredRecords.slice(page * recordsPerPage, (page + 1) * recordsPerPage);
-      
-      pagesHtml += `
-        <div class="print-page" ${page > 0 ? 'style="page-break-before: always;"' : ''}>
-          <div class="header">
-            <h1>OD Records</h1>
-            <p class="subtitle">Period: ${dateRangeText}</p>
-            <p class="page-info">Page ${page + 1} of ${totalPages} | Generated: ${format(new Date(), 'dd/MM/yyyy HH:mm')}</p>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>S.No</th>
-                <th>Date</th>
-                <th>OD from Bank</th>
-                <th>Last Balance</th>
-                <th>Deposit</th>
-                <th>Withdrawal</th>
-                <th>OD Adjusted</th>
-                <th>Cash in Hand</th>
-                <th>Remarks</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${pageRecords.map((record, idx) => `
-                <tr>
-                  <td style="text-align: center;">${page * recordsPerPage + idx + 1}</td>
-                  <td style="text-align: center;">${format(new Date(record.date), 'dd/MM/yyyy')}</td>
-                  <td style="text-align: right;">₹${record.od_from_bank.toLocaleString('en-IN')}</td>
-                  <td style="text-align: right;">₹${record.last_balance.toLocaleString('en-IN')}</td>
-                  <td style="text-align: right;">₹${record.amount_received.toLocaleString('en-IN')}</td>
-                  <td style="text-align: right;">₹${record.amount_distributed.toLocaleString('en-IN')}</td>
-                  <td style="text-align: right;">₹${(record.od_adjusted || 0).toLocaleString('en-IN')}</td>
-                  <td style="text-align: right; font-weight: 600;">₹${record.cash_in_hand.toLocaleString('en-IN')}</td>
-                  <td style="text-align: left;">${record.remarks || '-'}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-          ${page === totalPages - 1 ? `
-            <div class="summary">
-              <h3>Summary</h3>
-              <div class="summary-grid">
-                <div class="summary-item"><span>Total Records:</span><span>${filteredRecords.length}</span></div>
-                <div class="summary-item"><span>Total OD from Bank:</span><span>₹${totalODFromBank.toLocaleString('en-IN')}</span></div>
-                <div class="summary-item"><span>Total Deposit:</span><span>₹${totalReceived.toLocaleString('en-IN')}</span></div>
-                <div class="summary-item"><span>Total Withdrawal:</span><span>₹${totalDistributed.toLocaleString('en-IN')}</span></div>
-                <div class="summary-item"><span>Total OD Adjusted:</span><span>₹${totalODAdjusted.toLocaleString('en-IN')}</span></div>
-                <div class="summary-item highlight"><span>Final Cash in Hand:</span><span>₹${filteredRecords.length > 0 ? filteredRecords[filteredRecords.length - 1].cash_in_hand.toLocaleString('en-IN') : '0'}</span></div>
-              </div>
-            </div>
-          ` : ''}
+
+    const tableRows = filteredRecords.map((record, idx) => `
+      <tr>
+        <td style="text-align: center;">${idx + 1}</td>
+        <td style="text-align: center;">${format(new Date(record.date), 'dd/MM/yyyy')}</td>
+        <td style="text-align: right;">₹${record.od_from_bank.toLocaleString('en-IN')}</td>
+        <td style="text-align: right;">₹${record.last_balance.toLocaleString('en-IN')}</td>
+        <td style="text-align: right;">₹${record.amount_received.toLocaleString('en-IN')}</td>
+        <td style="text-align: right;">₹${record.amount_distributed.toLocaleString('en-IN')}</td>
+        <td style="text-align: right;">₹${(record.od_adjusted || 0).toLocaleString('en-IN')}</td>
+        <td style="text-align: right; font-weight: 600;">₹${record.cash_in_hand.toLocaleString('en-IN')}</td>
+        <td style="text-align: left;">${record.remarks || '-'}</td>
+      </tr>
+    `).join('');
+
+    const pagesHtml = `
+      <div class="print-page">
+        <div class="header">
+          <h1>OD Records</h1>
+          <p class="subtitle">Period: ${dateRangeText}</p>
+          <p class="page-info">Generated: ${format(new Date(), 'dd/MM/yyyy HH:mm')}</p>
         </div>
-      `;
-    }
-    
+        <table>
+          <thead>
+            <tr>
+              <th>S.No</th>
+              <th>Date</th>
+              <th>OD from Bank</th>
+              <th>Last Balance</th>
+              <th>Deposit</th>
+              <th>Withdrawal</th>
+              <th>OD Adjusted</th>
+              <th>Cash in Hand</th>
+              <th>Remarks</th>
+            </tr>
+          </thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+        <div class="summary">
+          <h3>Summary</h3>
+          <div class="summary-grid">
+            <div class="summary-item"><span>Total Records:</span><span>${filteredRecords.length}</span></div>
+            <div class="summary-item"><span>Total OD from Bank:</span><span>₹${totalODFromBank.toLocaleString('en-IN')}</span></div>
+            <div class="summary-item"><span>Total Deposit:</span><span>₹${totalReceived.toLocaleString('en-IN')}</span></div>
+            <div class="summary-item"><span>Total Withdrawal:</span><span>₹${totalDistributed.toLocaleString('en-IN')}</span></div>
+            <div class="summary-item"><span>Total OD Adjusted:</span><span>₹${totalODAdjusted.toLocaleString('en-IN')}</span></div>
+            <div class="summary-item highlight"><span>Final Cash in Hand:</span><span>₹${filteredRecords.length > 0 ? filteredRecords[filteredRecords.length - 1].cash_in_hand.toLocaleString('en-IN') : '0'}</span></div>
+          </div>
+        </div>
+      </div>
+    `;
+
     const printContent = `<!DOCTYPE html><html><head><title>OD Records - ${dateRangeText}</title>
       <style>
         @page { size: A4 portrait; margin: 15mm 10mm; }
@@ -549,7 +541,11 @@ const ODDetailRecords = () => {
         th, td { border: 1px solid #444; padding: 10px 8px; }
         th { background-color: #2c3e50; color: white; text-align: center; }
         tbody tr:nth-child(even) { background-color: #f8f9fa; }
+        thead { display: table-header-group; }
+        tfoot { display: table-footer-group; }
+        tr, td, th { page-break-inside: avoid; break-inside: avoid; }
         .summary { margin-top: 25px; padding: 20px; border: 2px solid #2c3e50; background-color: #f8f9fa; border-radius: 8px; }
+        .summary { page-break-inside: avoid; break-inside: avoid; }
         .summary h3 { font-size: 18px; margin-bottom: 15px; }
         .summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
         .summary-item { display: flex; justify-content: space-between; padding: 8px 12px; background: white; border-radius: 4px; border: 1px solid #ddd; }
@@ -794,7 +790,18 @@ const ODDetailRecords = () => {
                   {records.slice(0, RECORDS_PER_PAGE).map((record, index) => (
                     <TableRow key={record.id}>
                       <TableCell>{index + 1}</TableCell>
-                      <TableCell>{format(new Date(record.date), 'dd/MM/yyyy')}</TableCell>
+                      <TableCell>
+                        {inlineEditId === record.id ? (
+                          <Input
+                            type="date"
+                            className="w-36 h-8"
+                            value={inlineEditData.date || record.date}
+                            onChange={(e) => setInlineEditData({ ...inlineEditData, date: e.target.value })}
+                          />
+                        ) : (
+                          format(new Date(record.date), 'dd/MM/yyyy')
+                        )}
+                      </TableCell>
                       <TableCell>₹{record.od_from_bank.toLocaleString('en-IN')}</TableCell>
                       <TableCell>₹{record.last_balance.toLocaleString('en-IN')}</TableCell>
                       <TableCell>

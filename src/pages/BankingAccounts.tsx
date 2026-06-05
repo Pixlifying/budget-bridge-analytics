@@ -48,6 +48,7 @@ const BankingAccounts = () => {
   const [editingEntry, setEditingEntry] = useState<BankingAccount | null>(null);
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month' | 'quarter'>('day');
+  const [searchQuery, setSearchQuery] = useState('');
   const { isHighlighted, dateParam } = useHighlight();
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const [isPdfProcessing, setIsPdfProcessing] = useState(false);
@@ -117,14 +118,25 @@ const BankingAccounts = () => {
   }, []);
 
   useEffect(() => {
+    let base: BankingAccount[];
     if (viewMode === 'day') {
-      setFilteredAccounts(filterByDate(bankingAccounts, date));
+      base = filterByDate(bankingAccounts, date);
     } else if (viewMode === 'month') {
-      setFilteredAccounts(filterByMonth(bankingAccounts, date));
+      base = filterByMonth(bankingAccounts, date);
     } else {
-      setFilteredAccounts(filterByQuarter(bankingAccounts, date));
+      base = filterByQuarter(bankingAccounts, date);
     }
-  }, [date, viewMode, bankingAccounts]);
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      base = base.filter(a =>
+        a.customer_name?.toLowerCase().includes(q) ||
+        a.account_type?.toLowerCase().includes(q) ||
+        (a.account_number || '').toLowerCase().includes(q) ||
+        (a.insurance_type || '').toLowerCase().includes(q)
+      );
+    }
+    setFilteredAccounts(base);
+  }, [date, viewMode, bankingAccounts, searchQuery]);
 
   const handleAddEntry = async () => {
     if (!newEntry.customer_name || !newEntry.account_type || !newEntry.amount) {
@@ -269,14 +281,13 @@ const BankingAccounts = () => {
         </head>
         <body>
           <h1>Banking Accounts Report</h1>
-          <div class="total">Total Accounts: ${totalAccounts} | Total Amount: ₹${totalAmount.toFixed(2)}</div>
+          <div class="total">Total Accounts: ${totalAccounts}</div>
           <table>
             <thead>
               <tr>
                 <th>Date</th>
                 <th>Customer Name</th>
                 <th>Account Type</th>
-                <th>Amount</th>
                 <th>Account Number</th>
                 <th>Insurance Type</th>
               </tr>
@@ -287,7 +298,6 @@ const BankingAccounts = () => {
                   <td>${escapeHtml(format(account.date, 'dd/MM/yyyy'))}</td>
                   <td>${escapeHtml(account.customer_name)}</td>
                   <td>${escapeHtml(account.account_type)}</td>
-                  <td>₹${escapeHtml(account.amount.toFixed(2))}</td>
                   <td>${escapeHtml(account.account_number || '-')}</td>
                   <td>${escapeHtml(account.insurance_type || '-')}</td>
                 </tr>
@@ -409,6 +419,12 @@ const BankingAccounts = () => {
       subtitle="Manage banking accounts and view analytics"
       action={
         <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+          <Input
+            placeholder="Search by name, account..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-[200px] h-9"
+          />
           <DateRangePicker 
             date={date} 
             onDateChange={setDate} 
