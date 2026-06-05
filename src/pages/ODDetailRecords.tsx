@@ -790,7 +790,18 @@ const ODDetailRecords = () => {
                   {records.slice(0, RECORDS_PER_PAGE).map((record, index) => (
                     <TableRow key={record.id}>
                       <TableCell>{index + 1}</TableCell>
-                      <TableCell>{format(new Date(record.date), 'dd/MM/yyyy')}</TableCell>
+                      <TableCell>
+                        {inlineEditId === record.id ? (
+                          <Input
+                            type="date"
+                            className="w-36 h-8"
+                            value={inlineEditData.date || record.date}
+                            onChange={(e) => setInlineEditData({ ...inlineEditData, date: e.target.value })}
+                          />
+                        ) : (
+                          format(new Date(record.date), 'dd/MM/yyyy')
+                        )}
+                      </TableCell>
                       <TableCell>₹{record.od_from_bank.toLocaleString('en-IN')}</TableCell>
                       <TableCell>₹{record.last_balance.toLocaleString('en-IN')}</TableCell>
                       <TableCell>
