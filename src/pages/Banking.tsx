@@ -722,9 +722,6 @@ const Banking = () => {
             <TableBody>
               {groupedRows.map(row => {
                 const cell = (k: Category) => row.cats[k] > 0 ? formatCurrency(row.cats[k]) : '-';
-                const singleEntry = row.ids.length === 1
-                  ? bankingEntries.find(e => e.id === row.ids[0])
-                  : null;
                 const highlighted = row.ids.some(id => isHighlighted(id));
                 return (
                 <TableRow
