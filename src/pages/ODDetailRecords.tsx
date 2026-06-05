@@ -362,6 +362,7 @@ const ODDetailRecords = () => {
   const startInlineEdit = (record: ODDetailRecord) => {
     setInlineEditId(record.id);
     setInlineEditData({
+      date: record.date,
       amount_received: record.amount_received,
       amount_distributed: record.amount_distributed,
       od_adjusted: record.od_adjusted || 0,
@@ -381,6 +382,7 @@ const ODDetailRecords = () => {
         (inlineEditData.amount_received || 0) - (inlineEditData.amount_distributed || 0) - (inlineEditData.od_adjusted || 0);
       
       const { error } = await supabase.from('od_detail_records').update({
+        date: inlineEditData.date,
         amount_received: inlineEditData.amount_received,
         amount_given: inlineEditData.amount_distributed,
         od_adjusted: inlineEditData.od_adjusted,
