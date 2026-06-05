@@ -48,6 +48,7 @@ const BankingAccounts = () => {
   const [editingEntry, setEditingEntry] = useState<BankingAccount | null>(null);
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month' | 'quarter'>('day');
+  const [searchQuery, setSearchQuery] = useState('');
   const { isHighlighted, dateParam } = useHighlight();
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const [isPdfProcessing, setIsPdfProcessing] = useState(false);
@@ -117,14 +118,25 @@ const BankingAccounts = () => {
   }, []);
 
   useEffect(() => {
+    let base: BankingAccount[];
     if (viewMode === 'day') {
-      setFilteredAccounts(filterByDate(bankingAccounts, date));
+      base = filterByDate(bankingAccounts, date);
     } else if (viewMode === 'month') {
-      setFilteredAccounts(filterByMonth(bankingAccounts, date));
+      base = filterByMonth(bankingAccounts, date);
     } else {
-      setFilteredAccounts(filterByQuarter(bankingAccounts, date));
+      base = filterByQuarter(bankingAccounts, date);
     }
-  }, [date, viewMode, bankingAccounts]);
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      base = base.filter(a =>
+        a.customer_name?.toLowerCase().includes(q) ||
+        a.account_type?.toLowerCase().includes(q) ||
+        (a.account_number || '').toLowerCase().includes(q) ||
+        (a.insurance_type || '').toLowerCase().includes(q)
+      );
+    }
+    setFilteredAccounts(base);
+  }, [date, viewMode, bankingAccounts, searchQuery]);
 
   const handleAddEntry = async () => {
     if (!newEntry.customer_name || !newEntry.account_type || !newEntry.amount) {
