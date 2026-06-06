@@ -86,19 +86,38 @@ const NotificationBox = () => {
       const earliest = allowedDays[1];
       const latest = allowedDays[0] + 'T23:59:59.999';
 
-      const [banking, online, apps, photos, expenses] = await Promise.all([
+      const [banking, online, apps, photos] = await Promise.all([
         supabase.from('banking_services').select('*').gte('date', earliest).lte('date', latest).order('created_at', { ascending: false }),
         supabase.from('online_services').select('*').gte('date', earliest).lte('date', latest).order('created_at', { ascending: false }),
         supabase.from('applications').select('*').gte('date', earliest).lte('date', latest).order('created_at', { ascending: false }),
         supabase.from('photostats').select('*').gte('date', earliest).lte('date', latest).order('created_at', { ascending: false }),
-        supabase.from('expenses').select('*').gte('date', earliest).lte('date', latest).order('created_at', { ascending: false }),
       ]);
 
-      banking.data?.forEach((i: any) => items.push({ id: `b-${i.id}`, type: 'Banking', description: `Banking · ${i.transaction_count} txn`, amount: Number(i.margin) || 0, date: i.date, icon: 'banking' }));
+      // Aggregate banking transactions per day into a single summary entry
+      const bankingByDay = new Map<string, { count: number; txns: number; amount: number; margin: number; latestDate: string }>();
+      banking.data?.forEach((i: any) => {
+        const key = format(new Date(i.date), 'yyyy-MM-dd');
+        const prev = bankingByDay.get(key) || { count: 0, txns: 0, amount: 0, margin: 0, latestDate: i.date };
+        prev.count += 1;
+        prev.txns += Number(i.transaction_count) || 0;
+        prev.amount += Number(i.amount) || 0;
+        prev.margin += Number(i.margin) || 0;
+        if (new Date(i.date) > new Date(prev.latestDate)) prev.latestDate = i.date;
+        bankingByDay.set(key, prev);
+      });
+      bankingByDay.forEach((v, key) => {
+        items.push({
+          id: `b-${key}`,
+          type: 'Banking',
+          description: `Banking Summary · ${v.txns} txn · ${formatCurrency(v.amount)}`,
+          amount: v.margin,
+          date: v.latestDate,
+          icon: 'banking',
+        });
+      });
       online.data?.forEach((i: any) => items.push({ id: `o-${i.id}`, type: 'Online', description: `${i.service}${i.customer_name ? ` · ${i.customer_name}` : ''}`, amount: Number(i.total) || 0, date: i.date, icon: 'online' }));
       apps.data?.forEach((i: any) => items.push({ id: `a-${i.id}`, type: 'Offline Service', description: i.customer_name, amount: Number(i.amount) || 0, date: i.date, icon: 'application' }));
       photos.data?.forEach((i: any) => items.push({ id: `p-${i.id}`, type: 'Print', description: `Print · ${i.is_double_sided ? 'Double' : 'Single'}`, amount: Number(i.margin) || 0, date: i.date, icon: 'photostat' }));
-      expenses.data?.forEach((i: any) => items.push({ id: `e-${i.id}`, type: 'Expense', description: i.name, amount: -Math.abs(Number(i.amount) || 0), date: i.date, icon: 'expense' }));
 
       return items
         .filter(it => allowedDays.includes(format(new Date(it.date), 'yyyy-MM-dd')))
