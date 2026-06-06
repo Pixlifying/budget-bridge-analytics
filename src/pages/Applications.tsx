@@ -10,6 +10,7 @@ import ServiceCard from '@/components/ui/ServiceCard';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import DownloadButton from '@/components/ui/DownloadButton';
 import { Button } from '@/components/ui/button';
+import DocumentChecklist from '@/components/checklist/DocumentChecklist';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -455,6 +456,7 @@ const Applications = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-[180px] h-9 bg-sidebar-accent text-sidebar-accent-foreground placeholder:text-sidebar-accent-foreground/50 border-sidebar-border"
             />
+            <DocumentChecklist />
             <Button onClick={handlePrint} variant="outline">
               <Printer size={16} className="mr-2" />
               Print
