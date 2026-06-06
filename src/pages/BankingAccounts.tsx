@@ -423,7 +423,7 @@ const BankingAccounts = () => {
             placeholder="Search by name, account..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-[200px] h-9"
+            className="w-[200px] h-9 bg-sidebar-accent text-sidebar-accent-foreground placeholder:text-sidebar-accent-foreground/50 border-sidebar-border"
           />
           <DateRangePicker 
             date={date} 
