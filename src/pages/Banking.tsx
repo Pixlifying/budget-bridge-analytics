@@ -96,6 +96,7 @@ const Banking = () => {
     transaction_count: 1,
     amount: 0,
     extra_amount: 0,
+    account_number: '',
   });
 
   const [editForm, setEditForm] = useState({
@@ -437,11 +438,12 @@ const Banking = () => {
           const count = Math.max(1, newEntry.transaction_count || 1);
           const perAmount = newEntry.amount / count;
           const recordType = isImps ? 'IMPS' : 'Electricity Bill';
+          const acctNum = (newEntry.account_number || '').trim() || 'N/A';
           const rows = Array.from({ length: count }).map(() => ({
             date: new Date(newEntry.date).toISOString(),
             record_type: recordType,
             customer_name: 'N/A',
-            account_number: 'N/A',
+            account_number: acctNum,
             amount: perAmount,
             remarks: `Transaction ID: ${d.id}`,
           }));
@@ -453,6 +455,7 @@ const Banking = () => {
           transaction_count: 1,
           amount: 0,
           extra_amount: 0,
+          account_number: '',
         });
         toast.success('Banking entry added');
       }
@@ -585,7 +588,9 @@ const Banking = () => {
     printWindow.print();
   };
 
-  const totalEntries = filteredEntries.length;
+  const totalEntries = new Set(
+    filteredEntries.map(e => new Date(e.date).toISOString().split('T')[0])
+  ).size;
   const totalAmount = filteredEntries.reduce((sum, entry) => sum + entry.amount, 0);
   const totalTransactions = filteredEntries.reduce((sum, entry) => sum + entry.transaction_count, 0);
   const totalExtraAmount = filteredEntries.reduce((sum, entry) => sum + (entry.extra_amount || 0), 0);
@@ -674,6 +679,13 @@ const Banking = () => {
             <Input id="extra" type="number" min="0" value={newEntry.extra_amount}
               onChange={(e) => setNewEntry(prev => ({ ...prev, extra_amount: Number(e.target.value) }))} />
           </div>
+          {categorize(newEntry.transaction_type) === 'IMPS' && (
+            <div>
+              <Label htmlFor="acct_no">Account No.</Label>
+              <Input id="acct_no" type="text" value={newEntry.account_number}
+                onChange={(e) => setNewEntry(prev => ({ ...prev, account_number: e.target.value }))} placeholder="Beneficiary A/C" />
+            </div>
+          )}
           <Button onClick={handleAddEntry}>Save</Button>
         </div>
         <p className="text-xs text-muted-foreground mt-2">

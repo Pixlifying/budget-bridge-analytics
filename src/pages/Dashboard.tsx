@@ -615,7 +615,9 @@ const Dashboard = () => {
 
   // Calculate metrics
   const bankingServicesTotal = bankingData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
-  const bankingServicesCount = bankingData?.reduce((sum, entry) => sum + (entry.transaction_count || 1), 0) || 0;
+  const bankingServicesCount = new Set(
+    (bankingData || []).map((entry: any) => new Date(entry.date).toISOString().split('T')[0])
+  ).size;
   const bankingMargin = bankingData?.reduce((sum, entry) => sum + entry.margin, 0) || 0;
   const bankingAccountsMargin = bankingAccountsData?.reduce((sum, entry) => sum + Number(entry.amount || 0), 0) || 0;
   const onlineServicesTotal = onlineData?.reduce((sum, entry) => sum + Number(entry.total || 0), 0) || 0;
@@ -637,7 +639,9 @@ const Dashboard = () => {
   const prevBankingMargin = prevBankingData?.reduce((sum, entry) => sum + entry.margin, 0) || 0;
   const prevOnlineMargin = prevOnlineData?.reduce((sum, entry) => sum + Number(entry.total || 0), 0) || 0;
   const prevExpensesTotal = prevExpensesData?.reduce((sum, entry) => sum + Number(entry.amount), 0) || 0;
-  const prevBankingCount = prevBankingData?.reduce((sum, entry) => sum + (entry.transaction_count || 1), 0) || 0;
+  const prevBankingCount = new Set(
+    (prevBankingData || []).map((entry: any) => new Date(entry.date).toISOString().split('T')[0])
+  ).size;
 
   // Calculate percentage changes
   const calculateChange = (current: number, previous: number): number => {
