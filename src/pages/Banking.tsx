@@ -588,7 +588,9 @@ const Banking = () => {
     printWindow.print();
   };
 
-  const totalEntries = filteredEntries.length;
+  const totalEntries = new Set(
+    filteredEntries.map(e => new Date(e.date).toISOString().split('T')[0])
+  ).size;
   const totalAmount = filteredEntries.reduce((sum, entry) => sum + entry.amount, 0);
   const totalTransactions = filteredEntries.reduce((sum, entry) => sum + entry.transaction_count, 0);
   const totalExtraAmount = filteredEntries.reduce((sum, entry) => sum + (entry.extra_amount || 0), 0);
