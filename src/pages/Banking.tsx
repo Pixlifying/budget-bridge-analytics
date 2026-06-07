@@ -96,6 +96,7 @@ const Banking = () => {
     transaction_count: 1,
     amount: 0,
     extra_amount: 0,
+    account_number: '',
   });
 
   const [editForm, setEditForm] = useState({
