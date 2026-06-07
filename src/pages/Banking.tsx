@@ -438,11 +438,12 @@ const Banking = () => {
           const count = Math.max(1, newEntry.transaction_count || 1);
           const perAmount = newEntry.amount / count;
           const recordType = isImps ? 'IMPS' : 'Electricity Bill';
+          const acctNum = (newEntry.account_number || '').trim() || 'N/A';
           const rows = Array.from({ length: count }).map(() => ({
             date: new Date(newEntry.date).toISOString(),
             record_type: recordType,
             customer_name: 'N/A',
-            account_number: 'N/A',
+            account_number: acctNum,
             amount: perAmount,
             remarks: `Transaction ID: ${d.id}`,
           }));
@@ -454,6 +455,7 @@ const Banking = () => {
           transaction_count: 1,
           amount: 0,
           extra_amount: 0,
+          account_number: '',
         });
         toast.success('Banking entry added');
       }
