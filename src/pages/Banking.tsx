@@ -679,6 +679,13 @@ const Banking = () => {
             <Input id="extra" type="number" min="0" value={newEntry.extra_amount}
               onChange={(e) => setNewEntry(prev => ({ ...prev, extra_amount: Number(e.target.value) }))} />
           </div>
+          {categorize(newEntry.transaction_type) === 'IMPS' && (
+            <div>
+              <Label htmlFor="acct_no">Account No.</Label>
+              <Input id="acct_no" type="text" value={newEntry.account_number}
+                onChange={(e) => setNewEntry(prev => ({ ...prev, account_number: e.target.value }))} placeholder="Beneficiary A/C" />
+            </div>
+          )}
           <Button onClick={handleAddEntry}>Save</Button>
         </div>
         <p className="text-xs text-muted-foreground mt-2">
