@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ChevronDown, ChevronRight, X, PanelLeft } from 'lucide-react';
 import {
@@ -138,7 +138,8 @@ interface SidebarProps {
 
 const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: SidebarProps) => {
   const location = useLocation();
-  
+  const collapseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
     financialServices: false,
     nonFinancialServices: false,
@@ -146,6 +147,28 @@ const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: Sid
     ledger: false,
     apps: false,
   });
+
+  const clearCollapseTimer = () => {
+    if (collapseTimerRef.current) {
+      clearTimeout(collapseTimerRef.current);
+      collapseTimerRef.current = null;
+    }
+  };
+
+  const scheduleCollapseAll = () => {
+    clearCollapseTimer();
+    collapseTimerRef.current = setTimeout(() => {
+      setExpandedMenus({
+        financialServices: false,
+        nonFinancialServices: false,
+        customerServices: false,
+        ledger: false,
+        apps: false,
+      });
+    }, 30000);
+  };
+
+  useEffect(() => () => clearCollapseTimer(), []);
 
   // Auto-expand parent menu when navigating to a child route
   useEffect(() => {
@@ -190,7 +213,7 @@ const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: Sid
 
   const nonFinancialServiceItems = [
     { icon: <IconUsers size={16} />, label: 'Account Details', to: '/account-details' },
-    { icon: <IconShield size={16} />, label: 'Social Security', to: '/social-security' },
+    { icon: <IconShield size={16} />, label: 'Jan Surkahsha', to: '/social-security' },
     { icon: <IconDocument size={16} />, label: 'Documentation', to: '/documentation' },
   ];
 
@@ -300,7 +323,10 @@ const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: Sid
       <aside className={cn(
         "hidden md:flex h-screen flex-col sticky top-0 p-3 transition-all duration-300",
         collapsed ? "w-0 p-0 overflow-hidden" : "w-72"
-      )}>
+      )}
+        onMouseEnter={clearCollapseTimer}
+        onMouseLeave={scheduleCollapseAll}
+      >
         {sidebarContent}
       </aside>
 
