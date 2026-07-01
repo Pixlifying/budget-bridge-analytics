@@ -7,6 +7,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
 import Papa from 'papaparse';
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Set worker source for pdf.js
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.mjs',
+  import.meta.url
+).toString();
+
 import PageHeader from '@/components/layout/PageHeader';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import { Button } from '@/components/ui/button';
@@ -168,14 +176,20 @@ const SocialSecurity = () => {
     const fileName = file.name.toLowerCase();
     const isCSV = fileName.endsWith('.csv');
     const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
+    const isPDF = fileName.endsWith('.pdf');
 
-    if (!isCSV && !isExcel) {
-      toast({ title: 'Error', description: 'Please upload a CSV or Excel file', variant: 'destructive' });
+    if (!isCSV && !isExcel && !isPDF) {
+      toast({ title: 'Error', description: 'Please upload a CSV, Excel or PDF file', variant: 'destructive' });
       return;
     }
 
     setIsUploading(true);
     try {
+      if (isPDF) {
+        await extractFromPDF(file);
+        return;
+      }
+
       let data: Record<string, any>[];
       if (isExcel) {
         const buffer = await file.arrayBuffer();
@@ -236,6 +250,99 @@ const SocialSecurity = () => {
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  // Extract Jan Suraksha certificate fields from a PDF and auto-fill the form
+  const extractFromPDF = async (file: File) => {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = '';
+    for (let p = 1; p <= pdf.numPages; p++) {
+      const page = await pdf.getPage(p);
+      const tc = await page.getTextContent();
+      fullText += ' ' + (tc.items as any[]).map((i) => i.str).join(' ');
+    }
+    const text = fullText.replace(/\s+/g, ' ').trim();
+
+    // Anchor-based extraction: split text at known labels
+    const anchors = [
+      'Name of Member',
+      'Date of Birth',
+      'Mobile Number',
+      'Aadhar Number',
+      'Name of Nominee',
+      'Age of Nominee',
+      'Master Policy Number',
+      'Insurer',
+      'Unique Reference Number \\(URN\\)',
+      'Unique Reference Number',
+      'Name of Bank/Post Office',
+      'Name of Bank / Post Office',
+      'Bank / Post office a/c no\\.?',
+      'Bank/Post office a/c no\\.?',
+      'Branch Code',
+      'Branch Address',
+      'Date of Commencement of Cover',
+      'Cover End Date',
+      'Sum Assured',
+      'Annual Renewal Date',
+      'Premium Amount Paid',
+      'Address',
+    ];
+    const pattern = new RegExp('(' + anchors.join('|') + ')\\s*:?\\s*', 'gi');
+    const parts: { label: string; value: string }[] = [];
+    const matches = [...text.matchAll(pattern)];
+    matches.forEach((m, idx) => {
+      const start = (m.index ?? 0) + m[0].length;
+      const end = idx + 1 < matches.length ? matches[idx + 1].index : text.length;
+      const label = m[1].replace(/\\/g, '').toLowerCase();
+      const value = text.slice(start, end).trim();
+      parts.push({ label, value });
+    });
+
+    const findValue = (keywords: string[]): string => {
+      for (const p of parts) {
+        if (keywords.some((k) => p.label.toLowerCase().includes(k))) {
+          return p.value;
+        }
+      }
+      return '';
+    };
+
+    const name = findValue(['name of member']);
+    const urn = findValue(['unique reference number']);
+    const address = findValue(['address']);
+    const accountNo = findValue(['a/c no', 'account no']);
+
+    // Clean account number (digits only, up to 16)
+    const acctDigits = (accountNo.match(/\d[\d\s-]*/)?.[0] || '').replace(/\D/g, '').slice(0, 16);
+
+    // Detect scheme from URN prefix (e.g., JNS-PMSBY-... or PMJJY / APY)
+    let scheme = 'PMSBY';
+    const urnUpper = urn.toUpperCase();
+    if (urnUpper.includes('PMJJY') || urnUpper.includes('PMJJBY')) scheme = 'PMJJY';
+    else if (urnUpper.includes('APY')) scheme = 'APY';
+    else if (urnUpper.includes('PMSBY')) scheme = 'PMSBY';
+
+    if (name) setValue('name', name);
+    if (urn) setValue('remarks', urn);
+    if (address) setValue('address', address);
+    if (acctDigits) setValue('account_number', acctDigits);
+    setValue('scheme_type', scheme);
+
+    const extractedCount = [name, urn, address, acctDigits].filter(Boolean).length;
+    if (extractedCount === 0) {
+      toast({
+        title: 'No data extracted',
+        description: 'Could not find recognizable fields in this PDF. Please fill the form manually.',
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'PDF Extracted',
+        description: `Auto-filled ${extractedCount} field(s). Review and click Add to save.`,
+      });
     }
   };
 
@@ -330,7 +437,7 @@ const SocialSecurity = () => {
   return (
     <div className="min-h-screen bg-background">
       <PageHeader
-        title="Social Security"
+        title="Jan Surkahsha"
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
         searchPlaceholder="Search by name, account, mobile..."
@@ -367,7 +474,7 @@ const SocialSecurity = () => {
         <input
           type="file"
           ref={fileInputRef}
-          accept=".csv,.xlsx,.xls"
+          accept=".csv,.xlsx,.xls,.pdf"
           onChange={handleFileUpload}
           className="hidden"
         />
