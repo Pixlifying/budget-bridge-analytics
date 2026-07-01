@@ -357,7 +357,7 @@ const SocialSecurity = () => {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Social Security Records - ${escapeHtml(schemeLabel)}</title>
+          <title>Jan Surkahsha Records - ${escapeHtml(schemeLabel)}</title>
           <style>
             body { font-family: Arial, sans-serif; padding: 20px; }
             h1 { text-align: center; color: #333; }
@@ -370,7 +370,7 @@ const SocialSecurity = () => {
           </style>
         </head>
         <body>
-          <h1>Social Security Records - ${escapeHtml(schemeLabel)}</h1>
+          <h1>Jan Surkahsha Records - ${escapeHtml(schemeLabel)}</h1>
           <table>
             <thead>
               <tr>
