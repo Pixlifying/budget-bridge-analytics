@@ -150,7 +150,7 @@ const NotificationBox = () => {
           id: `pending-${pending.id}`,
           type: 'pending_balance',
           title: 'Pending Payment',
-          message: `${pending.name} - ${pending.service}${pending.custom_service ? ` (${pending.custom_service})` : ''}`,
+          message: `${pending.name} - ${pending.service}${pending.custom_service ? ` (${pending.custom_service})` : ''} · ${format(new Date(pending.date), 'dd MMM yyyy')}`,
           amount: pending.amount,
           icon: <AlertCircle className="h-4 w-4" />,
           priority: pending.amount > 1000 ? 'high' : pending.amount > 500 ? 'medium' : 'low',
