@@ -15,6 +15,7 @@ import { useNavigate } from 'react-router-dom';
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useMobileMenu } from '@/contexts/MobileMenuContext';
+import { playDropletSound } from '@/lib/soundUtils';
 
 const Dashboard = () => {
   const { setOpen: setMobileMenuOpen, sidebarCollapsed, setSidebarCollapsed } = useMobileMenu();
@@ -751,7 +752,7 @@ const Dashboard = () => {
 
   }: {children: React.ReactNode;className?: string;onClick?: () => void;}) =>
   <div
-    onClick={onClick}
+    onClick={onClick ? () => { playDropletSound(); onClick(); } : undefined}
     className={`
         bg-card rounded-2xl p-5 border border-transparent
         transition-all duration-200 hover:shadow-lg hover:border-primary
@@ -1047,6 +1048,18 @@ const Dashboard = () => {
                 </div>
                 <p className="text-2xl font-bold text-foreground">{documentationData?.length || 0}</p>
                 <p className="text-xs text-muted-foreground mt-1">{formatCurrency(documentationData?.reduce((sum, d) => sum + Number(d.amount), 0) || 0)}</p>
+              </DashCard>
+
+              {/* Pending Balance */}
+              <DashCard onClick={() => setPendingDialogOpen(true)} className="cursor-pointer">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 rounded-lg bg-destructive/10">
+                    <AlertCircle className="h-4 w-4 text-destructive" />
+                  </div>
+                  <h3 className="font-medium text-foreground">Pending Balance</h3>
+                </div>
+                <p className="text-2xl font-bold text-foreground">{formatCurrency(pendingBalanceTotal)}</p>
+                <p className="text-xs text-muted-foreground mt-1">{pendingBalanceData?.length || 0} entries</p>
               </DashCard>
             </div>
 
