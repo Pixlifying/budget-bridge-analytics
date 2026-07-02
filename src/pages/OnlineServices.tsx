@@ -834,6 +834,7 @@ const OnlineServices = () => {
               date={entry.date}
               data={{
                 customer: entry.customer_name || 'Not specified',
+                ...(entry.mobile_number && { mobile: entry.mobile_number }),
                 ...(entry.reference_number && { reference: entry.reference_number }),
                 amount: formatCurrency(entry.amount),
                 expense: formatCurrency(entry.expense),
@@ -841,6 +842,7 @@ const OnlineServices = () => {
               }}
               labels={{
                 customer: 'Customer',
+                mobile: 'Mobile',
                 ...(entry.reference_number && { reference: 'Ref No.' }),
                 amount: 'Amount',
                 expense: 'Expense',
