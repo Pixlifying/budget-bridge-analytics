@@ -40,6 +40,7 @@ interface OnlineServiceEntry {
   service: string;
   custom_service?: string;
   customer_name?: string;
+  mobile_number?: string;
   reference_number?: string;
   amount: number;
   expense: number;
@@ -73,6 +74,7 @@ const OnlineServices = () => {
   const [newEntry, setNewEntry] = useState({
     date: new Date().toISOString().split('T')[0],
     customer_name: '',
+    mobile_number: '',
     service: '',
     custom_service: '',
     reference_number: '',
@@ -83,6 +85,7 @@ const OnlineServices = () => {
   const [editForm, setEditForm] = useState({
     date: '',
     customer_name: '',
+    mobile_number: '',
     service: '',
     custom_service: '',
     reference_number: '',
@@ -136,6 +139,7 @@ const OnlineServices = () => {
         service: entry.service,
         custom_service: entry.custom_service,
         customer_name: entry.customer_name || '',
+        mobile_number: (entry as any).mobile_number || '',
         reference_number: (entry as any).reference_number || '',
         amount: Number(entry.amount),
         expense: Number(entry.expense || 0),
@@ -212,6 +216,7 @@ const OnlineServices = () => {
           service: newEntry.service,
           custom_service: newEntry.service === 'Other' ? newEntry.custom_service : null,
           customer_name: newEntry.customer_name,
+          mobile_number: newEntry.mobile_number || null,
           reference_number: newEntry.reference_number || null,
           amount: newEntry.amount,
           expense: newEntry.expense,
@@ -242,6 +247,7 @@ const OnlineServices = () => {
           service: data[0].service,
           custom_service: data[0].custom_service,
           customer_name: data[0].customer_name || '',
+          mobile_number: (data[0] as any).mobile_number || '',
           reference_number: (data[0] as any).reference_number || '',
           amount: Number(data[0].amount),
           expense: Number(data[0].expense || 0),
@@ -253,6 +259,7 @@ const OnlineServices = () => {
         setNewEntry({
           date: new Date().toISOString().split('T')[0],
           customer_name: '',
+          mobile_number: '',
           service: '',
           custom_service: '',
           reference_number: '',
@@ -283,6 +290,7 @@ const OnlineServices = () => {
           service: editForm.service,
           custom_service: editForm.service === 'Other' ? editForm.custom_service : null,
           customer_name: editForm.customer_name,
+          mobile_number: editForm.mobile_number || null,
           reference_number: editForm.reference_number || null,
           amount: editForm.amount,
           expense: editForm.expense,
@@ -331,6 +339,7 @@ const OnlineServices = () => {
         service: editForm.service,
         custom_service: editForm.service === 'Other' ? editForm.custom_service : null,
         customer_name: editForm.customer_name,
+        mobile_number: editForm.mobile_number,
         amount: editForm.amount,
         expense: editForm.expense,
         total: total,
@@ -370,6 +379,7 @@ const OnlineServices = () => {
     setEditForm({
       date: format(entry.date, 'yyyy-MM-dd'),
       customer_name: entry.customer_name || '',
+      mobile_number: entry.mobile_number || '',
       service: entry.service,
       custom_service: entry.custom_service || '',
       reference_number: entry.reference_number || '',
