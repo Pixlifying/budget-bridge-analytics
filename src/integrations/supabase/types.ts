@@ -94,6 +94,7 @@ export type Database = {
           date: string
           expense: number | null
           id: string
+          mobile_number: string | null
         }
         Insert: {
           amount: number
@@ -102,6 +103,7 @@ export type Database = {
           date?: string
           expense?: number | null
           id?: string
+          mobile_number?: string | null
         }
         Update: {
           amount?: number
@@ -110,6 +112,7 @@ export type Database = {
           date?: string
           expense?: number | null
           id?: string
+          mobile_number?: string | null
         }
         Relationships: []
       }
@@ -755,6 +758,7 @@ export type Database = {
           date: string
           expense: number | null
           id: string
+          mobile_number: string | null
           reference_number: string | null
           service: string
           total: number
@@ -767,6 +771,7 @@ export type Database = {
           date?: string
           expense?: number | null
           id?: string
+          mobile_number?: string | null
           reference_number?: string | null
           service: string
           total: number
@@ -779,6 +784,7 @@ export type Database = {
           date?: string
           expense?: number | null
           id?: string
+          mobile_number?: string | null
           reference_number?: string | null
           service?: string
           total?: number

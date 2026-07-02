@@ -40,6 +40,7 @@ interface OnlineServiceEntry {
   service: string;
   custom_service?: string;
   customer_name?: string;
+  mobile_number?: string;
   reference_number?: string;
   amount: number;
   expense: number;
@@ -73,6 +74,7 @@ const OnlineServices = () => {
   const [newEntry, setNewEntry] = useState({
     date: new Date().toISOString().split('T')[0],
     customer_name: '',
+    mobile_number: '',
     service: '',
     custom_service: '',
     reference_number: '',
@@ -83,6 +85,7 @@ const OnlineServices = () => {
   const [editForm, setEditForm] = useState({
     date: '',
     customer_name: '',
+    mobile_number: '',
     service: '',
     custom_service: '',
     reference_number: '',
@@ -136,6 +139,7 @@ const OnlineServices = () => {
         service: entry.service,
         custom_service: entry.custom_service,
         customer_name: entry.customer_name || '',
+        mobile_number: (entry as any).mobile_number || '',
         reference_number: (entry as any).reference_number || '',
         amount: Number(entry.amount),
         expense: Number(entry.expense || 0),
@@ -212,6 +216,7 @@ const OnlineServices = () => {
           service: newEntry.service,
           custom_service: newEntry.service === 'Other' ? newEntry.custom_service : null,
           customer_name: newEntry.customer_name,
+          mobile_number: newEntry.mobile_number || null,
           reference_number: newEntry.reference_number || null,
           amount: newEntry.amount,
           expense: newEntry.expense,
@@ -242,6 +247,7 @@ const OnlineServices = () => {
           service: data[0].service,
           custom_service: data[0].custom_service,
           customer_name: data[0].customer_name || '',
+          mobile_number: (data[0] as any).mobile_number || '',
           reference_number: (data[0] as any).reference_number || '',
           amount: Number(data[0].amount),
           expense: Number(data[0].expense || 0),
@@ -253,6 +259,7 @@ const OnlineServices = () => {
         setNewEntry({
           date: new Date().toISOString().split('T')[0],
           customer_name: '',
+          mobile_number: '',
           service: '',
           custom_service: '',
           reference_number: '',
@@ -283,6 +290,7 @@ const OnlineServices = () => {
           service: editForm.service,
           custom_service: editForm.service === 'Other' ? editForm.custom_service : null,
           customer_name: editForm.customer_name,
+          mobile_number: editForm.mobile_number || null,
           reference_number: editForm.reference_number || null,
           amount: editForm.amount,
           expense: editForm.expense,
@@ -331,6 +339,7 @@ const OnlineServices = () => {
         service: editForm.service,
         custom_service: editForm.service === 'Other' ? editForm.custom_service : null,
         customer_name: editForm.customer_name,
+        mobile_number: editForm.mobile_number,
         amount: editForm.amount,
         expense: editForm.expense,
         total: total,
@@ -370,6 +379,7 @@ const OnlineServices = () => {
     setEditForm({
       date: format(entry.date, 'yyyy-MM-dd'),
       customer_name: entry.customer_name || '',
+      mobile_number: entry.mobile_number || '',
       service: entry.service,
       custom_service: entry.custom_service || '',
       reference_number: entry.reference_number || '',
@@ -608,6 +618,18 @@ const OnlineServices = () => {
     printWindow.document.close();
   };
 
+  const handleWhatsApp = (entry: OnlineServiceEntry) => {
+    const raw = (entry.mobile_number || '').replace(/\D/g, '');
+    if (!raw) {
+      toast.error('No mobile number saved for this entry');
+      return;
+    }
+    const phone = raw.length === 10 ? `91${raw}` : raw;
+    const svc = entry.service === 'Other' && entry.custom_service ? entry.custom_service : entry.service;
+    const msg = `Hello ${entry.customer_name || ''},\n\nYour ${svc} application has been processed.\n${entry.reference_number ? `Reference No: ${entry.reference_number}\n` : ''}Amount: ₹${entry.amount.toFixed(2)}\nDate: ${format(entry.date, 'dd/MM/yyyy')}\n\nThank you,\nKHIDMAT CENTER`;
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+  };
+
   const totalServices = filteredServices.length;
   const totalAmount = filteredServices.reduce((sum, service) => sum + service.total, 0);
 
@@ -674,6 +696,16 @@ const OnlineServices = () => {
               value={newEntry.customer_name}
               onChange={(e) => setNewEntry(prev => ({ ...prev, customer_name: e.target.value }))}
               placeholder="Customer name"
+            />
+          </div>
+          <div>
+            <Label htmlFor="mobile_number">Mobile Number</Label>
+            <Input
+              id="mobile_number"
+              type="tel"
+              value={newEntry.mobile_number}
+              onChange={(e) => setNewEntry(prev => ({ ...prev, mobile_number: e.target.value }))}
+              placeholder="10-digit mobile"
             />
           </div>
           <div>
@@ -802,6 +834,7 @@ const OnlineServices = () => {
               date={entry.date}
               data={{
                 customer: entry.customer_name || 'Not specified',
+                ...(entry.mobile_number && { mobile: entry.mobile_number }),
                 ...(entry.reference_number && { reference: entry.reference_number }),
                 amount: formatCurrency(entry.amount),
                 expense: formatCurrency(entry.expense),
@@ -809,6 +842,7 @@ const OnlineServices = () => {
               }}
               labels={{
                 customer: 'Customer',
+                mobile: 'Mobile',
                 ...(entry.reference_number && { reference: 'Ref No.' }),
                 amount: 'Amount',
                 expense: 'Expense',
@@ -817,6 +851,7 @@ const OnlineServices = () => {
               onEdit={() => openEditEntry(entry)}
               onDelete={() => handleDeleteEntry(entry.id)}
               onPrint={() => handlePrintBill(entry)}
+              onWhatsApp={entry.mobile_number ? () => handleWhatsApp(entry) : undefined}
               isHighlighted={isHighlighted(entry.id)}
             />
           ))}
@@ -846,6 +881,16 @@ const OnlineServices = () => {
                 value={editForm.customer_name}
                 onChange={(e) => setEditForm(prev => ({ ...prev, customer_name: e.target.value }))}
                 placeholder="Customer name"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit_mobile">Mobile Number</Label>
+              <Input
+                id="edit_mobile"
+                type="tel"
+                value={editForm.mobile_number}
+                onChange={(e) => setEditForm(prev => ({ ...prev, mobile_number: e.target.value }))}
+                placeholder="10-digit mobile"
               />
             </div>
             <div className="grid gap-2">

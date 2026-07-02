@@ -1,5 +1,5 @@
 
-import { Pencil, Trash2, Printer } from 'lucide-react';
+import { Pencil, Trash2, Printer, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/utils/calculateUtils';
 import {
@@ -22,6 +22,7 @@ interface ServiceCardProps {
   onEdit: () => void;
   onDelete: () => void;
   onPrint?: () => void;
+  onWhatsApp?: () => void;
   className?: string;
   showActions?: boolean;
   isHighlighted?: boolean;
@@ -36,6 +37,7 @@ const ServiceCard = ({
   onEdit,
   onDelete,
   onPrint,
+  onWhatsApp,
   className,
   showActions = true,
   isHighlighted = false,
@@ -84,6 +86,17 @@ const ServiceCard = ({
             >
               <Printer size={14} className="mr-1" />
               <span className="text-xs">Print Bill</span>
+            </Button>
+          )}
+          {onWhatsApp && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 px-3 text-white bg-green-500 hover:bg-green-600 border-green-500"
+              onClick={onWhatsApp}
+            >
+              <MessageCircle size={14} className="mr-1" />
+              <span className="text-xs">WhatsApp</span>
             </Button>
           )}
           <Button 

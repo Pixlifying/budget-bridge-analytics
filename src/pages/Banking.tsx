@@ -96,6 +96,7 @@ const Banking = () => {
     transaction_count: 1,
     amount: 0,
     extra_amount: 0,
+    customer_name: '',
     account_number: '',
   });
 
@@ -434,20 +435,31 @@ const Banking = () => {
         const t = (newEntry.transaction_type || '').toLowerCase();
         const isImps = t.includes('imps');
         const isBbps = t.includes('bbps');
-        if (isImps || isBbps) {
+        const isElectric = t.includes('electric');
+        if (isImps || isBbps || isElectric) {
           const count = Math.max(1, newEntry.transaction_count || 1);
           const perAmount = newEntry.amount / count;
           const recordType = isImps ? 'IMPS' : 'Electricity Bill';
-          const acctNum = (newEntry.account_number || '').trim() || 'N/A';
+          const acctNum = (newEntry.account_number || '').trim();
+          const custName = (newEntry.customer_name || '').trim() || 'N/A';
+          if (isImps && !acctNum) {
+            toast.error('IMPS saved, but no account number was provided for IMPS/Electricity record.');
+          }
           const rows = Array.from({ length: count }).map(() => ({
             date: new Date(newEntry.date).toISOString(),
             record_type: recordType,
-            customer_name: 'N/A',
-            account_number: acctNum,
+            customer_name: custName,
+            account_number: acctNum || 'N/A',
             amount: perAmount,
             remarks: `Transaction ID: ${d.id}`,
           }));
-          await supabase.from('imps_electricity').insert(rows as any);
+          const { error: impsErr } = await supabase.from('imps_electricity').insert(rows as any);
+          if (impsErr) {
+            console.error('Failed to auto-record IMPS/Electricity:', impsErr);
+            toast.error(`Auto-record failed: ${impsErr.message}`);
+          } else {
+            toast.success(`${recordType} record saved automatically`);
+          }
         }
         setNewEntry({
           date: new Date().toISOString().split('T')[0],
@@ -455,6 +467,7 @@ const Banking = () => {
           transaction_count: 1,
           amount: 0,
           extra_amount: 0,
+          customer_name: '',
           account_number: '',
         });
         toast.success('Banking entry added');
@@ -679,12 +692,22 @@ const Banking = () => {
             <Input id="extra" type="number" min="0" value={newEntry.extra_amount}
               onChange={(e) => setNewEntry(prev => ({ ...prev, extra_amount: Number(e.target.value) }))} />
           </div>
-          {categorize(newEntry.transaction_type) === 'IMPS' && (
-            <div>
-              <Label htmlFor="acct_no">Account No.</Label>
-              <Input id="acct_no" type="text" value={newEntry.account_number}
-                onChange={(e) => setNewEntry(prev => ({ ...prev, account_number: e.target.value }))} placeholder="Beneficiary A/C" />
-            </div>
+          {(categorize(newEntry.transaction_type) === 'IMPS' || categorize(newEntry.transaction_type) === 'Electricity') && (
+            <>
+              <div>
+                <Label htmlFor="cust_name">Customer Name</Label>
+                <Input id="cust_name" type="text" value={newEntry.customer_name}
+                  onChange={(e) => setNewEntry(prev => ({ ...prev, customer_name: e.target.value }))} placeholder="Customer name" />
+              </div>
+              <div>
+                <Label htmlFor="acct_no">
+                  {categorize(newEntry.transaction_type) === 'IMPS' ? 'Account No. (full)' : 'Consumer No.'}
+                </Label>
+                <Input id="acct_no" type="text" value={newEntry.account_number}
+                  onChange={(e) => setNewEntry(prev => ({ ...prev, account_number: e.target.value }))}
+                  placeholder={categorize(newEntry.transaction_type) === 'IMPS' ? 'Full beneficiary account no.' : 'Consumer no.'} />
+              </div>
+            </>
           )}
           <Button onClick={handleAddEntry}>Save</Button>
         </div>
