@@ -26,6 +26,7 @@ interface ApplicationEntry {
   id: string;
   date: Date;
   customer_name: string;
+  mobile_number?: string;
   expense: number;
   amount: number;
   created_at?: string;
@@ -55,6 +56,7 @@ const Applications = () => {
   const [newEntry, setNewEntry] = useState({
     date: new Date().toISOString().split('T')[0],
     customer_name: '',
+    mobile_number: '',
     expense: 0,
     amount: 0,
     service_type: '',
@@ -64,6 +66,7 @@ const Applications = () => {
   const [editForm, setEditForm] = useState({
     date: '',
     customer_name: '',
+    mobile_number: '',
     expense: 0,
     amount: 0,
   });
@@ -84,6 +87,7 @@ const Applications = () => {
         id: entry.id,
         date: new Date(entry.date),
         customer_name: entry.customer_name,
+        mobile_number: (entry as any).mobile_number || '',
         expense: Number(entry.expense || 0),
         amount: Number(entry.amount),
         created_at: entry.created_at
@@ -153,9 +157,10 @@ const Applications = () => {
         .insert({
           date: new Date(newEntry.date).toISOString(),
           customer_name: displayName,
+          mobile_number: newEntry.mobile_number || null,
           expense: newEntry.expense,
           amount: total,
-        })
+        } as any)
         .select();
 
       if (error) throw error;
@@ -176,6 +181,7 @@ const Applications = () => {
           id: data[0].id,
           date: new Date(data[0].date),
           customer_name: data[0].customer_name,
+          mobile_number: (data[0] as any).mobile_number || '',
           expense: Number(data[0].expense || 0),
           amount: Number(data[0].amount),
           created_at: data[0].created_at
@@ -185,6 +191,7 @@ const Applications = () => {
         setNewEntry({
           date: new Date().toISOString().split('T')[0],
           customer_name: '',
+          mobile_number: '',
           expense: 0,
           amount: 0,
           service_type: '',
@@ -209,9 +216,10 @@ const Applications = () => {
         .update({
           date: new Date(editForm.date).toISOString(),
           customer_name: editForm.customer_name,
+          mobile_number: editForm.mobile_number || null,
           expense: editForm.expense,
           amount: total,
-        })
+        } as any)
         .eq('id', editingEntry.id);
 
       if (error) throw error;
@@ -249,6 +257,7 @@ const Applications = () => {
         ...editingEntry,
         date: new Date(editForm.date),
         customer_name: editForm.customer_name,
+        mobile_number: editForm.mobile_number,
         expense: editForm.expense,
         amount: total,
       };
@@ -287,6 +296,7 @@ const Applications = () => {
     setEditForm({
       date: format(entry.date, 'yyyy-MM-dd'),
       customer_name: entry.customer_name,
+      mobile_number: entry.mobile_number || '',
       expense: entry.expense,
       amount: entry.amount + entry.expense, // Show original amount before expense deduction
     });
@@ -432,6 +442,18 @@ const Applications = () => {
       </body></html>`;
     printWindow.document.write(html);
     printWindow.document.close();
+  };
+
+  const handleWhatsApp = (entry: ApplicationEntry) => {
+    const raw = (entry.mobile_number || '').replace(/\D/g, '');
+    if (!raw) {
+      toast.error('No mobile number saved for this entry');
+      return;
+    }
+    const phone = raw.length === 10 ? `91${raw}` : raw;
+    const totalAmt = entry.amount + entry.expense;
+    const msg = `Hello ${entry.customer_name},\n\nYour offline service has been processed.\nAmount: ₹${totalAmt.toFixed(2)}\nDate: ${format(entry.date, 'dd/MM/yyyy')}\n\nThank you,\nKHIDMAT CENTER`;
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
   const totalAmount = filteredApplications.reduce((sum, app) => sum + app.amount, 0);
