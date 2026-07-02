@@ -618,6 +618,18 @@ const OnlineServices = () => {
     printWindow.document.close();
   };
 
+  const handleWhatsApp = (entry: OnlineServiceEntry) => {
+    const raw = (entry.mobile_number || '').replace(/\D/g, '');
+    if (!raw) {
+      toast.error('No mobile number saved for this entry');
+      return;
+    }
+    const phone = raw.length === 10 ? `91${raw}` : raw;
+    const svc = entry.service === 'Other' && entry.custom_service ? entry.custom_service : entry.service;
+    const msg = `Hello ${entry.customer_name || ''},\n\nYour ${svc} application has been processed.\n${entry.reference_number ? `Reference No: ${entry.reference_number}\n` : ''}Amount: ₹${entry.amount.toFixed(2)}\nDate: ${format(entry.date, 'dd/MM/yyyy')}\n\nThank you,\nKHIDMAT CENTER`;
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+  };
+
   const totalServices = filteredServices.length;
   const totalAmount = filteredServices.reduce((sum, service) => sum + service.total, 0);
 
