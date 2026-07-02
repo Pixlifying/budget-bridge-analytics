@@ -699,6 +699,16 @@ const OnlineServices = () => {
             />
           </div>
           <div>
+            <Label htmlFor="mobile_number">Mobile Number</Label>
+            <Input
+              id="mobile_number"
+              type="tel"
+              value={newEntry.mobile_number}
+              onChange={(e) => setNewEntry(prev => ({ ...prev, mobile_number: e.target.value }))}
+              placeholder="10-digit mobile"
+            />
+          </div>
+          <div>
             <Label htmlFor="service">Service Type</Label>
             <Select value={newEntry.service} onValueChange={(value) => {
               const pricing = defaultPricing[value];
@@ -839,6 +849,7 @@ const OnlineServices = () => {
               onEdit={() => openEditEntry(entry)}
               onDelete={() => handleDeleteEntry(entry.id)}
               onPrint={() => handlePrintBill(entry)}
+              onWhatsApp={entry.mobile_number ? () => handleWhatsApp(entry) : undefined}
               isHighlighted={isHighlighted(entry.id)}
             />
           ))}
@@ -868,6 +879,16 @@ const OnlineServices = () => {
                 value={editForm.customer_name}
                 onChange={(e) => setEditForm(prev => ({ ...prev, customer_name: e.target.value }))}
                 placeholder="Customer name"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit_mobile">Mobile Number</Label>
+              <Input
+                id="edit_mobile"
+                type="tel"
+                value={editForm.mobile_number}
+                onChange={(e) => setEditForm(prev => ({ ...prev, mobile_number: e.target.value }))}
+                placeholder="10-digit mobile"
               />
             </div>
             <div className="grid gap-2">
