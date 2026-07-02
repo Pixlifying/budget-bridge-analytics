@@ -953,6 +953,7 @@ const Dashboard = () => {
                     <div>
                       <p className="text-sm text-muted-foreground">Banking Txn</p>
                       <p className="text-xl font-bold text-foreground">{bankingServicesCount}</p>
+                      <p className="text-xs text-muted-foreground">Total Transactions: {bankingTransactionsCount}</p>
                       <div className="flex items-center gap-1">
                         {bankingChange >= 0 ?
                         <ArrowUpRight className="h-3 w-3 text-green-500" /> :
