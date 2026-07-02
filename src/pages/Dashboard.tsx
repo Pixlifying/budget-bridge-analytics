@@ -619,6 +619,7 @@ const Dashboard = () => {
   const bankingServicesCount = new Set(
     (bankingData || []).map((entry: any) => new Date(entry.date).toISOString().split('T')[0])
   ).size;
+  const bankingTransactionsCount = (bankingData || []).reduce((sum: number, entry: any) => sum + Number(entry.transaction_count || 0), 0);
   const bankingMargin = bankingData?.reduce((sum, entry) => sum + entry.margin, 0) || 0;
   const bankingAccountsMargin = bankingAccountsData?.reduce((sum, entry) => sum + Number(entry.amount || 0), 0) || 0;
   const onlineServicesTotal = onlineData?.reduce((sum, entry) => sum + Number(entry.total || 0), 0) || 0;
