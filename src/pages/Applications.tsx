@@ -637,12 +637,14 @@ const Applications = () => {
               date={entry.date}
               data={{
                 customer: entry.customer_name,
+                ...(entry.mobile_number && { mobile: entry.mobile_number }),
                 amount: formatCurrency(entry.amount + entry.expense),
                 expense: formatCurrency(entry.expense),
                 margin: formatCurrency(entry.amount),
               }}
               labels={{
                 customer: 'Customer',
+                mobile: 'Mobile',
                 amount: 'Amount',
                 expense: 'Expense',
                 margin: 'Margin',
