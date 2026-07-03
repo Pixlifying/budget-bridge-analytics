@@ -177,7 +177,7 @@ const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: Sid
       nonFinancialServices: [{ menuKey: 'nonFinancialServices', paths: ['/account-details', '/social-security', '/documentation'] }],
       customerServices: [{ menuKey: 'customerServices', paths: ['/online-services', '/applications', '/photostat', '/papers'] }],
       ledger: [{ menuKey: 'ledger', paths: ['/khata', '/pending-balance', '/expenses'] }],
-      apps: [{ menuKey: 'apps', paths: ['/calculator', '/age-calculator', '/work-to-be'] }],
+      apps: [{ menuKey: 'apps', paths: ['/calculator', '/age-calculator', '/work-to-be', '/checklist-docs', '/khata-entry'] }],
     };
 
     const updates: Record<string, boolean> = {};
