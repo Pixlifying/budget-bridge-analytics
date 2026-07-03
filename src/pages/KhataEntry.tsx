@@ -75,6 +75,23 @@ const KhataEntry = () => {
 
   const selected = customers.find(c => c.id === selectedId) || null;
 
+  useEffect(() => {
+    if (selected) {
+      setWaMessage(buildMessage(selected));
+      setWaEdited(false);
+    } else {
+      setWaMessage('');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
+
+  useEffect(() => {
+    if (selected && !waEdited) {
+      setWaMessage(buildMessage(selected));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customers]);
+
   const balanceOf = (c: KCustomer) =>
     c.entries.reduce((s, e) => s + (e.type === 'debit' ? e.amount : -e.amount), 0);
 
@@ -384,8 +401,15 @@ const KhataEntry = () => {
               </div>
 
               <div className="mt-3">
-                <Label className="text-xs text-muted-foreground">WhatsApp Message Preview</Label>
-                <Textarea readOnly value={buildMessage(selected)} className="mt-1 font-mono text-xs h-40" />
+                <div className="flex items-center justify-between mt-3">
+                  <Label className="text-xs text-muted-foreground">WhatsApp Message Preview (editable)</Label>
+                  <Button size="sm" variant="ghost" onClick={() => { setWaMessage(buildMessage(selected)); setWaEdited(false); toast.success('Reset to default'); }}>Reset</Button>
+                </div>
+                <Textarea
+                  value={waMessage}
+                  onChange={e => { setWaMessage(e.target.value); setWaEdited(true); }}
+                  className="mt-1 font-mono text-xs h-40"
+                />
               </div>
             </>
           )}
