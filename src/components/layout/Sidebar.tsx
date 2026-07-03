@@ -177,7 +177,7 @@ const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: Sid
       nonFinancialServices: [{ menuKey: 'nonFinancialServices', paths: ['/account-details', '/social-security', '/documentation'] }],
       customerServices: [{ menuKey: 'customerServices', paths: ['/online-services', '/applications', '/photostat', '/papers'] }],
       ledger: [{ menuKey: 'ledger', paths: ['/khata', '/pending-balance', '/expenses'] }],
-      apps: [{ menuKey: 'apps', paths: ['/calculator', '/age-calculator', '/work-to-be'] }],
+      apps: [{ menuKey: 'apps', paths: ['/calculator', '/age-calculator', '/work-to-be', '/checklist-docs', '/khata-entry'] }],
     };
 
     const updates: Record<string, boolean> = {};
@@ -227,6 +227,7 @@ const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: Sid
     { icon: <IconCalculator size={16} />, label: 'Calculator', to: '/calculator' },
     { icon: <IconDocument size={16} />, label: 'Notes', to: '/work-to-be' },
     { icon: <IconDocument size={16} />, label: 'Check List Docs', to: '/checklist-docs' },
+    { icon: <IconBook size={16} />, label: 'Khata Entry', to: '/khata-entry' },
   ];
 
   const ledgerItems = [

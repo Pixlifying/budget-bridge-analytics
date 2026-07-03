@@ -17,6 +17,7 @@ import Photostat from "@/pages/Photostat";
 import Ledger from "@/pages/Ledger";
 import AccountDetails from "@/pages/AccountDetails";
 import Khata from "@/pages/Khata";
+import KhataEntry from "@/pages/KhataEntry";
 import Papers from "@/pages/Papers";
 import CustomerDetails from "@/pages/CustomerDetails";
 
@@ -89,6 +90,7 @@ const App = () => {
                       <Route path="/ledger/:id" element={<CustomerDetails />} />
                       <Route path="/account-details" element={<AccountDetails />} />
                       <Route path="/khata" element={<Khata />} />
+                      <Route path="/khata-entry" element={<KhataEntry />} />
                       <Route path="/papers" element={<Papers />} />
                       <Route path="/calculator" element={<Calculator />} />
                       <Route path="/age-calculator" element={<Calculator />} />
