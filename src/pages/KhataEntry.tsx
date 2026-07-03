@@ -64,6 +64,8 @@ const KhataEntry = () => {
     note: '',
     date: format(new Date(), 'yyyy-MM-dd'),
   });
+  const [waMessage, setWaMessage] = useState<string>('');
+  const [waEdited, setWaEdited] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const filtered = useMemo(
@@ -140,7 +142,8 @@ const KhataEntry = () => {
     if (!c.phone) return toast.error('No phone number');
     const raw = c.phone.replace(/\D/g, '');
     const phone = raw.length === 10 ? '91' + raw : raw;
-    const url = `https://wa.me/${phone}?text=${encodeURIComponent(buildMessage(c))}`;
+    const text = waMessage || buildMessage(c);
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');
   };
 
