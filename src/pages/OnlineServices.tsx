@@ -436,13 +436,29 @@ const OnlineServices = () => {
         }
       }
 
-      if (refNumber || applicantName) {
+      // Extract mobile number - try multiple patterns
+      const mobilePatterns = [
+        /(?:Mobile|Contact|Phone|Mob)\.?\s*(?:No\.?|Number)?\s*[:\s]*(\+?91[\s-]?)?([6-9]\d{9})\b/i,
+        /\b([6-9]\d{9})\b/,
+      ];
+      let mobileNumber = '';
+      for (const pattern of mobilePatterns) {
+        const match = fullText.match(pattern);
+        if (match) {
+          mobileNumber = (match[2] || match[1] || '').replace(/\D/g, '').slice(-10);
+          if (mobileNumber.length === 10) break;
+          mobileNumber = '';
+        }
+      }
+
+      if (refNumber || applicantName || mobileNumber) {
         setNewEntry(prev => ({
           ...prev,
           ...(refNumber && { reference_number: refNumber }),
           ...(applicantName && { customer_name: applicantName }),
+          ...(mobileNumber && { mobile_number: mobileNumber }),
         }));
-        toast.success(`Extracted: ${refNumber ? 'Ref: ' + refNumber : ''} ${applicantName ? 'Name: ' + applicantName : ''}`);
+        toast.success(`Extracted: ${[refNumber && 'Ref: ' + refNumber, applicantName && 'Name: ' + applicantName, mobileNumber && 'Mobile: ' + mobileNumber].filter(Boolean).join(' | ')}`);
       } else {
         toast.error('Could not extract reference number or name from PDF');
       }
