@@ -248,36 +248,95 @@ const KhataEntry = () => {
     w.document.close();
   };
 
+  const parseCsvDate = (raw: any): string => {
+    if (raw == null || raw === '') return format(new Date(), 'yyyy-MM-dd');
+    if (typeof raw === 'number') {
+      const d = new Date(Math.round((raw - 25569) * 86400 * 1000));
+      if (!isNaN(d.getTime())) return format(d, 'yyyy-MM-dd');
+    }
+    const s = String(raw).trim();
+    // Try DD-MM-YYYY or DD/MM/YYYY explicitly (as in CSV)
+    const m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})$/);
+    if (m) {
+      const [, dd, mm, yy] = m;
+      const y = yy.length === 2 ? 2000 + parseInt(yy, 10) : parseInt(yy, 10);
+      const d = new Date(y, parseInt(mm, 10) - 1, parseInt(dd, 10));
+      if (!isNaN(d.getTime())) return format(d, 'yyyy-MM-dd');
+    }
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) return format(d, 'yyyy-MM-dd');
+    return format(new Date(), 'yyyy-MM-dd');
+  };
+
   const onFile = async (f: File) => {
     try {
-      const buf = await f.arrayBuffer();
-      const wb = XLSX.read(buf, { type: 'array' });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json<any>(ws, { defval: '' });
-      if (!rows.length) return toast.error('Empty sheet');
+      const ext = f.name.split('.').pop()?.toLowerCase();
+      let rows: any[] = [];
+      if (ext === 'csv') {
+        const res = await new Promise<Papa.ParseResult<any>>((resolve, reject) => {
+          Papa.parse(f, { header: true, skipEmptyLines: true, complete: resolve, error: reject });
+        });
+        rows = res.data;
+      } else {
+        const buf = await f.arrayBuffer();
+        const wb = XLSX.read(buf, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        rows = XLSX.utils.sheet_to_json<any>(ws, { defval: '' });
+      }
+      if (!rows.length) return toast.error('Empty file');
       const norm = (k: string) => k.toLowerCase().replace(/[^a-z]/g, '');
+      const parseAmt = (v: any) => {
+        if (v == null) return 0;
+        if (typeof v === 'number') return Math.abs(v);
+        const cleaned = String(v).replace(/[₹$,\s+\-]/g, '');
+        return Math.abs(parseFloat(cleaned) || 0);
+      };
       const grouped: Record<string, KCustomer> = {};
       customers.forEach(c => { grouped[c.name.toLowerCase() + '|' + (c.phone || '')] = { ...c, entries: [...c.entries] }; });
+
+      // Fallback customer when CSV has no Name column (statement of selected/default customer)
+      const fallback: KCustomer = selected
+        ? (grouped[selected.name.toLowerCase() + '|' + (selected.phone || '')] ||= { ...selected, entries: [...selected.entries] })
+        : (() => {
+            const key = 'imported statement|';
+            if (!grouped[key]) grouped[key] = { id: uid(), name: 'Imported Statement', phone: '', entries: [], created_at: new Date().toISOString() };
+            return grouped[key];
+          })();
+
       let added = 0;
       for (const r of rows) {
         const obj: any = {};
         Object.keys(r).forEach(k => { obj[norm(k)] = r[k]; });
+
         const name = String(obj.name || obj.customer || obj.customername || '').trim();
         const phone = String(obj.phone || obj.mobile || obj.mobileno || '').trim();
-        const debit = parseFloat(obj.debit || obj.yougave || obj.given || 0) || 0;
-        const credit = parseFloat(obj.credit || obj.yougot || obj.received || 0) || 0;
-        const note = String(obj.note || obj.description || obj.remarks || '').trim();
-        const dateRaw = obj.date;
-        let date = format(new Date(), 'yyyy-MM-dd');
-        if (dateRaw) {
-          const d = typeof dateRaw === 'number' ? new Date(Math.round((dateRaw - 25569) * 86400 * 1000)) : new Date(dateRaw);
-          if (!isNaN(d.getTime())) date = format(d, 'yyyy-MM-dd');
+        const note = String(obj.description || obj.note || obj.remarks || obj.details || '').trim();
+        const date = parseCsvDate(obj.date);
+        const typeRaw = String(obj.type || obj.txntype || obj.transactiontype || '').trim().toLowerCase();
+        const amountRaw = obj.amount;
+
+        // Split Debit/Credit columns take priority when both are present
+        const debitCol = parseAmt(obj.debit ?? obj.yougave ?? obj.given ?? obj.withdrawal ?? 0);
+        const creditCol = parseAmt(obj.credit ?? obj.yougot ?? obj.received ?? obj.deposit ?? 0);
+
+        const target = name
+          ? (grouped[name.toLowerCase() + '|' + phone] ||= { id: uid(), name, phone, entries: [], created_at: new Date().toISOString() })
+          : fallback;
+
+        if (debitCol > 0) { target.entries.push({ id: uid(), date, type: 'debit', amount: debitCol, note }); added++; }
+        if (creditCol > 0) { target.entries.push({ id: uid(), date, type: 'credit', amount: creditCol, note }); added++; }
+
+        // Single-column Amount + Type (DEBIT/CREDIT) format
+        if (debitCol === 0 && creditCol === 0 && amountRaw !== undefined && amountRaw !== '') {
+          const amt = parseAmt(amountRaw);
+          if (amt > 0) {
+            const isDebit = typeRaw.includes('debit') || String(amountRaw).trim().startsWith('+');
+            const isCredit = typeRaw.includes('credit') || String(amountRaw).trim().startsWith('-');
+            const type: 'debit' | 'credit' = isDebit ? 'debit' : isCredit ? 'credit' : 'debit';
+            target.entries.push({ id: uid(), date, type, amount: amt, note });
+            added++;
+          }
         }
-        if (!name) continue;
-        const key = name.toLowerCase() + '|' + phone;
-        if (!grouped[key]) grouped[key] = { id: uid(), name, phone, entries: [], created_at: new Date().toISOString() };
-        if (debit > 0) { grouped[key].entries.unshift({ id: uid(), date, type: 'debit', amount: debit, note }); added++; }
-        if (credit > 0) { grouped[key].entries.unshift({ id: uid(), date, type: 'credit', amount: credit, note }); added++; }
       }
       setCustomers(Object.values(grouped));
       toast.success(`Imported ${added} entries`);
