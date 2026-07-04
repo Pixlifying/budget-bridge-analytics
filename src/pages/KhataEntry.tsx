@@ -1,8 +1,9 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
+import Papa from 'papaparse';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
-import { Plus, Trash2, MessageCircle, Printer, Upload, Search, ArrowDownCircle, ArrowUpCircle, User, Phone, IndianRupee } from 'lucide-react';
+import { format, parse as parseDateFns } from 'date-fns';
+import { Plus, Trash2, Edit, MessageCircle, Printer, Upload, Search, ArrowDownCircle, ArrowUpCircle, User, Phone, IndianRupee } from 'lucide-react';
 import PageWrapper from '@/components/layout/PageWrapper';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +11,8 @@ import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
 import { formatCurrency } from '@/utils/calculateUtils';
 import useLocalStorage from '@/hooks/useLocalStorage';
 
@@ -67,6 +70,9 @@ const KhataEntry = () => {
   const [waMessage, setWaMessage] = useState<string>('');
   const [waEdited, setWaEdited] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ kind: 'entry' | 'customer'; id: string } | null>(null);
+  const [editingEntry, setEditingEntry] = useState<KEntry | null>(null);
+  const [editForm, setEditForm] = useState<{ type: 'debit' | 'credit'; amount: string; note: string; date: string }>({ type: 'debit', amount: '', note: '', date: '' });
 
   const filtered = useMemo(
     () => customers.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || c.phone.includes(search)),
@@ -77,7 +83,7 @@ const KhataEntry = () => {
 
   useEffect(() => {
     if (selected) {
-      setWaMessage(buildMessage(selected));
+      setWaMessage(buildLatestMessage(selected));
       setWaEdited(false);
     } else {
       setWaMessage('');
@@ -87,13 +93,25 @@ const KhataEntry = () => {
 
   useEffect(() => {
     if (selected && !waEdited) {
-      setWaMessage(buildMessage(selected));
+      setWaMessage(buildLatestMessage(selected));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customers]);
 
   const balanceOf = (c: KCustomer) =>
     c.entries.reduce((s, e) => s + (e.type === 'debit' ? e.amount : -e.amount), 0);
+
+  // Entries sorted oldest→newest for running-balance display
+  const orderedEntries = (c: KCustomer) =>
+    [...c.entries].sort((a, b) => {
+      const d = a.date.localeCompare(b.date);
+      return d !== 0 ? d : a.id.localeCompare(b.id);
+    });
+
+  const latestEntry = (c: KCustomer): KEntry | null => {
+    const list = orderedEntries(c);
+    return list.length ? list[list.length - 1] : null;
+  };
 
   const totals = useMemo(() => {
     let gave = 0, got = 0;
@@ -113,7 +131,6 @@ const KhataEntry = () => {
   };
 
   const deleteCustomer = (id: string) => {
-    if (!confirm('Delete this customer and all entries?')) return;
     const next = customers.filter(c => c.id !== id);
     setCustomers(next);
     if (selectedId === id) setSelectedId(next[0]?.id ?? null);
@@ -134,24 +151,41 @@ const KhataEntry = () => {
     setCustomers(customers.map(c => c.id === selected.id ? { ...c, entries: c.entries.filter(e => e.id !== eid) } : c));
   };
 
-  const buildMessage = (c: KCustomer) => {
+  const openEditEntry = (e: KEntry) => {
+    setEditingEntry(e);
+    setEditForm({ type: e.type, amount: String(e.amount), note: e.note || '', date: e.date });
+  };
+
+  const saveEditEntry = () => {
+    if (!selected || !editingEntry) return;
+    const amt = parseFloat(editForm.amount);
+    if (!amt || amt <= 0) return toast.error('Enter valid amount');
+    setCustomers(customers.map(c => c.id === selected.id ? {
+      ...c,
+      entries: c.entries.map(e => e.id === editingEntry.id ? { ...e, type: editForm.type, amount: amt, note: editForm.note.trim(), date: editForm.date } : e),
+    } : c));
+    setEditingEntry(null);
+    toast.success('Entry updated');
+  };
+
+  // Only latest entry — used for WhatsApp
+  const buildLatestMessage = (c: KCustomer) => {
     const bal = balanceOf(c);
     const status = bal > 0 ? `You need to pay ₹${bal.toLocaleString('en-IN')}` : bal < 0 ? `Advance balance ₹${Math.abs(bal).toLocaleString('en-IN')}` : `All settled ✅`;
+    const last = latestEntry(c);
     const lines = [
-      `*KHIDMAT CENTER — Khata Statement*`,
+      `*KHIDMAT CENTER — Khata Update*`,
       `Customer: ${c.name}`,
       `Date: ${format(new Date(), 'dd MMM yyyy')}`,
       ``,
-      `Recent Entries:`,
-      ...c.entries.slice(0, 6).map(e => `• ${format(new Date(e.date), 'dd/MM')} — ${e.type === 'debit' ? 'Debit' : 'Credit'} ₹${e.amount.toLocaleString('en-IN')}${e.note ? ' (' + e.note + ')' : ''}`),
-      ``,
-      `Total Debit: ₹${c.entries.filter(e => e.type === 'debit').reduce((s, e) => s + e.amount, 0).toLocaleString('en-IN')}`,
-      `Total Credit: ₹${c.entries.filter(e => e.type === 'credit').reduce((s, e) => s + e.amount, 0).toLocaleString('en-IN')}`,
-      ``,
-      `*${status}*`,
-      ``,
-      `Thank you 🙏`,
     ];
+    if (last) {
+      lines.push(`Latest Entry:`);
+      lines.push(`• ${format(new Date(last.date), 'dd/MM/yyyy')} — ${last.type === 'debit' ? 'Debit (You Gave)' : 'Credit (You Got)'} ₹${last.amount.toLocaleString('en-IN')}${last.note ? ' (' + last.note + ')' : ''}`);
+      lines.push(``);
+    }
+    lines.push(`*${status}*`);
+    lines.push(``, `Thank you 🙏`);
     return lines.join('\n');
   };
 
