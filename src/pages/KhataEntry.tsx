@@ -367,7 +367,7 @@ const KhataEntry = () => {
                   <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => sendWhatsApp(selected)}>
                     <MessageCircle className="w-4 h-4 mr-1" />WhatsApp
                   </Button>
-                  <Button size="sm" variant="destructive" onClick={() => deleteCustomer(selected.id)}><Trash2 className="w-4 h-4" /></Button>
+                  <Button size="sm" variant="destructive" onClick={() => setDeleteTarget({ kind: 'customer', id: selected.id })}><Trash2 className="w-4 h-4" /></Button>
                 </div>
               </div>
 
@@ -412,24 +412,39 @@ const KhataEntry = () => {
                       <th className="p-2 text-left">Note</th>
                       <th className="p-2 text-right text-rose-600">Debit</th>
                       <th className="p-2 text-right text-emerald-600">Credit</th>
-                      <th className="p-2"></th>
+                      <th className="p-2 text-right">Balance</th>
+                      <th className="p-2 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {selected.entries.length === 0 && (
-                      <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">No entries yet</td></tr>
+                      <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">No entries yet</td></tr>
                     )}
-                    {selected.entries.map(e => (
-                      <tr key={e.id} className="border-t hover:bg-muted/30">
-                        <td className="p-2">{format(new Date(e.date), 'dd/MM/yyyy')}</td>
-                        <td className="p-2">{e.note || '-'}</td>
-                        <td className="p-2 text-right text-rose-600 font-medium">{e.type === 'debit' ? formatCurrency(e.amount) : ''}</td>
-                        <td className="p-2 text-right text-emerald-600 font-medium">{e.type === 'credit' ? formatCurrency(e.amount) : ''}</td>
-                        <td className="p-2 text-right">
-                          <button onClick={() => deleteEntry(e.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4" /></button>
-                        </td>
-                      </tr>
-                    ))}
+                    {(() => {
+                      const asc = orderedEntries(selected);
+                      let running = 0;
+                      const rows = asc.map(e => {
+                        running += e.type === 'debit' ? e.amount : -e.amount;
+                        return { e, bal: running };
+                      });
+                      return rows.slice().reverse().map(({ e, bal }) => (
+                        <tr key={e.id} className="border-t hover:bg-muted/30">
+                          <td className="p-2">{format(new Date(e.date), 'dd/MM/yyyy')}</td>
+                          <td className="p-2">{e.note || '-'}</td>
+                          <td className="p-2 text-right text-rose-600 font-medium">{e.type === 'debit' ? formatCurrency(e.amount) : ''}</td>
+                          <td className="p-2 text-right text-emerald-600 font-medium">{e.type === 'credit' ? formatCurrency(e.amount) : ''}</td>
+                          <td className={`p-2 text-right font-semibold ${bal > 0 ? 'text-rose-600' : bal < 0 ? 'text-emerald-600' : 'text-muted-foreground'}`}>
+                            {bal === 0 ? '—' : (bal > 0 ? '+' : '-') + formatCurrency(Math.abs(bal))}
+                          </td>
+                          <td className="p-2 text-right">
+                            <div className="inline-flex items-center gap-2">
+                              <button onClick={() => openEditEntry(e)} className="text-muted-foreground hover:text-primary" title="Edit"><Edit className="w-4 h-4" /></button>
+                              <button onClick={() => setDeleteTarget({ kind: 'entry', id: e.id })} className="text-muted-foreground hover:text-destructive" title="Delete"><Trash2 className="w-4 h-4" /></button>
+                            </div>
+                          </td>
+                        </tr>
+                      ));
+                    })()}
                   </tbody>
                 </table>
               </div>
@@ -449,6 +464,46 @@ const KhataEntry = () => {
           )}
         </Card>
       </div>
+
+      {/* Delete confirmation */}
+      <DeleteConfirmation
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          if (!deleteTarget) return;
+          if (deleteTarget.kind === 'entry') deleteEntry(deleteTarget.id);
+          else deleteCustomer(deleteTarget.id);
+          setDeleteTarget(null);
+        }}
+        title={deleteTarget?.kind === 'customer' ? 'Delete customer?' : 'Delete entry?'}
+        description={deleteTarget?.kind === 'customer'
+          ? 'This will permanently remove the customer and all of their Khata entries.'
+          : 'This will permanently remove this Debit/Credit entry from the ledger.'}
+      />
+
+      {/* Edit entry dialog */}
+      <Dialog open={!!editingEntry} onOpenChange={(o) => !o && setEditingEntry(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Entry</DialogTitle></DialogHeader>
+          <div className="grid gap-3">
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant={editForm.type === 'debit' ? 'default' : 'outline'}
+                className={editForm.type === 'debit' ? 'bg-rose-600 hover:bg-rose-700' : ''}
+                onClick={() => setEditForm({ ...editForm, type: 'debit' })}>You Gave (Debit)</Button>
+              <Button variant={editForm.type === 'credit' ? 'default' : 'outline'}
+                className={editForm.type === 'credit' ? 'bg-emerald-600 hover:bg-emerald-700' : ''}
+                onClick={() => setEditForm({ ...editForm, type: 'credit' })}>You Got (Credit)</Button>
+            </div>
+            <div><Label>Date</Label><Input type="date" value={editForm.date} onChange={e => setEditForm({ ...editForm, date: e.target.value })} /></div>
+            <div><Label>Amount</Label><Input type="number" value={editForm.amount} onChange={e => setEditForm({ ...editForm, amount: e.target.value })} /></div>
+            <div><Label>Note</Label><Input value={editForm.note} onChange={e => setEditForm({ ...editForm, note: e.target.value })} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingEntry(null)}>Cancel</Button>
+            <Button onClick={saveEditEntry}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageWrapper>
   );
 };
