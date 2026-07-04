@@ -193,7 +193,7 @@ const KhataEntry = () => {
     if (!c.phone) return toast.error('No phone number');
     const raw = c.phone.replace(/\D/g, '');
     const phone = raw.length === 10 ? '91' + raw : raw;
-    const text = waMessage || buildMessage(c);
+    const text = waMessage || buildLatestMessage(c);
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');
   };
@@ -437,7 +437,7 @@ const KhataEntry = () => {
               <div className="mt-3">
                 <div className="flex items-center justify-between mt-3">
                   <Label className="text-xs text-muted-foreground">WhatsApp Message Preview (editable)</Label>
-                  <Button size="sm" variant="ghost" onClick={() => { setWaMessage(buildMessage(selected)); setWaEdited(false); toast.success('Reset to default'); }}>Reset</Button>
+                  <Button size="sm" variant="ghost" onClick={() => { setWaMessage(buildLatestMessage(selected)); setWaEdited(false); toast.success('Reset to default'); }}>Reset</Button>
                 </div>
                 <Textarea
                   value={waMessage}
