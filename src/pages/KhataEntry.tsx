@@ -1,8 +1,9 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
+import Papa from 'papaparse';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
-import { Plus, Trash2, MessageCircle, Printer, Upload, Search, ArrowDownCircle, ArrowUpCircle, User, Phone, IndianRupee } from 'lucide-react';
+import { format, parse as parseDateFns } from 'date-fns';
+import { Plus, Trash2, Edit, MessageCircle, Printer, Upload, Search, ArrowDownCircle, ArrowUpCircle, User, Phone, IndianRupee } from 'lucide-react';
 import PageWrapper from '@/components/layout/PageWrapper';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +11,8 @@ import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import DeleteConfirmation from '@/components/ui/DeleteConfirmation';
 import { formatCurrency } from '@/utils/calculateUtils';
 import useLocalStorage from '@/hooks/useLocalStorage';
 
@@ -67,6 +70,9 @@ const KhataEntry = () => {
   const [waMessage, setWaMessage] = useState<string>('');
   const [waEdited, setWaEdited] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ kind: 'entry' | 'customer'; id: string } | null>(null);
+  const [editingEntry, setEditingEntry] = useState<KEntry | null>(null);
+  const [editForm, setEditForm] = useState<{ type: 'debit' | 'credit'; amount: string; note: string; date: string }>({ type: 'debit', amount: '', note: '', date: '' });
 
   const filtered = useMemo(
     () => customers.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || c.phone.includes(search)),
@@ -77,7 +83,7 @@ const KhataEntry = () => {
 
   useEffect(() => {
     if (selected) {
-      setWaMessage(buildMessage(selected));
+      setWaMessage(buildLatestMessage(selected));
       setWaEdited(false);
     } else {
       setWaMessage('');
@@ -87,13 +93,25 @@ const KhataEntry = () => {
 
   useEffect(() => {
     if (selected && !waEdited) {
-      setWaMessage(buildMessage(selected));
+      setWaMessage(buildLatestMessage(selected));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customers]);
 
   const balanceOf = (c: KCustomer) =>
     c.entries.reduce((s, e) => s + (e.type === 'debit' ? e.amount : -e.amount), 0);
+
+  // Entries sorted oldest→newest for running-balance display
+  const orderedEntries = (c: KCustomer) =>
+    [...c.entries].sort((a, b) => {
+      const d = a.date.localeCompare(b.date);
+      return d !== 0 ? d : a.id.localeCompare(b.id);
+    });
+
+  const latestEntry = (c: KCustomer): KEntry | null => {
+    const list = orderedEntries(c);
+    return list.length ? list[list.length - 1] : null;
+  };
 
   const totals = useMemo(() => {
     let gave = 0, got = 0;
@@ -113,7 +131,6 @@ const KhataEntry = () => {
   };
 
   const deleteCustomer = (id: string) => {
-    if (!confirm('Delete this customer and all entries?')) return;
     const next = customers.filter(c => c.id !== id);
     setCustomers(next);
     if (selectedId === id) setSelectedId(next[0]?.id ?? null);
@@ -134,24 +151,41 @@ const KhataEntry = () => {
     setCustomers(customers.map(c => c.id === selected.id ? { ...c, entries: c.entries.filter(e => e.id !== eid) } : c));
   };
 
-  const buildMessage = (c: KCustomer) => {
+  const openEditEntry = (e: KEntry) => {
+    setEditingEntry(e);
+    setEditForm({ type: e.type, amount: String(e.amount), note: e.note || '', date: e.date });
+  };
+
+  const saveEditEntry = () => {
+    if (!selected || !editingEntry) return;
+    const amt = parseFloat(editForm.amount);
+    if (!amt || amt <= 0) return toast.error('Enter valid amount');
+    setCustomers(customers.map(c => c.id === selected.id ? {
+      ...c,
+      entries: c.entries.map(e => e.id === editingEntry.id ? { ...e, type: editForm.type, amount: amt, note: editForm.note.trim(), date: editForm.date } : e),
+    } : c));
+    setEditingEntry(null);
+    toast.success('Entry updated');
+  };
+
+  // Only latest entry — used for WhatsApp
+  const buildLatestMessage = (c: KCustomer) => {
     const bal = balanceOf(c);
     const status = bal > 0 ? `You need to pay ₹${bal.toLocaleString('en-IN')}` : bal < 0 ? `Advance balance ₹${Math.abs(bal).toLocaleString('en-IN')}` : `All settled ✅`;
+    const last = latestEntry(c);
     const lines = [
-      `*KHIDMAT CENTER — Khata Statement*`,
+      `*KHIDMAT CENTER — Khata Update*`,
       `Customer: ${c.name}`,
       `Date: ${format(new Date(), 'dd MMM yyyy')}`,
       ``,
-      `Recent Entries:`,
-      ...c.entries.slice(0, 6).map(e => `• ${format(new Date(e.date), 'dd/MM')} — ${e.type === 'debit' ? 'Debit' : 'Credit'} ₹${e.amount.toLocaleString('en-IN')}${e.note ? ' (' + e.note + ')' : ''}`),
-      ``,
-      `Total Debit: ₹${c.entries.filter(e => e.type === 'debit').reduce((s, e) => s + e.amount, 0).toLocaleString('en-IN')}`,
-      `Total Credit: ₹${c.entries.filter(e => e.type === 'credit').reduce((s, e) => s + e.amount, 0).toLocaleString('en-IN')}`,
-      ``,
-      `*${status}*`,
-      ``,
-      `Thank you 🙏`,
     ];
+    if (last) {
+      lines.push(`Latest Entry:`);
+      lines.push(`• ${format(new Date(last.date), 'dd/MM/yyyy')} — ${last.type === 'debit' ? 'Debit (You Gave)' : 'Credit (You Got)'} ₹${last.amount.toLocaleString('en-IN')}${last.note ? ' (' + last.note + ')' : ''}`);
+      lines.push(``);
+    }
+    lines.push(`*${status}*`);
+    lines.push(``, `Thank you 🙏`);
     return lines.join('\n');
   };
 
@@ -159,7 +193,7 @@ const KhataEntry = () => {
     if (!c.phone) return toast.error('No phone number');
     const raw = c.phone.replace(/\D/g, '');
     const phone = raw.length === 10 ? '91' + raw : raw;
-    const text = waMessage || buildMessage(c);
+    const text = waMessage || buildLatestMessage(c);
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');
   };
@@ -214,36 +248,95 @@ const KhataEntry = () => {
     w.document.close();
   };
 
+  const parseCsvDate = (raw: any): string => {
+    if (raw == null || raw === '') return format(new Date(), 'yyyy-MM-dd');
+    if (typeof raw === 'number') {
+      const d = new Date(Math.round((raw - 25569) * 86400 * 1000));
+      if (!isNaN(d.getTime())) return format(d, 'yyyy-MM-dd');
+    }
+    const s = String(raw).trim();
+    // Try DD-MM-YYYY or DD/MM/YYYY explicitly (as in CSV)
+    const m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})$/);
+    if (m) {
+      const [, dd, mm, yy] = m;
+      const y = yy.length === 2 ? 2000 + parseInt(yy, 10) : parseInt(yy, 10);
+      const d = new Date(y, parseInt(mm, 10) - 1, parseInt(dd, 10));
+      if (!isNaN(d.getTime())) return format(d, 'yyyy-MM-dd');
+    }
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) return format(d, 'yyyy-MM-dd');
+    return format(new Date(), 'yyyy-MM-dd');
+  };
+
   const onFile = async (f: File) => {
     try {
-      const buf = await f.arrayBuffer();
-      const wb = XLSX.read(buf, { type: 'array' });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json<any>(ws, { defval: '' });
-      if (!rows.length) return toast.error('Empty sheet');
+      const ext = f.name.split('.').pop()?.toLowerCase();
+      let rows: any[] = [];
+      if (ext === 'csv') {
+        const res = await new Promise<Papa.ParseResult<any>>((resolve, reject) => {
+          Papa.parse(f, { header: true, skipEmptyLines: true, complete: resolve, error: reject });
+        });
+        rows = res.data;
+      } else {
+        const buf = await f.arrayBuffer();
+        const wb = XLSX.read(buf, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        rows = XLSX.utils.sheet_to_json<any>(ws, { defval: '' });
+      }
+      if (!rows.length) return toast.error('Empty file');
       const norm = (k: string) => k.toLowerCase().replace(/[^a-z]/g, '');
+      const parseAmt = (v: any) => {
+        if (v == null) return 0;
+        if (typeof v === 'number') return Math.abs(v);
+        const cleaned = String(v).replace(/[₹$,\s+\-]/g, '');
+        return Math.abs(parseFloat(cleaned) || 0);
+      };
       const grouped: Record<string, KCustomer> = {};
       customers.forEach(c => { grouped[c.name.toLowerCase() + '|' + (c.phone || '')] = { ...c, entries: [...c.entries] }; });
+
+      // Fallback customer when CSV has no Name column (statement of selected/default customer)
+      const fallback: KCustomer = selected
+        ? (grouped[selected.name.toLowerCase() + '|' + (selected.phone || '')] ||= { ...selected, entries: [...selected.entries] })
+        : (() => {
+            const key = 'imported statement|';
+            if (!grouped[key]) grouped[key] = { id: uid(), name: 'Imported Statement', phone: '', entries: [], created_at: new Date().toISOString() };
+            return grouped[key];
+          })();
+
       let added = 0;
       for (const r of rows) {
         const obj: any = {};
         Object.keys(r).forEach(k => { obj[norm(k)] = r[k]; });
+
         const name = String(obj.name || obj.customer || obj.customername || '').trim();
         const phone = String(obj.phone || obj.mobile || obj.mobileno || '').trim();
-        const debit = parseFloat(obj.debit || obj.yougave || obj.given || 0) || 0;
-        const credit = parseFloat(obj.credit || obj.yougot || obj.received || 0) || 0;
-        const note = String(obj.note || obj.description || obj.remarks || '').trim();
-        const dateRaw = obj.date;
-        let date = format(new Date(), 'yyyy-MM-dd');
-        if (dateRaw) {
-          const d = typeof dateRaw === 'number' ? new Date(Math.round((dateRaw - 25569) * 86400 * 1000)) : new Date(dateRaw);
-          if (!isNaN(d.getTime())) date = format(d, 'yyyy-MM-dd');
+        const note = String(obj.description || obj.note || obj.remarks || obj.details || '').trim();
+        const date = parseCsvDate(obj.date);
+        const typeRaw = String(obj.type || obj.txntype || obj.transactiontype || '').trim().toLowerCase();
+        const amountRaw = obj.amount;
+
+        // Split Debit/Credit columns take priority when both are present
+        const debitCol = parseAmt(obj.debit ?? obj.yougave ?? obj.given ?? obj.withdrawal ?? 0);
+        const creditCol = parseAmt(obj.credit ?? obj.yougot ?? obj.received ?? obj.deposit ?? 0);
+
+        const target = name
+          ? (grouped[name.toLowerCase() + '|' + phone] ||= { id: uid(), name, phone, entries: [], created_at: new Date().toISOString() })
+          : fallback;
+
+        if (debitCol > 0) { target.entries.push({ id: uid(), date, type: 'debit', amount: debitCol, note }); added++; }
+        if (creditCol > 0) { target.entries.push({ id: uid(), date, type: 'credit', amount: creditCol, note }); added++; }
+
+        // Single-column Amount + Type (DEBIT/CREDIT) format
+        if (debitCol === 0 && creditCol === 0 && amountRaw !== undefined && amountRaw !== '') {
+          const amt = parseAmt(amountRaw);
+          if (amt > 0) {
+            const isDebit = typeRaw.includes('debit') || String(amountRaw).trim().startsWith('+');
+            const isCredit = typeRaw.includes('credit') || String(amountRaw).trim().startsWith('-');
+            const type: 'debit' | 'credit' = isDebit ? 'debit' : isCredit ? 'credit' : 'debit';
+            target.entries.push({ id: uid(), date, type, amount: amt, note });
+            added++;
+          }
         }
-        if (!name) continue;
-        const key = name.toLowerCase() + '|' + phone;
-        if (!grouped[key]) grouped[key] = { id: uid(), name, phone, entries: [], created_at: new Date().toISOString() };
-        if (debit > 0) { grouped[key].entries.unshift({ id: uid(), date, type: 'debit', amount: debit, note }); added++; }
-        if (credit > 0) { grouped[key].entries.unshift({ id: uid(), date, type: 'credit', amount: credit, note }); added++; }
       }
       setCustomers(Object.values(grouped));
       toast.success(`Imported ${added} entries`);
@@ -333,7 +426,7 @@ const KhataEntry = () => {
                   <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => sendWhatsApp(selected)}>
                     <MessageCircle className="w-4 h-4 mr-1" />WhatsApp
                   </Button>
-                  <Button size="sm" variant="destructive" onClick={() => deleteCustomer(selected.id)}><Trash2 className="w-4 h-4" /></Button>
+                  <Button size="sm" variant="destructive" onClick={() => setDeleteTarget({ kind: 'customer', id: selected.id })}><Trash2 className="w-4 h-4" /></Button>
                 </div>
               </div>
 
@@ -378,24 +471,39 @@ const KhataEntry = () => {
                       <th className="p-2 text-left">Note</th>
                       <th className="p-2 text-right text-rose-600">Debit</th>
                       <th className="p-2 text-right text-emerald-600">Credit</th>
-                      <th className="p-2"></th>
+                      <th className="p-2 text-right">Balance</th>
+                      <th className="p-2 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {selected.entries.length === 0 && (
-                      <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">No entries yet</td></tr>
+                      <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">No entries yet</td></tr>
                     )}
-                    {selected.entries.map(e => (
-                      <tr key={e.id} className="border-t hover:bg-muted/30">
-                        <td className="p-2">{format(new Date(e.date), 'dd/MM/yyyy')}</td>
-                        <td className="p-2">{e.note || '-'}</td>
-                        <td className="p-2 text-right text-rose-600 font-medium">{e.type === 'debit' ? formatCurrency(e.amount) : ''}</td>
-                        <td className="p-2 text-right text-emerald-600 font-medium">{e.type === 'credit' ? formatCurrency(e.amount) : ''}</td>
-                        <td className="p-2 text-right">
-                          <button onClick={() => deleteEntry(e.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4" /></button>
-                        </td>
-                      </tr>
-                    ))}
+                    {(() => {
+                      const asc = orderedEntries(selected);
+                      let running = 0;
+                      const rows = asc.map(e => {
+                        running += e.type === 'debit' ? e.amount : -e.amount;
+                        return { e, bal: running };
+                      });
+                      return rows.slice().reverse().map(({ e, bal }) => (
+                        <tr key={e.id} className="border-t hover:bg-muted/30">
+                          <td className="p-2">{format(new Date(e.date), 'dd/MM/yyyy')}</td>
+                          <td className="p-2">{e.note || '-'}</td>
+                          <td className="p-2 text-right text-rose-600 font-medium">{e.type === 'debit' ? formatCurrency(e.amount) : ''}</td>
+                          <td className="p-2 text-right text-emerald-600 font-medium">{e.type === 'credit' ? formatCurrency(e.amount) : ''}</td>
+                          <td className={`p-2 text-right font-semibold ${bal > 0 ? 'text-rose-600' : bal < 0 ? 'text-emerald-600' : 'text-muted-foreground'}`}>
+                            {bal === 0 ? '—' : (bal > 0 ? '+' : '-') + formatCurrency(Math.abs(bal))}
+                          </td>
+                          <td className="p-2 text-right">
+                            <div className="inline-flex items-center gap-2">
+                              <button onClick={() => openEditEntry(e)} className="text-muted-foreground hover:text-primary" title="Edit"><Edit className="w-4 h-4" /></button>
+                              <button onClick={() => setDeleteTarget({ kind: 'entry', id: e.id })} className="text-muted-foreground hover:text-destructive" title="Delete"><Trash2 className="w-4 h-4" /></button>
+                            </div>
+                          </td>
+                        </tr>
+                      ));
+                    })()}
                   </tbody>
                 </table>
               </div>
@@ -403,7 +511,7 @@ const KhataEntry = () => {
               <div className="mt-3">
                 <div className="flex items-center justify-between mt-3">
                   <Label className="text-xs text-muted-foreground">WhatsApp Message Preview (editable)</Label>
-                  <Button size="sm" variant="ghost" onClick={() => { setWaMessage(buildMessage(selected)); setWaEdited(false); toast.success('Reset to default'); }}>Reset</Button>
+                  <Button size="sm" variant="ghost" onClick={() => { setWaMessage(buildLatestMessage(selected)); setWaEdited(false); toast.success('Reset to default'); }}>Reset</Button>
                 </div>
                 <Textarea
                   value={waMessage}
@@ -415,6 +523,46 @@ const KhataEntry = () => {
           )}
         </Card>
       </div>
+
+      {/* Delete confirmation */}
+      <DeleteConfirmation
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          if (!deleteTarget) return;
+          if (deleteTarget.kind === 'entry') deleteEntry(deleteTarget.id);
+          else deleteCustomer(deleteTarget.id);
+          setDeleteTarget(null);
+        }}
+        title={deleteTarget?.kind === 'customer' ? 'Delete customer?' : 'Delete entry?'}
+        description={deleteTarget?.kind === 'customer'
+          ? 'This will permanently remove the customer and all of their Khata entries.'
+          : 'This will permanently remove this Debit/Credit entry from the ledger.'}
+      />
+
+      {/* Edit entry dialog */}
+      <Dialog open={!!editingEntry} onOpenChange={(o) => !o && setEditingEntry(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Entry</DialogTitle></DialogHeader>
+          <div className="grid gap-3">
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant={editForm.type === 'debit' ? 'default' : 'outline'}
+                className={editForm.type === 'debit' ? 'bg-rose-600 hover:bg-rose-700' : ''}
+                onClick={() => setEditForm({ ...editForm, type: 'debit' })}>You Gave (Debit)</Button>
+              <Button variant={editForm.type === 'credit' ? 'default' : 'outline'}
+                className={editForm.type === 'credit' ? 'bg-emerald-600 hover:bg-emerald-700' : ''}
+                onClick={() => setEditForm({ ...editForm, type: 'credit' })}>You Got (Credit)</Button>
+            </div>
+            <div><Label>Date</Label><Input type="date" value={editForm.date} onChange={e => setEditForm({ ...editForm, date: e.target.value })} /></div>
+            <div><Label>Amount</Label><Input type="number" value={editForm.amount} onChange={e => setEditForm({ ...editForm, amount: e.target.value })} /></div>
+            <div><Label>Note</Label><Input value={editForm.note} onChange={e => setEditForm({ ...editForm, note: e.target.value })} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingEntry(null)}>Cancel</Button>
+            <Button onClick={saveEditEntry}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageWrapper>
   );
 };
