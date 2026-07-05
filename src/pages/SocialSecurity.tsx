@@ -634,10 +634,10 @@ const SocialSecurity = () => {
                   <TableHead>Date</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Account No.</TableHead>
-                  <TableHead>{schemeFilter === 'DLC' ? 'PPO Number' : 'Address'}</TableHead>
+                  <TableHead>{addressColLabel}</TableHead>
                   <TableHead>Mobile</TableHead>
                   <TableHead>Scheme</TableHead>
-                  <TableHead>Remarks</TableHead>
+                  <TableHead>{remarksColLabel}</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
