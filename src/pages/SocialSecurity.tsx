@@ -280,6 +280,7 @@ const SocialSecurity = () => {
     const urnRaw = grab(/Unique Reference Number\s*(?:\(URN\))?/i, new RegExp(NEXT));
     const address = grab(/(?<!Branch\s)Address/i, new RegExp(NEXT));
     const accountRaw = grab(/Bank\s*\/\s*Post office a\/c no\.?/i, new RegExp(NEXT));
+    const masterPolicyRaw = grab(/Master Policy Number/i, new RegExp(NEXT));
 
     // Clean URN: strip whitespace and collapse line-break hyphens inside the
     // long trailing numeric segment (e.g. "00383108367-581" -> "00383108367581")
@@ -300,11 +301,18 @@ const SocialSecurity = () => {
 
     if (name) setValue('name', name);
     if (urn) setValue('remarks', urn);
-    if (address) setValue('address', address);
+    // For PMSBY/PMJJY, the "Address" column holds Master Policy Number.
+    const masterPolicy = masterPolicyRaw.replace(/\s+/g, ' ').trim();
+    if (scheme === 'PMSBY' || scheme === 'PMJJY') {
+      if (masterPolicy) setValue('address', masterPolicy);
+      else if (address) setValue('address', address);
+    } else if (address) {
+      setValue('address', address);
+    }
     if (acctDigits) setValue('account_number', acctDigits);
     setValue('scheme_type', scheme);
 
-    const extractedCount = [name, urn, address, acctDigits].filter(Boolean).length;
+    const extractedCount = [name, urn, address || masterPolicy, acctDigits].filter(Boolean).length;
     if (extractedCount === 0) {
       toast({
         title: 'No data extracted',
