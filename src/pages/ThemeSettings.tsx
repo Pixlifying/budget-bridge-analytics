@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Palette, Check, Sparkles, Sun, Moon, Monitor, Droplets } from 'lucide-react';
@@ -8,6 +8,7 @@ import PageWrapper from '@/components/layout/PageWrapper';
 import PageHeader from '@/components/layout/PageHeader';
 import { setColorTheme, getColorTheme, setGlassmorphism, getGlassmorphism } from '@/lib/themeUtils';
 import { Switch } from '@/components/ui/switch';
+import LQGlassPreview from '@/components/theme/LQGlassPreview';
 
 interface ColorTheme {
   name: string;
@@ -401,7 +402,7 @@ const ThemeSettings = () => {
           <CardHeader className="bg-gradient-to-r from-primary/10 to-accent/10">
             <CardTitle className="flex items-center gap-2">
               <Droplets className="h-5 w-5 text-primary" />
-              Glassmorphism / Liquid Glass
+              LQ Glass
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
@@ -411,8 +412,8 @@ const ThemeSettings = () => {
                   <Droplets className="h-6 w-6" />
                 </div>
                 <div>
-                  <p className="font-semibold text-foreground">Liquid Glass Mode</p>
-                  <p className="text-sm text-muted-foreground">Transform the entire app with frosted glass, blur effects, and translucent surfaces</p>
+                  <p className="font-semibold text-foreground">LQ Glass Mode</p>
+                  <p className="text-sm text-muted-foreground">Real WebGL liquid-glass refraction, blur, chromatic aberration & lighting on preview cards</p>
                 </div>
               </div>
               <Switch
@@ -421,39 +422,7 @@ const ThemeSettings = () => {
                 className="data-[state=checked]:bg-primary scale-125"
               />
             </div>
-            {/* Preview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className={`relative rounded-xl p-4 border transition-all duration-500 overflow-hidden ${glassEnabled ? 'bg-card/40 backdrop-blur-xl border-primary/20 shadow-lg' : 'bg-card border-border'}`}>
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/10 opacity-50"></div>
-                <div className="relative z-10">
-                  <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center mb-2">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                  </div>
-                  <p className="text-sm font-medium text-foreground">Frosted Cards</p>
-                  <p className="text-xs text-muted-foreground mt-1">Translucent surfaces</p>
-                </div>
-              </div>
-              <div className={`relative rounded-xl p-4 border transition-all duration-500 overflow-hidden ${glassEnabled ? 'bg-card/40 backdrop-blur-xl border-primary/20 shadow-lg' : 'bg-card border-border'}`}>
-                <div className="absolute inset-0 bg-gradient-to-br from-accent/10 to-primary/10 opacity-50"></div>
-                <div className="relative z-10">
-                  <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center mb-2">
-                    <Droplets className="h-4 w-4 text-primary" />
-                  </div>
-                  <p className="text-sm font-medium text-foreground">Blur Effects</p>
-                  <p className="text-xs text-muted-foreground mt-1">Background blur & glow</p>
-                </div>
-              </div>
-              <div className={`relative rounded-xl p-4 border transition-all duration-500 overflow-hidden ${glassEnabled ? 'bg-card/40 backdrop-blur-xl border-primary/20 shadow-lg' : 'bg-card border-border'}`}>
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/15 opacity-50"></div>
-                <div className="relative z-10">
-                  <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center mb-2">
-                    <Palette className="h-4 w-4 text-primary" />
-                  </div>
-                  <p className="text-sm font-medium text-foreground">Glass Borders</p>
-                  <p className="text-xs text-muted-foreground mt-1">Light-refracting edges</p>
-                </div>
-              </div>
-            </div>
+            <LQGlassPreview enabled={glassEnabled} />
           </CardContent>
         </Card>
 
