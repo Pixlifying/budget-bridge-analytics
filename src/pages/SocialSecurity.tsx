@@ -281,8 +281,13 @@ const SocialSecurity = () => {
     const address = grab(/(?<!Branch\s)Address/i, new RegExp(NEXT));
     const accountRaw = grab(/Bank\s*\/\s*Post office a\/c no\.?/i, new RegExp(NEXT));
 
-    // Clean URN: keep alphanumerics + dashes, strip stray spaces/hyphens injected by pdf.js
-    const urn = urnRaw.replace(/\s+/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    // Clean URN: strip whitespace and collapse line-break hyphens inside the
+    // long trailing numeric segment (e.g. "00383108367-581" -> "00383108367581")
+    const urn = urnRaw
+      .replace(/\s+/g, '')
+      .replace(/-+/g, '-')
+      .replace(/(\d{6,})-(\d+)/g, '$1$2')
+      .replace(/^-|-$/g, '');
     // Account number: digits only, up to 20
     const acctDigits = (accountRaw.match(/[\d\s-]+/)?.[0] || '').replace(/\D/g, '').slice(0, 20);
 
