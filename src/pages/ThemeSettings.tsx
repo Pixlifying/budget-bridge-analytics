@@ -8,6 +8,7 @@ import PageWrapper from '@/components/layout/PageWrapper';
 import PageHeader from '@/components/layout/PageHeader';
 import { setColorTheme, getColorTheme, setGlassmorphism, getGlassmorphism } from '@/lib/themeUtils';
 import { Switch } from '@/components/ui/switch';
+import LQGlassPreview from '@/components/theme/LQGlassPreview';
 
 interface ColorTheme {
   name: string;
