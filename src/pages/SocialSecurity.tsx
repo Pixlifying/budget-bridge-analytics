@@ -72,6 +72,16 @@ const SocialSecurity = () => {
 
   const selectedDate = watch('date');
 
+  // Dynamic column labels driven by the top-nav scheme filter
+  const addressColLabel =
+    schemeFilter === 'DLC' ? 'PPO Number'
+    : (schemeFilter === 'PMSBY' || schemeFilter === 'PMJJY') ? 'Bank / Post office a/c NO.'
+    : 'Address';
+  const remarksColLabel =
+    (schemeFilter === 'PMSBY' || schemeFilter === 'PMJJY')
+      ? 'Unique Reference Number (URN)'
+      : 'Remarks';
+
   useEffect(() => {
     fetchRecords();
   }, []);
@@ -332,7 +342,8 @@ const SocialSecurity = () => {
     if (!printWindow) return;
 
     const schemeLabel = schemeFilter === 'all' ? 'All Schemes (APY/PMSBY/PMJJY/DLC)' : schemeFilter === 'DLC' ? 'DLC (Life Certificate)' : schemeFilter;
-    const addressHeader = schemeFilter === 'DLC' ? 'PPO Number' : 'Address';
+    const addressHeader = addressColLabel;
+    const remarksHeader = remarksColLabel;
 
     const printContent = `
       <!DOCTYPE html>
@@ -361,7 +372,7 @@ const SocialSecurity = () => {
                 <th>${escapeHtml(addressHeader)}</th>
                 <th>Mobile</th>
                 <th>Scheme</th>
-                <th>Remarks</th>
+                <th>${escapeHtml(remarksHeader)}</th>
               </tr>
             </thead>
             <tbody>
