@@ -265,58 +265,26 @@ const SocialSecurity = () => {
     }
     const text = fullText.replace(/\s+/g, ' ').trim();
 
-    // Anchor-based extraction: split text at known labels
-    const anchors = [
-      'Name of Member',
-      'Date of Birth',
-      'Mobile Number',
-      'Aadhar Number',
-      'Name of Nominee',
-      'Age of Nominee',
-      'Master Policy Number',
-      'Insurer',
-      'Unique Reference Number \\(URN\\)',
-      'Unique Reference Number',
-      'Name of Bank/Post Office',
-      'Name of Bank / Post Office',
-      'Bank / Post office a/c no\\.?',
-      'Bank/Post office a/c no\\.?',
-      'Branch Code',
-      'Branch Address',
-      'Date of Commencement of Cover',
-      'Cover End Date',
-      'Sum Assured',
-      'Annual Renewal Date',
-      'Premium Amount Paid',
-      'Address',
-    ];
-    const pattern = new RegExp('(' + anchors.join('|') + ')\\s*:?\\s*', 'gi');
-    const parts: { label: string; value: string }[] = [];
-    const matches = [...text.matchAll(pattern)];
-    matches.forEach((m, idx) => {
-      const start = (m.index ?? 0) + m[0].length;
-      const end = idx + 1 < matches.length ? matches[idx + 1].index : text.length;
-      const label = m[1].replace(/\\/g, '').toLowerCase();
-      const value = text.slice(start, end).trim();
-      parts.push({ label, value });
-    });
-
-    const findValue = (keywords: string[]): string => {
-      for (const p of parts) {
-        if (keywords.some((k) => p.label.toLowerCase().includes(k))) {
-          return p.value;
-        }
-      }
-      return '';
+    // Targeted extraction — only the 4 fields we need. Each regex captures
+    // the value between its label and the next known label, so we never
+    // pick up unrelated fields like Branch Address or Name of Nominee.
+    const grab = (labelRe: RegExp, stopRe: RegExp): string => {
+      const m = text.match(new RegExp(labelRe.source + '\\s*:?\\s*(.+?)\\s*(?=' + stopRe.source + ')', 'i'));
+      return m ? m[1].trim().replace(/\s{2,}/g, ' ') : '';
     };
 
-    const name = findValue(['name of member']);
-    const urn = findValue(['unique reference number']);
-    const address = findValue(['address']);
-    const accountNo = findValue(['a/c no', 'account no']);
+    // Stop tokens = any other label that can appear on the certificate
+    const NEXT = '(?:Date of Birth|Mobile Number|Address\\b|Aadhar Number|Name of Nominee|Age of Nominee|Master Policy Number|Insurer|Unique Reference Number|Name of Bank|Bank\\s*/\\s*Post office a\\/c no|Branch Code|Branch Address|Date of Commencement|Cover End Date|Sum Assured|Annual Renewal|Premium Amount|Signature|$)';
 
-    // Clean account number (digits only, up to 16)
-    const acctDigits = (accountNo.match(/\d[\d\s-]*/)?.[0] || '').replace(/\D/g, '').slice(0, 16);
+    const name = grab(/Name of Member/i, new RegExp(NEXT));
+    const urnRaw = grab(/Unique Reference Number\s*(?:\(URN\))?/i, new RegExp(NEXT));
+    const address = grab(/(?<!Branch\s)Address/i, new RegExp(NEXT));
+    const accountRaw = grab(/Bank\s*\/\s*Post office a\/c no\.?/i, new RegExp(NEXT));
+
+    // Clean URN: keep alphanumerics + dashes, strip stray spaces/hyphens injected by pdf.js
+    const urn = urnRaw.replace(/\s+/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    // Account number: digits only, up to 20
+    const acctDigits = (accountRaw.match(/[\d\s-]+/)?.[0] || '').replace(/\D/g, '').slice(0, 20);
 
     // Detect scheme from URN prefix (e.g., JNS-PMSBY-... or PMJJY / APY)
     let scheme = 'PMSBY';
