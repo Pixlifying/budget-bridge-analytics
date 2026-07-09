@@ -287,7 +287,6 @@ const Applications = () => {
     setEditingEntry(entry);
     setEditForm({
       date: format(entry.date, 'yyyy-MM-dd'),
-      mobile_number: '',
       expense: entry.expense,
       amount: entry.amount + entry.expense, // Show original amount before expense deduction
     });
