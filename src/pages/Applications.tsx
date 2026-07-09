@@ -55,8 +55,6 @@ const Applications = () => {
   // Form state for inline entry
   const [newEntry, setNewEntry] = useState({
     date: new Date().toISOString().split('T')[0],
-    customer_name: '',
-    mobile_number: '',
     expense: 0,
     amount: 0,
     service_type: '',
@@ -65,8 +63,6 @@ const Applications = () => {
 
   const [editForm, setEditForm] = useState({
     date: '',
-    customer_name: '',
-    mobile_number: '',
     expense: 0,
     amount: 0,
   });
@@ -146,18 +142,21 @@ const Applications = () => {
       return;
     }
 
+    const serviceName = newEntry.service_type === 'Other' ? newEntry.custom_service : newEntry.service_type;
+    if (!serviceName) {
+      toast.error('Please select a service');
+      return;
+    }
+
     try {
       const total = newEntry.amount - newEntry.expense;
-      
-      const serviceName = newEntry.service_type === 'Other' ? newEntry.custom_service : newEntry.service_type;
-      const displayName = serviceName ? `${serviceName} - ${newEntry.customer_name}` : newEntry.customer_name;
       
       const { data, error } = await supabase
         .from('applications')
         .insert({
           date: new Date(newEntry.date).toISOString(),
-          customer_name: displayName,
-          mobile_number: newEntry.mobile_number || null,
+          customer_name: serviceName,
+          mobile_number: null,
           expense: newEntry.expense,
           amount: total,
         } as any)
@@ -171,7 +170,7 @@ const Applications = () => {
           .from('expenses')
           .insert({
             date: new Date(newEntry.date).toISOString(),
-            name: `Application - ${newEntry.customer_name}`,
+            name: `Application - ${serviceName}`,
             amount: newEntry.expense,
           });
       }
@@ -190,8 +189,6 @@ const Applications = () => {
         setApplications(prev => [newApplicationEntry, ...prev]);
         setNewEntry({
           date: new Date().toISOString().split('T')[0],
-          customer_name: '',
-          mobile_number: '',
           expense: 0,
           amount: 0,
           service_type: '',
@@ -215,8 +212,6 @@ const Applications = () => {
         .from('applications')
         .update({
           date: new Date(editForm.date).toISOString(),
-          customer_name: editForm.customer_name,
-          mobile_number: editForm.mobile_number || null,
           expense: editForm.expense,
           amount: total,
         } as any)
@@ -226,13 +221,12 @@ const Applications = () => {
 
       // Update or insert expense - prevent double entry
       if (editForm.expense > 0) {
-        const oldExpenseName = `Application - ${editingEntry.customer_name}`;
-        const newExpenseName = `Application - ${editForm.customer_name}`;
+        const expenseName = `Application - ${editingEntry.customer_name}`;
         
         const { data: existingExpense } = await supabase
           .from('expenses')
           .select('id')
-          .eq('name', oldExpenseName)
+          .eq('name', expenseName)
           .gte('date', format(editingEntry.date, 'yyyy-MM-dd'))
           .lt('date', format(editingEntry.date, 'yyyy-MM-dd') + 'T23:59:59.999')
           .limit(1);
@@ -240,14 +234,14 @@ const Applications = () => {
         if (existingExpense && existingExpense.length > 0) {
           await supabase
             .from('expenses')
-            .update({ name: newExpenseName, amount: editForm.expense, date: new Date(editForm.date).toISOString() })
+            .update({ name: expenseName, amount: editForm.expense, date: new Date(editForm.date).toISOString() })
             .eq('id', existingExpense[0].id);
         } else {
           await supabase
             .from('expenses')
             .insert({
               date: new Date(editForm.date).toISOString(),
-              name: newExpenseName,
+              name: expenseName,
               amount: editForm.expense,
             });
         }
@@ -256,8 +250,6 @@ const Applications = () => {
       const updatedEntry: ApplicationEntry = {
         ...editingEntry,
         date: new Date(editForm.date),
-        customer_name: editForm.customer_name,
-        mobile_number: editForm.mobile_number,
         expense: editForm.expense,
         amount: total,
       };
@@ -295,8 +287,6 @@ const Applications = () => {
     setEditingEntry(entry);
     setEditForm({
       date: format(entry.date, 'yyyy-MM-dd'),
-      customer_name: entry.customer_name,
-      mobile_number: entry.mobile_number || '',
       expense: entry.expense,
       amount: entry.amount + entry.expense, // Show original amount before expense deduction
     });
@@ -328,7 +318,7 @@ const Applications = () => {
             <thead>
               <tr>
                 <th>Date</th>
-                <th>Customer Name</th>
+                <th>Service</th>
                 <th>Amount</th>
                 <th>Expense</th>
                 <th>Margin</th>
@@ -424,8 +414,7 @@ const Applications = () => {
         <div class="addr">Address: Ward No 6, R.S. Pura</div>
         <div class="row"><span>Serial No:</span><span>${escapeHtml(serial)}</span></div>
         <div class="row"><span>Date:</span><span>${escapeHtml(billDate)}</span></div>
-        <div class="row"><span>Customer Name:</span><span>${escapeHtml(entry.customer_name)}</span></div>
-        <div class="row"><span>Service Type:</span><span>Offline Service</span></div>
+        <div class="row"><span>Service Type:</span><span>${escapeHtml(entry.customer_name)}</span></div>
         <div class="row"><span>Payment Mode:</span><span>${escapeHtml(paymentMode)}</span></div>
         <div class="amt">Amount: ₹ ${totalAmt.toFixed(2)}</div>
         <div class="words">In Words: ${escapeHtml(amountWords)}</div>
@@ -444,17 +433,6 @@ const Applications = () => {
     printWindow.document.close();
   };
 
-  const handleWhatsApp = (entry: ApplicationEntry) => {
-    const raw = (entry.mobile_number || '').replace(/\D/g, '');
-    if (!raw) {
-      toast.error('No mobile number saved for this entry');
-      return;
-    }
-    const phone = raw.length === 10 ? `91${raw}` : raw;
-    const totalAmt = entry.amount + entry.expense;
-    const msg = `Hello ${entry.customer_name},\n\nYour offline service has been processed.\nAmount: ₹${totalAmt.toFixed(2)}\nDate: ${format(entry.date, 'dd/MM/yyyy')}\n\nThank you,\nKHIDMAT CENTER`;
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
-  };
 
   const totalAmount = filteredApplications.reduce((sum, app) => sum + app.amount, 0);
 
@@ -472,7 +450,7 @@ const Applications = () => {
           />
           <div className="flex flex-wrap gap-2 items-center">
             <Input
-              placeholder="Search by customer..."
+              placeholder="Search by service..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-[180px] h-9 bg-sidebar-accent text-sidebar-accent-foreground placeholder:text-sidebar-accent-foreground/50 border-sidebar-border"
@@ -534,25 +512,6 @@ const Applications = () => {
               />
             </div>
           )}
-          <div>
-            <Label htmlFor="customer">Customer Name</Label>
-            <Input
-              id="customer"
-              value={newEntry.customer_name}
-              onChange={(e) => setNewEntry(prev => ({ ...prev, customer_name: e.target.value }))}
-              placeholder="Customer name"
-            />
-          </div>
-          <div>
-            <Label htmlFor="mobile_number">Mobile Number</Label>
-            <Input
-              id="mobile_number"
-              type="tel"
-              value={newEntry.mobile_number}
-              onChange={(e) => setNewEntry(prev => ({ ...prev, mobile_number: e.target.value }))}
-              placeholder="10-digit mobile"
-            />
-          </div>
           <div>
             <Label htmlFor="amount">Amount</Label>
             <Input
@@ -633,18 +592,14 @@ const Applications = () => {
             <ServiceCard
               key={entry.id}
               id={entry.id}
-              title={`Application - ${entry.customer_name}`}
+              title={entry.customer_name}
               date={entry.date}
               data={{
-                customer: entry.customer_name,
-                ...(entry.mobile_number && { mobile: entry.mobile_number }),
                 amount: formatCurrency(entry.amount + entry.expense),
                 expense: formatCurrency(entry.expense),
                 margin: formatCurrency(entry.amount),
               }}
               labels={{
-                customer: 'Customer',
-                mobile: 'Mobile',
                 amount: 'Amount',
                 expense: 'Expense',
                 margin: 'Margin',
@@ -652,7 +607,6 @@ const Applications = () => {
               onEdit={() => openEditEntry(entry)}
               onDelete={() => handleDeleteEntry(entry.id)}
               onPrint={() => handlePrintBill(entry)}
-              onWhatsApp={entry.mobile_number ? () => handleWhatsApp(entry) : undefined}
               isHighlighted={isHighlighted(entry.id)}
             />
           ))}
@@ -673,25 +627,6 @@ const Applications = () => {
                 type="date"
                 value={editForm.date}
                 onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit_customer">Customer Name</Label>
-              <Input
-                id="edit_customer"
-                value={editForm.customer_name}
-                onChange={(e) => setEditForm(prev => ({ ...prev, customer_name: e.target.value }))}
-                placeholder="Customer name"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit_mobile">Mobile Number</Label>
-              <Input
-                id="edit_mobile"
-                type="tel"
-                value={editForm.mobile_number}
-                onChange={(e) => setEditForm(prev => ({ ...prev, mobile_number: e.target.value }))}
-                placeholder="10-digit mobile"
               />
             </div>
             <div className="grid gap-2">
