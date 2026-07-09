@@ -144,18 +144,21 @@ const Applications = () => {
       return;
     }
 
+    const serviceName = newEntry.service_type === 'Other' ? newEntry.custom_service : newEntry.service_type;
+    if (!serviceName) {
+      toast.error('Please select a service');
+      return;
+    }
+
     try {
       const total = newEntry.amount - newEntry.expense;
-      
-      const serviceName = newEntry.service_type === 'Other' ? newEntry.custom_service : newEntry.service_type;
-      const displayName = serviceName ? `${serviceName} - ${newEntry.customer_name}` : newEntry.customer_name;
       
       const { data, error } = await supabase
         .from('applications')
         .insert({
           date: new Date(newEntry.date).toISOString(),
-          customer_name: displayName,
-          mobile_number: newEntry.mobile_number || null,
+          customer_name: serviceName,
+          mobile_number: null,
           expense: newEntry.expense,
           amount: total,
         } as any)
@@ -169,7 +172,7 @@ const Applications = () => {
           .from('expenses')
           .insert({
             date: new Date(newEntry.date).toISOString(),
-            name: `Application - ${newEntry.customer_name}`,
+            name: `Application - ${serviceName}`,
             amount: newEntry.expense,
           });
       }
@@ -188,7 +191,6 @@ const Applications = () => {
         setApplications(prev => [newApplicationEntry, ...prev]);
         setNewEntry({
           date: new Date().toISOString().split('T')[0],
-          customer_name: '',
           mobile_number: '',
           expense: 0,
           amount: 0,
