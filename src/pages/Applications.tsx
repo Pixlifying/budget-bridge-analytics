@@ -322,7 +322,7 @@ const Applications = () => {
             <thead>
               <tr>
                 <th>Date</th>
-                <th>Customer Name</th>
+                <th>Service</th>
                 <th>Amount</th>
                 <th>Expense</th>
                 <th>Margin</th>
