@@ -290,8 +290,7 @@ const Applications = () => {
     setEditingEntry(entry);
     setEditForm({
       date: format(entry.date, 'yyyy-MM-dd'),
-      customer_name: entry.customer_name,
-      mobile_number: entry.mobile_number || '',
+      mobile_number: '',
       expense: entry.expense,
       amount: entry.amount + entry.expense, // Show original amount before expense deduction
     });
