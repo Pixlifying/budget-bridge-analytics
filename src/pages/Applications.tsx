@@ -466,7 +466,7 @@ const Applications = () => {
           />
           <div className="flex flex-wrap gap-2 items-center">
             <Input
-              placeholder="Search by customer..."
+              placeholder="Search by service..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-[180px] h-9 bg-sidebar-accent text-sidebar-accent-foreground placeholder:text-sidebar-accent-foreground/50 border-sidebar-border"
@@ -608,18 +608,14 @@ const Applications = () => {
             <ServiceCard
               key={entry.id}
               id={entry.id}
-              title={`Application - ${entry.customer_name}`}
+              title={entry.customer_name}
               date={entry.date}
               data={{
-                customer: entry.customer_name,
-                ...(entry.mobile_number && { mobile: entry.mobile_number }),
                 amount: formatCurrency(entry.amount + entry.expense),
                 expense: formatCurrency(entry.expense),
                 margin: formatCurrency(entry.amount),
               }}
               labels={{
-                customer: 'Customer',
-                mobile: 'Mobile',
                 amount: 'Amount',
                 expense: 'Expense',
                 margin: 'Margin',
@@ -627,7 +623,6 @@ const Applications = () => {
               onEdit={() => openEditEntry(entry)}
               onDelete={() => handleDeleteEntry(entry.id)}
               onPrint={() => handlePrintBill(entry)}
-              onWhatsApp={entry.mobile_number ? () => handleWhatsApp(entry) : undefined}
               isHighlighted={isHighlighted(entry.id)}
             />
           ))}
