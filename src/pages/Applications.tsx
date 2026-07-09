@@ -651,25 +651,6 @@ const Applications = () => {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="edit_customer">Customer Name</Label>
-              <Input
-                id="edit_customer"
-                value={editForm.customer_name}
-                onChange={(e) => setEditForm(prev => ({ ...prev, customer_name: e.target.value }))}
-                placeholder="Customer name"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit_mobile">Mobile Number</Label>
-              <Input
-                id="edit_mobile"
-                type="tel"
-                value={editForm.mobile_number}
-                onChange={(e) => setEditForm(prev => ({ ...prev, mobile_number: e.target.value }))}
-                placeholder="10-digit mobile"
-              />
-            </div>
-            <div className="grid gap-2">
               <Label htmlFor="edit_amount">Amount</Label>
               <Input
                 id="edit_amount"
