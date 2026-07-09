@@ -529,25 +529,6 @@ const Applications = () => {
             </div>
           )}
           <div>
-            <Label htmlFor="customer">Customer Name</Label>
-            <Input
-              id="customer"
-              value={newEntry.customer_name}
-              onChange={(e) => setNewEntry(prev => ({ ...prev, customer_name: e.target.value }))}
-              placeholder="Customer name"
-            />
-          </div>
-          <div>
-            <Label htmlFor="mobile_number">Mobile Number</Label>
-            <Input
-              id="mobile_number"
-              type="tel"
-              value={newEntry.mobile_number}
-              onChange={(e) => setNewEntry(prev => ({ ...prev, mobile_number: e.target.value }))}
-              placeholder="10-digit mobile"
-            />
-          </div>
-          <div>
             <Label htmlFor="amount">Amount</Label>
             <Input
               id="amount"
