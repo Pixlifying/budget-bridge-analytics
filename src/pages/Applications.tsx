@@ -418,8 +418,7 @@ const Applications = () => {
         <div class="addr">Address: Ward No 6, R.S. Pura</div>
         <div class="row"><span>Serial No:</span><span>${escapeHtml(serial)}</span></div>
         <div class="row"><span>Date:</span><span>${escapeHtml(billDate)}</span></div>
-        <div class="row"><span>Customer Name:</span><span>${escapeHtml(entry.customer_name)}</span></div>
-        <div class="row"><span>Service Type:</span><span>Offline Service</span></div>
+        <div class="row"><span>Service Type:</span><span>${escapeHtml(entry.customer_name)}</span></div>
         <div class="row"><span>Payment Mode:</span><span>${escapeHtml(paymentMode)}</span></div>
         <div class="amt">Amount: ₹ ${totalAmt.toFixed(2)}</div>
         <div class="words">In Words: ${escapeHtml(amountWords)}</div>
