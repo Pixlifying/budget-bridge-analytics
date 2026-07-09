@@ -437,17 +437,6 @@ const Applications = () => {
     printWindow.document.close();
   };
 
-  const handleWhatsApp = (entry: ApplicationEntry) => {
-    const raw = (entry.mobile_number || '').replace(/\D/g, '');
-    if (!raw) {
-      toast.error('No mobile number saved for this entry');
-      return;
-    }
-    const phone = raw.length === 10 ? `91${raw}` : raw;
-    const totalAmt = entry.amount + entry.expense;
-    const msg = `Hello ${entry.customer_name},\n\nYour offline service has been processed.\nAmount: ₹${totalAmt.toFixed(2)}\nDate: ${format(entry.date, 'dd/MM/yyyy')}\n\nThank you,\nKHIDMAT CENTER`;
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
-  };
 
   const totalAmount = filteredApplications.reduce((sum, app) => sum + app.amount, 0);
 
