@@ -215,8 +215,6 @@ const Applications = () => {
         .from('applications')
         .update({
           date: new Date(editForm.date).toISOString(),
-          customer_name: editForm.customer_name,
-          mobile_number: editForm.mobile_number || null,
           expense: editForm.expense,
           amount: total,
         } as any)
@@ -226,13 +224,12 @@ const Applications = () => {
 
       // Update or insert expense - prevent double entry
       if (editForm.expense > 0) {
-        const oldExpenseName = `Application - ${editingEntry.customer_name}`;
-        const newExpenseName = `Application - ${editForm.customer_name}`;
+        const expenseName = `Application - ${editingEntry.customer_name}`;
         
         const { data: existingExpense } = await supabase
           .from('expenses')
           .select('id')
-          .eq('name', oldExpenseName)
+          .eq('name', expenseName)
           .gte('date', format(editingEntry.date, 'yyyy-MM-dd'))
           .lt('date', format(editingEntry.date, 'yyyy-MM-dd') + 'T23:59:59.999')
           .limit(1);
@@ -240,14 +237,14 @@ const Applications = () => {
         if (existingExpense && existingExpense.length > 0) {
           await supabase
             .from('expenses')
-            .update({ name: newExpenseName, amount: editForm.expense, date: new Date(editForm.date).toISOString() })
+            .update({ name: expenseName, amount: editForm.expense, date: new Date(editForm.date).toISOString() })
             .eq('id', existingExpense[0].id);
         } else {
           await supabase
             .from('expenses')
             .insert({
               date: new Date(editForm.date).toISOString(),
-              name: newExpenseName,
+              name: expenseName,
               amount: editForm.expense,
             });
         }
@@ -256,8 +253,6 @@ const Applications = () => {
       const updatedEntry: ApplicationEntry = {
         ...editingEntry,
         date: new Date(editForm.date),
-        customer_name: editForm.customer_name,
-        mobile_number: editForm.mobile_number,
         expense: editForm.expense,
         amount: total,
       };
