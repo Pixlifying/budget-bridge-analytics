@@ -189,7 +189,6 @@ const Applications = () => {
         setApplications(prev => [newApplicationEntry, ...prev]);
         setNewEntry({
           date: new Date().toISOString().split('T')[0],
-          mobile_number: '',
           expense: 0,
           amount: 0,
           service_type: '',
