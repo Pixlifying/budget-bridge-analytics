@@ -55,7 +55,6 @@ const Applications = () => {
   // Form state for inline entry
   const [newEntry, setNewEntry] = useState({
     date: new Date().toISOString().split('T')[0],
-    customer_name: '',
     mobile_number: '',
     expense: 0,
     amount: 0,
@@ -65,7 +64,6 @@ const Applications = () => {
 
   const [editForm, setEditForm] = useState({
     date: '',
-    customer_name: '',
     mobile_number: '',
     expense: 0,
     amount: 0,
