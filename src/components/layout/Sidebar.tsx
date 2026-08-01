@@ -176,8 +176,8 @@ const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: Sid
       financialServices: [{ menuKey: 'financialServices', paths: ['/banking', '/od-records', '/banking-accounts'] }],
       nonFinancialServices: [{ menuKey: 'nonFinancialServices', paths: ['/account-details', '/social-security', '/documentation'] }],
       customerServices: [{ menuKey: 'customerServices', paths: ['/online-services', '/applications', '/photostat', '/papers'] }],
-      ledger: [{ menuKey: 'ledger', paths: ['/khata', '/pending-balance', '/expenses'] }],
-      apps: [{ menuKey: 'apps', paths: ['/calculator', '/age-calculator', '/work-to-be', '/checklist-docs', '/khata-entry'] }],
+      ledger: [{ menuKey: 'ledger', paths: ['/khata-entry', '/pending-balance', '/expenses'] }],
+      apps: [{ menuKey: 'apps', paths: ['/calculator', '/age-calculator', '/work-to-be', '/checklist-docs'] }],
     };
 
     const updates: Record<string, boolean> = {};
