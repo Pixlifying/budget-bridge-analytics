@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Eye, EyeOff, UserPlus } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface LoginProps {
@@ -20,34 +20,6 @@ const Login = ({ onLogin, onForgotPassword }: LoginProps) => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
-
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-        },
-      });
-
-      if (error) throw error;
-
-      if (data.user && !data.session) {
-        toast.success('Check your email for verification link!');
-      } else {
-        toast.success('Account created successfully!');
-      }
-    } catch (error: any) {
-      toast.error(error.message || 'Error creating account');
-    }
-
-    setIsLoading(false);
-  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,11 +47,11 @@ const Login = ({ onLogin, onForgotPassword }: LoginProps) => {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl text-center">
-            {isSignUp ? 'Create Account' : 'Sign In'}
+            Sign In
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={isSignUp ? handleSignUp : handleSignIn} className="space-y-4">
+          <form onSubmit={handleSignIn} className="space-y-4">
             <div>
               <Label htmlFor="email">Email</Label>
               <Input
@@ -114,16 +86,7 @@ const Login = ({ onLogin, onForgotPassword }: LoginProps) => {
               </div>
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? (isSignUp ? 'Creating...' : 'Signing in...') : (isSignUp ? 'Create Account' : 'Sign In')}
-            </Button>
-            <Button 
-              type="button" 
-              variant="outline" 
-              className="w-full"
-              onClick={() => setIsSignUp(!isSignUp)}
-            >
-              <UserPlus className="h-4 w-4 mr-2" />
-              {isSignUp ? 'Already have an account? Sign In' : 'Need an account? Sign Up'}
+              {isLoading ? 'Signing in...' : 'Sign In'}
             </Button>
             <Button 
               type="button" 

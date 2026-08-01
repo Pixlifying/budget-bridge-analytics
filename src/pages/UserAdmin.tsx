@@ -114,8 +114,16 @@ const UserAdmin = () => {
 
     setIsUploadingImage(true);
     try {
+      const { data: authData } = await supabase.auth.getUser();
+      const authUserId = authData?.user?.id;
+      if (!authUserId) {
+        toast.error('You must be signed in to upload an image');
+        setIsUploadingImage(false);
+        return;
+      }
+
       const fileExt = file.name.split('.').pop();
-      const fileName = `profile-${userData.id}-${Date.now()}.${fileExt}`;
+      const fileName = `${authUserId}/profile-${Date.now()}.${fileExt}`;
 
       // Delete old image if exists
       if (userData.profile_image_url) {
