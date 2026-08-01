@@ -227,11 +227,10 @@ const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: Sid
     { icon: <IconCalculator size={16} />, label: 'Calculator', to: '/calculator' },
     { icon: <IconDocument size={16} />, label: 'Notes', to: '/work-to-be' },
     { icon: <IconDocument size={16} />, label: 'Check List Docs', to: '/checklist-docs' },
-    { icon: <IconBook size={16} />, label: 'Khata Entry', to: '/khata-entry' },
   ];
 
   const ledgerItems = [
-    { icon: <IconBook size={16} />, label: 'Khata', to: '/khata' },
+    { icon: <IconBook size={16} />, label: 'Khata Entry', to: '/khata-entry' },
     { icon: <IconWarning size={16} />, label: 'Pending Balance', to: '/pending-balance' },
     { icon: <IconExpense size={16} />, label: 'Expenses', to: '/expenses' },
   ];

@@ -901,10 +901,6 @@ const Dashboard = () => {
                     <span className="text-[10px] opacity-80">Txn Days</span>
                   </div>
                   <div className="flex-1 bg-white/15 rounded-xl p-2.5 text-center backdrop-blur-sm">
-                    <span className="text-lg font-bold block">{bankingServicesCount}</span>
-                    <span className="text-[10px] opacity-80">Banking Txn</span>
-                  </div>
-                  <div className="flex-1 bg-white/15 rounded-xl p-2.5 text-center backdrop-blur-sm">
                     <span className="text-lg font-bold block">{onlineServicesCount}</span>
                     <span className="text-[10px] opacity-80">Online</span>
                   </div>
@@ -1026,18 +1022,17 @@ const Dashboard = () => {
               </DashCard>
             </div>
 
-            {/* Third Row - Khata, Documentation */}
+            {/* Third Row - Khata Entry, Documentation */}
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-              {/* Khata */}
-              <DashCard onClick={() => setKhataDialogOpen(true)} className="cursor-pointer">
+              {/* Khata Entry */}
+              <DashCard onClick={() => navigate('/khata-entry')} className="cursor-pointer">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="p-2 rounded-lg bg-primary/10">
                     <BookOpen className="h-4 w-4 text-primary" />
                   </div>
-                  <h3 className="font-medium text-foreground">Khata</h3>
+                  <h3 className="font-medium text-foreground">Khata Entry</h3>
                 </div>
-                <p className="text-2xl font-bold text-foreground">{khataCustomersData?.length || 0}</p>
-                <p className="text-xs text-muted-foreground mt-1">Net: <span className={khataTotal >= 0 ? 'text-primary' : 'text-destructive'}>{formatCurrency(khataTotal)}</span></p>
+                <p className="text-sm text-muted-foreground mt-1">Open Khata Book →</p>
               </DashCard>
 
               {/* Documentation */}
