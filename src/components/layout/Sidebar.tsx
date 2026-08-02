@@ -63,13 +63,13 @@ const SidebarSubMenu = ({ items, isExpanded, onNavigate }: SidebarSubMenuProps) 
             to={item.to}
             onClick={onNavigate}
             className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200",
+              "group/sub flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200",
               isActive 
                 ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-sidebar-primary/30" 
                 : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             )}
           >
-            <div className="shrink-0 w-4 h-4">
+            <div className="shrink-0 w-4 h-4 transition-transform duration-300 group-hover/sub:scale-110 group-hover/sub:rotate-6">
               {item.icon}
             </div>
             <span className="font-medium">{item.label}</span>
