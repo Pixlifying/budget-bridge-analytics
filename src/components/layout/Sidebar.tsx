@@ -95,17 +95,17 @@ const SidebarItem = ({
       <button
         onClick={onClick}
         className={cn(
-          "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
+          "group w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
           isActive 
             ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-sidebar-primary/30" 
             : "text-sidebar-foreground hover:bg-sidebar-accent"
         )}
       >
-        <div className="shrink-0 w-5 h-5">
+        <div className="shrink-0 w-5 h-5 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6">
           {icon}
         </div>
         <span className="text-sm font-medium flex-1 text-left">{label}</span>
-        {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+        <ChevronRight size={16} className={cn("transition-transform duration-300", isExpanded && "rotate-90")} />
       </button>
     );
   }
@@ -115,13 +115,13 @@ const SidebarItem = ({
       to={to}
       onClick={onNavigate}
       className={cn(
-        "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
+        "group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
         isActive 
           ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-sidebar-primary/30" 
           : "text-sidebar-foreground hover:bg-sidebar-accent"
       )}
     >
-      <div className="shrink-0 w-5 h-5">
+      <div className="shrink-0 w-5 h-5 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6">
         {icon}
       </div>
       <span className="text-sm font-medium">{label}</span>
