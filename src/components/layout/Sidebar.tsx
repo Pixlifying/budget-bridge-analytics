@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ChevronDown, ChevronRight, X, PanelLeft } from 'lucide-react';
+import { ChevronRight, X, PanelLeft } from 'lucide-react';
 import {
   IconDashboard,
   IconWallet,
