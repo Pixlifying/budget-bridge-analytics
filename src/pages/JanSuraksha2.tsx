@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Upload, Printer, Download, Pencil, Trash2, Plus, ShieldCheck } from 'lucide-react';
+import { Upload, Printer, Download, FileText, Pencil, Trash2, Plus, ShieldCheck, Beaker } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -15,30 +15,116 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.mjs', import.meta.url).toString();
 
-const STORAGE_KEY = 'jan-suraksha-records';
+const STORAGE_KEY = 'jan-suraksha-2-records';
 const SCHEMES = ['PMSBY', 'PMJJBY', 'APY', 'DLC'] as const;
 type Scheme = (typeof SCHEMES)[number];
+const SCHEME_LABEL: Record<Scheme, string> = {
+  PMSBY: 'PMSBY',
+  PMJJBY: 'PMJJBY',
+  APY: 'APY',
+  DLC: 'Digital Life Certificate',
+};
 
 interface JSRecord {
   id: string;
   date: string; // yyyy-MM-dd
   scheme: Scheme;
   name: string;
+  mobile: string;
   urn: string;
   account: string;
+  policy: string;
   remarks: string;
 }
 
-const emptyForm = (): Omit<JSRecord, 'id'> => ({
+type ParsedRecord = Omit<JSRecord, 'id'>;
+
+const emptyForm = (): ParsedRecord => ({
   date: format(new Date(), 'yyyy-MM-dd'),
   scheme: 'PMSBY',
   name: '',
+  mobile: '',
   urn: '',
   account: '',
+  policy: '',
   remarks: '',
 });
 
-const JanSuraksha = () => {
+const DEMO_TEXT = `Pradhan Mantri Suraksha Bima Yojana (PMSBY) - Certificate of Insurance
+Name of Member AJAY KUMAR
+Date of Birth 02/01/1990
+Mobile Number 6005051275
+Address RS PURA JAMMU
+Unique Reference Number (URN) JNS-PMSBY-26-27-
+00405007578-953
+Name of Bank J&K BANK
+Bank / Post office a/c no. 0025040800601467
+Master Policy Number 35120166269200000001
+Date of Commencement of Cover 14/08/2026
+Cover End Date 31/05/2027`;
+
+const LABELS = [
+  'Name of Member', 'Name of the Member', 'Member Name', 'Name of Pensioner', 'Name of Subscriber',
+  'Date of Birth', 'DOB', 'Age', 'Gender', 'Mobile Number', 'Mobile No', 'Email',
+  'Address', 'Aadhar Number', 'Aadhaar Number', 'Aadhaar', 'Name of Nominee', 'Age of Nominee',
+  'Relationship', 'Master Policy Number', 'Master Policy No', 'Insurer', 'Name of Insurance Company',
+  'Unique Reference Number', 'URN', 'Name of Bank', 'Bank / Post office a/c no', 'Bank/Post office a/c no',
+  'Account Number', 'A/c No', 'Branch Code', 'Branch Name', 'Branch Address', 'IFSC',
+  'Date of Commencement of Cover', 'Date of Commencement', 'Cover End Date', 'Sum Assured',
+  'Annual Renewal Date', 'Premium Amount', 'Signature', 'PRAN', 'Pension Amount',
+];
+
+const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
+const NEXT = '(?:' + LABELS.map(escape).join('|') + '|$)';
+
+const grab = (text: string, labels: string[]) => {
+  for (const label of labels) {
+    const re = new RegExp(escape(label) + '\\s*:?\\s*(.+?)\\s*(?=' + NEXT + ')', 'i');
+    const m = text.match(re);
+    if (m && m[1].trim()) return m[1].trim().replace(/\s{2,}/g, ' ');
+  }
+  return '';
+};
+
+export const parseCertificateText = (raw: string): ParsedRecord | null => {
+  // Join wrapped lines / two-column layouts into a single normalized stream
+  const text = raw.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
+
+  const name = grab(text, ['Name of the Member', 'Name of Member', 'Member Name', 'Name of Subscriber', 'Name of Pensioner']);
+  const mobile = (grab(text, ['Mobile Number', 'Mobile No']).match(/\d{10}/) || [''])[0];
+
+  // URN can wrap across lines: strip every internal space, collapse stray hyphens
+  let urn = grab(text, ['Unique Reference Number (URN)', 'Unique Reference Number', 'URN'])
+    .replace(/\s+/g, '')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-+|-+$/g, '');
+  const urnMatch = urn.match(/[A-Z]{2,4}-[A-Z]+-[\dA-Z-]+/i);
+  if (urnMatch) urn = urnMatch[0].toUpperCase();
+
+  const account = (grab(text, ['Bank / Post office a/c no', 'Bank/Post office a/c no', 'Account Number', 'A/c No']).match(/\d[\d\s-]{6,}/) || [''])[0].replace(/\D/g, '').slice(0, 20);
+  const policy = (grab(text, ['Master Policy Number', 'Master Policy No']).match(/[\dA-Z]{6,}/i) || [''])[0];
+
+  const upper = text.toUpperCase();
+  let scheme: Scheme = 'PMSBY';
+  if (upper.includes('PMJJBY') || upper.includes('JEEVAN JYOTI')) scheme = 'PMJJBY';
+  else if (upper.includes('ATAL PENSION') || /\bAPY\b/.test(upper) || upper.includes('PRAN')) scheme = 'APY';
+  else if (upper.includes('LIFE CERTIFICATE') || upper.includes('JEEVAN PRAMAAN') || /\bDLC\b/.test(upper)) scheme = 'DLC';
+  else if (upper.includes('PMSBY') || upper.includes('SURAKSHA BIMA')) scheme = 'PMSBY';
+
+  const toIso = (d: string) => {
+    const m = d.match(/(\d{2})[-/.](\d{2})[-/.](\d{4})/);
+    return m ? `${m[3]}-${m[2]}-${m[1]}` : '';
+  };
+  const date =
+    toIso(grab(text, ['Date of Commencement of Cover', 'Date of Commencement'])) ||
+    toIso(text.match(/(\d{2})[-/.](\d{2})[-/.](\d{4})/)?.[0] || '') ||
+    format(new Date(), 'yyyy-MM-dd');
+
+  if (!name && !urn && !account) return null;
+  return { date, scheme, name, mobile, urn, account, policy, remarks: '' };
+};
+
+const JanSuraksha2 = () => {
   const [records, setRecords] = useState<JSRecord[]>(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -51,7 +137,8 @@ const JanSuraksha = () => {
   const [search, setSearch] = useState('');
   const [isParsing, setIsParsing] = useState(false);
   const [editing, setEditing] = useState<JSRecord | null>(null);
-  const [form, setForm] = useState(emptyForm());
+  const [form, setForm] = useState<ParsedRecord>(emptyForm());
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -68,6 +155,7 @@ const JanSuraksha = () => {
           !q ||
           r.name.toLowerCase().includes(q) ||
           r.urn.toLowerCase().includes(q) ||
+          r.mobile.includes(q) ||
           r.account.toLowerCase().includes(q),
       )
       .sort((a, b) => b.date.localeCompare(a.date));
@@ -81,120 +169,85 @@ const JanSuraksha = () => {
   const dedupeKey = (r: Pick<JSRecord, 'urn' | 'name' | 'account'>) =>
     (r.urn || `${r.name}|${r.account}`).replace(/\s+/g, '').toUpperCase();
 
-  const parsePdf = async (file: File): Promise<Omit<JSRecord, 'id'> | null> => {
+  const addParsed = (list: ParsedRecord[]) => {
+    const existing = new Set(records.map(dedupeKey));
+    const fresh: JSRecord[] = [];
+    let dupes = 0;
+    for (const parsed of list) {
+      const key = dedupeKey(parsed);
+      if (existing.has(key)) {
+        dupes++;
+        continue;
+      }
+      existing.add(key);
+      fresh.push({ ...parsed, id: crypto.randomUUID() });
+    }
+    if (fresh.length) setRecords((prev) => [...fresh, ...prev]);
+    return { added: fresh.length, dupes };
+  };
+
+  const pdfToText = async (file: File) => {
     const buffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-    let fullText = '';
+    let out = '';
     for (let p = 1; p <= pdf.numPages; p++) {
       const page = await pdf.getPage(p);
       const tc = await page.getTextContent();
-      fullText += ' ' + (tc.items as any[]).map((i) => i.str).join(' ');
+      out += ' ' + (tc.items as any[]).map((i) => i.str).join(' ');
     }
-    const text = fullText.replace(/\s+/g, ' ').trim();
-
-    const NEXT =
-      '(?:Date of Birth|Mobile Number|Address\\b|Aadhar Number|Aadhaar|Name of Nominee|Age of Nominee|Master Policy Number|Insurer|Unique Reference Number|Name of Bank|Bank\\s*/\\s*Post office a\\/c no|Branch Code|Branch Address|Date of Commencement|Cover End Date|Sum Assured|Annual Renewal|Premium Amount|Signature|$)';
-    const grab = (labelRe: RegExp) => {
-      const m = text.match(new RegExp(labelRe.source + '\\s*:?\\s*(.+?)\\s*(?=' + NEXT + ')', 'i'));
-      return m ? m[1].trim().replace(/\s{2,}/g, ' ') : '';
-    };
-
-    const name = grab(/Name of (?:the )?Member|Member Name|Name of Pensioner/i);
-    const urn = grab(/Unique Reference Number\s*(?:\(URN\))?|URN/i)
-      .replace(/\s+/g, '')
-      .replace(/-+/g, '-')
-      .replace(/(\d{6,})-(\d+)/g, '$1$2')
-      .replace(/^-|-$/g, '');
-    const accountRaw = grab(/Bank\s*\/\s*Post office a\/c no\.?|Account Number|A\/c No\.?/i);
-    const account = (accountRaw.match(/[\d\s-]+/)?.[0] || '').replace(/\D/g, '').slice(0, 20);
-
-    const upper = (urn + ' ' + text).toUpperCase();
-    let scheme: Scheme = 'PMSBY';
-    if (upper.includes('PMJJBY') || upper.includes('PMJJY') || upper.includes('JEEVAN JYOTI')) scheme = 'PMJJBY';
-    else if (upper.includes('ATAL PENSION') || /\bAPY\b/.test(upper)) scheme = 'APY';
-    else if (upper.includes('LIFE CERTIFICATE') || upper.includes('JEEVAN PRAMAAN') || /\bDLC\b/.test(upper))
-      scheme = 'DLC';
-
-    // Certificate date if present, else today
-    const dateMatch = text.match(/(\d{2})[-/](\d{2})[-/](\d{4})/);
-    const date = dateMatch ? `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}` : format(new Date(), 'yyyy-MM-dd');
-
-    if (!name && !urn && !account) return null;
-    return { date, scheme, name, urn, account, remarks: '' };
+    return out;
   };
 
   const handleFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
     setIsParsing(true);
-    let added = 0;
-    let dupes = 0;
+    const parsedList: ParsedRecord[] = [];
     let failed = 0;
-    const existing = new Set(records.map(dedupeKey));
-    const fresh: JSRecord[] = [];
-
     for (const file of files) {
       try {
         if (!file.name.toLowerCase().endsWith('.pdf')) {
           failed++;
           continue;
         }
-        const parsed = await parsePdf(file);
-        if (!parsed) {
-          failed++;
-          continue;
-        }
-        const key = dedupeKey(parsed);
-        if (existing.has(key)) {
-          dupes++;
-          continue;
-        }
-        existing.add(key);
-        fresh.push({ ...parsed, id: crypto.randomUUID() });
-        added++;
+        const parsed = parseCertificateText(await pdfToText(file));
+        if (parsed) parsedList.push(parsed);
+        else failed++;
       } catch (err) {
         console.error(err);
         failed++;
       }
     }
-
-    if (fresh.length) setRecords((prev) => [...fresh, ...prev]);
+    const { added, dupes } = addParsed(parsedList);
     setIsParsing(false);
     if (fileRef.current) fileRef.current.value = '';
-
     if (added) toast.success(`${added} record(s) extracted`);
-    if (dupes) toast.info(`${dupes} duplicate file(s) skipped`);
+    if (dupes) toast.info(`${dupes} duplicate entry(ies) skipped`);
     if (failed) toast.error(`${failed} file(s) could not be read`);
   };
 
-  const openAdd = () => {
-    setForm(emptyForm());
-    setEditing(null);
+  const runDemo = () => {
+    const parsed = parseCertificateText(DEMO_TEXT);
+    if (!parsed) return toast.error('Demo parse failed');
+    const { added, dupes } = addParsed([parsed]);
+    if (added) toast.success('Demo record added');
+    if (dupes) toast.info('Demo record already exists');
   };
 
   const saveForm = () => {
-    if (!form.name.trim()) {
-      toast.error('Member name is required');
-      return;
-    }
+    if (!form.name.trim()) return toast.error('Member name is required');
     if (editing) {
       setRecords((prev) => prev.map((r) => (r.id === editing.id ? { ...editing, ...form } : r)));
       toast.success('Record updated');
       setEditing(null);
     } else {
-      const key = dedupeKey(form);
-      if (records.some((r) => dedupeKey(r) === key)) {
-        toast.error('This entry already exists');
-        return;
-      }
-      setRecords((prev) => [{ ...form, id: crypto.randomUUID() }, ...prev]);
+      const { added, dupes } = addParsed([form]);
+      if (!added && dupes) return toast.error('This entry already exists');
       toast.success('Record added');
     }
     setForm(emptyForm());
     setDialogOpen(false);
   };
-
-  const [dialogOpen, setDialogOpen] = useState(false);
 
   const confirmDelete = () => {
     setRecords((prev) => prev.filter((r) => r.id !== deleteId));
@@ -202,36 +255,52 @@ const JanSuraksha = () => {
     toast.success('Record deleted');
   };
 
-  const handleExport = () => {
-    const rows = filtered.map((r, i) => ({
+  const rowsForExport = () =>
+    filtered.map((r, i) => ({
       '#': i + 1,
       Date: format(new Date(r.date), 'dd/MM/yyyy'),
       Scheme: r.scheme,
       'Member Name': r.name,
+      Mobile: r.mobile,
       URN: r.urn,
-      'Account No.': r.account,
+      'Bank A/c': r.account,
+      'Master Policy No': r.policy,
       Remarks: r.remarks,
     }));
-    const ws = XLSX.utils.json_to_sheet(rows);
+
+  const handleExcel = () => {
+    const ws = XLSX.utils.json_to_sheet(rowsForExport());
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Jan Suraksha');
     XLSX.writeFile(wb, `jan-suraksha-${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
   };
 
+  const handleCsv = () => {
+    const rows = rowsForExport();
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const csv = XLSX.utils.sheet_to_csv(ws);
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `jan-suraksha-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handlePrint = () => {
     const win = window.open('', '_blank');
     if (!win) return;
-    win.document.write(`<!DOCTYPE html><html><head><title>Jan Suraksha Records</title>
-      <style>@page{size:A4 landscape;margin:15mm}body{font-family:Arial,sans-serif;font-size:11px}
+    win.document.write(`<!DOCTYPE html><html><head><title>Jan Suraksha 2 Records</title>
+      <style>@page{size:A4 landscape;margin:12mm}body{font-family:Arial,sans-serif;font-size:10px}
       h1{text-align:center;font-size:16px}table{width:100%;border-collapse:collapse;margin-top:10px}
-      th,td{border:1px solid #000;padding:6px;text-align:left}th{background:#f0f0f0}</style></head><body>
+      th,td{border:1px solid #000;padding:5px;text-align:left}th{background:#f0f0f0}</style></head><body>
       <h1>Jan Suraksha Records</h1>
       <p>Total: ${filtered.length} | Generated: ${format(new Date(), 'dd/MM/yyyy')}</p>
-      <table><thead><tr><th>#</th><th>Date</th><th>Scheme</th><th>Member Name</th><th>URN</th><th>Account No.</th><th>Remarks</th></tr></thead>
+      <table><thead><tr><th>#</th><th>Date</th><th>Scheme</th><th>Member Name</th><th>Mobile</th><th>URN</th><th>Bank A/c</th><th>Master Policy No</th><th>Remarks</th></tr></thead>
       <tbody>${filtered
         .map(
           (r, i) =>
-            `<tr><td>${i + 1}</td><td>${format(new Date(r.date), 'dd/MM/yyyy')}</td><td>${r.scheme}</td><td>${r.name}</td><td>${r.urn}</td><td>${r.account}</td><td>${r.remarks}</td></tr>`,
+            `<tr><td>${i + 1}</td><td>${format(new Date(r.date), 'dd/MM/yyyy')}</td><td>${r.scheme}</td><td>${r.name}</td><td>${r.mobile}</td><td>${r.urn}</td><td>${r.account}</td><td>${r.policy}</td><td>${r.remarks}</td></tr>`,
         )
         .join('')}</tbody></table></body></html>`);
     win.document.close();
@@ -240,35 +309,37 @@ const JanSuraksha = () => {
 
   return (
     <PageWrapper
-      title="Jan Suraksha"
-      subtitle="PMSBY • PMJJBY • APY • Digital Life Certificate — automated PDF extraction"
+      title="Jan Suraksha 2"
+      subtitle="Data extraction utility — PMSBY • PMJJBY • APY • Digital Life Certificate"
       icon={<ShieldCheck size={20} />}
       action={
         <div className="flex flex-wrap items-center gap-2">
           <Button onClick={() => fileRef.current?.click()} disabled={isParsing}>
             <Upload size={16} className="mr-2" />
-            {isParsing ? 'Extracting…' : 'Browse PDF & Extract'}
+            {isParsing ? 'Extracting…' : 'Browse PDFs & Extract'}
           </Button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".pdf"
-            multiple
-            className="hidden"
-            onChange={handleFiles}
-          />
+          <input ref={fileRef} type="file" accept=".pdf" multiple className="hidden" onChange={handleFiles} />
           <Button variant="outline" onClick={handlePrint}>
             <Printer size={16} className="mr-2" />
             Print
           </Button>
-          <Button variant="outline" onClick={handleExport}>
+          <Button variant="outline" onClick={handleExcel}>
             <Download size={16} className="mr-2" />
-            Download
+            Excel
+          </Button>
+          <Button variant="outline" onClick={handleCsv}>
+            <FileText size={16} className="mr-2" />
+            CSV
+          </Button>
+          <Button variant="outline" onClick={runDemo}>
+            <Beaker size={16} className="mr-2" />
+            Demo Test
           </Button>
           <Button
             variant="outline"
             onClick={() => {
-              openAdd();
+              setEditing(null);
+              setForm(emptyForm());
               setDialogOpen(true);
             }}
           >
@@ -282,7 +353,7 @@ const JanSuraksha = () => {
         {counts.map(({ scheme, count }) => (
           <Card key={scheme} className="border-border/60">
             <CardContent className="p-4">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">{scheme}</p>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">{SCHEME_LABEL[scheme]}</p>
               <p className="text-2xl font-bold">{count}</p>
             </CardContent>
           </Card>
@@ -291,20 +362,20 @@ const JanSuraksha = () => {
 
       <div className="flex flex-col sm:flex-row gap-2 mb-4">
         <Select value={schemeFilter} onValueChange={(v) => setSchemeFilter(v as any)}>
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-[220px]">
             <SelectValue placeholder="Scheme" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Schemes</SelectItem>
             {SCHEMES.map((s) => (
               <SelectItem key={s} value={s}>
-                {s}
+                {SCHEME_LABEL[s]}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
         <Input
-          placeholder="Search by name, URN or account…"
+          placeholder="Search by name, mobile, URN or account…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="sm:max-w-xs"
@@ -319,8 +390,10 @@ const JanSuraksha = () => {
               <th className="p-3 text-left">Date</th>
               <th className="p-3 text-left">Scheme</th>
               <th className="p-3 text-left">Member Name</th>
+              <th className="p-3 text-left">Mobile</th>
               <th className="p-3 text-left">Unique Reference Number (URN)</th>
-              <th className="p-3 text-left">Account No.</th>
+              <th className="p-3 text-left">Bank A/c</th>
+              <th className="p-3 text-left">Master Policy No</th>
               <th className="p-3 text-left">Remarks</th>
               <th className="p-3 text-right">Actions</th>
             </tr>
@@ -328,8 +401,8 @@ const JanSuraksha = () => {
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={8} className="p-10 text-center text-muted-foreground">
-                  No Jan Suraksha data available. Use “Browse PDF &amp; Extract” to import certificates.
+                <td colSpan={10} className="p-10 text-center text-muted-foreground">
+                  No records yet. Use “Browse PDFs &amp; Extract” to import certificates.
                 </td>
               </tr>
             ) : (
@@ -339,8 +412,10 @@ const JanSuraksha = () => {
                   <td className="p-3 whitespace-nowrap">{format(new Date(r.date), 'dd/MM/yyyy')}</td>
                   <td className="p-3">{r.scheme}</td>
                   <td className="p-3 font-medium">{r.name}</td>
+                  <td className="p-3">{r.mobile}</td>
                   <td className="p-3 break-all">{r.urn}</td>
                   <td className="p-3">{r.account}</td>
+                  <td className="p-3">{r.policy}</td>
                   <td className="p-3">{r.remarks}</td>
                   <td className="p-3">
                     <div className="flex justify-end gap-1">
@@ -393,7 +468,7 @@ const JanSuraksha = () => {
                 <SelectContent>
                   {SCHEMES.map((s) => (
                     <SelectItem key={s} value={s}>
-                      {s}
+                      {SCHEME_LABEL[s]}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -404,12 +479,20 @@ const JanSuraksha = () => {
               <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
             </div>
             <div>
+              <Label>Mobile</Label>
+              <Input value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} />
+            </div>
+            <div>
               <Label>Unique Reference Number (URN)</Label>
               <Input value={form.urn} onChange={(e) => setForm({ ...form, urn: e.target.value })} />
             </div>
             <div>
-              <Label>Account No.</Label>
+              <Label>Bank A/c</Label>
               <Input value={form.account} onChange={(e) => setForm({ ...form, account: e.target.value })} />
+            </div>
+            <div>
+              <Label>Master Policy No</Label>
+              <Input value={form.policy} onChange={(e) => setForm({ ...form, policy: e.target.value })} />
             </div>
             <div>
               <Label>Remarks</Label>
@@ -436,4 +519,4 @@ const JanSuraksha = () => {
   );
 };
 
-export default JanSuraksha;
+export default JanSuraksha2;
