@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.mjs', import.meta.url).toString();
 
-const STORAGE_KEY = 'jan-suraksha-2-records';
+const STORAGE_KEY = 'jan-suraksha-records';
 const SCHEMES = ['PMSBY', 'PMJJBY', 'APY', 'DLC'] as const;
 type Scheme = (typeof SCHEMES)[number];
 const SCHEME_LABEL: Record<Scheme, string> = {
@@ -124,7 +124,7 @@ export const parseCertificateText = (raw: string): ParsedRecord | null => {
   return { date, scheme, name, mobile, urn, account, policy, remarks: '' };
 };
 
-const JanSuraksha2 = () => {
+const JanSuraksha = () => {
   const [records, setRecords] = useState<JSRecord[]>(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -290,7 +290,7 @@ const JanSuraksha2 = () => {
   const handlePrint = () => {
     const win = window.open('', '_blank');
     if (!win) return;
-    win.document.write(`<!DOCTYPE html><html><head><title>Jan Suraksha 2 Records</title>
+    win.document.write(`<!DOCTYPE html><html><head><title>Jan Suraksha Records</title>
       <style>@page{size:A4 landscape;margin:12mm}body{font-family:Arial,sans-serif;font-size:10px}
       h1{text-align:center;font-size:16px}table{width:100%;border-collapse:collapse;margin-top:10px}
       th,td{border:1px solid #000;padding:5px;text-align:left}th{background:#f0f0f0}</style></head><body>
@@ -309,8 +309,8 @@ const JanSuraksha2 = () => {
 
   return (
     <PageWrapper
-      title="Jan Suraksha 2"
-      subtitle="Data extraction utility — PMSBY • PMJJBY • APY • Digital Life Certificate"
+      title="Jansuraksha Data Extraction Utility"
+      subtitle="Supports PMSBY • PMJJBY • APY • Digital Life Certificate (DLC)"
       icon={<ShieldCheck size={20} />}
       action={
         <div className="flex flex-wrap items-center gap-2">
@@ -519,4 +519,4 @@ const JanSuraksha2 = () => {
   );
 };
 
-export default JanSuraksha2;
+export default JanSuraksha;
