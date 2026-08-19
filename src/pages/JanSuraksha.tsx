@@ -75,34 +75,97 @@ const LABELS = [
 ];
 
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
-const NEXT = '(?:' + LABELS.map(escape).join('|') + '|$)';
+const LABEL_RE = new RegExp('^(?:' + LABELS.map(escape).join('|') + ')\\b', 'i');
 
-const grab = (text: string, labels: string[]) => {
+const isLabelLine = (line: string) => LABEL_RE.test(line.trim());
+
+/**
+ * Line-aware field extraction. Handles:
+ *  - "Label : value" on one line
+ *  - two-column layouts where the value sits after the label on the same visual line
+ *  - values wrapped onto the following line(s)
+ */
+const grabLines = (lines: string[], labels: string[], continuation?: RegExp) => {
   for (const label of labels) {
-    const re = new RegExp(escape(label) + '\\s*:?\\s*(.+?)\\s*(?=' + NEXT + ')', 'i');
-    const m = text.match(re);
-    if (m && m[1].trim()) return m[1].trim().replace(/\s{2,}/g, ' ');
+    const re = new RegExp('^' + escape(label) + '\\s*[:.\\-]?\\s*(.*)$', 'i');
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      const m = line.match(re);
+      if (!m) continue;
+      let value = m[1].trim();
+      // value wrapped onto next line(s)
+      let j = i + 1;
+      while (j < lines.length) {
+        const next = lines[j].trim();
+        if (!next || isLabelLine(next)) break;
+        if (!value) {
+          value = next;
+        } else if (continuation && continuation.test(next)) {
+          value += next;
+        } else break;
+        j++;
+        if (!continuation) break;
+      }
+      value = value.replace(/\s{2,}/g, ' ').trim();
+      if (value) return value;
+    }
   }
   return '';
 };
 
 export const parseCertificateText = (raw: string): ParsedRecord | null => {
-  // Join wrapped lines / two-column layouts into a single normalized stream
-  const text = raw.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
+  const lines = raw
+    .replace(/\u00a0/g, ' ')
+    .split('\n')
+    .map((l) => l.replace(/\s{2,}/g, ' ').trim())
+    .filter(Boolean);
+  const text = lines.join(' ');
 
-  const name = grab(text, ['Name of the Member', 'Name of Member', 'Member Name', 'Name of Subscriber', 'Name of Pensioner']);
-  const mobile = (grab(text, ['Mobile Number', 'Mobile No']).match(/\d{10}/) || [''])[0];
+  let name = grabLines(lines, [
+    'Name of the Member',
+    'Name of Member',
+    'Member Name',
+    'Name of Subscriber',
+    'Name of Pensioner',
+    'Name',
+  ]);
+  // guard against picking up headings / insurer names
+  if (/CERTIFICATE|YOJANA|INSURANCE|ASSURANCE|COMPANY|LIMITED|BANK/i.test(name)) {
+    const clean = name.replace(/.*?(?:CERTIFICATE[^)]*\)|YOJANA\)?)/i, '').trim();
+    name = /^[A-Za-z .]{3,}$/.test(clean) ? clean : '';
+  }
+  name = name.replace(/\bRs\.?\s*[\d.,]+\b/gi, '').replace(/\s{2,}/g, ' ').trim();
 
-  // URN can wrap across lines: strip every internal space, collapse stray hyphens
-  let urn = grab(text, ['Unique Reference Number (URN)', 'Unique Reference Number', 'URN'])
-    .replace(/\s+/g, '')
-    .replace(/-{2,}/g, '-')
-    .replace(/^-+|-+$/g, '');
-  const urnMatch = urn.match(/[A-Z]{2,4}-[A-Z]+-[\dA-Z-]+/i);
-  if (urnMatch) urn = urnMatch[0].toUpperCase();
+  const mobile = (grabLines(lines, ['Mobile Number', 'Mobile No']).match(/\d{10}/) ||
+    text.match(/\b[6-9]\d{9}\b/) || [''])[0];
 
-  const account = (grab(text, ['Bank / Post office a/c no', 'Bank/Post office a/c no', 'Account Number', 'A/c No']).match(/\d[\d\s-]{6,}/) || [''])[0].replace(/\D/g, '').slice(0, 20);
-  const policy = (grab(text, ['Master Policy Number', 'Master Policy No']).match(/[\dA-Z]{6,}/i) || [''])[0];
+  // URN may wrap across lines -> join continuation fragments
+  let urn = grabLines(
+    lines,
+    ['Unique Reference Number (URN)', 'Unique Reference Number', 'URN'],
+    /^[\dA-Z-]{2,}$/,
+  ).replace(/\s+/g, '');
+  const urnMatch = (urn || text.replace(/\s+/g, '')).match(/JNS-[A-Z]+-[\dA-Z-]+/i) ||
+    urn.match(/[A-Z]{2,5}-[A-Z]{2,8}-[\dA-Z-]{4,}/i);
+  urn = (urnMatch ? urnMatch[0] : urn).toUpperCase().replace(/-{2,}/g, '-').replace(/^-+|-+$/g, '');
+  if (/[A-Z]{12,}/.test(urn) && !urn.includes('-')) urn = '';
+
+  const accountRaw = grabLines(lines, [
+    'Bank / Post office a/c no',
+    'Bank/Post office a/c no',
+    'Bank / Post office a/c',
+    'Account Number',
+    'A/c No',
+  ]);
+  let account = (accountRaw.match(/\d[\d\s-]{8,}/) || [''])[0].replace(/\D/g, '');
+  if (!account) {
+    const fallback = text.match(/\b\d{11,18}\b/g) || [];
+    account = fallback.find((n) => n.length >= 11 && n.length <= 18) || '';
+  }
+  account = account.slice(0, 20);
+
+  const policy =
+    (grabLines(lines, ['Master Policy Number', 'Master Policy No']).match(/[\dA-Z]{6,}/i) || [''])[0] || '';
 
   const upper = text.toUpperCase();
   let scheme: Scheme = 'PMSBY';
@@ -116,7 +179,7 @@ export const parseCertificateText = (raw: string): ParsedRecord | null => {
     return m ? `${m[3]}-${m[2]}-${m[1]}` : '';
   };
   const date =
-    toIso(grab(text, ['Date of Commencement of Cover', 'Date of Commencement'])) ||
+    toIso(grabLines(lines, ['Date of Commencement of Cover', 'Date of Commencement'])) ||
     toIso(text.match(/(\d{2})[-/.](\d{2})[-/.](\d{4})/)?.[0] || '') ||
     format(new Date(), 'yyyy-MM-dd');
 
@@ -193,7 +256,28 @@ const JanSuraksha = () => {
     for (let p = 1; p <= pdf.numPages; p++) {
       const page = await pdf.getPage(p);
       const tc = await page.getTextContent();
-      out += ' ' + (tc.items as any[]).map((i) => i.str).join(' ');
+      // Rebuild visual lines using item coordinates so two-column layouts
+      // ("Label            VALUE") stay on the same line.
+      const rows = new Map<number, { x: number; str: string }[]>();
+      for (const item of tc.items as any[]) {
+        if (!item.str || !item.str.trim()) continue;
+        const y = Math.round(item.transform[5] / 3) * 3; // tolerance for baseline jitter
+        const x = item.transform[4];
+        if (!rows.has(y)) rows.set(y, []);
+        rows.get(y)!.push({ x, str: item.str });
+      }
+      const lines = [...rows.entries()]
+        .sort((a, b) => b[0] - a[0])
+        .map(([, items]) =>
+          items
+            .sort((a, b) => a.x - b.x)
+            .map((i) => i.str)
+            .join(' ')
+            .replace(/\s{2,}/g, ' ')
+            .trim(),
+        )
+        .filter(Boolean);
+      out += lines.join('\n') + '\n';
     }
     return out;
   };

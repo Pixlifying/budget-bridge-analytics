@@ -227,7 +227,7 @@ const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: Sid
     { icon: <IconCalculator size={16} />, label: 'Calculator', to: '/calculator' },
     { icon: <IconDocument size={16} />, label: 'Notes', to: '/work-to-be' },
     { icon: <IconDocument size={16} />, label: 'Check List Docs', to: '/checklist-docs' },
-    { icon: <IconShield size={16} />, label: 'Jan Suraksha 2', to: '/jan-suraksha' },
+    { icon: <IconShield size={16} />, label: 'Jan Suraksha', to: '/jan-suraksha' },
   ];
 
   const ledgerItems = [
