@@ -79,6 +79,19 @@ const LABEL_RE = new RegExp('^(?:' + LABELS.map(escape).join('|') + ')\\b', 'i')
 
 const isLabelLine = (line: string) => LABEL_RE.test(line.trim());
 
+// Matches a label appearing *inside* a line (two-column PDFs merge
+// "Name of Member RAHUL KUMAR Master Policy Number 3512...").
+const INLINE_LABEL_RE = new RegExp(
+  '\\s(?:' + LABELS.slice().sort((a, b) => b.length - a.length).map(escape).join('|') + ')\\b',
+  'i',
+);
+
+/** Trim everything from the next label token onward. */
+const cutAtLabel = (value: string) => {
+  const m = value.match(INLINE_LABEL_RE);
+  return (m && m.index !== undefined ? value.slice(0, m.index) : value).trim();
+};
+
 /**
  * Line-aware field extraction. Handles:
  *  - "Label : value" on one line
@@ -93,17 +106,21 @@ const grabLines = (lines: string[], labels: string[], continuation?: RegExp) => 
       const m = line.match(re);
       if (!m) continue;
       let value = m[1].trim();
+      value = cutAtLabel(value);
       // value wrapped onto next line(s)
       let j = i + 1;
       while (j < lines.length) {
         const next = lines[j].trim();
         if (!next || isLabelLine(next)) break;
+        const nextVal = cutAtLabel(next);
+        if (!nextVal) break;
         if (!value) {
-          value = next;
-        } else if (continuation && continuation.test(next)) {
-          value += next;
+          value = nextVal;
+        } else if (continuation && continuation.test(nextVal)) {
+          value += nextVal;
         } else break;
         j++;
+        if (nextVal !== next) break;
         if (!continuation) break;
       }
       value = value.replace(/\s{2,}/g, ' ').trim();
