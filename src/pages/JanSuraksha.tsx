@@ -256,7 +256,28 @@ const JanSuraksha = () => {
     for (let p = 1; p <= pdf.numPages; p++) {
       const page = await pdf.getPage(p);
       const tc = await page.getTextContent();
-      out += ' ' + (tc.items as any[]).map((i) => i.str).join(' ');
+      // Rebuild visual lines using item coordinates so two-column layouts
+      // ("Label            VALUE") stay on the same line.
+      const rows = new Map<number, { x: number; str: string }[]>();
+      for (const item of tc.items as any[]) {
+        if (!item.str || !item.str.trim()) continue;
+        const y = Math.round(item.transform[5] / 3) * 3; // tolerance for baseline jitter
+        const x = item.transform[4];
+        if (!rows.has(y)) rows.set(y, []);
+        rows.get(y)!.push({ x, str: item.str });
+      }
+      const lines = [...rows.entries()]
+        .sort((a, b) => b[0] - a[0])
+        .map(([, items]) =>
+          items
+            .sort((a, b) => a.x - b.x)
+            .map((i) => i.str)
+            .join(' ')
+            .replace(/\s{2,}/g, ' ')
+            .trim(),
+        )
+        .filter(Boolean);
+      out += lines.join('\n') + '\n';
     }
     return out;
   };
