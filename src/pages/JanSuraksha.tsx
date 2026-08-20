@@ -598,6 +598,10 @@ const JanSuraksha = () => {
               <Input value={form.policy} onChange={(e) => setForm({ ...form, policy: e.target.value })} />
             </div>
             <div>
+              <Label>PPO</Label>
+              <Input value={form.ppo || ''} onChange={(e) => setForm({ ...form, ppo: e.target.value })} />
+            </div>
+            <div>
               <Label>Remarks</Label>
               <Input value={form.remarks} onChange={(e) => setForm({ ...form, remarks: e.target.value })} />
             </div>
