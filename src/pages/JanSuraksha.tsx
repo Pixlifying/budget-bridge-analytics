@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Upload, Printer, Download, FileText, Pencil, Trash2, Plus, ShieldCheck, Beaker } from 'lucide-react';
+import { Upload, Printer, Pencil, Trash2, Plus, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import * as pdfjsLib from 'pdfjs-dist';
-import * as XLSX from 'xlsx';
 import PageWrapper from '@/components/layout/PageWrapper';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,6 +33,7 @@ interface JSRecord {
   urn: string;
   account: string;
   policy: string;
+  ppo?: string;
   remarks: string;
 }
 
@@ -47,6 +47,7 @@ const emptyForm = (): ParsedRecord => ({
   urn: '',
   account: '',
   policy: '',
+  ppo: '',
   remarks: '',
 });
 
