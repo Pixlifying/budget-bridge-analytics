@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Upload, Printer, Pencil, Trash2, Plus, ShieldCheck } from 'lucide-react';
+import { Upload, Printer, Pencil, Trash2, Plus, ShieldCheck, CalendarRange } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -356,6 +356,8 @@ const JanSuraksha = () => {
     toast.success('Record deleted');
   };
 
+  const isDlcView = schemeFilter === 'DLC';
+
   const handlePrint = () => {
     const win = window.open('', '_blank');
     if (!win) return;
@@ -461,23 +463,36 @@ const JanSuraksha = () => {
       <div className="rounded-xl border border-border overflow-x-auto bg-card">
         <table className="w-full text-sm">
           <thead className="bg-muted/50">
-            <tr>
-              <th className="p-3 text-left">#</th>
-              <th className="p-3 text-left">Date</th>
-              <th className="p-3 text-left">Scheme</th>
-              <th className="p-3 text-left">Member Name</th>
-              <th className="p-3 text-left">Mobile</th>
-              <th className="p-3 text-left">Unique Reference Number (URN)</th>
-              <th className="p-3 text-left">Bank A/c</th>
-              <th className="p-3 text-left">Master Policy No</th>
-              <th className="p-3 text-left">Remarks</th>
-              <th className="p-3 text-right">Actions</th>
-            </tr>
+            {isDlcView ? (
+              <tr>
+                <th className="p-3 text-left">#</th>
+                <th className="p-3 text-left">Date</th>
+                <th className="p-3 text-left">Name</th>
+                <th className="p-3 text-left">Account (16 Digits)</th>
+                <th className="p-3 text-left">PPO</th>
+                <th className="p-3 text-left">Mobile</th>
+                <th className="p-3 text-left">Remarks</th>
+                <th className="p-3 text-right">Actions</th>
+              </tr>
+            ) : (
+              <tr>
+                <th className="p-3 text-left">#</th>
+                <th className="p-3 text-left">Date</th>
+                <th className="p-3 text-left">Scheme</th>
+                <th className="p-3 text-left">Member Name</th>
+                <th className="p-3 text-left">Mobile</th>
+                <th className="p-3 text-left">Unique Reference Number (URN)</th>
+                <th className="p-3 text-left">Bank A/c</th>
+                <th className="p-3 text-left">Master Policy No</th>
+                <th className="p-3 text-left">Remarks</th>
+                <th className="p-3 text-right">Actions</th>
+              </tr>
+            )}
           </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={10} className="p-10 text-center text-muted-foreground">
+                <td colSpan={isDlcView ? 8 : 10} className="p-10 text-center text-muted-foreground">
                   No records yet. Use “Browse PDFs &amp; Extract” to import certificates.
                 </td>
               </tr>
@@ -486,13 +501,25 @@ const JanSuraksha = () => {
                 <tr key={r.id} className="border-t border-border/60 hover:bg-muted/30">
                   <td className="p-3">{i + 1}</td>
                   <td className="p-3 whitespace-nowrap">{format(new Date(r.date), 'dd/MM/yyyy')}</td>
-                  <td className="p-3">{r.scheme}</td>
-                  <td className="p-3 font-medium">{r.name}</td>
-                  <td className="p-3">{r.mobile}</td>
-                  <td className="p-3 break-all">{r.urn}</td>
-                  <td className="p-3">{r.account}</td>
-                  <td className="p-3">{r.policy}</td>
-                  <td className="p-3">{r.remarks}</td>
+                  {isDlcView ? (
+                    <>
+                      <td className="p-3 font-medium">{r.name}</td>
+                      <td className="p-3">{r.account}</td>
+                      <td className="p-3">{r.ppo || ''}</td>
+                      <td className="p-3">{r.mobile}</td>
+                      <td className="p-3">{r.remarks}</td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="p-3">{r.scheme}</td>
+                      <td className="p-3 font-medium">{r.name}</td>
+                      <td className="p-3">{r.mobile}</td>
+                      <td className="p-3 break-all">{r.urn}</td>
+                      <td className="p-3">{r.account}</td>
+                      <td className="p-3">{r.policy}</td>
+                      <td className="p-3">{r.remarks}</td>
+                    </>
+                  )}
                   <td className="p-3">
                     <div className="flex justify-end gap-1">
                       <Button
