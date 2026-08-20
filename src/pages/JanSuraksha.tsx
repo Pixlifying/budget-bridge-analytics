@@ -217,7 +217,7 @@ const JanSuraksha = () => {
     }
   });
   const [schemeFilter, setSchemeFilter] = useState<'all' | Scheme>('all');
-  const [period, setPeriod] = useState<'all' | 'week' | 'month' | 'quarter'>('all');
+  const [period, setPeriod] = useState<'all' | 'week' | 'month' | 'year'>('all');
   const [search, setSearch] = useState('');
   const [isParsing, setIsParsing] = useState(false);
   const [editing, setEditing] = useState<JSRecord | null>(null);
@@ -233,7 +233,7 @@ const JanSuraksha = () => {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     const now = new Date();
-    const days = period === 'week' ? 7 : period === 'month' ? 30 : period === 'quarter' ? 90 : 0;
+    const days = period === 'week' ? 7 : period === 'month' ? 30 : period === 'year' ? 365 : 0;
     const from = days ? new Date(now.getTime() - days * 86400000) : null;
     return records
       .filter((r) => schemeFilter === 'all' || r.scheme === schemeFilter)
@@ -399,20 +399,18 @@ const JanSuraksha = () => {
             <Printer size={16} className="mr-2" />
             Print
           </Button>
-          {([
-            { key: 'week', label: 'Weekly Report' },
-            { key: 'month', label: 'Monthly Report' },
-            { key: 'quarter', label: 'Quarterly Report' },
-          ] as const).map(({ key, label }) => (
-            <Button
-              key={key}
-              variant={period === key ? 'default' : 'outline'}
-              onClick={() => setPeriod(period === key ? 'all' : key)}
-            >
-              <CalendarRange size={16} className="mr-2" />
-              {label}
-            </Button>
-          ))}
+          <Select value={period} onValueChange={(v) => setPeriod(v as any)}>
+            <SelectTrigger className="w-[180px]">
+              <CalendarRange size={16} className="mr-2 shrink-0" />
+              <SelectValue placeholder="Report Period" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Records</SelectItem>
+              <SelectItem value="week">Weekly Report</SelectItem>
+              <SelectItem value="month">Monthly Report</SelectItem>
+              <SelectItem value="year">Yearly Report</SelectItem>
+            </SelectContent>
+          </Select>
           <Button
             variant="outline"
             onClick={() => {

@@ -38,7 +38,6 @@ import { MobileMenuContext } from "@/contexts/MobileMenuContext";
 
 import Forms from "@/pages/Forms";
 import Milk from "@/pages/Milk";
-import SocialSecurity from "@/pages/SocialSecurity";
 import Documentation from "@/pages/Documentation";
 import Udhar from '@/pages/Udhar';
 import ODDetailRecords from "@/pages/ODDetailRecords";
@@ -76,7 +75,6 @@ const App = () => {
                       <Route path="/banking-accounts" element={<BankingAccounts />} />
                       
                       <Route path="/od-records" element={<ODDetailRecords />} />
-                      <Route path="/social-security" element={<SocialSecurity />} />
                       <Route path="/documentation" element={<Documentation />} />
                       <Route path="/imps-electricity" element={<ImpsElectricity />} />
                       <Route path="/udhar" element={<Udhar />} />

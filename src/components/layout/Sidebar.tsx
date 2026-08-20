@@ -174,10 +174,10 @@ const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: Sid
   useEffect(() => {
     const menuMap: Record<string, { menuKey: string; paths: string[] }[]> = {
       financialServices: [{ menuKey: 'financialServices', paths: ['/banking', '/od-records', '/banking-accounts'] }],
-      nonFinancialServices: [{ menuKey: 'nonFinancialServices', paths: ['/account-details', '/social-security', '/documentation'] }],
+      nonFinancialServices: [{ menuKey: 'nonFinancialServices', paths: ['/account-details', '/jan-suraksha', '/documentation'] }],
       customerServices: [{ menuKey: 'customerServices', paths: ['/online-services', '/applications', '/photostat', '/papers'] }],
       ledger: [{ menuKey: 'ledger', paths: ['/khata-entry', '/pending-balance', '/expenses'] }],
-      apps: [{ menuKey: 'apps', paths: ['/calculator', '/age-calculator', '/work-to-be', '/checklist-docs', '/jan-suraksha'] }],
+      apps: [{ menuKey: 'apps', paths: ['/calculator', '/age-calculator', '/work-to-be', '/checklist-docs'] }],
     };
 
     const updates: Record<string, boolean> = {};
@@ -213,7 +213,7 @@ const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: Sid
 
   const nonFinancialServiceItems = [
     { icon: <IconUsers size={16} />, label: 'Account Details', to: '/account-details' },
-    { icon: <IconShield size={16} />, label: 'Jan Surkahsha', to: '/social-security' },
+    { icon: <IconShield size={16} />, label: 'Jan Suraksha', to: '/jan-suraksha' },
     { icon: <IconDocument size={16} />, label: 'Documentation', to: '/documentation' },
   ];
 
@@ -227,7 +227,6 @@ const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: Sid
     { icon: <IconCalculator size={16} />, label: 'Calculator', to: '/calculator' },
     { icon: <IconDocument size={16} />, label: 'Notes', to: '/work-to-be' },
     { icon: <IconDocument size={16} />, label: 'Check List Docs', to: '/checklist-docs' },
-    { icon: <IconShield size={16} />, label: 'Jan Suraksha', to: '/jan-suraksha' },
   ];
 
   const ledgerItems = [
