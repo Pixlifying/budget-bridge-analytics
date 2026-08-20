@@ -335,14 +335,6 @@ const JanSuraksha = () => {
     if (failed) toast.error(`${failed} file(s) could not be read`);
   };
 
-  const runDemo = () => {
-    const parsed = parseCertificateText(DEMO_TEXT);
-    if (!parsed) return toast.error('Demo parse failed');
-    const { added, dupes } = addParsed([parsed]);
-    if (added) toast.success('Demo record added');
-    if (dupes) toast.info('Demo record already exists');
-  };
-
   const saveForm = () => {
     if (!form.name.trim()) return toast.error('Member name is required');
     if (editing) {
@@ -362,38 +354,6 @@ const JanSuraksha = () => {
     setRecords((prev) => prev.filter((r) => r.id !== deleteId));
     setDeleteId(null);
     toast.success('Record deleted');
-  };
-
-  const rowsForExport = () =>
-    filtered.map((r, i) => ({
-      '#': i + 1,
-      Date: format(new Date(r.date), 'dd/MM/yyyy'),
-      Scheme: r.scheme,
-      'Member Name': r.name,
-      Mobile: r.mobile,
-      URN: r.urn,
-      'Bank A/c': r.account,
-      'Master Policy No': r.policy,
-      Remarks: r.remarks,
-    }));
-
-  const handleExcel = () => {
-    const ws = XLSX.utils.json_to_sheet(rowsForExport());
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Jan Suraksha');
-    XLSX.writeFile(wb, `jan-suraksha-${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
-  };
-
-  const handleCsv = () => {
-    const rows = rowsForExport();
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const csv = XLSX.utils.sheet_to_csv(ws);
-    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `jan-suraksha-${format(new Date(), 'yyyy-MM-dd')}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
   };
 
   const handlePrint = () => {
