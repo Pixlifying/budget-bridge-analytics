@@ -201,8 +201,10 @@ export const parseCertificateText = (raw: string): ParsedRecord | null => {
     toIso(text.match(/(\d{2})[-/.](\d{2})[-/.](\d{4})/)?.[0] || '') ||
     format(new Date(), 'yyyy-MM-dd');
 
+  const ppo = grabLines(lines, ['PPO Number', 'PPO No', 'PPO']).replace(/\s+/g, '');
+
   if (!name && !urn && !account) return null;
-  return { date, scheme, name, mobile, urn, account, policy, remarks: '' };
+  return { date, scheme, name, mobile, urn, account, policy, ppo, remarks: '' };
 };
 
 const JanSuraksha = () => {
@@ -215,6 +217,7 @@ const JanSuraksha = () => {
     }
   });
   const [schemeFilter, setSchemeFilter] = useState<'all' | Scheme>('all');
+  const [period, setPeriod] = useState<'all' | 'week' | 'month' | 'quarter'>('all');
   const [search, setSearch] = useState('');
   const [isParsing, setIsParsing] = useState(false);
   const [editing, setEditing] = useState<JSRecord | null>(null);
@@ -229,8 +232,12 @@ const JanSuraksha = () => {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const now = new Date();
+    const days = period === 'week' ? 7 : period === 'month' ? 30 : period === 'quarter' ? 90 : 0;
+    const from = days ? new Date(now.getTime() - days * 86400000) : null;
     return records
       .filter((r) => schemeFilter === 'all' || r.scheme === schemeFilter)
+      .filter((r) => !from || new Date(`${r.date}T23:59:59.999`) >= from)
       .filter(
         (r) =>
           !q ||
@@ -240,7 +247,7 @@ const JanSuraksha = () => {
           r.account.toLowerCase().includes(q),
       )
       .sort((a, b) => b.date.localeCompare(a.date));
-  }, [records, schemeFilter, search]);
+  }, [records, schemeFilter, search, period]);
 
   const counts = useMemo(
     () => SCHEMES.map((s) => ({ scheme: s, count: records.filter((r) => r.scheme === s).length })),
