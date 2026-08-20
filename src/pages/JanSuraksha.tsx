@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Upload, Printer, Download, FileText, Pencil, Trash2, Plus, ShieldCheck, Beaker } from 'lucide-react';
+import { Upload, Printer, Pencil, Trash2, Plus, ShieldCheck, CalendarRange } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import * as pdfjsLib from 'pdfjs-dist';
-import * as XLSX from 'xlsx';
 import PageWrapper from '@/components/layout/PageWrapper';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,6 +33,7 @@ interface JSRecord {
   urn: string;
   account: string;
   policy: string;
+  ppo?: string;
   remarks: string;
 }
 
@@ -47,6 +47,7 @@ const emptyForm = (): ParsedRecord => ({
   urn: '',
   account: '',
   policy: '',
+  ppo: '',
   remarks: '',
 });
 
@@ -200,8 +201,10 @@ export const parseCertificateText = (raw: string): ParsedRecord | null => {
     toIso(text.match(/(\d{2})[-/.](\d{2})[-/.](\d{4})/)?.[0] || '') ||
     format(new Date(), 'yyyy-MM-dd');
 
+  const ppo = grabLines(lines, ['PPO Number', 'PPO No', 'PPO']).replace(/\s+/g, '');
+
   if (!name && !urn && !account) return null;
-  return { date, scheme, name, mobile, urn, account, policy, remarks: '' };
+  return { date, scheme, name, mobile, urn, account, policy, ppo, remarks: '' };
 };
 
 const JanSuraksha = () => {
@@ -214,6 +217,7 @@ const JanSuraksha = () => {
     }
   });
   const [schemeFilter, setSchemeFilter] = useState<'all' | Scheme>('all');
+  const [period, setPeriod] = useState<'all' | 'week' | 'month' | 'quarter'>('all');
   const [search, setSearch] = useState('');
   const [isParsing, setIsParsing] = useState(false);
   const [editing, setEditing] = useState<JSRecord | null>(null);
@@ -228,8 +232,12 @@ const JanSuraksha = () => {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const now = new Date();
+    const days = period === 'week' ? 7 : period === 'month' ? 30 : period === 'quarter' ? 90 : 0;
+    const from = days ? new Date(now.getTime() - days * 86400000) : null;
     return records
       .filter((r) => schemeFilter === 'all' || r.scheme === schemeFilter)
+      .filter((r) => !from || new Date(`${r.date}T23:59:59.999`) >= from)
       .filter(
         (r) =>
           !q ||
@@ -239,7 +247,7 @@ const JanSuraksha = () => {
           r.account.toLowerCase().includes(q),
       )
       .sort((a, b) => b.date.localeCompare(a.date));
-  }, [records, schemeFilter, search]);
+  }, [records, schemeFilter, search, period]);
 
   const counts = useMemo(
     () => SCHEMES.map((s) => ({ scheme: s, count: records.filter((r) => r.scheme === s).length })),
@@ -327,14 +335,6 @@ const JanSuraksha = () => {
     if (failed) toast.error(`${failed} file(s) could not be read`);
   };
 
-  const runDemo = () => {
-    const parsed = parseCertificateText(DEMO_TEXT);
-    if (!parsed) return toast.error('Demo parse failed');
-    const { added, dupes } = addParsed([parsed]);
-    if (added) toast.success('Demo record added');
-    if (dupes) toast.info('Demo record already exists');
-  };
-
   const saveForm = () => {
     if (!form.name.trim()) return toast.error('Member name is required');
     if (editing) {
@@ -356,37 +356,7 @@ const JanSuraksha = () => {
     toast.success('Record deleted');
   };
 
-  const rowsForExport = () =>
-    filtered.map((r, i) => ({
-      '#': i + 1,
-      Date: format(new Date(r.date), 'dd/MM/yyyy'),
-      Scheme: r.scheme,
-      'Member Name': r.name,
-      Mobile: r.mobile,
-      URN: r.urn,
-      'Bank A/c': r.account,
-      'Master Policy No': r.policy,
-      Remarks: r.remarks,
-    }));
-
-  const handleExcel = () => {
-    const ws = XLSX.utils.json_to_sheet(rowsForExport());
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Jan Suraksha');
-    XLSX.writeFile(wb, `jan-suraksha-${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
-  };
-
-  const handleCsv = () => {
-    const rows = rowsForExport();
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const csv = XLSX.utils.sheet_to_csv(ws);
-    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `jan-suraksha-${format(new Date(), 'yyyy-MM-dd')}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+  const isDlcView = schemeFilter === 'DLC';
 
   const handlePrint = () => {
     const win = window.open('', '_blank');
@@ -397,11 +367,16 @@ const JanSuraksha = () => {
       th,td{border:1px solid #000;padding:5px;text-align:left}th{background:#f0f0f0}</style></head><body>
       <h1>Jan Suraksha Records</h1>
       <p>Total: ${filtered.length} | Generated: ${format(new Date(), 'dd/MM/yyyy')}</p>
-      <table><thead><tr><th>#</th><th>Date</th><th>Scheme</th><th>Member Name</th><th>Mobile</th><th>URN</th><th>Bank A/c</th><th>Master Policy No</th><th>Remarks</th></tr></thead>
+      <table><thead><tr>${
+        isDlcView
+          ? '<th>#</th><th>Date</th><th>Name</th><th>Account (16 Digits)</th><th>PPO</th><th>Mobile</th><th>Remarks</th>'
+          : '<th>#</th><th>Date</th><th>Scheme</th><th>Member Name</th><th>Mobile</th><th>URN</th><th>Bank A/c</th><th>Master Policy No</th><th>Remarks</th>'
+      }</tr></thead>
       <tbody>${filtered
-        .map(
-          (r, i) =>
-            `<tr><td>${i + 1}</td><td>${format(new Date(r.date), 'dd/MM/yyyy')}</td><td>${r.scheme}</td><td>${r.name}</td><td>${r.mobile}</td><td>${r.urn}</td><td>${r.account}</td><td>${r.policy}</td><td>${r.remarks}</td></tr>`,
+        .map((r, i) =>
+          isDlcView
+            ? `<tr><td>${i + 1}</td><td>${format(new Date(r.date), 'dd/MM/yyyy')}</td><td>${r.name}</td><td>${r.account}</td><td>${r.ppo || ''}</td><td>${r.mobile}</td><td>${r.remarks}</td></tr>`
+            : `<tr><td>${i + 1}</td><td>${format(new Date(r.date), 'dd/MM/yyyy')}</td><td>${r.scheme}</td><td>${r.name}</td><td>${r.mobile}</td><td>${r.urn}</td><td>${r.account}</td><td>${r.policy}</td><td>${r.remarks}</td></tr>`,
         )
         .join('')}</tbody></table></body></html>`);
     win.document.close();
@@ -424,18 +399,20 @@ const JanSuraksha = () => {
             <Printer size={16} className="mr-2" />
             Print
           </Button>
-          <Button variant="outline" onClick={handleExcel}>
-            <Download size={16} className="mr-2" />
-            Excel
-          </Button>
-          <Button variant="outline" onClick={handleCsv}>
-            <FileText size={16} className="mr-2" />
-            CSV
-          </Button>
-          <Button variant="outline" onClick={runDemo}>
-            <Beaker size={16} className="mr-2" />
-            Demo Test
-          </Button>
+          {([
+            { key: 'week', label: 'Weekly Report' },
+            { key: 'month', label: 'Monthly Report' },
+            { key: 'quarter', label: 'Quarterly Report' },
+          ] as const).map(({ key, label }) => (
+            <Button
+              key={key}
+              variant={period === key ? 'default' : 'outline'}
+              onClick={() => setPeriod(period === key ? 'all' : key)}
+            >
+              <CalendarRange size={16} className="mr-2" />
+              {label}
+            </Button>
+          ))}
           <Button
             variant="outline"
             onClick={() => {
@@ -486,23 +463,36 @@ const JanSuraksha = () => {
       <div className="rounded-xl border border-border overflow-x-auto bg-card">
         <table className="w-full text-sm">
           <thead className="bg-muted/50">
-            <tr>
-              <th className="p-3 text-left">#</th>
-              <th className="p-3 text-left">Date</th>
-              <th className="p-3 text-left">Scheme</th>
-              <th className="p-3 text-left">Member Name</th>
-              <th className="p-3 text-left">Mobile</th>
-              <th className="p-3 text-left">Unique Reference Number (URN)</th>
-              <th className="p-3 text-left">Bank A/c</th>
-              <th className="p-3 text-left">Master Policy No</th>
-              <th className="p-3 text-left">Remarks</th>
-              <th className="p-3 text-right">Actions</th>
-            </tr>
+            {isDlcView ? (
+              <tr>
+                <th className="p-3 text-left">#</th>
+                <th className="p-3 text-left">Date</th>
+                <th className="p-3 text-left">Name</th>
+                <th className="p-3 text-left">Account (16 Digits)</th>
+                <th className="p-3 text-left">PPO</th>
+                <th className="p-3 text-left">Mobile</th>
+                <th className="p-3 text-left">Remarks</th>
+                <th className="p-3 text-right">Actions</th>
+              </tr>
+            ) : (
+              <tr>
+                <th className="p-3 text-left">#</th>
+                <th className="p-3 text-left">Date</th>
+                <th className="p-3 text-left">Scheme</th>
+                <th className="p-3 text-left">Member Name</th>
+                <th className="p-3 text-left">Mobile</th>
+                <th className="p-3 text-left">Unique Reference Number (URN)</th>
+                <th className="p-3 text-left">Bank A/c</th>
+                <th className="p-3 text-left">Master Policy No</th>
+                <th className="p-3 text-left">Remarks</th>
+                <th className="p-3 text-right">Actions</th>
+              </tr>
+            )}
           </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={10} className="p-10 text-center text-muted-foreground">
+                <td colSpan={isDlcView ? 8 : 10} className="p-10 text-center text-muted-foreground">
                   No records yet. Use “Browse PDFs &amp; Extract” to import certificates.
                 </td>
               </tr>
@@ -511,13 +501,25 @@ const JanSuraksha = () => {
                 <tr key={r.id} className="border-t border-border/60 hover:bg-muted/30">
                   <td className="p-3">{i + 1}</td>
                   <td className="p-3 whitespace-nowrap">{format(new Date(r.date), 'dd/MM/yyyy')}</td>
-                  <td className="p-3">{r.scheme}</td>
-                  <td className="p-3 font-medium">{r.name}</td>
-                  <td className="p-3">{r.mobile}</td>
-                  <td className="p-3 break-all">{r.urn}</td>
-                  <td className="p-3">{r.account}</td>
-                  <td className="p-3">{r.policy}</td>
-                  <td className="p-3">{r.remarks}</td>
+                  {isDlcView ? (
+                    <>
+                      <td className="p-3 font-medium">{r.name}</td>
+                      <td className="p-3">{r.account}</td>
+                      <td className="p-3">{r.ppo || ''}</td>
+                      <td className="p-3">{r.mobile}</td>
+                      <td className="p-3">{r.remarks}</td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="p-3">{r.scheme}</td>
+                      <td className="p-3 font-medium">{r.name}</td>
+                      <td className="p-3">{r.mobile}</td>
+                      <td className="p-3 break-all">{r.urn}</td>
+                      <td className="p-3">{r.account}</td>
+                      <td className="p-3">{r.policy}</td>
+                      <td className="p-3">{r.remarks}</td>
+                    </>
+                  )}
                   <td className="p-3">
                     <div className="flex justify-end gap-1">
                       <Button
@@ -594,6 +596,10 @@ const JanSuraksha = () => {
             <div>
               <Label>Master Policy No</Label>
               <Input value={form.policy} onChange={(e) => setForm({ ...form, policy: e.target.value })} />
+            </div>
+            <div>
+              <Label>PPO</Label>
+              <Input value={form.ppo || ''} onChange={(e) => setForm({ ...form, ppo: e.target.value })} />
             </div>
             <div>
               <Label>Remarks</Label>
