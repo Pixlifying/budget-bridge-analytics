@@ -365,11 +365,16 @@ const JanSuraksha = () => {
       th,td{border:1px solid #000;padding:5px;text-align:left}th{background:#f0f0f0}</style></head><body>
       <h1>Jan Suraksha Records</h1>
       <p>Total: ${filtered.length} | Generated: ${format(new Date(), 'dd/MM/yyyy')}</p>
-      <table><thead><tr><th>#</th><th>Date</th><th>Scheme</th><th>Member Name</th><th>Mobile</th><th>URN</th><th>Bank A/c</th><th>Master Policy No</th><th>Remarks</th></tr></thead>
+      <table><thead><tr>${
+        isDlcView
+          ? '<th>#</th><th>Date</th><th>Name</th><th>Account (16 Digits)</th><th>PPO</th><th>Mobile</th><th>Remarks</th>'
+          : '<th>#</th><th>Date</th><th>Scheme</th><th>Member Name</th><th>Mobile</th><th>URN</th><th>Bank A/c</th><th>Master Policy No</th><th>Remarks</th>'
+      }</tr></thead>
       <tbody>${filtered
-        .map(
-          (r, i) =>
-            `<tr><td>${i + 1}</td><td>${format(new Date(r.date), 'dd/MM/yyyy')}</td><td>${r.scheme}</td><td>${r.name}</td><td>${r.mobile}</td><td>${r.urn}</td><td>${r.account}</td><td>${r.policy}</td><td>${r.remarks}</td></tr>`,
+        .map((r, i) =>
+          isDlcView
+            ? `<tr><td>${i + 1}</td><td>${format(new Date(r.date), 'dd/MM/yyyy')}</td><td>${r.name}</td><td>${r.account}</td><td>${r.ppo || ''}</td><td>${r.mobile}</td><td>${r.remarks}</td></tr>`
+            : `<tr><td>${i + 1}</td><td>${format(new Date(r.date), 'dd/MM/yyyy')}</td><td>${r.scheme}</td><td>${r.name}</td><td>${r.mobile}</td><td>${r.urn}</td><td>${r.account}</td><td>${r.policy}</td><td>${r.remarks}</td></tr>`,
         )
         .join('')}</tbody></table></body></html>`);
     win.document.close();
@@ -392,18 +397,20 @@ const JanSuraksha = () => {
             <Printer size={16} className="mr-2" />
             Print
           </Button>
-          <Button variant="outline" onClick={handleExcel}>
-            <Download size={16} className="mr-2" />
-            Excel
-          </Button>
-          <Button variant="outline" onClick={handleCsv}>
-            <FileText size={16} className="mr-2" />
-            CSV
-          </Button>
-          <Button variant="outline" onClick={runDemo}>
-            <Beaker size={16} className="mr-2" />
-            Demo Test
-          </Button>
+          {([
+            { key: 'week', label: 'Weekly Report' },
+            { key: 'month', label: 'Monthly Report' },
+            { key: 'quarter', label: 'Quarterly Report' },
+          ] as const).map(({ key, label }) => (
+            <Button
+              key={key}
+              variant={period === key ? 'default' : 'outline'}
+              onClick={() => setPeriod(period === key ? 'all' : key)}
+            >
+              <CalendarRange size={16} className="mr-2" />
+              {label}
+            </Button>
+          ))}
           <Button
             variant="outline"
             onClick={() => {
