@@ -421,6 +421,7 @@ const JanSuraksha = () => {
               <SelectItem value="all">All Records</SelectItem>
               <SelectItem value="week">Weekly Report</SelectItem>
               <SelectItem value="month">Monthly Report</SelectItem>
+              <SelectItem value="quarter">Quarterly Report</SelectItem>
               <SelectItem value="year">Yearly Report</SelectItem>
             </SelectContent>
           </Select>
