@@ -157,16 +157,28 @@ export const parseCertificateText = (raw: string): ParsedRecord | null => {
   const mobile = (grabLines(lines, ['Mobile Number', 'Mobile No']).match(/\d{10}/) ||
     text.match(/\b[6-9]\d{9}\b/) || [''])[0];
 
-  // URN may wrap across lines -> join continuation fragments
-  let urn = grabLines(
+  // URN may wrap across lines -> join continuation fragments.
+  // Only a strict URN token is kept; any trailing address text is discarded.
+  const urnRaw = grabLines(
     lines,
     ['Unique Reference Number (URN)', 'Unique Reference Number', 'URN'],
     /^[\dA-Z-]{2,}$/,
-  ).replace(/\s+/g, '');
-  const urnMatch = (urn || text.replace(/\s+/g, '')).match(/JNS-[A-Z]+-[\dA-Z-]+/i) ||
-    urn.match(/[A-Z]{2,5}-[A-Z]{2,8}-[\dA-Z-]{4,}/i);
-  urn = (urnMatch ? urnMatch[0] : urn).toUpperCase().replace(/-{2,}/g, '-').replace(/^-+|-+$/g, '');
-  if (/[A-Z]{12,}/.test(urn) && !urn.includes('-')) urn = '';
+  );
+  const URN_TOKEN = /(?:JNS-[A-Z0-9]+-[A-Z0-9-]{3,}|[A-Z]{2,6}-[A-Z0-9]{2,10}-[A-Z0-9-]{3,}|\b[A-Z0-9]{2,}-[A-Z0-9-]{6,}\b)/i;
+  const candidates = [urnRaw.replace(/\s+/g, ''), urnRaw, text.replace(/\s+/g, ''), text];
+  let urn = '';
+  for (const c of candidates) {
+    const m = c.match(URN_TOKEN);
+    if (m) {
+      urn = m[0];
+      break;
+    }
+  }
+  urn = urn.toUpperCase().replace(/-{2,}/g, '-').replace(/^-+|-+$/g, '');
+  // Strip any trailing non-URN characters (spaces/letters from an address column)
+  urn = (urn.match(/^[A-Z0-9-]+/) || [''])[0];
+  if (urn && !urn.includes('-')) urn = '';
+
 
   const accountRaw = grabLines(lines, [
     'Bank / Post office a/c no',
