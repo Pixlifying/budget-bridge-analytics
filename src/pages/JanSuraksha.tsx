@@ -229,7 +229,7 @@ const JanSuraksha = () => {
     }
   });
   const [schemeFilter, setSchemeFilter] = useState<'all' | Scheme>('all');
-  const [period, setPeriod] = useState<'all' | 'week' | 'month' | 'year'>('all');
+  const [period, setPeriod] = useState<'all' | 'week' | 'month' | 'quarter' | 'year'>('all');
   const [search, setSearch] = useState('');
   const [isParsing, setIsParsing] = useState(false);
   const [editing, setEditing] = useState<JSRecord | null>(null);
