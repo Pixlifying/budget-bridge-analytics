@@ -245,7 +245,8 @@ const JanSuraksha = () => {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     const now = new Date();
-    const days = period === 'week' ? 7 : period === 'month' ? 30 : period === 'year' ? 365 : 0;
+    const days =
+      period === 'week' ? 7 : period === 'month' ? 30 : period === 'quarter' ? 90 : period === 'year' ? 365 : 0;
     const from = days ? new Date(now.getTime() - days * 86400000) : null;
     return records
       .filter((r) => schemeFilter === 'all' || r.scheme === schemeFilter)
