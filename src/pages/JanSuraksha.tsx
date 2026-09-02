@@ -93,6 +93,12 @@ const cutAtLabel = (value: string) => {
   return (m && m.index !== undefined ? value.slice(0, m.index) : value).trim();
 };
 
+/** Trim everything from the first address / bank token onward. */
+const stripAfterAddress = (value: string) => {
+  const m = value.match(/\b(?:Address|Add\.?|Branch|Name of Bank|Bank \\/|Bank\\/|A\\/c No|Account Number|IFSC|Mobile)\b/i);
+  return m && m.index !== undefined && m.index > 0 ? value.slice(0, m.index).trim() : value.trim();
+};
+
 /**
  * Line-aware field extraction. Handles:
  *  - "Label : value" on one line
