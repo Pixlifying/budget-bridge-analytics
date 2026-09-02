@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Upload, Printer, Pencil, Trash2, Plus, ShieldCheck, CalendarRange } from 'lucide-react';
+import { Upload, Printer, Pencil, Trash2, Plus, ShieldCheck, CalendarRange, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import * as pdfjsLib from 'pdfjs-dist';
