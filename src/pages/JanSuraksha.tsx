@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Upload, Printer, Pencil, Trash2, Plus, ShieldCheck, CalendarRange } from 'lucide-react';
+import { Upload, Printer, Pencil, Trash2, Plus, ShieldCheck, CalendarRange, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -93,6 +93,12 @@ const cutAtLabel = (value: string) => {
   return (m && m.index !== undefined ? value.slice(0, m.index) : value).trim();
 };
 
+/** Trim everything from the first address / bank token onward. */
+const stripAfterAddress = (value: string) => {
+  const m = value.match(/\b(?:Address|Add\.?|Branch|Name of Bank|Bank\s*\/|A\/c No|Account Number|IFSC|Mobile)\b/i);
+  return m && m.index !== undefined && m.index > 0 ? value.slice(0, m.index).trim() : value.trim();
+};
+
 /**
  * Line-aware field extraction. Handles:
  *  - "Label : value" on one line
@@ -157,11 +163,13 @@ export const parseCertificateText = (raw: string): ParsedRecord | null => {
   const mobile = (grabLines(lines, ['Mobile Number', 'Mobile No']).match(/\d{10}/) ||
     text.match(/\b[6-9]\d{9}\b/) || [''])[0];
 
-  // URN may wrap across lines -> join continuation fragments
-  let urn = grabLines(
-    lines,
-    ['Unique Reference Number (URN)', 'Unique Reference Number', 'URN'],
-    /^[\dA-Z-]{2,}$/,
+  // URN may wrap across lines -> join continuation fragments, then keep only the policy reference
+  let urn = stripAfterAddress(
+    grabLines(
+      lines,
+      ['Unique Reference Number (URN)', 'Unique Reference Number', 'URN'],
+      /^[\dA-Z-]{2,}$/,
+    ),
   ).replace(/\s+/g, '');
   const urnMatch = (urn || text.replace(/\s+/g, '')).match(/JNS-[A-Z]+-[\dA-Z-]+/i) ||
     urn.match(/[A-Z]{2,5}-[A-Z]{2,8}-[\dA-Z-]{4,}/i);
@@ -356,6 +364,20 @@ const JanSuraksha = () => {
     toast.success('Record deleted');
   };
 
+  const sendWhatsApp = (r: JSRecord) => {
+    const digits = r.mobile.replace(/\D/g, '');
+    if (digits.length < 10) {
+      toast.error('No valid mobile number for this record');
+      return;
+    }
+    const to = digits.length === 10 ? '91' + digits : digits;
+    const msg =
+      r.scheme === 'DLC'
+        ? `*Digital Life Certificate*\nName: ${r.name}\nAccount: ${r.account}\nPPO: ${r.ppo || ''}\nRemarks: ${r.remarks || ''}`
+        : `*Jan Suraksha - ${r.scheme}*\nName: ${r.name}\nURN: ${r.urn}\nBank A/c: ${r.account}\nMaster Policy No: ${r.policy || ''}\nRemarks: ${r.remarks || ''}`;
+    window.open(`https://wa.me/${to}?text=${encodeURIComponent(msg)}`, '_blank');
+  };
+
   const isDlcView = schemeFilter === 'DLC';
 
   const handlePrint = () => {
@@ -520,6 +542,15 @@ const JanSuraksha = () => {
                   )}
                   <td className="p-3">
                     <div className="flex justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30"
+                        title="Send WhatsApp"
+                        onClick={() => sendWhatsApp(r)}
+                      >
+                        <MessageCircle size={15} />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
