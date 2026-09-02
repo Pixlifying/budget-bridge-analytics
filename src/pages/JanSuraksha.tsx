@@ -163,11 +163,13 @@ export const parseCertificateText = (raw: string): ParsedRecord | null => {
   const mobile = (grabLines(lines, ['Mobile Number', 'Mobile No']).match(/\d{10}/) ||
     text.match(/\b[6-9]\d{9}\b/) || [''])[0];
 
-  // URN may wrap across lines -> join continuation fragments
-  let urn = grabLines(
-    lines,
-    ['Unique Reference Number (URN)', 'Unique Reference Number', 'URN'],
-    /^[\dA-Z-]{2,}$/,
+  // URN may wrap across lines -> join continuation fragments, then keep only the policy reference
+  let urn = stripAfterAddress(
+    grabLines(
+      lines,
+      ['Unique Reference Number (URN)', 'Unique Reference Number', 'URN'],
+      /^[\dA-Z-]{2,}$/,
+    ),
   ).replace(/\s+/g, '');
   const urnMatch = (urn || text.replace(/\s+/g, '')).match(/JNS-[A-Z]+-[\dA-Z-]+/i) ||
     urn.match(/[A-Z]{2,5}-[A-Z]{2,8}-[\dA-Z-]{4,}/i);
