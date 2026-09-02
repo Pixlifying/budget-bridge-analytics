@@ -364,6 +364,20 @@ const JanSuraksha = () => {
     toast.success('Record deleted');
   };
 
+  const sendWhatsApp = (r: JSRecord) => {
+    const digits = r.mobile.replace(/\D/g, '');
+    if (digits.length < 10) {
+      toast.error('No valid mobile number for this record');
+      return;
+    }
+    const to = digits.length === 10 ? '91' + digits : digits;
+    const msg =
+      r.scheme === 'DLC'
+        ? `*Digital Life Certificate*\nName: ${r.name}\nAccount: ${r.account}\nPPO: ${r.ppo || ''}\nRemarks: ${r.remarks || ''}`
+        : `*Jan Suraksha - ${r.scheme}*\nName: ${r.name}\nURN: ${r.urn}\nBank A/c: ${r.account}\nMaster Policy No: ${r.policy || ''}\nRemarks: ${r.remarks || ''}`;
+    window.open(`https://wa.me/${to}?text=${encodeURIComponent(msg)}`, '_blank');
+  };
+
   const isDlcView = schemeFilter === 'DLC';
 
   const handlePrint = () => {
