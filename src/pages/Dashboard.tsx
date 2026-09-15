@@ -1054,6 +1054,43 @@ const Dashboard = () => {
               </DashCard>
             </div>
 
+            {/* Fourth Row - Jan Suraksha, Calculator, Checklist Docs */}
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+              {/* Jan Suraksha */}
+              <DashCard onClick={() => navigate('/jan-suraksha')} className="cursor-pointer">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Shield className="h-4 w-4 text-primary" />
+                  </div>
+                  <h3 className="font-medium text-foreground">Jan Suraksha</h3>
+                </div>
+                <p className="text-2xl font-bold text-foreground">{janSurakshaTotal}</p>
+                <p className="text-xs text-muted-foreground mt-1 truncate">{janSurakshaSchemeSummary}</p>
+              </DashCard>
+
+              {/* Calculator */}
+              <DashCard onClick={() => navigate('/calculator')} className="cursor-pointer">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Calculator className="h-4 w-4 text-primary" />
+                  </div>
+                  <h3 className="font-medium text-foreground">Calculator</h3>
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">Open Calculator →</p>
+              </DashCard>
+
+              {/* Checklist Docs */}
+              <DashCard onClick={() => navigate('/checklist-docs')} className="cursor-pointer">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <ListChecks className="h-4 w-4 text-primary" />
+                  </div>
+                  <h3 className="font-medium text-foreground">Checklist Docs</h3>
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">Open Checklist →</p>
+              </DashCard>
+            </div>
+
           </div>
 
           {/* Right Sidebar */}
