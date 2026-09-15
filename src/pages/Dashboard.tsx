@@ -32,6 +32,7 @@ const Dashboard = () => {
   const [expensesDialogOpen, setExpensesDialogOpen] = useState(false);
   const [photostatDialogOpen, setPhotostatDialogOpen] = useState(false);
   const [khataDialogOpen, setKhataDialogOpen] = useState(false);
+  const [janSurakshaRecords] = useLocalStorage<Array<{ scheme: string; date?: string }>>('jan-suraksha-records', []);
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
