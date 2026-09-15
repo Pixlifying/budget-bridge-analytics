@@ -333,6 +333,16 @@ const Dashboard = () => {
 
   const khataTotal = khataCustomersData?.reduce((sum, c) => sum + c.current_balance, 0) || 0;
 
+  // Jan Suraksha metrics (localStorage records from Jan Suraksha page)
+  const janSurakshaTotal = janSurakshaRecords.length;
+  const janSurakshaCounts = janSurakshaRecords.reduce((acc, r) => {
+    acc[r.scheme] = (acc[r.scheme] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  const janSurakshaSchemeSummary = Object.entries(janSurakshaCounts)
+    .map(([scheme, count]) => `${scheme}: ${count}`)
+    .join(' · ') || 'No entries yet';
+
   // User admin data for profile image
   const { data: userAdminData } = useQuery({
     queryKey: ['userAdmin'],
