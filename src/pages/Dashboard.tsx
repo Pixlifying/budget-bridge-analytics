@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { CreditCard, FileText, Globe, BarChart3, AlertCircle, Wallet, Printer, Receipt, TrendingUp, Search, Bell, MessageSquare, Users, ArrowUpRight, ArrowDownRight, Upload, Clock, BookOpen, Menu, Shield } from 'lucide-react';
+import { CreditCard, FileText, Globe, BarChart3, AlertCircle, Wallet, Printer, Receipt, TrendingUp, Search, Bell, MessageSquare, Users, ArrowUpRight, ArrowDownRight, Upload, Clock, BookOpen, Menu, Shield, Calculator, ListChecks } from 'lucide-react';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
 import { format, startOfMonth, endOfMonth, subMonths, startOfQuarter, endOfQuarter } from 'date-fns';
@@ -31,6 +32,7 @@ const Dashboard = () => {
   const [expensesDialogOpen, setExpensesDialogOpen] = useState(false);
   const [photostatDialogOpen, setPhotostatDialogOpen] = useState(false);
   const [khataDialogOpen, setKhataDialogOpen] = useState(false);
+  const [janSurakshaRecords] = useLocalStorage<Array<{ scheme: string; date?: string }>>('jan-suraksha-records', []);
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
@@ -330,6 +332,16 @@ const Dashboard = () => {
   });
 
   const khataTotal = khataCustomersData?.reduce((sum, c) => sum + c.current_balance, 0) || 0;
+
+  // Jan Suraksha metrics (localStorage records from Jan Suraksha page)
+  const janSurakshaTotal = janSurakshaRecords.length;
+  const janSurakshaCounts = janSurakshaRecords.reduce((acc, r) => {
+    acc[r.scheme] = (acc[r.scheme] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  const janSurakshaSchemeSummary = Object.entries(janSurakshaCounts)
+    .map(([scheme, count]) => `${scheme}: ${count}`)
+    .join(' · ') || 'No entries yet';
 
   // User admin data for profile image
   const { data: userAdminData } = useQuery({
@@ -1039,6 +1051,43 @@ const Dashboard = () => {
                 </div>
                 <p className="text-2xl font-bold text-foreground">{formatCurrency(pendingBalanceTotal)}</p>
                 <p className="text-xs text-muted-foreground mt-1">{pendingBalanceData?.length || 0} entries</p>
+              </DashCard>
+            </div>
+
+            {/* Fourth Row - Jan Suraksha, Calculator, Checklist Docs */}
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+              {/* Jan Suraksha */}
+              <DashCard onClick={() => navigate('/jan-suraksha')} className="cursor-pointer">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Shield className="h-4 w-4 text-primary" />
+                  </div>
+                  <h3 className="font-medium text-foreground">Jan Suraksha</h3>
+                </div>
+                <p className="text-2xl font-bold text-foreground">{janSurakshaTotal}</p>
+                <p className="text-xs text-muted-foreground mt-1 truncate">{janSurakshaSchemeSummary}</p>
+              </DashCard>
+
+              {/* Calculator */}
+              <DashCard onClick={() => navigate('/calculator')} className="cursor-pointer">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Calculator className="h-4 w-4 text-primary" />
+                  </div>
+                  <h3 className="font-medium text-foreground">Calculator</h3>
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">Open Calculator →</p>
+              </DashCard>
+
+              {/* Checklist Docs */}
+              <DashCard onClick={() => navigate('/checklist-docs')} className="cursor-pointer">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <ListChecks className="h-4 w-4 text-primary" />
+                  </div>
+                  <h3 className="font-medium text-foreground">Checklist Docs</h3>
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">Open Checklist →</p>
               </DashCard>
             </div>
 
