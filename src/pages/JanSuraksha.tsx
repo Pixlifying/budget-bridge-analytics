@@ -382,7 +382,7 @@ const JanSuraksha = () => {
     window.open(`https://wa.me/${to}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
-  const isDlcView = schemeFilter === 'DLC';
+  const isDlcView = effectiveFilter === 'DLC';
 
   const handlePrint = () => {
     const win = window.open('', '_blank');
