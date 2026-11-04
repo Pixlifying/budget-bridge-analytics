@@ -42,11 +42,14 @@ interface OnlineServiceEntry {
   customer_name?: string;
   mobile_number?: string;
   reference_number?: string;
+  user_id?: string;
   amount: number;
   expense: number;
   total: number;
   created_at?: string;
 }
+
+const USER_ID_OPTIONS = ['Self', 'Sonika', 'Hari', 'cscrspura'];
 
 const OnlineServices = () => {
   const [onlineServices, setOnlineServices] = useState<OnlineServiceEntry[]>([]);
@@ -78,6 +81,7 @@ const OnlineServices = () => {
     service: '',
     custom_service: '',
     reference_number: '',
+    user_id: '',
     amount: 0,
     expense: 0,
   });
@@ -89,6 +93,7 @@ const OnlineServices = () => {
     service: '',
     custom_service: '',
     reference_number: '',
+    user_id: '',
     amount: 0,
     expense: 0,
   });
@@ -141,6 +146,7 @@ const OnlineServices = () => {
         customer_name: entry.customer_name || '',
         mobile_number: (entry as any).mobile_number || '',
         reference_number: (entry as any).reference_number || '',
+        user_id: (entry as any).user_id || '',
         amount: Number(entry.amount),
         expense: Number(entry.expense || 0),
         total: Number(entry.total),
@@ -218,6 +224,7 @@ const OnlineServices = () => {
           customer_name: newEntry.customer_name,
           mobile_number: newEntry.mobile_number || null,
           reference_number: newEntry.reference_number || null,
+          user_id: newEntry.user_id || null,
           amount: newEntry.amount,
           expense: newEntry.expense,
           total: total,
@@ -249,6 +256,7 @@ const OnlineServices = () => {
           customer_name: data[0].customer_name || '',
           mobile_number: (data[0] as any).mobile_number || '',
           reference_number: (data[0] as any).reference_number || '',
+          user_id: (data[0] as any).user_id || '',
           amount: Number(data[0].amount),
           expense: Number(data[0].expense || 0),
           total: Number(data[0].total),
@@ -263,6 +271,7 @@ const OnlineServices = () => {
           service: '',
           custom_service: '',
           reference_number: '',
+          user_id: '',
           amount: 0,
           expense: 0,
         });
@@ -292,6 +301,7 @@ const OnlineServices = () => {
           customer_name: editForm.customer_name,
           mobile_number: editForm.mobile_number || null,
           reference_number: editForm.reference_number || null,
+          user_id: editForm.user_id || null,
           amount: editForm.amount,
           expense: editForm.expense,
           total: total,
@@ -340,6 +350,7 @@ const OnlineServices = () => {
         custom_service: editForm.service === 'Other' ? editForm.custom_service : null,
         customer_name: editForm.customer_name,
         mobile_number: editForm.mobile_number,
+        user_id: editForm.user_id,
         amount: editForm.amount,
         expense: editForm.expense,
         total: total,
@@ -383,6 +394,7 @@ const OnlineServices = () => {
       service: entry.service,
       custom_service: entry.custom_service || '',
       reference_number: entry.reference_number || '',
+      user_id: entry.user_id || '',
       amount: entry.amount,
       expense: entry.expense,
     });
@@ -614,6 +626,7 @@ const OnlineServices = () => {
         <div class="row"><span>Customer Name:</span><span>${escapeHtml(entry.customer_name || '')}</span></div>
         <div class="row"><span>Service Type:</span><span>${escapeHtml(serviceName)}</span></div>
         <div class="row"><span>Reference No:</span><span>${escapeHtml(refNo)}</span></div>
+        <div class="row"><span>User ID:</span><span>${escapeHtml(entry.user_id || 'Nil')}</span></div>
         <div class="row"><span>Payment Mode:</span><span>${escapeHtml(paymentMode)}</span></div>
         <div class="amt">Amount: ₹ ${entry.amount.toFixed(2)}</div>
         <div class="words">In Words: ${escapeHtml(amountWords)}</div>
@@ -767,6 +780,21 @@ const OnlineServices = () => {
             />
           </div>
           <div>
+            <Label htmlFor="user_id">User ID</Label>
+            <Select value={newEntry.user_id || undefined} onValueChange={(value) => setNewEntry(prev => ({ ...prev, user_id: value }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select user" />
+              </SelectTrigger>
+              <SelectContent>
+                {USER_ID_OPTIONS.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
             <Label htmlFor="amount">Amount</Label>
             <Input
               id="amount"
@@ -852,6 +880,7 @@ const OnlineServices = () => {
                 customer: entry.customer_name || 'Not specified',
                 ...(entry.mobile_number && { mobile: entry.mobile_number }),
                 ...(entry.reference_number && { reference: entry.reference_number }),
+                ...(entry.user_id && { user_id: entry.user_id }),
                 amount: formatCurrency(entry.amount),
                 expense: formatCurrency(entry.expense),
                 margin: formatCurrency(entry.total),
@@ -860,6 +889,7 @@ const OnlineServices = () => {
                 customer: 'Customer',
                 mobile: 'Mobile',
                 ...(entry.reference_number && { reference: 'Ref No.' }),
+                ...(entry.user_id && { user_id: 'User ID' }),
                 amount: 'Amount',
                 expense: 'Expense',
                 margin: 'Margin',
@@ -950,6 +980,21 @@ const OnlineServices = () => {
                 onChange={(e) => setEditForm(prev => ({ ...prev, reference_number: e.target.value }))}
                 placeholder="Reference number"
               />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit_user_id">User ID</Label>
+              <Select value={editForm.user_id || undefined} onValueChange={(value) => setEditForm(prev => ({ ...prev, user_id: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select user" />
+                </SelectTrigger>
+                <SelectContent>
+                  {USER_ID_OPTIONS.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="edit_amount">Amount</Label>
