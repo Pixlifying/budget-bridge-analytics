@@ -239,13 +239,16 @@ const JanSuraksha = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
   }, [records]);
 
+  // Hovering a scheme card previews that scheme's data; leaving restores the chosen filter.
+  const effectiveFilter = hoverScheme ?? schemeFilter;
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     const now = new Date();
     const days = period === 'week' ? 7 : period === 'month' ? 30 : period === 'year' ? 365 : 0;
     const from = days ? new Date(now.getTime() - days * 86400000) : null;
     return records
-      .filter((r) => schemeFilter === 'all' || r.scheme === schemeFilter)
+      .filter((r) => effectiveFilter === 'all' || r.scheme === effectiveFilter)
       .filter((r) => !from || new Date(`${r.date}T23:59:59.999`) >= from)
       .filter(
         (r) =>
