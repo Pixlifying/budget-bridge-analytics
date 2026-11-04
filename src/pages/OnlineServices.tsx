@@ -81,6 +81,7 @@ const OnlineServices = () => {
     service: '',
     custom_service: '',
     reference_number: '',
+    user_id: '',
     amount: 0,
     expense: 0,
   });
@@ -92,6 +93,7 @@ const OnlineServices = () => {
     service: '',
     custom_service: '',
     reference_number: '',
+    user_id: '',
     amount: 0,
     expense: 0,
   });
@@ -144,6 +146,7 @@ const OnlineServices = () => {
         customer_name: entry.customer_name || '',
         mobile_number: (entry as any).mobile_number || '',
         reference_number: (entry as any).reference_number || '',
+        user_id: (entry as any).user_id || '',
         amount: Number(entry.amount),
         expense: Number(entry.expense || 0),
         total: Number(entry.total),
@@ -221,6 +224,7 @@ const OnlineServices = () => {
           customer_name: newEntry.customer_name,
           mobile_number: newEntry.mobile_number || null,
           reference_number: newEntry.reference_number || null,
+          user_id: newEntry.user_id || null,
           amount: newEntry.amount,
           expense: newEntry.expense,
           total: total,
@@ -252,6 +256,7 @@ const OnlineServices = () => {
           customer_name: data[0].customer_name || '',
           mobile_number: (data[0] as any).mobile_number || '',
           reference_number: (data[0] as any).reference_number || '',
+          user_id: (data[0] as any).user_id || '',
           amount: Number(data[0].amount),
           expense: Number(data[0].expense || 0),
           total: Number(data[0].total),
@@ -266,6 +271,7 @@ const OnlineServices = () => {
           service: '',
           custom_service: '',
           reference_number: '',
+          user_id: '',
           amount: 0,
           expense: 0,
         });
