@@ -225,6 +225,7 @@ const JanSuraksha = () => {
     }
   });
   const [schemeFilter, setSchemeFilter] = useState<'all' | Scheme>('all');
+  const [hoverScheme, setHoverScheme] = useState<'all' | Scheme | null>(null);
   const [period, setPeriod] = useState<'all' | 'week' | 'month' | 'year'>('all');
   const [search, setSearch] = useState('');
   const [isParsing, setIsParsing] = useState(false);
