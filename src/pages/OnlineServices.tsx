@@ -42,11 +42,14 @@ interface OnlineServiceEntry {
   customer_name?: string;
   mobile_number?: string;
   reference_number?: string;
+  user_id?: string;
   amount: number;
   expense: number;
   total: number;
   created_at?: string;
 }
+
+const USER_ID_OPTIONS = ['Self', 'Sonika', 'Hari', 'cscrspura'];
 
 const OnlineServices = () => {
   const [onlineServices, setOnlineServices] = useState<OnlineServiceEntry[]>([]);
