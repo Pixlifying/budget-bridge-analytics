@@ -259,7 +259,7 @@ const JanSuraksha = () => {
           r.account.toLowerCase().includes(q),
       )
       .sort((a, b) => b.date.localeCompare(a.date));
-  }, [records, schemeFilter, search, period]);
+  }, [records, effectiveFilter, search, period]);
 
   const counts = useMemo(
     () => SCHEMES.map((s) => ({ scheme: s, count: records.filter((r) => r.scheme === s).length })),
