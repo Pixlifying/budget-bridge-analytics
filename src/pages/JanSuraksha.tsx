@@ -225,6 +225,7 @@ const JanSuraksha = () => {
     }
   });
   const [schemeFilter, setSchemeFilter] = useState<'all' | Scheme>('all');
+  const [hoverScheme, setHoverScheme] = useState<'all' | Scheme | null>(null);
   const [period, setPeriod] = useState<'all' | 'week' | 'month' | 'year'>('all');
   const [search, setSearch] = useState('');
   const [isParsing, setIsParsing] = useState(false);
@@ -238,13 +239,16 @@ const JanSuraksha = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
   }, [records]);
 
+  // Hovering a scheme card previews that scheme's data; leaving restores the chosen filter.
+  const effectiveFilter = hoverScheme ?? schemeFilter;
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     const now = new Date();
     const days = period === 'week' ? 7 : period === 'month' ? 30 : period === 'year' ? 365 : 0;
     const from = days ? new Date(now.getTime() - days * 86400000) : null;
     return records
-      .filter((r) => schemeFilter === 'all' || r.scheme === schemeFilter)
+      .filter((r) => effectiveFilter === 'all' || r.scheme === effectiveFilter)
       .filter((r) => !from || new Date(`${r.date}T23:59:59.999`) >= from)
       .filter(
         (r) =>
@@ -255,7 +259,7 @@ const JanSuraksha = () => {
           r.account.toLowerCase().includes(q),
       )
       .sort((a, b) => b.date.localeCompare(a.date));
-  }, [records, schemeFilter, search, period]);
+  }, [records, effectiveFilter, search, period]);
 
   const counts = useMemo(
     () => SCHEMES.map((s) => ({ scheme: s, count: records.filter((r) => r.scheme === s).length })),
@@ -378,7 +382,7 @@ const JanSuraksha = () => {
     window.open(`https://wa.me/${to}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
-  const isDlcView = schemeFilter === 'DLC';
+  const isDlcView = effectiveFilter === 'DLC';
 
   const handlePrint = () => {
     const win = window.open('', '_blank');
