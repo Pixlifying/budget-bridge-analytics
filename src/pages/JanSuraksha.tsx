@@ -453,7 +453,12 @@ const JanSuraksha = () => {
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {counts.map(({ scheme, count }) => (
-          <Card key={scheme} className="border-border/60">
+          <Card
+            key={scheme}
+            className="border-border/60 cursor-pointer transition-colors hover:border-primary/40"
+            onMouseEnter={() => setHoverScheme(scheme)}
+            onMouseLeave={() => setHoverScheme(null)}
+          >
             <CardContent className="p-4">
               <p className="text-xs uppercase tracking-wide text-muted-foreground">{SCHEME_LABEL[scheme]}</p>
               <p className="text-2xl font-bold">{count}</p>
