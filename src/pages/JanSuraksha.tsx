@@ -73,6 +73,7 @@ const LABELS = [
   'Account Number', 'A/c No', 'Branch Code', 'Branch Name', 'Branch Address', 'IFSC',
   'Date of Commencement of Cover', 'Date of Commencement', 'Cover End Date', 'Sum Assured',
   'Annual Renewal Date', 'Premium Amount', 'Signature', 'PRAN', 'Pension Amount',
+  'Jeevan Pramaan ID', 'Jeevan Praman ID', 'Pramaan ID', 'Praman ID', 'Pramaan Number',
 ];
 
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
@@ -163,6 +164,10 @@ export const parseCertificateText = (raw: string): ParsedRecord | null => {
   const mobile = (grabLines(lines, ['Mobile Number', 'Mobile No']).match(/\d{10}/) ||
     text.match(/\b[6-9]\d{9}\b/) || [''])[0];
 
+  const pramanId = grabLines(lines, [
+    'Jeevan Pramaan ID', 'Jeevan Praman ID', 'Pramaan ID', 'Praman ID', 'Pramaan Number',
+  ]).replace(/\s+/g, '');
+
   // URN may wrap across lines -> join continuation fragments, then keep only the policy reference
   let urn = stripAfterAddress(
     grabLines(
@@ -199,6 +204,7 @@ export const parseCertificateText = (raw: string): ParsedRecord | null => {
   else if (upper.includes('ATAL PENSION') || /\bAPY\b/.test(upper) || upper.includes('PRAN')) scheme = 'APY';
   else if (upper.includes('LIFE CERTIFICATE') || upper.includes('JEEVAN PRAMAAN') || /\bDLC\b/.test(upper)) scheme = 'DLC';
   else if (upper.includes('PMSBY') || upper.includes('SURAKSHA BIMA')) scheme = 'PMSBY';
+  if (scheme === 'DLC' && pramanId) urn = pramanId;
 
   const toIso = (d: string) => {
     const m = d.match(/(\d{2})[-/.](\d{2})[-/.](\d{4})/);
@@ -395,13 +401,13 @@ const JanSuraksha = () => {
       <p>Total: ${filtered.length} | Generated: ${format(new Date(), 'dd/MM/yyyy')}</p>
       <table><thead><tr>${
         isDlcView
-          ? '<th>#</th><th>Date</th><th>Name</th><th>Account (16 Digits)</th><th>PPO</th><th>Mobile</th><th>Remarks</th>'
+          ? '<th>#</th><th>Date</th><th>PPO Number</th><th>Account Number</th><th>Name of Pensioner</th><th>Mobile Number</th><th>Praman ID</th>'
           : '<th>#</th><th>Date</th><th>Scheme</th><th>Member Name</th><th>Mobile</th><th>URN</th><th>Bank A/c</th><th>Master Policy No</th><th>Remarks</th>'
       }</tr></thead>
       <tbody>${filtered
         .map((r, i) =>
           isDlcView
-            ? `<tr><td>${i + 1}</td><td>${format(new Date(r.date), 'dd/MM/yyyy')}</td><td>${r.name}</td><td>${r.account}</td><td>${r.ppo || ''}</td><td>${r.mobile}</td><td>${r.remarks}</td></tr>`
+            ? `<tr><td>${i + 1}</td><td>${format(new Date(r.date), 'dd/MM/yyyy')}</td><td>${r.ppo || ''}</td><td>${r.account}</td><td>${r.name}</td><td>${r.mobile}</td><td>${r.urn}</td></tr>`
             : `<tr><td>${i + 1}</td><td>${format(new Date(r.date), 'dd/MM/yyyy')}</td><td>${r.scheme}</td><td>${r.name}</td><td>${r.mobile}</td><td>${r.urn}</td><td>${r.account}</td><td>${r.policy}</td><td>${r.remarks}</td></tr>`,
         )
         .join('')}</tbody></table></body></html>`);
@@ -496,11 +502,11 @@ const JanSuraksha = () => {
               <tr>
                 <th className="p-3 text-left">#</th>
                 <th className="p-3 text-left">Date</th>
-                <th className="p-3 text-left">Name</th>
-                <th className="p-3 text-left">Account (16 Digits)</th>
-                <th className="p-3 text-left">PPO</th>
-                <th className="p-3 text-left">Mobile</th>
-                <th className="p-3 text-left">Remarks</th>
+                <th className="p-3 text-left">PPO Number</th>
+                <th className="p-3 text-left">Account Number</th>
+                <th className="p-3 text-left">Name of Pensioner</th>
+                <th className="p-3 text-left">Mobile Number</th>
+                <th className="p-3 text-left">Praman ID</th>
                 <th className="p-3 text-right">Actions</th>
               </tr>
             ) : (
@@ -532,11 +538,11 @@ const JanSuraksha = () => {
                   <td className="p-3 whitespace-nowrap">{format(new Date(r.date), 'dd/MM/yyyy')}</td>
                   {isDlcView ? (
                     <>
-                      <td className="p-3 font-medium">{r.name}</td>
-                      <td className="p-3">{r.account}</td>
                       <td className="p-3">{r.ppo || ''}</td>
+                      <td className="p-3">{r.account}</td>
+                      <td className="p-3 font-medium">{r.name}</td>
                       <td className="p-3">{r.mobile}</td>
-                      <td className="p-3">{r.remarks}</td>
+                      <td className="p-3">{r.urn}</td>
                     </>
                   ) : (
                     <>
