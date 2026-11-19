@@ -3,6 +3,8 @@ import { Upload, Printer, Pencil, Trash2, Plus, ShieldCheck, CalendarRange, Mess
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import * as pdfjsLib from 'pdfjs-dist';
+import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
 import PageWrapper from '@/components/layout/PageWrapper';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,6 +25,7 @@ const SCHEME_LABEL: Record<Scheme, string> = {
   APY: 'APY',
   DLC: 'Digital Life Certificate',
 };
+const DLC_COLUMNS = ['Date', 'PPO Number', 'Account Number', 'Name of Pensioner', 'Mobile Number', 'Praman ID'];
 
 interface JSRecord {
   id: string;
@@ -221,6 +224,55 @@ export const parseCertificateText = (raw: string): ParsedRecord | null => {
   return { date, scheme, name, mobile, urn, account, policy, ppo, remarks: '' };
 };
 
+const parseDlcDate = (value: unknown): string | null => {
+  const toIso = (year: number, month: number, day: number) => {
+    const date = new Date(Date.UTC(year, month - 1, day));
+    if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null;
+    return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  };
+
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return toIso(value.getFullYear(), value.getMonth() + 1, value.getDate());
+  }
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+    const date = new Date(Date.UTC(1899, 11, 30) + Math.floor(value) * 86400000);
+    return toIso(date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate());
+  }
+
+  const text = String(value ?? '').trim();
+  const iso = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T\s].*)?$/);
+  if (iso) return toIso(Number(iso[1]), Number(iso[2]), Number(iso[3]));
+  const dmy = text.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/);
+  if (dmy) return toIso(Number(dmy[3]), Number(dmy[2]), Number(dmy[1]));
+  return null;
+};
+
+const parseDlcSpreadsheetRows = (rows: unknown[][]): ParsedRecord[] => {
+  const headers = rows[0]?.map((value) => String(value ?? '').trim().replace(/^\uFEFF/, '')) ?? [];
+  if (headers.length !== DLC_COLUMNS.length || !DLC_COLUMNS.every((column, index) => headers[index] === column)) {
+    throw new Error(`Columns must be exactly: ${DLC_COLUMNS.join(', ')}.`);
+  }
+
+  const records = rows.slice(1).flatMap((row, index) => {
+    const values = DLC_COLUMNS.map((_, column) => String(row[column] ?? '').trim());
+    if (values.every((value) => !value)) return [];
+    if (row.slice(DLC_COLUMNS.length).some((value) => String(value ?? '').trim())) {
+      throw new Error(`Row ${index + 2} has extra data beyond the six required columns.`);
+    }
+    const date = parseDlcDate(row[0]);
+    if (!date) throw new Error(`Row ${index + 2} has an invalid Date. Use DD-MM-YYYY or YYYY-MM-DD.`);
+    const [ , ppo, account, name, mobile, pramanId ] = values;
+    if (!name) throw new Error(`Row ${index + 2} is missing the Name of Pensioner.`);
+    if (mobile && (mobile.replace(/\D/g, '').length < 10 || mobile.replace(/\D/g, '').length > 15)) {
+      throw new Error(`Row ${index + 2} has an invalid Mobile Number. Enter 10–15 digits.`);
+    }
+    return [{ date, scheme: 'DLC' as Scheme, ppo, account, name, mobile, urn: pramanId, policy: '', remarks: '' }];
+  });
+
+  if (!records.length) throw new Error('The file contains no DLC data rows.');
+  return records;
+};
+
 const JanSuraksha = () => {
   const [records, setRecords] = useState<JSRecord[]>(() => {
     try {
@@ -331,18 +383,39 @@ const JanSuraksha = () => {
     setIsParsing(true);
     const parsedList: ParsedRecord[] = [];
     let failed = 0;
+    const errors: string[] = [];
     for (const file of files) {
       try {
-        if (!file.name.toLowerCase().endsWith('.pdf')) {
+        const extension = file.name.split('.').pop()?.toLowerCase();
+        if (schemeFilter === 'DLC' && ['csv', 'xlsx', 'xls'].includes(extension || '')) {
+          let rows: unknown[][];
+          if (extension === 'csv') {
+            const result = Papa.parse<unknown[]>(await file.text(), { header: false, skipEmptyLines: 'greedy' });
+            if (result.errors.length) throw new Error(`CSV parsing failed: ${result.errors[0].message}`);
+            rows = result.data;
+          } else {
+            const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: true });
+            const firstSheetName = workbook.SheetNames[0];
+            const firstSheet = firstSheetName ? workbook.Sheets[firstSheetName] : undefined;
+            if (!firstSheet) throw new Error('The Excel file has no worksheet.');
+            rows = XLSX.utils.sheet_to_json<unknown[]>(firstSheet, { header: 1, defval: '', raw: true });
+          }
+          parsedList.push(...parseDlcSpreadsheetRows(rows));
+          continue;
+        }
+        if (extension !== 'pdf') {
           failed++;
+          errors.push(schemeFilter === 'DLC'
+            ? `${file.name}: supported extensions are .pdf, .csv, .xlsx, and .xls.`
+            : `${file.name}: only .pdf files are supported for this scheme.`);
           continue;
         }
         const parsed = parseCertificateText(await pdfToText(file));
         if (parsed) parsedList.push(parsed);
         else failed++;
       } catch (err) {
-        console.error(err);
         failed++;
+        errors.push(`${file.name}: ${err instanceof Error ? err.message : 'could not be read.'}`);
       }
     }
     const { added, dupes } = addParsed(parsedList);
@@ -350,7 +423,7 @@ const JanSuraksha = () => {
     if (fileRef.current) fileRef.current.value = '';
     if (added) toast.success(`${added} record(s) extracted`);
     if (dupes) toast.info(`${dupes} duplicate entry(ies) skipped`);
-    if (failed) toast.error(`${failed} file(s) could not be read`);
+    if (failed) toast.error(errors[0] || `${failed} file(s) could not be read`);
   };
 
   const saveForm = () => {
@@ -424,9 +497,16 @@ const JanSuraksha = () => {
         <div className="flex flex-wrap items-center gap-2">
           <Button onClick={() => fileRef.current?.click()} disabled={isParsing}>
             <Upload size={16} className="mr-2" />
-            {isParsing ? 'Extracting…' : 'Browse PDFs & Extract'}
+            {isParsing ? 'Processing…' : schemeFilter === 'DLC' ? 'Browse PDF, CSV & Excel' : 'Browse PDFs & Extract'}
           </Button>
-          <input ref={fileRef} type="file" accept=".pdf" multiple className="hidden" onChange={handleFiles} />
+          <input
+            ref={fileRef}
+            type="file"
+            accept={schemeFilter === 'DLC' ? '.pdf,.csv,.xlsx,.xls' : '.pdf'}
+            multiple
+            className="hidden"
+            onChange={handleFiles}
+          />
           <Button variant="outline" onClick={handlePrint}>
             <Printer size={16} className="mr-2" />
             Print
@@ -447,7 +527,7 @@ const JanSuraksha = () => {
             variant="outline"
             onClick={() => {
               setEditing(null);
-              setForm(emptyForm());
+              setForm({ ...emptyForm(), scheme: schemeFilter === 'DLC' ? 'DLC' : 'PMSBY' });
               setDialogOpen(true);
             }}
           >
@@ -528,7 +608,7 @@ const JanSuraksha = () => {
             {filtered.length === 0 ? (
               <tr>
                 <td colSpan={isDlcView ? 8 : 10} className="p-10 text-center text-muted-foreground">
-                  No records yet. Use “Browse PDFs &amp; Extract” to import certificates.
+                  No records found.
                 </td>
               </tr>
             ) : (
@@ -602,53 +682,82 @@ const JanSuraksha = () => {
             <DialogTitle>{editing ? 'Edit Record' : 'Add Record'}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-3">
+            {form.scheme !== 'DLC' && (
+              <div>
+                <Label>Scheme</Label>
+                <Select value={form.scheme} onValueChange={(v) => setForm({ ...form, scheme: v as Scheme })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SCHEMES.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {SCHEME_LABEL[s]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div>
               <Label>Date</Label>
               <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
             </div>
-            <div>
-              <Label>Scheme</Label>
-              <Select value={form.scheme} onValueChange={(v) => setForm({ ...form, scheme: v as Scheme })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {SCHEMES.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {SCHEME_LABEL[s]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Member Name</Label>
-              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-            </div>
-            <div>
-              <Label>Mobile</Label>
-              <Input value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} />
-            </div>
-            <div>
-              <Label>Unique Reference Number (URN)</Label>
-              <Input value={form.urn} onChange={(e) => setForm({ ...form, urn: e.target.value })} />
-            </div>
-            <div>
-              <Label>Bank A/c</Label>
-              <Input value={form.account} onChange={(e) => setForm({ ...form, account: e.target.value })} />
-            </div>
-            <div>
-              <Label>Master Policy No</Label>
-              <Input value={form.policy} onChange={(e) => setForm({ ...form, policy: e.target.value })} />
-            </div>
-            <div>
-              <Label>PPO</Label>
-              <Input value={form.ppo || ''} onChange={(e) => setForm({ ...form, ppo: e.target.value })} />
-            </div>
-            <div>
-              <Label>Remarks</Label>
-              <Input value={form.remarks} onChange={(e) => setForm({ ...form, remarks: e.target.value })} />
-            </div>
+            {form.scheme === 'DLC' ? (
+              <>
+                <div>
+                  <Label>PPO Number</Label>
+                  <Input value={form.ppo || ''} onChange={(e) => setForm({ ...form, ppo: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Account Number</Label>
+                  <Input value={form.account} onChange={(e) => setForm({ ...form, account: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Name of Pensioner</Label>
+                  <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Mobile Number</Label>
+                  <Input value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Praman ID</Label>
+                  <Input value={form.urn} onChange={(e) => setForm({ ...form, urn: e.target.value })} />
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <Label>Member Name</Label>
+                  <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Mobile</Label>
+                  <Input value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Unique Reference Number (URN)</Label>
+                  <Input value={form.urn} onChange={(e) => setForm({ ...form, urn: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Bank A/c</Label>
+                  <Input value={form.account} onChange={(e) => setForm({ ...form, account: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Master Policy No</Label>
+                  <Input value={form.policy} onChange={(e) => setForm({ ...form, policy: e.target.value })} />
+                </div>
+                <div>
+                  <Label>PPO</Label>
+                  <Input value={form.ppo || ''} onChange={(e) => setForm({ ...form, ppo: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Remarks</Label>
+                  <Input value={form.remarks} onChange={(e) => setForm({ ...form, remarks: e.target.value })} />
+                </div>
+              </>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
