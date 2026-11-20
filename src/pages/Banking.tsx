@@ -67,11 +67,17 @@ interface BankingEntry {
   created_at?: string;
 }
 
+interface EditableBankingGroup {
+  ids: string[];
+  date: Date;
+  cats: Record<Category, number>;
+}
+
 const Banking = () => {
   const [bankingEntries, setBankingEntries] = useState<BankingEntry[]>([]);
   const [filteredEntries, setFilteredEntries] = useState<BankingEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [editingEntry, setEditingEntry] = useState<BankingEntry | null>(null);
+  const [editingGroup, setEditingGroup] = useState<EditableBankingGroup | null>(null);
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month' | 'quarter'>('day');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -100,12 +106,11 @@ const Banking = () => {
     account_number: '',
   });
 
-  const [editForm, setEditForm] = useState({
+  const [groupEditForm, setGroupEditForm] = useState({
     date: '',
-    amount: 0,
-    transaction_count: 1,
-    extra_amount: 0,
-    transaction_type: '',
+    withdrawal: 0,
+    deposit: 0,
+    imps: 0,
   });
 
   const fetchBankingEntries = async () => {
@@ -478,45 +483,105 @@ const Banking = () => {
     }
   };
 
-  const handleEditEntry = async () => {
-    if (!editingEntry) return;
+  const openEditGroup = (row: EditableBankingGroup) => {
+    const dateKey = format(row.date, 'yyyy-MM-dd');
+    const dayEntries = bankingEntries.filter(entry => format(entry.date, 'yyyy-MM-dd') === dateKey);
+    const dayCategories: Record<Category, number> = {
+      Deposit: 0,
+      Withdrawal: 0,
+      IMPS: 0,
+      Electricity: 0,
+    };
+    dayEntries.forEach(entry => {
+      const category = categorize(entry.transaction_type);
+      if (category) dayCategories[category] += entry.amount;
+    });
+
+    setEditingGroup({
+      ...row,
+      ids: dayEntries.map(entry => entry.id),
+      cats: dayCategories,
+    });
+    setGroupEditForm({
+      date: dateKey,
+      withdrawal: dayCategories.Withdrawal,
+      deposit: dayCategories.Deposit,
+      imps: dayCategories.IMPS,
+    });
+  };
+
+  const handleEditGroup = async () => {
+    if (!editingGroup) return;
+
+    const targetDate = new Date(groupEditForm.date);
+    const targetAmounts: Partial<Record<Category, number>> = {
+      Withdrawal: Number(groupEditForm.withdrawal),
+      Deposit: Number(groupEditForm.deposit),
+      IMPS: Number(groupEditForm.imps),
+    };
+
+    if (Number.isNaN(targetDate.getTime()) || Object.values(targetAmounts).some(amount => !Number.isFinite(amount) || amount < 0)) {
+      toast.error('Enter a valid date and non-negative amounts');
+      return;
+    }
 
     try {
-      const margin = calculateBankingServicesMargin(editForm.amount);
-      
-      const { error } = await supabase
+      const { error: dateError } = await supabase
         .from('banking_services')
-        .update({
-          date: new Date(editForm.date).toISOString(),
-          amount: editForm.amount,
-          margin: margin,
-          transaction_count: editForm.transaction_count,
-          extra_amount: editForm.extra_amount,
-          transaction_type: editForm.transaction_type || null,
-        } as any)
-        .eq('id', editingEntry.id);
+        .update({ date: targetDate.toISOString() })
+        .in('id', editingGroup.ids);
+      if (dateError) throw dateError;
 
-      if (error) throw error;
+      const entries = bankingEntries.filter(entry => editingGroup.ids.includes(entry.id));
+      const categoryResults = await Promise.all((['Withdrawal', 'Deposit', 'IMPS'] as const).map(async category => {
+        const categoryEntries = entries.filter(entry => categorize(entry.transaction_type) === category);
+        const targetAmount = targetAmounts[category] ?? 0;
 
-      const updatedEntry: BankingEntry = {
-        ...editingEntry,
-        date: new Date(editForm.date),
-        amount: editForm.amount,
-        margin: margin,
-        transaction_count: editForm.transaction_count,
-        extra_amount: editForm.extra_amount,
-        transaction_type: editForm.transaction_type || null,
-      };
+        if (categoryEntries.length === 0) {
+          if (targetAmount === 0) return null;
+          return supabase.from('banking_services').insert({
+            date: targetDate.toISOString(),
+            amount: targetAmount,
+            margin: calculateBankingServicesMargin(targetAmount),
+            transaction_count: 1,
+            extra_amount: 0,
+            transaction_type: CATEGORY_DEFAULT_TYPE[category],
+          } as any);
+        }
 
-      setBankingEntries(prev =>
-        prev.map(entry => entry.id === editingEntry.id ? updatedEntry : entry)
-      );
+        if (targetAmount === 0) {
+          return supabase.from('banking_services').delete().in('id', categoryEntries.map(entry => entry.id));
+        }
 
-      setEditingEntry(null);
-      toast.success('Banking entry updated successfully');
+        const priorTotal = categoryEntries.reduce((sum, entry) => sum + entry.amount, 0);
+        const totalCents = Math.round(targetAmount * 100);
+        let allocatedCents = 0;
+        const updates = categoryEntries.map((entry, index) => {
+          const amountCents = index === categoryEntries.length - 1
+            ? totalCents - allocatedCents
+            : Math.round(totalCents * (priorTotal > 0 ? entry.amount / priorTotal : 1 / categoryEntries.length));
+          allocatedCents += amountCents;
+          const amount = amountCents / 100;
+          return supabase.from('banking_services').update({
+            date: targetDate.toISOString(),
+            amount,
+            margin: calculateBankingServicesMargin(amount),
+          }).eq('id', entry.id);
+        });
+        const results = await Promise.all(updates);
+        return results.find(result => result.error) ?? null;
+      }));
+
+      const categoryError = categoryResults.find(result => result?.error)?.error;
+      if (categoryError) throw categoryError;
+
+      await fetchBankingEntries();
+      setEditingGroup(null);
+      toast.success('Banking transaction row updated');
     } catch (error) {
-      console.error('Error updating banking entry:', error);
-      toast.error('Failed to update banking entry');
+      console.error('Error updating banking transaction row:', error);
+      await fetchBankingEntries();
+      toast.error('Failed to update banking transaction row');
     }
   };
 
@@ -535,17 +600,6 @@ const Banking = () => {
       console.error('Error deleting banking entry:', error);
       toast.error('Failed to delete banking entry');
     }
-  };
-
-  const openEditEntry = (entry: BankingEntry) => {
-    setEditingEntry(entry);
-    setEditForm({
-      date: format(entry.date, 'yyyy-MM-dd'),
-      amount: entry.amount,
-      transaction_count: entry.transaction_count,
-      extra_amount: entry.extra_amount || 0,
-      transaction_type: entry.transaction_type || '',
-    });
   };
 
   const handlePrint = () => {
@@ -800,23 +854,15 @@ const Banking = () => {
                   <TableCell className="text-right">{formatCurrency(row.margin)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      {row.ids.map((eid, idx) => {
-                        const e = bankingEntries.find(b => b.id === eid);
-                        if (!e) return null;
-                        const c = categorize(e.transaction_type);
-                        return (
-                          <Button
-                            key={eid}
-                            size="sm"
-                            variant="outline"
-                            title={`Edit ${c || 'entry'} (${formatCurrency(e.amount)})`}
-                            onClick={() => openEditEntry(e)}
-                          >
-                            <Edit size={14} />
-                            {row.ids.length > 1 && <span className="ml-1 text-[10px]">{c?.[0] || idx + 1}</span>}
-                          </Button>
-                        );
-                      })}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        title="Edit date, withdrawal, deposit, and IMPS amounts"
+                        aria-label={`Edit banking transactions for ${format(row.date, 'dd/MM/yyyy')}`}
+                        onClick={() => openEditGroup(row)}
+                      >
+                        <Edit size={14} />
+                      </Button>
                       <Button
                         size="sm"
                         variant="outline"
@@ -835,73 +881,43 @@ const Banking = () => {
         </div>
       )}
 
-      {/* Edit Entry Dialog */}
-      <Dialog open={!!editingEntry} onOpenChange={() => setEditingEntry(null)}>
+      <Dialog open={!!editingGroup} onOpenChange={(open) => { if (!open) setEditingGroup(null); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Banking Entry</DialogTitle>
+            <DialogTitle>Edit Banking Transactions</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="edit_date">Date</Label>
+              <Label htmlFor="group_edit_date">Date</Label>
               <Input
-                id="edit_date"
+                id="group_edit_date"
                 type="date"
-                value={editForm.date}
-                onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))}
+                value={groupEditForm.date}
+                onChange={(event) => setGroupEditForm(prev => ({ ...prev, date: event.target.value }))}
               />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit_transaction_type">Transaction Type</Label>
-              <Select
-                value={editForm.transaction_type || ''}
-                onValueChange={(v) => setEditForm(prev => ({ ...prev, transaction_type: v }))}
-              >
-                <SelectTrigger id="edit_transaction_type">
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {TRANSACTION_TYPES.map(t => (
-                    <SelectItem key={t} value={t}>{t}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit_transaction_count">Transaction Count</Label>
-              <Input
-                id="edit_transaction_count"
-                type="number"
-                value={editForm.transaction_count}
-                onChange={(e) => setEditForm(prev => ({ ...prev, transaction_count: Number(e.target.value) }))}
-                placeholder="Transaction count"
-                min="1"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit_amount">Amount</Label>
-              <Input
-                id="edit_amount"
-                type="number"
-                value={editForm.amount}
-                onChange={(e) => setEditForm(prev => ({ ...prev, amount: Number(e.target.value) }))}
-                placeholder="Amount"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit_extra_amount">Extra Amount</Label>
-              <Input
-                id="edit_extra_amount"
-                type="number"
-                value={editForm.extra_amount}
-                onChange={(e) => setEditForm(prev => ({ ...prev, extra_amount: Number(e.target.value) }))}
-                placeholder="Extra Amount"
-              />
-            </div>
-            <Button onClick={handleEditEntry}>Update Banking Entry</Button>
+            {([
+              { key: 'withdrawal', label: 'Withdrawal' },
+              { key: 'deposit', label: 'Deposit' },
+              { key: 'imps', label: 'IMPS' },
+            ] as const).map(({ key, label }) => (
+              <div className="grid gap-2" key={key}>
+                <Label htmlFor={`group_edit_${key}`}>{label}</Label>
+                <Input
+                  id={`group_edit_${key}`}
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={groupEditForm[key]}
+                  onChange={(event) => setGroupEditForm(prev => ({ ...prev, [key]: Number(event.target.value) }))}
+                />
+              </div>
+            ))}
+            <Button onClick={handleEditGroup}>Save Changes</Button>
           </div>
         </DialogContent>
       </Dialog>
+
     </PageWrapper>
   );
 };
