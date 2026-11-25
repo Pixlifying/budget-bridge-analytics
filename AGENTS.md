@@ -1,0 +1,2 @@
+# Architecture decisions
+- Persist CKYC personal records in Supabase `public.ckyc_records` with admin/manager-only access; this protects sensitive identity details and keeps authorized staff on one shared record set.

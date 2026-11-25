@@ -188,6 +188,39 @@ export type Database = {
         }
         Relationships: []
       }
+      ckyc_records: {
+        Row: {
+          account_number: string
+          address: string
+          created_at: string
+          id: string
+          mobile_number: string | null
+          name: string
+          record_date: string
+          updated_at: string
+        }
+        Insert: {
+          account_number: string
+          address: string
+          created_at?: string
+          id?: string
+          mobile_number?: string | null
+          name: string
+          record_date?: string
+          updated_at?: string
+        }
+        Update: {
+          account_number?: string
+          address?: string
+          created_at?: string
+          id?: string
+          mobile_number?: string | null
+          name?: string
+          record_date?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       classes: {
         Row: {
           created_at: string
