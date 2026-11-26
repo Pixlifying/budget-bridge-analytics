@@ -174,7 +174,7 @@ const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: Sid
   useEffect(() => {
     const menuMap: Record<string, { menuKey: string; paths: string[] }[]> = {
       financialServices: [{ menuKey: 'financialServices', paths: ['/banking', '/od-records', '/banking-accounts'] }],
-      nonFinancialServices: [{ menuKey: 'nonFinancialServices', paths: ['/account-details', '/jan-suraksha', '/documentation'] }],
+      nonFinancialServices: [{ menuKey: 'nonFinancialServices', paths: ['/account-details', '/jan-suraksha', '/documentation', '/ckyc'] }],
       customerServices: [{ menuKey: 'customerServices', paths: ['/online-services', '/applications', '/photostat', '/papers'] }],
       ledger: [{ menuKey: 'ledger', paths: ['/khata-entry', '/pending-balance', '/expenses'] }],
       apps: [{ menuKey: 'apps', paths: ['/calculator', '/age-calculator', '/work-to-be', '/checklist-docs'] }],
@@ -215,6 +215,7 @@ const Sidebar = ({ mobileOpen, onMobileClose, collapsed, onToggleCollapse }: Sid
     { icon: <IconUsers size={16} />, label: 'Account Details', to: '/account-details' },
     { icon: <IconShield size={16} />, label: 'Jan Suraksha', to: '/jan-suraksha' },
     { icon: <IconDocument size={16} />, label: 'Documentation', to: '/documentation' },
+    { icon: <IconFingerprint size={16} />, label: 'CKYC', to: '/ckyc' },
   ];
 
   const customerServiceItems = [

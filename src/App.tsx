@@ -45,6 +45,7 @@ import WorkToBe from "@/pages/WorkToBe";
 import ImpsElectricity from "@/pages/ImpsElectricity";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Admin from "@/pages/Admin";
+import Ckyc from "@/pages/Ckyc";
 
 const queryClient = new QueryClient();
 
@@ -88,6 +89,7 @@ const App = () => {
                       <Route path="/ledger" element={<Ledger />} />
                       <Route path="/ledger/:id" element={<CustomerDetails />} />
                       <Route path="/account-details" element={<AccountDetails />} />
+                      <Route path="/ckyc" element={<Ckyc />} />
                       <Route path="/khata" element={<Khata />} />
                       <Route path="/khata-entry" element={<KhataEntry />} />
                       <Route path="/papers" element={<Papers />} />
