@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { format } from 'date-fns';
-import { Pencil, Printer, Save, X } from 'lucide-react';
+import { Pencil, Printer, Save, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import PageWrapper from '@/components/layout/PageWrapper';
@@ -19,6 +19,16 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { escapeHtml } from '@/lib/sanitize';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface CkycRecord {
   id: string;
@@ -65,6 +75,8 @@ const Ckyc = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<CkycRecord | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const formRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -168,6 +180,30 @@ const Ckyc = () => {
       mobile_number: record.mobile_number ?? '',
     });
     formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget || deleting) return;
+
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('ckyc_records')
+        .delete()
+        .eq('id', deleteTarget.id);
+
+      if (error) throw error;
+
+      setRecords((current) => current.filter((record) => record.id !== deleteTarget.id));
+      if (editingId === deleteTarget.id) resetForm();
+      setDeleteTarget(null);
+      toast.success('CKYC record deleted.');
+    } catch (error) {
+      console.error('Unable to delete CKYC record:', error);
+      toast.error('Unable to delete the CKYC record. Please try again.');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const handlePrint = () => {
@@ -323,7 +359,7 @@ const Ckyc = () => {
                     <TableHead>Name</TableHead>
                     <TableHead>Address</TableHead>
                     <TableHead>Mobile Number</TableHead>
-                    <TableHead className="w-20 text-right">Actions</TableHead>
+                    <TableHead className="w-24 text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -335,16 +371,28 @@ const Ckyc = () => {
                       <TableCell className="max-w-sm whitespace-normal">{record.address}</TableCell>
                       <TableCell>{record.mobile_number || '—'}</TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          aria-label={`Edit CKYC record for ${record.name}`}
-                          title="Edit record"
-                          onClick={() => startEditing(record)}
-                        >
-                          <Pencil size={16} />
-                        </Button>
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Edit CKYC record for ${record.name}`}
+                            title="Edit record"
+                            onClick={() => startEditing(record)}
+                          >
+                            <Pencil size={16} />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Delete CKYC record for ${record.name}`}
+                            title="Delete record"
+                            onClick={() => setDeleteTarget(record)}
+                          >
+                            <Trash2 size={16} />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -354,6 +402,59 @@ const Ckyc = () => {
           </div>
         )}
       </section>
+
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => {
+          if (!open && !deleting) setDeleteTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this CKYC record?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Confirm the record details below. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {deleteTarget && (
+            <dl className="grid grid-cols-1 gap-x-4 gap-y-2 rounded-md border border-border bg-muted/40 p-3 text-sm sm:grid-cols-2">
+              <div>
+                <dt className="text-muted-foreground">Date</dt>
+                <dd className="break-words font-medium text-foreground">{displayDate(deleteTarget.record_date)}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Account Number</dt>
+                <dd className="break-words font-medium text-foreground">{deleteTarget.account_number}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Name</dt>
+                <dd className="break-words font-medium text-foreground">{deleteTarget.name}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Mobile Number</dt>
+                <dd className="break-words font-medium text-foreground">{deleteTarget.mobile_number || '—'}</dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="text-muted-foreground">Address</dt>
+                <dd className="break-words font-medium text-foreground">{deleteTarget.address}</dd>
+              </div>
+            </dl>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(event) => {
+                event.preventDefault();
+                void handleDelete();
+              }}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? 'Deleting…' : 'Delete record'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageWrapper>
   );
 };
